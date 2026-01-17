@@ -1,0 +1,15 @@
+---
+import HelloComponent from "../components/Hello.tsx"
+import TodoList from "../components/TodoList.vue"
+---
+
+<html>
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <h1>Hello World 页面</h1>
+    <TodoList client:load />
+    <HelloComponent client:load />
+    <br />
+    <a href="/">返回首页</a>
+  </body>
+</html>
