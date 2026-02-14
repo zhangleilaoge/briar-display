@@ -1,0 +1,3 @@
+[submodule "briar-assets"]
+	path = briar-assets
+	url = https://github.com/zhangleilaoge/briar-assets.git

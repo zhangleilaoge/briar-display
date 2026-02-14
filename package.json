@@ -1,21 +1,16 @@
 {
-  "name": "",
-  "type": "module",
+  "name": "briar-monorepo",
   "version": "0.0.1",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "dev": "pnpm --filter @briar/display dev",
+    "dev:node": "pnpm --filter @briar/node dev",
+    "dev:shared": "pnpm --filter @briar/shared dev",
+    "build": "pnpm --filter @briar/shared build && pnpm --filter @briar/display build",
+    "build:shared": "pnpm --filter @briar/shared build",
+    "preview": "pnpm --filter @briar/display preview",
+    "install:all": "pnpm install"
   },
-  "dependencies": {
-    "@astrojs/react": "^4.4.2",
-    "@astrojs/vue": "^5.1.4",
-    "@types/react": "^19.2.8",
-    "@types/react-dom": "^19.2.3",
-    "astro": "^5.16.11",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "vue": "^3.5.26"
-  }
+  "devDependencies": {}
 }
