@@ -40,3 +40,11 @@ export interface User {
   email: string
   createdAt: Date
 }
+
+/**
+ * Auth session payload
+ */
+export interface AuthSession {
+  token: string
+  user: User
+}

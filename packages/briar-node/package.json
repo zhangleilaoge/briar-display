@@ -3,13 +3,29 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "dev": "node src/index.js",
-    "build": "echo 'No build step yet'"
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist",
+    "db:setup": "tsx src/db/setup.ts"
   },
   "dependencies": {
-    "@briar/shared": "workspace:*"
+    "@briar/shared": "workspace:*",
+    "@hono/node-server": "^1.13.7",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^17.3.1",
+    "hono": "^4.7.9",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.17.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.3.0"
+  }
 }

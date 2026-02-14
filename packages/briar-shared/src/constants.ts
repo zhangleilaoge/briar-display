@@ -6,6 +6,17 @@ export const APP_NAME = "Briar"
 export const APP_VERSION = "0.0.1"
 
 /**
+ * 端口配置
+ */
+export const DISPLAY_PORT = 4321
+export const NODE_PORT = 3888
+
+/**
+ * Demo API 路径
+ */
+export const API_BASE_PATH = "/api"
+
+/**
  * API 相关常量
  */
 export const API_TIMEOUT = 30000

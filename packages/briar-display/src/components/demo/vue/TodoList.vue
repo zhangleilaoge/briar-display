@@ -15,27 +15,27 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref } from "vue"
 
-const newTodo = ref('');
+const newTodo = ref("")
 const todos = ref([
-  { text: 'Learn Astro', done: false },
-  { text: 'Try Vue in Astro', done: false },
-]);
+  { text: "Learn Astro", done: false },
+  { text: "Try Vue in Astro", done: false },
+])
 
 function addTodo() {
   if (newTodo.value.trim()) {
-    todos.value.push({ text: newTodo.value, done: false });
-    newTodo.value = '';
+    todos.value.push({ text: newTodo.value, done: false })
+    newTodo.value = ""
   }
 }
 
 function toggleTodo(idx) {
-  todos.value[idx].done = !todos.value[idx].done;
+  todos.value[idx].done = !todos.value[idx].done
 }
 
 function removeTodo(idx) {
-  todos.value.splice(idx, 1);
+  todos.value.splice(idx, 1)
 }
 </script>
 

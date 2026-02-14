@@ -4,13 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @briar/display dev",
-    "dev:node": "pnpm --filter @briar/node dev",
+    "dev": "concurrently -k -n shared,display -c gray,cyan --hide shared \"pnpm --filter @briar/shared dev\" \"pnpm --filter @briar/display dev\"",
+    "dev:node": "concurrently -k -n shared,node -c gray,magenta --hide shared \"pnpm --filter @briar/shared dev\" \"pnpm --filter @briar/node dev\"",
     "dev:shared": "pnpm --filter @briar/shared dev",
     "build": "pnpm --filter @briar/shared build && pnpm --filter @briar/display build",
     "build:shared": "pnpm --filter @briar/shared build",
     "preview": "pnpm --filter @briar/display preview",
     "install:all": "pnpm install"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
 }
