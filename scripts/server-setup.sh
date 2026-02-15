@@ -114,9 +114,9 @@ init_project() {
 start_service() {
   log_info "启动服务..."
   
-  if [ -f "ecosystem.config.js" ]; then
-    pm2 start ecosystem.config.js
-    log_info "使用 ecosystem.config.js 启动服务"
+  if [ -f "ecosystem.config.cjs" ]; then
+    pm2 start ecosystem.config.cjs
+    log_info "使用 ecosystem.config.cjs 启动服务"
   else
     cd packages/briar-node
     NODE_ENV=production pm2 start dist/index.js --name briar-node

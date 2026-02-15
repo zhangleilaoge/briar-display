@@ -96,7 +96,7 @@ pm2 reload briar-node
 pm2 stop briar-node
 
 # 使用配置文件启动
-pm2 start ecosystem.config.js
+pm2 start ecosystem.config.cjs
 ```
 
 > 📖 详细部署文档请查看 [DEPLOYMENT.md](DEPLOYMENT.md)

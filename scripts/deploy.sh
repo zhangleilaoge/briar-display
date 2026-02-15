@@ -151,10 +151,10 @@ main() {
   else
     log_warn "PM2 应用不存在，正在启动..."
     
-    # 优先使用 ecosystem.config.js
-    if [ -f "ecosystem.config.js" ]; then
-      pm2 start ecosystem.config.js
-      log_info "使用 ecosystem.config.js 启动应用"
+    # 优先使用 ecosystem.config.cjs
+    if [ -f "ecosystem.config.cjs" ]; then
+      pm2 start ecosystem.config.cjs
+      log_info "使用 ecosystem.config.cjs 启动应用"
     else
       cd packages/briar-node
       NODE_ENV=production pm2 start dist/index.js --name "$PM2_APP_NAME"
