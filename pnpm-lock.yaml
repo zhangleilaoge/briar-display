@@ -114,6 +114,10 @@ importers:
         version: 5.9.3
 
   packages/briar-shared:
+    dependencies:
+      dotenv:
+        specifier: ^16.0.0
+        version: 16.6.1
     devDependencies:
       tsup:
         specifier: ^8.0.0
@@ -2556,6 +2560,11 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       is-obj: 2.0.0
+    dev: false
+
+  /dotenv@16.6.1:
+    resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
+    engines: {node: '>=12'}
     dev: false
 
   /dotenv@17.3.1:
