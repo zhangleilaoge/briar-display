@@ -7,7 +7,12 @@ const getApiBaseUrl = () => {
   }
 
   const { protocol, hostname } = window.location
-  return `${protocol}//${hostname}:${NODE_PORT}${API_BASE_PATH}`
+  // 生产环境不带端口号，通过 Nginx 代理
+  const isLocal = hostname === "localhost" || hostname === "127.0.0.1"
+  const baseUrl = isLocal
+    ? `${protocol}//${hostname}:${NODE_PORT}`
+    : `${protocol}//${hostname}`
+  return `${baseUrl}${API_BASE_PATH}`
 }
 
 export const apiClient = axios.create({
