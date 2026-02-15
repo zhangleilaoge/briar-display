@@ -21,12 +21,15 @@ const DIST_PATH = path.resolve(__dirname, "../../briar-display/dist")
 
 const app = new Hono()
 
+// 全局中间件
 app.use("/*", loggerMiddleware())
 app.use("/*", corsMiddleware())
 app.use("/*", pageAuthMiddleware())
 
+// API 路由
 app.route("/api", apiRoutes)
 
+// 静态资源和前端页面
 app.use("/*", serveStatic({ root: DIST_PATH }))
 app.get("/*", serveStatic({ path: "./index.html", root: DIST_PATH }))
 

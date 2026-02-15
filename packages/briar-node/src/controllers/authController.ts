@@ -81,4 +81,93 @@ export const authController = {
       )
     }
   },
+
+  async sendPasswordResetCode(c: Context) {
+    const body = await c.req.json()
+    const { email } = body || {}
+
+    if (!email) {
+      return c.json<ApiResponse>(
+        {
+          success: false,
+          message: "Missing email",
+          code: HTTP_STATUS.BAD_REQUEST,
+        },
+        HTTP_STATUS.BAD_REQUEST,
+      )
+    }
+
+    try {
+      await authService.sendPasswordResetCode(email)
+      return c.json<ApiResponse>({
+        success: true,
+        message: "Reset code sent to your email",
+        code: HTTP_STATUS.OK,
+      })
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message === "USER_NOT_FOUND"
+          ? "User not found"
+          : "Failed to send reset code"
+      const statusCode =
+        error instanceof Error && error.message === "USER_NOT_FOUND"
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.INTERNAL_SERVER_ERROR
+      return c.json<ApiResponse>(
+        {
+          success: false,
+          message,
+          code: statusCode,
+        },
+        statusCode,
+      )
+    }
+  },
+
+  async resetPassword(c: Context) {
+    const body = await c.req.json()
+    const { email, code, newPassword } = body || {}
+
+    if (!email || !code || !newPassword) {
+      return c.json<ApiResponse>(
+        {
+          success: false,
+          message: "Missing required fields",
+          code: HTTP_STATUS.BAD_REQUEST,
+        },
+        HTTP_STATUS.BAD_REQUEST,
+      )
+    }
+
+    try {
+      const result = await authService.resetPassword(email, code, newPassword)
+      return c.json<ApiResponse>({
+        success: true,
+        data: result,
+        code: HTTP_STATUS.OK,
+      })
+    } catch (error) {
+      let message = "Password reset failed"
+      let statusCode: (typeof HTTP_STATUS)[keyof typeof HTTP_STATUS] =
+        HTTP_STATUS.BAD_REQUEST
+
+      if (error instanceof Error) {
+        if (error.message === "INVALID_CODE") {
+          message = "Invalid or expired reset code"
+        } else if (error.message === "USER_NOT_FOUND") {
+          message = "User not found"
+          statusCode = HTTP_STATUS.NOT_FOUND
+        }
+      }
+
+      return c.json<ApiResponse>(
+        {
+          success: false,
+          message,
+          code: statusCode,
+        },
+        statusCode,
+      )
+    }
+  },
 }

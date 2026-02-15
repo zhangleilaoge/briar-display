@@ -11,7 +11,12 @@ export const RouteConfig = {
   PUBLIC_PREFIXES: ["/demo"],
 
   /** API 不需要认证的路径 */
-  API_PUBLIC_PATHS: ["/api/auth/login", "/api/auth/register"],
+  API_PUBLIC_PATHS: [
+    "/api/auth/login",
+    "/api/auth/register",
+    "/api/auth/send-reset-code",
+    "/api/auth/reset-password",
+  ],
 
   /** API 不需要认证的路径前缀 */
   API_PUBLIC_PREFIXES: [],

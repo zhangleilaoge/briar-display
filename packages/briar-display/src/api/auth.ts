@@ -12,6 +12,16 @@ export interface RegisterPayload {
   password: string
 }
 
+export interface SendResetCodePayload {
+  email: string
+}
+
+export interface ResetPasswordPayload {
+  email: string
+  code: string
+  newPassword: string
+}
+
 export const setAuthToken = (token: string) => {
   if (typeof window === "undefined") {
     return
@@ -43,6 +53,22 @@ export const login = async (payload: LoginPayload) => {
 export const register = async (payload: RegisterPayload) => {
   const response = await apiClient.post<ApiResponse<AuthSession>>(
     "/auth/register",
+    payload,
+  )
+  return response.data
+}
+
+export const sendPasswordResetCode = async (payload: SendResetCodePayload) => {
+  const response = await apiClient.post<ApiResponse>(
+    "/auth/send-reset-code",
+    payload,
+  )
+  return response.data
+}
+
+export const resetPassword = async (payload: ResetPasswordPayload) => {
+  const response = await apiClient.post<ApiResponse<AuthSession>>(
+    "/auth/reset-password",
     payload,
   )
   return response.data

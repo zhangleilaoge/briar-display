@@ -103,7 +103,10 @@ export default function LoginPage() {
                     />
                     记住我
                   </label>
-                  <a href="/register" className="text-primary hover:underline">
+                  <a
+                    href="/forgot-password"
+                    className="text-primary hover:underline"
+                  >
                     忘记密码？
                   </a>
                 </div>

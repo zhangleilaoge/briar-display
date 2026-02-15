@@ -3,6 +3,11 @@ import jwt from "jsonwebtoken"
 import type { User } from "@briar/shared"
 import { AUTH_CONFIG } from "../config/auth"
 import { userDal, type UserRecord } from "../dal/userDal"
+import {
+  verificationCodeDal,
+  VerificationCodeType,
+} from "../dal/verificationCodeDal"
+import { emailService } from "./emailService"
 
 export interface AuthPayload {
   sub: string
@@ -16,6 +21,13 @@ const toPublicUser = (record: UserRecord): User => ({
   email: record.email,
   createdAt: record.createdAt,
 })
+
+/**
+ * 生成随机 6 位验证码
+ */
+const generateVerificationCode = (): string => {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
 
 /**
  * 创建默认管理员账户
@@ -70,6 +82,74 @@ export const authService = {
 
     const token = authService.createToken(record)
     return { user: toPublicUser(record), token }
+  },
+
+  async sendPasswordResetCode(email: string) {
+    // 验证用户是否存在
+    const user = await userDal.findByEmail(email)
+    if (!user) {
+      throw new Error("USER_NOT_FOUND")
+    }
+
+    // 生成验证码
+    const code = generateVerificationCode()
+
+    // 设置验证码过期时间为 15 分钟
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+
+    // 删除该邮箱之前的重置密码验证码
+    await verificationCodeDal.deleteByTargetAndType(
+      email,
+      VerificationCodeType.RESET_PASSWORD,
+    )
+
+    // 保存新的验证码
+    await verificationCodeDal.create(
+      email,
+      VerificationCodeType.RESET_PASSWORD,
+      code,
+      expiresAt,
+    )
+
+    // 发送邮件
+    try {
+      await emailService.sendPasswordResetCode(email, user.name, code)
+    } catch (error) {
+      console.error("Failed to send password reset code:", error)
+      throw new Error("SEND_EMAIL_FAILED")
+    }
+  },
+
+  async resetPassword(email: string, code: string, newPassword: string) {
+    // 验证用户是否存在
+    const user = await userDal.findByEmail(email)
+    if (!user) {
+      throw new Error("USER_NOT_FOUND")
+    }
+
+    // 验证验证码
+    const resetCode = await verificationCodeDal.findValidByTargetTypeAndCode(
+      email,
+      VerificationCodeType.RESET_PASSWORD,
+      code,
+    )
+    if (!resetCode) {
+      throw new Error("INVALID_CODE")
+    }
+
+    // 标记该验证码为已使用
+    await verificationCodeDal.markAsUsed(resetCode.id)
+
+    // 更新密码
+    const passwordHash = await bcrypt.hash(newPassword, 10)
+    const updatedUser = await userDal.update(user.id, { passwordHash })
+
+    if (!updatedUser) {
+      throw new Error("UPDATE_FAILED")
+    }
+
+    const token = authService.createToken(updatedUser)
+    return { user: toPublicUser(updatedUser), token }
   },
 
   createToken(record: UserRecord) {
