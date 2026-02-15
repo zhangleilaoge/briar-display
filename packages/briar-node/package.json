@@ -15,7 +15,9 @@
   "dependencies": {
     "@briar/shared": "workspace:*",
     "@hono/node-server": "^1.13.7",
+    "@breejs/later": "^4.2.0",
     "bcryptjs": "^2.4.3",
+    "bree": "^9.2.8",
     "cos-nodejs-sdk-v5": "^2.11.10",
     "dotenv": "^17.3.1",
     "hono": "^4.7.9",

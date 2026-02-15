@@ -140,6 +140,14 @@ export const verificationCodeDal = {
   },
 
   /**
+   * 删除所有验证码
+   */
+  async deleteAll(): Promise<number> {
+    const result = await execute("DELETE FROM verification_codes")
+    return result.affectedRows
+  },
+
+  /**
    * 删除指定目标的所有验证码
    */
   async deleteByTarget(target: string): Promise<number> {

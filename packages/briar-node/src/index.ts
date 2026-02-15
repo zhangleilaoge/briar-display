@@ -5,13 +5,14 @@ import path from "path"
 import { fileURLToPath } from "url"
 import { APP_NAME, NODE_PORT } from "@briar/shared"
 import {
-  loggerMiddleware,
-  corsMiddleware,
-  pageAuthMiddleware,
-} from "./middleware"
+  applyConfiguredMiddlewares,
+  globalMiddlewares,
+} from "./middleware/config"
 import apiRoutes from "./routes/api"
 import { checkDatabase } from "./db/init"
 import { releasePort } from "./lib/port"
+import { startScheduler } from "./lib/scheduler"
+import { schedulerTasks } from "./lib/schedulerConfig"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -22,9 +23,7 @@ const DIST_PATH = path.resolve(__dirname, "../../briar-display/dist")
 const app = new Hono()
 
 // 全局中间件
-app.use("/*", loggerMiddleware())
-app.use("/*", corsMiddleware())
-app.use("/*", pageAuthMiddleware())
+applyConfiguredMiddlewares(app, globalMiddlewares, "/*")
 
 // API 路由
 app.route("/api", apiRoutes)
@@ -49,6 +48,8 @@ const startServer = async () => {
   console.log(`📦 前端资源目录: ${DIST_PATH}`)
   console.log(`🌐 服务器地址: http://localhost:${PORT}`)
   console.log("=".repeat(60))
+
+  startScheduler(schedulerTasks)
 
   serve({ fetch: app.fetch, port: Number(PORT) })
 }

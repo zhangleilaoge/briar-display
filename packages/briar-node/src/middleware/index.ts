@@ -2,7 +2,7 @@ import type { MiddlewareHandler } from "hono"
 import { logger } from "hono/logger"
 import { cors } from "hono/cors"
 import { getCookie } from "hono/cookie"
-import { isPublicPath, isAssetPath, isApiPublicPath } from "../config/routes"
+import { isApiPublicPath } from "../config/routes"
 import { authMiddleware } from "./authMiddleware"
 
 /**
@@ -26,17 +26,6 @@ export const corsMiddleware = (): MiddlewareHandler =>
  */
 export const pageAuthMiddleware = (): MiddlewareHandler => {
   return async (c, next) => {
-    const pathname = c.req.path
-
-    // API 路径、资源文件和公开页面直接放行
-    if (
-      pathname.startsWith("/api") ||
-      isAssetPath(pathname) ||
-      isPublicPath(pathname)
-    ) {
-      return next()
-    }
-
     // 检查 token
     const token = getCookie(c, "briar_token")
     if (!token) {
