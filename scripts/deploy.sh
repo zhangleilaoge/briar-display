@@ -16,8 +16,6 @@ PROJECT_NAME="briar-display"
 PM2_APP_NAME="briar-node"
 BACKUP_DIR="$HOME/backups/$PROJECT_NAME"
 MAX_BACKUPS=5
-NGINX_CONF_SRC="default.conf"
-NGINX_CONF_DEST="/etc/nginx/conf.d/briar-display.conf"
 
 # 参数解析
 SKIP_INSTALL=false
@@ -142,18 +140,6 @@ main() {
     fi
   else
     log_warn "跳过构建"
-  fi
-
-  # 更新 Nginx 配置
-  if [ -f "$NGINX_CONF_SRC" ]; then
-    check_command nginx
-    log_info "更新 Nginx 配置..."
-    sudo cp "$NGINX_CONF_SRC" "$NGINX_CONF_DEST"
-    sudo nginx -t
-    sudo systemctl reload nginx
-    log_info "Nginx 配置已更新并重载"
-  else
-    log_warn "未找到 $NGINX_CONF_SRC，跳过 Nginx 配置更新"
   fi
   
   # 重启 PM2 应用

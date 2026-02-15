@@ -28,8 +28,12 @@ export const pageAuthMiddleware = (): MiddlewareHandler => {
   return async (c, next) => {
     const pathname = c.req.path
 
-    // 资源文件和公开页面直接放行
-    if (isAssetPath(pathname) || isPublicPath(pathname)) {
+    // API 路径、资源文件和公开页面直接放行
+    if (
+      pathname.startsWith("/api") ||
+      isAssetPath(pathname) ||
+      isPublicPath(pathname)
+    ) {
       return next()
     }
 

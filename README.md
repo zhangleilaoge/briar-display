@@ -80,6 +80,13 @@ chmod +x scripts/*.sh
 ./scripts/deploy.sh --skip-build
 ```
 
+#### Nginx 配置部署
+
+```bash
+# 单独部署 Nginx 配置
+./scripts/deploy-nginx.sh
+```
+
 #### PM2 管理
 
 ```bash
