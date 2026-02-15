@@ -9,12 +9,14 @@
     "build": "tsup",
     "start": "node dist/index.js",
     "clean": "rm -rf dist",
-    "db:setup": "tsx src/db/setup.ts"
+    "db:setup": "tsx src/db/setup.ts",
+    "upload:cdn": "tsx scripts/upload-cdn.ts"
   },
   "dependencies": {
     "@briar/shared": "workspace:*",
     "@hono/node-server": "^1.13.7",
     "bcryptjs": "^2.4.3",
+    "cos-nodejs-sdk-v5": "^2.11.10",
     "dotenv": "^17.3.1",
     "hono": "^4.7.9",
     "jsonwebtoken": "^9.0.2",

@@ -1,4 +1,4 @@
-.PHONY: help init install dev dev-node dev-shared build build-shared preview clean db-setup
+.PHONY: help init install dev dev-node dev-shared build build-shared build-cdn upload-cdn preview clean db-setup
 
 # 默认目标
 help:
@@ -10,6 +10,8 @@ help:
 	@echo "  make dev-node    - 启动后端开发服务"
 	@echo "  make dev-shared  - 启动 shared 包监听模式"
 	@echo "  make build       - 构建所有包"
+	@echo "  make upload-cdn  - 上传前端构建产物到 CDN"
+	@echo "  make build-cdn   - 构建前端并上传到 CDN"
 	@echo "  make build-shared - 仅构建 shared 包"
 	@echo "  make preview     - 预览前端生产构建"
 	@echo "  make clean       - 清理构建产物"
@@ -72,6 +74,14 @@ dev-shared:
 # 构建所有包（先构建 shared，再构建 display）
 build:
 	pnpm --filter @briar/shared build && pnpm --filter @briar/display build
+
+# 构建前端并上传到 CDN
+build-cdn:
+	pnpm --filter @briar/display build && pnpm --filter @briar/node upload:cdn
+
+# 上传前端构建产物到 CDN
+upload-cdn:
+	pnpm --filter @briar/node upload:cdn
 
 # 仅构建 shared 包
 build-shared:

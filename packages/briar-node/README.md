@@ -2,115 +2,63 @@
 
 基于 Hono 的 Node.js 后端服务，提供 API 接口和静态资源托管。
 
-## 技术栈
-
-- **Hono** - 轻量级、高性能 Web 框架
-- **TypeScript** - 类型安全
-- **tsup** - 快速构建工具
-- **tsx** - TypeScript 执行器（开发模式）
-
-## 功能特性
-
-✅ **API 路由** - 处理 `/api/*` 路径的请求  
-✅ **静态托管** - 托管前端构建产物  
-✅ **SPA 支持** - 自动回退到 index.html  
-✅ **共享类型** - 使用 @briar/shared 的类型和工具
-
 ## 开发
 
-### 启动开发服务器
-
 ```bash
-# 在项目根目录
-pnpm --filter @briar/node dev
-
-# 或使用快捷命令
-pnpm dev:node
-# 或
-make dev:node
+# 启动开发服务器
+make dev-node
 ```
 
 开发服务器将在 `http://localhost:3888` 启动。
 
-### 构建生产版本
+## 部署
 
 ```bash
-# 构建
-pnpm --filter @briar/node build
+# 1. 初始化项目（首次）
+make init
 
-# 启动生产服务器
+# 2. 初始化数据库
+make db-setup
+
+# 3. 构建整个项目（shared → display → node）
+make build && pnpm --filter @briar/node build
+
+# 4. 启动生产服务器
 pnpm --filter @briar/node start
 ```
 
-## API 端点
-
-### 健康检查
+**日常更新部署：**
 
 ```bash
-GET /api/health
-```
+# 使用部署脚本（推荐）
+./scripts/deploy.sh
 
-### 服务器信息
+# 快速部署（跳过依赖安装）
+./scripts/deploy.sh --skip-install
 
-```bash
-GET /api/info
-```
-
-### 生成 ID
-
-```bash
-GET /api/generate-id
-```
-
-### 用户管理
-
-```bash
-# 获取用户列表
-GET /api/users
-
-# 创建用户
-POST /api/users
-Content-Type: application/json
-
-{
-  "name": "John Doe",
-  "email": "john@example.com"
-}
-```
-
-## 项目结构
-
-```
-/
-├── src/
-│   ├── index.ts           # 服务器入口
-│   └── routes/
-│       └── api.ts         # API 路由定义
-├── dist/                  # 构建输出
-├── tsconfig.json          # TypeScript 配置
-├── tsup.config.ts         # 构建配置
-└── package.json
+# 仅重启（跳过构建）
+./scripts/deploy.sh --skip-build
 ```
 
 ## 环境变量
 
 ```bash
-PORT=3888  # 服务器端口（默认 3000）
+# 服务器
+PORT=3888
+
+# 数据库
+BRIAR_DATABASE_HOST=...
+BRIAR_DATABASE_USER=...
+BRIAR_DATABASE_PASSWORD=...
+
+# 腾讯云 COS（用于上传 CDN）
+BRIAR_TX_BUCKET_REGION=ap-shanghai
+BRIAR_TX_SEC_ID=...
+BRIAR_TX_SEC_KEY=...
+BRIAR_TX_BUCKET_NAME=...
+BRIAR_TX_BUCKET_DOMAIN=https://your-bucket.cos.ap-shanghai.myqcloud.com
 ```
 
-## 部署
+**CDN 工作原理：**
 
-生产环境部署步骤：
-
-```bash
-# 1. 构建前端
-pnpm --filter @briar/display build
-
-# 2. 构建后端
-pnpm --filter @briar/node build
-
-# 3. 启动服务器
-pnpm --filter @briar/node start
-```
-
-所有请求（包括页面和 API）都由 Node.js 服务器处理。
+前端构建时设置 `BRIAR_TX_BUCKET_DOMAIN` 环境变量，Astro 会将所有资源引用（JS、CSS、图片等）路径改为 CDN 地址。服务器只负责提供 HTML 页面，资源由浏览器直接从 CDN 加载。

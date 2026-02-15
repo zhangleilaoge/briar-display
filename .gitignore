@@ -17,6 +17,13 @@ pnpm-debug.log*
 .env
 .env.production
 
+# PM2 logs
+logs/
+*.log
+
+# backups
+backups/
+
 # macOS-specific files
 .DS_Store
 

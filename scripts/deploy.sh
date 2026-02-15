@@ -1,0 +1,178 @@
+#!/bin/bash
+
+# Briar 项目部署脚本
+# 使用方式: ./scripts/deploy.sh [--skip-install] [--skip-build]
+
+set -e
+
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# 配置
+PROJECT_NAME="briar-display"
+PM2_APP_NAME="briar-node"
+BACKUP_DIR="$HOME/backups/$PROJECT_NAME"
+MAX_BACKUPS=5
+
+# 参数解析
+SKIP_INSTALL=false
+SKIP_BUILD=false
+
+for arg in "$@"; do
+  case $arg in
+    --skip-install)
+      SKIP_INSTALL=true
+      shift
+      ;;
+    --skip-build)
+      SKIP_BUILD=true
+      shift
+      ;;
+  esac
+done
+
+# 工具函数
+log_info() {
+  echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_warn() {
+  echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+  echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# 检查命令是否存在
+check_command() {
+  if ! command -v $1 &> /dev/null; then
+    log_error "$1 未安装，请先安装"
+    exit 1
+  fi
+}
+
+# 创建备份
+create_backup() {
+  log_info "创建备份..."
+  
+  mkdir -p "$BACKUP_DIR"
+  
+  if [ -d "packages/briar-node/dist" ]; then
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
+    
+    tar -czf "$BACKUP_FILE" packages/briar-node/dist
+    log_info "备份已创建: $BACKUP_FILE"
+    
+    # 清理旧备份
+    BACKUP_COUNT=$(ls -1 "$BACKUP_DIR" | wc -l)
+    if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
+      log_info "清理旧备份..."
+      cd "$BACKUP_DIR"
+      ls -t | tail -n +$((MAX_BACKUPS + 1)) | xargs rm -f
+      cd - > /dev/null
+    fi
+  fi
+}
+
+# 恢复备份
+restore_backup() {
+  log_warn "正在恢复最新备份..."
+  
+  LATEST_BACKUP=$(ls -t "$BACKUP_DIR" | head -n 1)
+  
+  if [ -n "$LATEST_BACKUP" ]; then
+    tar -xzf "$BACKUP_DIR/$LATEST_BACKUP"
+    log_info "备份已恢复: $LATEST_BACKUP"
+  else
+    log_error "未找到备份文件"
+  fi
+}
+
+# 主流程
+main() {
+  log_info "开始部署 $PROJECT_NAME..."
+  
+  # 检查必要命令
+  check_command git
+  check_command pnpm
+  check_command pm2
+  
+  # 检查 .env 文件
+  if [ ! -f ".env" ]; then
+    log_error ".env 文件不存在，请先配置环境变量"
+    exit 1
+  fi
+  
+  # 拉取最新代码
+  log_info "拉取最新代码..."
+  git pull origin master || git pull origin main
+  
+  # 更新子模块
+  log_info "更新子模块..."
+  git submodule update --init --recursive
+  
+  # 安装依赖
+  if [ "$SKIP_INSTALL" = false ]; then
+    log_info "安装依赖..."
+    pnpm install
+  else
+    log_warn "跳过依赖安装"
+  fi
+  
+  # 创建备份
+  create_backup
+  
+  # 构建前端和后端
+  if [ "$SKIP_BUILD" = false ]; then
+    log_info "构建项目（shared → display → node）..."
+    
+    if ! pnpm --filter @briar/shared build && \
+       pnpm --filter @briar/display build && \
+       pnpm --filter @briar/node build; then
+      log_error "构建失败，正在恢复备份..."
+      restore_backup
+      exit 1
+    fi
+  else
+    log_warn "跳过构建"
+  fi
+  
+  # 重启 PM2 应用
+  log_info "重启应用..."
+  
+  if pm2 list | grep -q "$PM2_APP_NAME"; then
+    pm2 reload "$PM2_APP_NAME"
+    log_info "应用已重启"
+  else
+    log_warn "PM2 应用不存在，正在启动..."
+    
+    # 优先使用 ecosystem.config.js
+    if [ -f "ecosystem.config.js" ]; then
+      pm2 start ecosystem.config.js
+      log_info "使用 ecosystem.config.js 启动应用"
+    else
+      cd packages/briar-node
+      NODE_ENV=production pm2 start dist/index.js --name "$PM2_APP_NAME"
+      cd ../..
+      log_info "应用已启动"
+    fi
+  fi
+  
+  # 保存 PM2 配置
+  pm2 save
+  
+  log_info "部署完成！"
+  log_info "运行 'pm2 logs $PM2_APP_NAME' 查看日志"
+  log_info "运行 'pm2 monit' 查看监控"
+}
+
+# 错误处理
+trap 'log_error "部署过程中出错，请检查日志"; exit 1' ERR
+
+# 执行主流程
+main

@@ -2,6 +2,124 @@
 
 基于 pnpm workspace 的 monorepo 项目，包含前端展示和 Node.js 后端服务。
 
+## 快速开始
+
+```bash
+# 1. 克隆仓库并初始化子模块
+git clone https://github.com/your-username/briar-display.git
+cd briar-display
+
+# 2. 初始化项目（拉取子模块 + 安装依赖）
+make init
+
+# 3. 初始化数据库
+make db-setup
+
+# 4. 启动开发服务器
+make dev          # 前端
+make dev-node     # 后端
+```
+
+## 可用命令
+
+| 命令              | 说明                     |
+| :---------------- | :----------------------- |
+| `make init`       | 初始化项目（首次使用）   |
+| `make install`    | 安装所有依赖             |
+| `make db-setup`   | 初始化数据库             |
+| `make dev`        | 启动前端开发服务器       |
+| `make dev-node`   | 启动后端开发服务         |
+| `make dev-shared` | 启动 shared 包监听模式   |
+| `make build`      | 构建所有包（含依赖顺序） |
+| `make upload-cdn` | 上传前端构建产物到 CDN   |
+| `make build-cdn`  | 构建前端并上传到 CDN     |
+| `make preview`    | 预览前端生产构建         |
+| `make clean`      | 清理构建产物             |
+
+## 部署
+
+### GitHub Actions 自动构建
+
+推送到 `master` 或 `main` 分支时自动触发构建并上传到 CDN。
+
+需在 GitHub 仓库设置以下 Secrets：
+
+```
+BRIAR_TX_BUCKET_REGION
+BRIAR_TX_SEC_ID
+BRIAR_TX_SEC_KEY
+BRIAR_TX_BUCKET_NAME
+
+```
+
+### 服务器部署
+
+#### 首次部署
+
+```bash
+# 1. 在服务器上运行初始化脚本
+bash <(curl -s https://raw.githubusercontent.com/your-username/briar-display/master/scripts/server-setup.sh)
+
+# 或手动执行
+git clone --recurse-submodules <repo-url> ~/briar-display
+cd ~/briar-display
+chmod +x scripts/*.sh
+./scripts/server-setup.sh
+```
+
+#### 日常部署
+
+```bash
+# 在服务器项目目录下
+./scripts/deploy.sh
+
+# 跳过依赖安装（更快）
+./scripts/deploy.sh --skip-install
+
+# 跳过构建（仅重启）
+./scripts/deploy.sh --skip-build
+```
+
+#### PM2 管理
+
+```bash
+# 查看状态
+pm2 list
+
+# 查看日志
+pm2 logs briar-node
+
+# 重启服务
+pm2 reload briar-node
+
+# 停止服务
+pm2 stop briar-node
+
+# 使用配置文件启动
+pm2 start ecosystem.config.js
+```
+
+> 📖 详细部署文档请查看 [DEPLOYMENT.md](DEPLOYMENT.md)
+
+## 环境变量
+
+核心配置（可选）：
+
+```bash
+# 腾讯云 COS 配置
+BRIAR_TX_BUCKET_REGION=ap-shanghai
+BRIAR_TX_SEC_ID=...
+BRIAR_TX_SEC_KEY=...
+BRIAR_TX_BUCKET_NAME=...
+BRIAR_TX_BUCKET_DOMAIN=https://your-bucket.cos.ap-shanghai.myqcloud.com
+
+# 其他配置见 .env.example
+```
+
+**CDN 说明：**
+
+前端构建时设置 `BRIAR_TX_BUCKET_DOMAIN`，所有静态资源会使用 CDN 地址。上传后，浏览器直接从 CDN 加载资源，减轻服务器压力。
+
 ## 项目结构
 
 ```
@@ -15,123 +133,3 @@
 ├── Makefile               # 构建命令
 └── package.json           # 根 package.json
 ```
-
-## 技术栈
-
-### @briar/display (前端)
-
-- **Astro** - 静态站点生成器
-- **React** - UI 组件库
-- **Vue** - UI 组件库
-- **TypeScript** - 类型支持
-
-### @briar/node (后端)
-
-- **Node.js** - 运行时环境
-
-### @briar/shared (共享库)
-
-- **TypeScript** - 类型定义
-- **tsup** - 构建工具
-
-## 快速开始
-
-### 克隆项目
-
-```bash
-# 克隆主仓库
-git clone https://github.com/your-username/briar-display.git
-cd briar-display
-
-# 初始化并拉取子模块
-git submodule update --init --recursive
-```
-
-### 安装依赖
-
-```bash
-pnpm install
-# 或使用 Makefile
-make install
-```
-
-### 启动开发服务器
-
-```bash
-# 启动前端开发服务器
-pnpm dev
-# 或
-make dev
-
-# 启动 Node.js 后端服务
-pnpm dev:node
-# 或
-make dev:node
-```
-
-前端开发服务器将在 `http://localhost:4321` 启动。
-
-## 可用命令
-
-### Monorepo 命令
-
-使用 Makefile 简化操作：
-
-| 命令                | 说明                     |
-| :------------------ | :----------------------- |
-| `make install`      | 安装所有依赖             |
-| `make dev`          | 启动前端开发服务器       |
-| `make dev:node`     | 启动后端开发服务         |
-| `make dev:shared`   | 启动 shared 包监听模式   |
-| `make build`        | 构建所有包（含依赖顺序） |
-| `make build:shared` | 仅构建 shared 包         |
-| `make preview`      | 预览前端生产构建         |
-| `make clean`        | 清理构建产物             |
-
-或直接使用 pnpm：
-
-| 命令                                 | 说明                    |
-| :----------------------------------- | :---------------------- |
-| `pnpm install`                       | 安装所有依赖            |
-| `pnpm dev`                           | 启动前端开发服务器      |
-| `pnpm dev:node`                      | 启动后端开发服务        |
-| `pnpm dev:shared`                    | 启动 shared 包监听模式  |
-| `pnpm build`                         | 构建所有包              |
-| `pnpm build:shared`                  | 仅构建 shared 包        |
-| `pnpm preview`                       | 预览前端生产构建        |
-| `pnpm --filter @briar/display <cmd>` | 在前端 package 执行命令 |
-| `pnpm --filter @briar/node <cmd>`    | 在后端 package 执行命令 |
-| `pnpm --filter @briar/shared <cmd>`  | 在共享 package 执行命令 |
-
-## Packages 说明
-
-### @briar/shared
-
-共享工具库和类型定义，可被其他所有 package 引用。
-
-特性：
-
-- 自动构建：当 display 或 node 构建时，如果 shared 未构建，会自动触发构建
-- TypeScript 类型定义
-- 通用工具函数和常量
-
-详见：[packages/briar-shared/README.md](packages/briar-shared/README.md)
-
-### @briar/display
-
-前端展示项目，使用 Astro 构建，集成 React 和 Vue 组件。
-
-详见：[packages/briar-display/README.md](packages/briar-display/README.md)
-
-### @briar/node
-
-Node.js 后端服务包。
-
-详见：[packages/briar-node/README.md](packages/briar-node/README.md)
-
-## 了解更多
-
-- [pnpm Workspace](https://pnpm.io/workspaces)
-- [Astro 文档](https://docs.astro.build)
-- [React 文档](https://react.dev)
-- [Vue 文档](https://vuejs.org)
