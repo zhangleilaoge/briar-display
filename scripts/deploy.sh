@@ -146,11 +146,14 @@ main() {
   log_info "重启应用..."
   
   if [ -f "ecosystem.config.cjs" ]; then
-    pm2 startOrReload ecosystem.config.cjs --update-env
-    log_info "使用 ecosystem.config.cjs 启动/重启应用"
+    # 先停止再启动，避免 reload 卡住
+    pm2 stop ecosystem.config.cjs 2>/dev/null || true
+    pm2 start ecosystem.config.cjs
+    log_info "使用 ecosystem.config.cjs 启动应用"
   else
     if pm2 list | grep -q "$PM2_APP_NAME"; then
-      pm2 reload "$PM2_APP_NAME" --update-env
+      pm2 stop "$PM2_APP_NAME"
+      pm2 start "$PM2_APP_NAME" --update-env
       log_info "应用已重启"
     else
       log_warn "PM2 应用不存在，正在启动..."
