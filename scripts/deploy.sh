@@ -145,17 +145,15 @@ main() {
   # 重启 PM2 应用
   log_info "重启应用..."
   
-  if pm2 list | grep -q "$PM2_APP_NAME"; then
-    pm2 reload "$PM2_APP_NAME"
-    log_info "应用已重启"
+  if [ -f "ecosystem.config.cjs" ]; then
+    pm2 startOrReload ecosystem.config.cjs --update-env
+    log_info "使用 ecosystem.config.cjs 启动/重启应用"
   else
-    log_warn "PM2 应用不存在，正在启动..."
-    
-    # 优先使用 ecosystem.config.cjs
-    if [ -f "ecosystem.config.cjs" ]; then
-      pm2 start ecosystem.config.cjs
-      log_info "使用 ecosystem.config.cjs 启动应用"
+    if pm2 list | grep -q "$PM2_APP_NAME"; then
+      pm2 reload "$PM2_APP_NAME" --update-env
+      log_info "应用已重启"
     else
+      log_warn "PM2 应用不存在，正在启动..."
       cd packages/briar-node
       NODE_ENV=production pm2 start dist/index.js --name "$PM2_APP_NAME"
       cd ../..
