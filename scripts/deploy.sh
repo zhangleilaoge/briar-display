@@ -131,9 +131,9 @@ main() {
   if [ "$SKIP_BUILD" = false ]; then
     log_info "构建项目（shared → display → node）..."
     
-    if ! pnpm --filter @briar/shared build && \
-       pnpm --filter @briar/display build && \
-       pnpm --filter @briar/node build; then
+    if ! (pnpm --filter @briar/shared build && \
+      pnpm --filter @briar/display build && \
+      pnpm --filter @briar/node build); then
       log_error "构建失败，正在恢复备份..."
       restore_backup
       exit 1
