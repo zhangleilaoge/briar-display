@@ -43,3 +43,24 @@ CREATE TABLE IF NOT EXISTS verification_codes (
   INDEX idx_expires_at (expires_at),
   INDEX idx_is_used (is_used)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通用验证码表';
+
+-- Wiki 文章表
+CREATE TABLE IF NOT EXISTS wiki (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  title VARCHAR(255) NOT NULL COMMENT '文章标题',
+  slug VARCHAR(255) NOT NULL UNIQUE COMMENT 'URL 友好的唯一标识',
+  content LONGTEXT NOT NULL COMMENT 'Markdown 内容',
+  summary VARCHAR(500) COMMENT '摘要（前500字）',
+  author_id VARCHAR(36) NOT NULL COMMENT '作者 ID',
+  view_count INT DEFAULT 0 COMMENT '浏览次数',
+  status ENUM('draft', 'published') DEFAULT 'draft' COMMENT '状态：草稿/已发布',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  
+  UNIQUE KEY uk_slug (slug),
+  INDEX idx_author_id (author_id),
+  INDEX idx_status (status),
+  INDEX idx_created_at (created_at),
+  INDEX idx_updated_at (updated_at),
+  FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Wiki 文章表';

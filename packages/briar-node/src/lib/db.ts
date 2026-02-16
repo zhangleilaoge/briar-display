@@ -15,6 +15,19 @@ export const getPool = (): mysql.Pool => {
 }
 
 /**
+ * 清理参数，确保数字是原始类型
+ */
+const cleanValues = (values?: any[]): any[] | undefined => {
+  if (!values) return values
+  return values.map((v) => {
+    if (typeof v === "number" && !Object.is(v, NaN)) {
+      return +v // 确保是原始数字
+    }
+    return v
+  })
+}
+
+/**
  * 执行查询
  */
 export const query = async <T = any>(
@@ -22,7 +35,7 @@ export const query = async <T = any>(
   values?: any[],
 ): Promise<T[]> => {
   const pool = getPool()
-  const [rows] = await pool.execute(sql, values)
+  const [rows] = await pool.execute(sql, cleanValues(values))
   return rows as T[]
 }
 
@@ -45,7 +58,7 @@ export const execute = async (
   values?: any[],
 ): Promise<mysql.ResultSetHeader> => {
   const pool = getPool()
-  const [result] = await pool.execute(sql, values)
+  const [result] = await pool.execute(sql, cleanValues(values))
   return result as mysql.ResultSetHeader
 }
 

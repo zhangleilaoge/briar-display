@@ -1,0 +1,174 @@
+.wiki-content {
+  line-height: 1.8;
+  color: #1f2937;
+}
+
+/* 标题 */
+.wiki-content h1,
+.wiki-content h2,
+.wiki-content h3,
+.wiki-content h4,
+.wiki-content h5,
+.wiki-content h6 {
+  margin: 1.5rem 0 0.75rem 0;
+  font-weight: 600;
+  color: #111827;
+  border-bottom: none;
+}
+
+.wiki-content h1 {
+  font-size: 2rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.wiki-content h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.wiki-content h3 {
+  font-size: 1.25rem;
+}
+
+.wiki-content h4 {
+  font-size: 1.1rem;
+}
+
+.wiki-content h5 {
+  font-size: 1rem;
+}
+
+.wiki-content h6 {
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+/* 段落 */
+.wiki-content p {
+  margin: 1rem 0;
+}
+
+/* 列表 */
+.wiki-content ul,
+.wiki-content ol {
+  margin: 1rem 0;
+  padding-left: 2rem;
+}
+
+.wiki-content li {
+  margin: 0.5rem 0;
+}
+
+.wiki-content ul > li::marker {
+  color: #9ca3af;
+}
+
+.wiki-content ol > li::marker {
+  color: #9ca3af;
+}
+
+/* 代码块 */
+.wiki-content code {
+  background: #f3f4f6;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro",
+    monospace;
+  font-size: 0.875em;
+  color: #dc2626;
+}
+
+.wiki-content pre {
+  background: #1f2937;
+  color: #f3f4f6;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  overflow: auto;
+  margin: 1rem 0;
+  line-height: 1.5;
+}
+
+.wiki-content pre code {
+  background: none;
+  color: #f3f4f6;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* 引用 */
+.wiki-content blockquote {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* 链接 */
+.wiki-content a {
+  color: #3b82f6;
+  text-decoration: none;
+  border-bottom: 1px solid #93c5fd;
+}
+
+.wiki-content a:hover {
+  color: #1d4ed8;
+  border-bottom-color: #3b82f6;
+}
+
+/* 图片 */
+.wiki-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  margin: 1rem 0;
+}
+
+/* 表格 */
+.wiki-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.wiki-content table th {
+  background: #f3f4f6;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+
+.wiki-content table td {
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+
+.wiki-content table tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+/* 水平线 */
+.wiki-content hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 2rem 0;
+}
+
+/* 强调 */
+.wiki-content strong {
+  font-weight: 600;
+}
+
+.wiki-content em {
+  font-style: italic;
+}
+
+/* 嵌入式内容 */
+.wiki-content iframe {
+  max-width: 100%;
+  border-radius: 0.375rem;
+  margin: 1rem 0;
+}

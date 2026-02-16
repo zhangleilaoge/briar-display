@@ -1,0 +1,11 @@
+.wiki-editor .section-container h1,
+.wiki-editor .section-container h2,
+.wiki-editor .section-container h3,
+.wiki-editor .section-container h4,
+.wiki-editor .section-container h5,
+.wiki-editor .section-container h6,
+.wiki-editor .section-container p {
+  margin: 0;
+}
+
+
