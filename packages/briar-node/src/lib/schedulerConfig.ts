@@ -22,4 +22,12 @@ export const schedulerTasks: SchedulerTask[] = [
       new URL("../jobs/cleanup-verification-codes.mjs", import.meta.url),
     ),
   },
+  // {
+  //   name: "renew-certificates",
+  //   cron: resolveCron("BRIAR_RENEW_CERT_CRON", "0 2 1 * *"), // 每月1日 02:00 UTC
+  //   runOnStart: false,
+  //   path: fileURLToPath(
+  //     new URL("../jobs/renew-certificates.mjs", import.meta.url),
+  //   ),
+  // },
 ]

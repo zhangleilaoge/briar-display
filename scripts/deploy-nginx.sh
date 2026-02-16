@@ -14,6 +14,10 @@ NC='\033[0m' # No Color
 # 配置
 NGINX_CONF_SRC="default.conf"
 NGINX_CONF_DEST="/etc/nginx/conf.d/briar-display.conf"
+SSL_CERT_SRC="briar-assets/ssl/stardew.site_bundle.crt"
+SSL_KEY_SRC="briar-assets/ssl/stardew.site.key"
+SSL_CERT_DEST="/etc/nginx/stardew.site_bundle.crt"
+SSL_KEY_DEST="/etc/nginx/stardew.site.key"
 
 # 工具函数
 log_info() {
@@ -48,6 +52,24 @@ main() {
     log_error "未找到 $NGINX_CONF_SRC，请确保在项目根目录下运行"
     exit 1
   fi
+
+  # 检查证书文件是否存在
+  if [ ! -f "$SSL_CERT_SRC" ]; then
+    log_error "未找到 $SSL_CERT_SRC，请确保证书文件存在"
+    exit 1
+  fi
+
+  if [ ! -f "$SSL_KEY_SRC" ]; then
+    log_error "未找到 $SSL_KEY_SRC，请确保证书密钥文件存在"
+    exit 1
+  fi
+  
+  # 部署证书
+  log_info "部署 SSL 证书..."
+  sudo cp "$SSL_CERT_SRC" "$SSL_CERT_DEST"
+  sudo cp "$SSL_KEY_SRC" "$SSL_KEY_DEST"
+  sudo chmod 600 "$SSL_KEY_DEST"
+  log_info "SSL 证书已部署"
   
   # 备份现有配置
   if [ -f "$NGINX_CONF_DEST" ]; then

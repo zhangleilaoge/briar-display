@@ -13,9 +13,10 @@
     "upload:cdn": "tsx scripts/upload-cdn.ts"
   },
   "dependencies": {
+    "@breejs/later": "^4.2.0",
     "@briar/shared": "workspace:*",
     "@hono/node-server": "^1.13.7",
-    "@breejs/later": "^4.2.0",
+    "acme-client": "^5.4.0",
     "bcryptjs": "^2.4.3",
     "bree": "^9.2.8",
     "cos-nodejs-sdk-v5": "^2.11.10",
@@ -23,6 +24,7 @@
     "hono": "^4.7.9",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.17.1",
+    "tencentcloud-sdk-nodejs": "^4.0.0",
     "tencentcloud-sdk-nodejs-ses": "^4.1.182"
   },
   "devDependencies": {
