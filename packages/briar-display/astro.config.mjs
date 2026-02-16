@@ -9,7 +9,7 @@ import { loadEnv } from "@briar/shared/env"
 loadEnv(import.meta.url)
 
 const cdnBase = process.env.BRIAR_TX_BUCKET_DOMAIN?.replace(/\/+$/, "")
-const cdnPrefix = "briar-display/static"
+const cdnPrefix = "static"
 const assetsPrefix = cdnBase ? `${cdnBase}/${cdnPrefix}` : undefined
 
 // https://astro.build/config

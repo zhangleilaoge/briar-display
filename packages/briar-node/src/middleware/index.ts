@@ -1,5 +1,4 @@
 import type { MiddlewareHandler } from "hono"
-import { logger } from "hono/logger"
 import { cors } from "hono/cors"
 import { getCookie } from "hono/cookie"
 import { isApiPublicPath } from "../config/routes"

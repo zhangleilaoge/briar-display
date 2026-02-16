@@ -27,7 +27,7 @@ export default function LoginPage() {
       const result = await login({ email, password })
       if (result.success && result.data) {
         setAuthToken(result.data.token)
-        window.location.href = "/business"
+        window.location.href = "/briar-display/business"
         return
       }
       setError(result.message || "登录失败")
@@ -128,7 +128,10 @@ export default function LoginPage() {
                 </p>
                 <p className="text-center text-xs text-muted-foreground">
                   还没有账号？{" "}
-                  <a href="/register" className="text-primary hover:underline">
+                  <a
+                    href="/briar-display/register"
+                    className="text-primary hover:underline"
+                  >
                     创建账号
                   </a>
                 </p>

@@ -24,7 +24,7 @@ const region = process.env.BRIAR_TX_BUCKET_REGION
 const secretId = process.env.BRIAR_TX_SEC_ID
 const secretKey = process.env.BRIAR_TX_SEC_KEY
 const bucket = process.env.BRIAR_TX_BUCKET_NAME
-const prefix = "briar-display/static".replace(/^\/+/, "").replace(/\/+$/, "")
+const prefix = "static".replace(/^\/+/, "").replace(/\/+$/, "")
 
 if (!region || !secretId || !secretKey || !bucket) {
   console.error(

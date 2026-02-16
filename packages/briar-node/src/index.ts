@@ -22,6 +22,9 @@ const DIST_PATH = path.resolve(__dirname, "../../briar-display/dist")
 
 const app = new Hono()
 
+// 设置全局路径前缀
+app.basePath("/briar-display")
+
 // 全局中间件
 applyConfiguredMiddlewares(app, globalMiddlewares, "/*")
 

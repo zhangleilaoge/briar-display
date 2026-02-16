@@ -125,7 +125,10 @@ export default function RegisterPage() {
                 </Button>
                 <p className="text-center text-xs text-muted-foreground">
                   已有账号？{" "}
-                  <a href="/login" className="text-primary hover:underline">
+                  <a
+                    href="/briar-display/login"
+                    className="text-primary hover:underline"
+                  >
                     返回登录
                   </a>
                 </p>
