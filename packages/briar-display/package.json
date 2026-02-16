@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "pnpm --filter @briar/shared build && astro build",
+    "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
