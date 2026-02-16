@@ -71,9 +71,9 @@ dev-node:
 dev-shared:
 	pnpm --filter @briar/shared dev
 
-# 构建所有包（先构建 shared，再构建 display）
+# 构建所有包（display 的 build script 已包含 shared 的构建）
 build:
-	pnpm --filter @briar/shared build && pnpm --filter @briar/display build
+	pnpm --filter @briar/display build
 
 # 构建前端并上传到 CDN
 build-cdn:
