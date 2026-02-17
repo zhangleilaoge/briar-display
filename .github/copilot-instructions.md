@@ -17,3 +17,13 @@ Use when you have lint errors, formatting issues, or before committing code to e
 - Runs `yarn prettier` to fix formatting
 - Runs `yarn linc` to check for lint issues
 - Reports any remaining manual fixes needed
+
+## Styling Guidelines
+
+This project uses **Tailwind CSS** and **shadcn/ui** components for styling.
+
+**Guidelines**:
+
+- Use Tailwind utility classes for all styling
+- Prefer shadcn/ui components for UI elements (buttons, inputs, cards, etc.)
+- Avoid inline styles and custom CSS files
