@@ -147,7 +147,7 @@ export const pageAuthMiddleware = (): MiddlewareHandler => {
     // 检查 token
     const token = getCookie(c, "briar_token")
     if (!token) {
-      return c.redirect("/login")
+      return c.redirect("/briar-display/login")
     }
 
     return next()
