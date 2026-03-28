@@ -3,6 +3,7 @@ import later from "@breejs/later"
 import type { WorkerOptions } from "node:worker_threads"
 import path from "path"
 import { fileURLToPath } from "url"
+import { mkdirSync } from "fs"
 
 type WorkerOptionsWithType = WorkerOptions & {
   type?: "module" | "commonjs"
@@ -34,9 +35,18 @@ export const startScheduler = (tasks: SchedulerTask[]) => {
   const runtimeExt = resolveRuntimeExtension()
   const isDev = runtimeExt === ".ts"
   const jobsRoot = resolveJobsRoot()
-  const worker = isDev
-    ? { execArgv: ["--import", "tsx/esm"], type: "module" }
-    : undefined
+
+  // Ensure jobs directory exists (Bree requires root directory to exist)
+  try {
+    mkdirSync(jobsRoot, { recursive: true })
+  } catch {
+    // Directory might already exist, ignore error
+  }
+
+  const worker =
+    isDev
+      ? { execArgv: ["--import", "tsx/esm"], type: "module" }
+      : undefined
 
   const jobs = tasks
     .filter((task) => task.enabled !== false)
