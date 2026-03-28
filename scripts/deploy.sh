@@ -21,6 +21,15 @@ MAX_BACKUPS=5
 SKIP_INSTALL=false
 SKIP_BUILD=false
 
+# 确保 nginx 服务已启动
+if ! systemctl is-active --quiet nginx; then
+    echo "Starting nginx..."
+    sudo systemctl start nginx
+else
+    echo "nginx already running, reloading configuration..."
+    sudo systemctl reload nginx
+fi
+
 for arg in "$@"; do
   case $arg in
     --skip-install)
