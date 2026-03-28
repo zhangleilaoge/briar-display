@@ -28,6 +28,8 @@ const resolveRuntimeExtension = () => {
 const resolveJobsRoot = () => {
   const filename = fileURLToPath(import.meta.url)
   const dirname = path.dirname(filename)
+  // Jobs directory is at package root (sibling to dist/), not inside dist/
+  // This works because tsup onSuccess copies jobs to both locations
   return path.resolve(dirname, "../jobs")
 }
 

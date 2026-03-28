@@ -13,19 +13,22 @@ export default defineConfig({
   shims: true,
   onSuccess: async () => {
     const jobsDir = "src/jobs"
-    const outputJobsDir = "dist/jobs"
-
-    if (!existsSync(outputJobsDir)) {
-      mkdirSync(outputJobsDir, { recursive: true })
-    }
+    // Copy to both dist/jobs (for imports) and jobs/ (for Bree root)
+    const outputJobsDirs = ["dist/jobs", "jobs"]
 
     const { readdirSync } = await import("fs")
     const jobFiles = readdirSync(jobsDir)
 
-    for (const file of jobFiles) {
-      const srcPath = join(jobsDir, file)
-      const destPath = join(outputJobsDir, file)
-      copyFileSync(srcPath, destPath)
+    for (const outputJobsDir of outputJobsDirs) {
+      if (!existsSync(outputJobsDir)) {
+        mkdirSync(outputJobsDir, { recursive: true })
+      }
+
+      for (const file of jobFiles) {
+        const srcPath = join(jobsDir, file)
+        const destPath = join(outputJobsDir, file)
+        copyFileSync(srcPath, destPath)
+      }
     }
   },
 })
