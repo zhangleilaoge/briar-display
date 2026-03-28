@@ -32,16 +32,16 @@ const resolveJobsRoot = () => {
 
 export const startScheduler = (tasks: SchedulerTask[]) => {
   const runtimeExt = resolveRuntimeExtension()
-  const jobExt = runtimeExt === ".ts" ? ".ts" : ".js"
+  const isDev = runtimeExt === ".ts"
   const jobsRoot = resolveJobsRoot()
-  const worker =
-    runtimeExt === ".ts"
-      ? { execArgv: ["--import", "tsx/esm"], type: "module" }
-      : undefined
+  const worker = isDev
+    ? { execArgv: ["--import", "tsx/esm"], type: "module" }
+    : undefined
 
   const jobs = tasks
     .filter((task) => task.enabled !== false)
     .map((task) => {
+      const jobExt = ".mjs"
       const jobPath = task.path ?? path.join(jobsRoot, `${task.name}${jobExt}`)
 
       const job: {
@@ -73,9 +73,8 @@ export const startScheduler = (tasks: SchedulerTask[]) => {
     root: jobsRoot,
     jobs,
     worker,
-    defaultExtension: runtimeExt === ".ts" ? "ts" : "js",
-    acceptedExtensions:
-      runtimeExt === ".ts" ? [".ts", ".js", ".mjs"] : [".js", ".mjs"],
+    defaultExtension: "mjs",
+    acceptedExtensions: [".mjs", ".js", ".ts"],
     logger: {
       info() {},
       warn() {},
