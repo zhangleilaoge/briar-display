@@ -1,14 +1,14 @@
 ---
-import { formatDate, generateId, APP_NAME, type User } from "@briar/shared"
+import { APP_NAME, type User, formatDate, generateId } from '@briar/shared'
 
 const currentDate = formatDate(new Date())
 const sampleId = generateId()
 
 const sampleUser: User = {
-  id: sampleId,
-  name: "Test User",
-  email: "test@example.com",
-  createdAt: new Date(),
+	id: sampleId,
+	name: 'Test User',
+	email: 'test@example.com',
+	createdAt: new Date(),
 }
 ---
 

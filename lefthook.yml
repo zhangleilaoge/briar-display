@@ -1,0 +1,33 @@
+# Lefthook 配置
+# https://github.com/evilmartians/lefthook
+
+# 提交前检查
+pre-commit:
+  parallel: true
+  commands:
+    # Biome 检查和格式化
+    biome-check:
+      glob: "*.{js,ts,jsx,tsx,json,cjs,mjs}"
+      run: pnpm biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+
+    # 类型检查
+    typecheck-shared:
+      glob: "packages/briar-shared/**/*.{ts,tsx}"
+      run: pnpm --filter @briar/shared typecheck
+
+    # 类型检查 (node)
+    typecheck-node:
+      glob: "packages/briar-node/**/*.{ts,tsx}"
+      run: pnpm --filter @briar/node typecheck
+
+# 提交信息检查 (可选，如果需要规范提交信息)
+commit-msg:
+  commands:
+    # 简单的提交信息长度检查
+    lint-commit-msg:
+      run: |
+        if [ $(cat {1} | wc -c) -lt 10 ]; then
+          echo "❌ 提交信息太短，请至少输入 10 个字符"
+          exit 1
+        fi

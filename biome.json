@@ -1,0 +1,66 @@
+{
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": false,
+		"ignore": [
+			"**/dist/**",
+			"**/.astro/**",
+			"**/node_modules/**",
+			"**/logs/**",
+			"**/backups/**",
+			"pnpm-lock.yaml"
+		]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"indentWidth": 2,
+		"lineWidth": 100,
+		"formatWithErrors": false
+	},
+	"organizeImports": {
+		"enabled": true
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"suspicious": {
+				"noConsoleLog": "off",
+				"noExplicitAny": "off",
+				"noArrayIndexKey": "off",
+				"noImplicitAnyLet": "off"
+			},
+			"style": {
+				"noNonNullAssertion": "off",
+				"useNodejsImportProtocol": "off"
+			},
+			"a11y": {
+				"noRedundantAlt": "off",
+				"noSvgWithoutTitle": "off",
+				"useButtonType": "off",
+				"useKeyWithClickEvents": "off",
+				"useAltText": "off",
+				"noLabelWithoutControl": "off"
+			},
+			"correctness": {
+				"useExhaustiveDependencies": "off"
+			},
+			"complexity": {
+				"noForEach": "off"
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "single",
+			"trailingCommas": "all",
+			"semicolons": "asNeeded"
+		}
+	}
+}

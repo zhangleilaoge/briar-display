@@ -1,42 +1,43 @@
 {
-  "name": "@briar/display",
-  "type": "module",
-  "version": "0.0.1",
-  "private": true,
-  "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "build:watch": "chokidar 'src/**' -c 'astro build'",
-    "build:dev": "BUILD_DEV=true chokidar 'src/**' -c 'astro build'",
-    "preview": "astro preview",
-    "astro": "astro"
-  },
-  "dependencies": {
-    "@astrojs/react": "^4.4.2",
-    "@astrojs/starlight": "^0.35.0",
-    "@astrojs/vue": "^5.1.4",
-    "@briar/shared": "workspace:*",
-    "@radix-ui/react-select": "^2.2.6",
-    "@types/react": "^19.2.8",
-    "@types/react-dom": "^19.2.3",
-    "astro": "^5.16.11",
-    "axios": "^1.7.9",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^3.3.1",
-    "lucide-react": "^0.568.0",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "react-markdown": "^9.0.1",
-    "tailwind-merge": "^2.6.1",
-    "tailwindcss-animate": "^1.0.7",
-    "vue": "^3.5.26"
-  },
-  "devDependencies": {
-    "@astrojs/tailwind": "^5.1.0",
-    "autoprefixer": "^10.4.20",
-    "chokidar-cli": "^3.0.0",
-    "postcss": "^8.4.47",
-    "tailwindcss": "^3.4.14"
-  }
+	"name": "@briar/display",
+	"type": "module",
+	"version": "0.0.1",
+	"private": true,
+	"scripts": {
+		"dev": "astro dev",
+		"build": "astro build",
+		"build:watch": "chokidar 'src/**' -c 'astro build'",
+		"build:dev": "BUILD_DEV=true chokidar 'src/**' -c 'astro build'",
+		"preview": "astro preview",
+		"astro": "astro",
+		"typecheck": "astro check"
+	},
+	"dependencies": {
+		"@astrojs/react": "^4.4.2",
+		"@astrojs/starlight": "^0.35.0",
+		"@astrojs/vue": "^5.1.4",
+		"@briar/shared": "workspace:*",
+		"@radix-ui/react-select": "^2.2.6",
+		"@types/react": "^19.2.8",
+		"@types/react-dom": "^19.2.3",
+		"astro": "^5.16.11",
+		"axios": "^1.7.9",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
+		"date-fns": "^3.3.1",
+		"lucide-react": "^0.568.0",
+		"react": "^19.2.3",
+		"react-dom": "^19.2.3",
+		"react-markdown": "^9.0.1",
+		"tailwind-merge": "^2.6.1",
+		"tailwindcss-animate": "^1.0.7",
+		"vue": "^3.5.26"
+	},
+	"devDependencies": {
+		"@astrojs/tailwind": "^5.1.0",
+		"autoprefixer": "^10.4.20",
+		"chokidar-cli": "^3.0.0",
+		"postcss": "^8.4.47",
+		"tailwindcss": "^3.4.14"
+	}
 }

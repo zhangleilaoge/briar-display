@@ -1,18 +1,29 @@
 {
-  "name": "briar-monorepo",
-  "version": "0.0.1",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "concurrently -k -n shared,display -c gray,cyan --hide shared \"pnpm --filter @briar/shared dev\" \"pnpm --filter @briar/display dev\"",
-    "dev:node": "concurrently -k -n shared,node -c gray,magenta --hide shared \"pnpm --filter @briar/shared dev\" \"pnpm --filter @briar/node dev\"",
-    "dev:shared": "pnpm --filter @briar/shared dev",
-    "build": "pnpm --filter @briar/shared build && pnpm --filter @briar/display build",
-    "build:shared": "pnpm --filter @briar/shared build",
-    "preview": "pnpm --filter @briar/display preview",
-    "install:all": "pnpm install"
-  },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
-  }
+	"name": "briar-monorepo",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=22.0.0",
+		"pnpm": ">=8.0.0"
+	},
+	"packageManager": "pnpm@8.15.0",
+	"scripts": {
+		"dev": "concurrently -k -n shared,display -c gray,cyan --hide shared \"pnpm --filter @briar/shared dev\" \"pnpm --filter @briar/display dev\"",
+		"dev:node": "concurrently -k -n shared,node -c gray,magenta --hide shared \"pnpm --filter @briar/shared dev\" \"pnpm --filter @briar/node dev\"",
+		"dev:shared": "pnpm --filter @briar/shared dev",
+		"build": "pnpm --filter @briar/shared build && pnpm --filter @briar/display build",
+		"build:shared": "pnpm --filter @briar/shared build",
+		"preview": "pnpm --filter @briar/display preview",
+		"install:all": "pnpm install",
+		"lint": "biome check .",
+		"lint:fix": "biome check . --write",
+		"format": "biome format . --write",
+		"typecheck": "pnpm --filter @briar/shared typecheck && pnpm --filter @briar/node typecheck && pnpm --filter @briar/display typecheck"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"concurrently": "^8.2.2",
+		"lefthook": "^1.10.0"
+	}
 }

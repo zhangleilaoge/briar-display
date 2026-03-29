@@ -1,27 +1,25 @@
-import dotenv from "dotenv"
-import fs from "fs"
-import path from "path"
-import { fileURLToPath } from "url"
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import dotenv from 'dotenv'
 
 export const loadEnv = (currentFilePath?: string) => {
-  const dirname = currentFilePath
-    ? path.dirname(fileURLToPath(currentFilePath))
-    : process.cwd()
+	const dirname = currentFilePath ? path.dirname(fileURLToPath(currentFilePath)) : process.cwd()
 
-  const candidates = [
-    path.resolve(process.cwd(), ".env"),
-    path.resolve(process.cwd(), "../.env"),
-    path.resolve(process.cwd(), "../../.env"),
-    path.resolve(dirname, "../../../.env"),
-  ]
+	const candidates = [
+		path.resolve(process.cwd(), '.env'),
+		path.resolve(process.cwd(), '../.env'),
+		path.resolve(process.cwd(), '../../.env'),
+		path.resolve(dirname, '../../../.env'),
+	]
 
-  const envPath = candidates.find((candidate) => fs.existsSync(candidate))
+	const envPath = candidates.find((candidate) => fs.existsSync(candidate))
 
-  if (envPath) {
-    dotenv.config({ path: envPath })
-    return envPath
-  }
+	if (envPath) {
+		dotenv.config({ path: envPath })
+		return envPath
+	}
 
-  dotenv.config()
-  return null
+	dotenv.config()
+	return null
 }

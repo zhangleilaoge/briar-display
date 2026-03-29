@@ -1,5 +1,5 @@
 export const demoService = {
-  helloWorld() {
-    // console.log("helloworld")
-  },
+	helloWorld() {
+		// console.log("helloworld")
+	},
 }

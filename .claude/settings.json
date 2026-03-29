@@ -1,0 +1,10 @@
+{
+	"permissions": {
+		"allow": [
+			"Bash(pnpm lint:fix)",
+			"Bash(pnpm add:*)",
+			"Bash(ls /Users/zhanglei/Documents/projects/briar-display/packages/briar-node/src/types*)",
+			"Bash(pnpm --filter @briar/node typecheck)"
+		]
+	}
+}

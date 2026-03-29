@@ -1,7 +1,7 @@
-import { verificationCodeDal } from "../dal/verificationCodeDal"
+import { verificationCodeDal } from '../dal/verificationCodeDal'
 
 export const maintenanceService = {
-  async clearAllVerificationCodes() {
-    return verificationCodeDal.deleteAll()
-  },
+	async clearAllVerificationCodes() {
+		return verificationCodeDal.deleteAll()
+	},
 }
