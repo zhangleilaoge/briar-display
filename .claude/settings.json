@@ -4,7 +4,13 @@
 			"Bash(pnpm lint:fix)",
 			"Bash(pnpm add:*)",
 			"Bash(ls /Users/zhanglei/Documents/projects/briar-display/packages/briar-node/src/types*)",
-			"Bash(pnpm --filter @briar/node typecheck)"
+			"Bash(pnpm --filter @briar/node typecheck)",
+			"WebFetch(domain:minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com)",
+			"mcp__MiniMax__understand_image",
+			"Read(//Users/zhanglei/.claude/**)",
+			"Bash(curl -sL \"https://minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com/ccv2%2F2026-03-30%2FMiniMax-M2.7%2F2035998323525030135%2Fe0472fcbe7cabc3cdebaf83c4c116403296d91e0ca5a0a3c29b7d317c4555dc4..png?Expires=1774891269&OSSAccessKeyId=LTAI5tGLnRTkBjLuYPjNcKQ8&Signature=5Iul0zLbCg2wGfvfk%2BDl4yiFwNk%3D\" -o /tmp/image.png)",
+			"Read(//tmp/**)",
+			"WebSearch"
 		]
 	}
 }
