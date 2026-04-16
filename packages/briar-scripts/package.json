@@ -1,0 +1,8 @@
+{
+	"name": "@briar/scripts",
+	"version": "0.0.1",
+	"private": true,
+	"scripts": {
+		"zip": "bash ./scripts/clone-and-zip.sh"
+	}
+}

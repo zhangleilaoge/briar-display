@@ -19,7 +19,8 @@
 		"lint": "biome check .",
 		"lint:fix": "biome check . --write",
 		"format": "biome format . --write",
-		"typecheck": "pnpm --filter @briar/shared typecheck && pnpm --filter @briar/node typecheck && pnpm --filter @briar/display typecheck"
+		"typecheck": "pnpm --filter @briar/shared typecheck && pnpm --filter @briar/node typecheck && pnpm --filter @briar/display typecheck",
+		"scripts:zip": "bash packages/briar-scripts/scripts/clone-and-zip.sh"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
