@@ -1,0 +1,27 @@
+version: "3.8"
+
+# Qdrant 向量数据库部署
+# 用于二期语义向量搜索
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: briar-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  qdrant-storage:
+    driver: local

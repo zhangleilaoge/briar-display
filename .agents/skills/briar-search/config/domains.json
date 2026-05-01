@@ -1,0 +1,139 @@
+{
+	"version": "1.0",
+	"description": "业务域规则配置：基于仓库名、目录名、包名自动打标",
+	"domains": {
+		"导购": {
+			"patterns": [
+				"guide",
+				"导购",
+				"guider",
+				"导购员",
+				"salesman",
+				"shop-guide",
+				"com\\.\\w+\\.guide",
+				"/guide/",
+				"/guider/"
+			],
+			"repo_patterns": ["guide-*", "guider-*", "shop-guide*", "导购*"]
+		},
+		"CRM": {
+			"patterns": [
+				"crm",
+				"customer",
+				"client",
+				"客户",
+				"会员",
+				"member",
+				"customer-relation",
+				"com\\.\\w+\\.crm",
+				"/crm/",
+				"/customer/"
+			],
+			"repo_patterns": ["crm-*", "customer-*", "client-*", "会员*", "客户*"]
+		},
+		"支付": {
+			"patterns": [
+				"pay",
+				"payment",
+				"billing",
+				"支付",
+				"收银",
+				"checkout",
+				"trade",
+				"com\\.\\w+\\.pay",
+				"/pay/",
+				"/payment/",
+				"/billing/"
+			],
+			"repo_patterns": ["pay-*", "payment-*", "billing-*", "收银*", "支付*"]
+		},
+		"订单": {
+			"patterns": ["order", "订单", "trade", "com\\.\\w+\\.order", "/order/"],
+			"repo_patterns": ["order-*", "订单*", "trade-*"]
+		},
+		"库存": {
+			"patterns": [
+				"stock",
+				"inventory",
+				"库存",
+				"warehouse",
+				"storage",
+				"com\\.\\w+\\.stock",
+				"/stock/",
+				"/inventory/"
+			],
+			"repo_patterns": ["stock-*", "inventory-*", "库存*", "warehouse-*"]
+		},
+		"商品": {
+			"patterns": [
+				"product",
+				"item",
+				"goods",
+				"sku",
+				"spu",
+				"商品",
+				"com\\.\\w+\\.product",
+				"/product/",
+				"/item/",
+				"/goods/"
+			],
+			"repo_patterns": ["product-*", "item-*", "goods-*", "商品*", "sku-*"]
+		},
+		"营销": {
+			"patterns": [
+				"marketing",
+				"promo",
+				"promotion",
+				"coupon",
+				"activity",
+				"campaign",
+				"营销",
+				"促销",
+				"优惠券",
+				"活动",
+				"com\\.\\w+\\.marketing",
+				"/marketing/",
+				"/promo/"
+			],
+			"repo_patterns": ["marketing-*", "promo-*", "coupon-*", "activity-*", "营销*", "促销*"]
+		},
+		"消息推送": {
+			"patterns": [
+				"message",
+				"push",
+				"notification",
+				"sms",
+				"消息",
+				"推送",
+				"通知",
+				"com\\.\\w+\\.message",
+				"/message/",
+				"/push/"
+			],
+			"repo_patterns": ["message-*", "push-*", "notification-*", "消息*", "推送*"]
+		},
+		"用户": {
+			"patterns": [
+				"user",
+				"account",
+				"auth",
+				"sso",
+				"用户",
+				"账号",
+				"登录",
+				"认证",
+				"com\\.\\w+\\.user",
+				"/user/",
+				"/account/",
+				"/auth/"
+			],
+			"repo_patterns": ["user-*", "account-*", "auth-*", "sso-*", "用户*", "账号*"]
+		}
+	},
+	"matching_rules": {
+		"repo_name": true,
+		"directory_path": true,
+		"package_name": true,
+		"readme_title": true
+	}
+}

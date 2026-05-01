@@ -29,3 +29,4 @@ backups/
 
 # jetbrains setting folder
 .idea/
+.zoekt/

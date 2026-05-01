@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  zoekt-webserver:
+    image: sourcegraph/zoekt-webserver:latest
+    container_name: briar-zoekt-webserver
+    ports:
+      - "6070:6070"
+    volumes:
+      - ./.zoekt:/data/index
+      - ${REPOS_ROOT:-/repos}:/repos:ro
+    command:
+      - -listen
+      - :6070
+      - -index
+      - /data/index
+      - -rpc
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:6070/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  zoekt-indexserver:
+    image: sourcegraph/zoekt-indexserver:latest
+    container_name: briar-zoekt-indexserver
+    volumes:
+      - ./.zoekt:/data/index
+      - ${REPOS_ROOT:-/repos}:/repos:ro
+      - ./config:/config:ro
+    environment:
+      - REPOS_ROOT=/repos
+    command:
+      - -data_dir
+      - /data/index
+      - -repo_list
+      - /config/repos.list
+    restart: unless-stopped
+
+
