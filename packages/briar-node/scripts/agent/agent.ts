@@ -127,7 +127,10 @@ class SubAgent {
 	private startTimeStr: string
 	private endTimeStr: string | null = null
 
-	constructor(private task: string, label: string) {
+	constructor(
+		private task: string,
+		label: string,
+	) {
 		this.client = new Anthropic({
 			apiKey: ANTHROPIC_API_KEY,
 			baseURL: ANTHROPIC_BASE_URL,
@@ -142,7 +145,7 @@ class SubAgent {
 		this.logs.push(msg)
 	}
 
-	flushLogs(elapsed: string, finished: boolean = true) {
+	flushLogs(elapsed: string, finished = true) {
 		if (this.logs.length === 0) return
 		this.endTimeStr = new Date().toLocaleTimeString('zh-CN', { hour12: false })
 		const timeRange = finished
@@ -166,11 +169,17 @@ class SubAgent {
 
 	async run(): Promise<string> {
 		const startTime = Date.now()
-		const subAgentTools = toolRegistry.getDefinitions().filter((t) => t.name !== 'delegate_to_subagent')
+		const subAgentTools = toolRegistry
+			.getDefinitions()
+			.filter((t) => t.name !== 'delegate_to_subagent')
 		let hasUsedTool = false
 
 		for (let turnCount = 0; turnCount < SUB_AGENT_MAX_TURNS; turnCount++) {
-			const availableTools = hasUsedTool ? undefined : (subAgentTools.length > 0 ? subAgentTools : undefined)
+			const availableTools = hasUsedTool
+				? undefined
+				: subAgentTools.length > 0
+					? subAgentTools
+					: undefined
 
 			const response = await this.client.messages.create({
 				model: MODEL,
@@ -223,7 +232,7 @@ class SubAgent {
 							tool_use_id: block.id,
 							content: result,
 						}
-					})
+					}),
 				)
 
 				this.messages.push({
@@ -242,7 +251,8 @@ class SubAgent {
 				})
 				this.messages.push({
 					role: 'user',
-					content: '你还没有调用工具获取实际信息。请使用 web_search 工具搜索相关信息，获取数据后再总结回复。不要只输出计划。',
+					content:
+						'你还没有调用工具获取实际信息。请使用 web_search 工具搜索相关信息，获取数据后再总结回复。不要只输出计划。',
 				})
 				continue
 			}
@@ -384,7 +394,7 @@ export class CliAgent {
 								tool_use_id: block.id,
 								content: result,
 							}
-						})
+						}),
 					)
 
 					// 添加 tool_result 消息
@@ -563,31 +573,23 @@ export function registerDelegateTool() {
 			properties: {
 				task: {
 					type: 'string',
-					description:
-						'要分配给子代理执行的具体任务描述。描述应尽量详细，包含必要的上下文信息。',
+					description: '要分配给子代理执行的具体任务描述。描述应尽量详细，包含必要的上下文信息。',
 				},
 			},
 			required: ['task'],
 		},
 	}
 
+	const SUB_AGENT_COLORS = [chalk.cyan, chalk.magenta, chalk.yellow, chalk.green, chalk.blue]
+	let subAgentCounter = 0
 
-const SUB_AGENT_COLORS = [
-	chalk.cyan,
-	chalk.magenta,
-	chalk.yellow,
-	chalk.green,
-	chalk.blue,
-]
-let subAgentCounter = 0
-
-toolRegistry.register(delegateTool, async (args) => {
-	const task = args.task as string
-	const id = ++subAgentCounter
-	const colorFn = SUB_AGENT_COLORS[(id - 1) % SUB_AGENT_COLORS.length]
-	const label = colorFn(`[子代理${id}]`)
-	const subAgent = new SubAgent(task, label)
-	const result = await subAgent.run()
-	return result
-})
+	toolRegistry.register(delegateTool, async (args) => {
+		const task = args.task as string
+		const id = ++subAgentCounter
+		const colorFn = SUB_AGENT_COLORS[(id - 1) % SUB_AGENT_COLORS.length]
+		const label = colorFn(`[子代理${id}]`)
+		const subAgent = new SubAgent(task, label)
+		const result = await subAgent.run()
+		return result
+	})
 }

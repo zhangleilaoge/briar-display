@@ -40,11 +40,31 @@ function sleep(ms: number): Promise<void> {
 }
 
 const MOCK_NEWS = [
-	{ title: '神舟二十号成功发射，航天员顺利进驻空间站', url: 'https://news.example.com/1', snippet: '北京时间今日上午，神舟二十号载人飞船在酒泉卫星发射中心成功发射...' },
-	{ title: '2026年五一假期全国旅游人次预计突破3亿', url: 'https://news.example.com/2', snippet: '文化和旅游部发布预测数据，今年五一假期国内旅游出游人次将达3.2亿...' },
-	{ title: '国产大飞机C919新增航线覆盖东南亚市场', url: 'https://news.example.com/3', snippet: '中国商飞宣布C919客机正式开通新加坡、曼谷等国际航线...' },
-	{ title: '全国铁路五一期间加开旅客列车5000余列', url: 'https://news.example.com/4', snippet: '国铁集团表示，五一假期将增开夜间高铁、旅游专列等满足出行需求...' },
-	{ title: '新一代人工智能芯片发布，算力提升300%', url: 'https://news.example.com/5', snippet: '国内半导体企业今日发布自研AI芯片，采用先进制程工艺...' },
+	{
+		title: '神舟二十号成功发射，航天员顺利进驻空间站',
+		url: 'https://news.example.com/1',
+		snippet: '北京时间今日上午，神舟二十号载人飞船在酒泉卫星发射中心成功发射...',
+	},
+	{
+		title: '2026年五一假期全国旅游人次预计突破3亿',
+		url: 'https://news.example.com/2',
+		snippet: '文化和旅游部发布预测数据，今年五一假期国内旅游出游人次将达3.2亿...',
+	},
+	{
+		title: '国产大飞机C919新增航线覆盖东南亚市场',
+		url: 'https://news.example.com/3',
+		snippet: '中国商飞宣布C919客机正式开通新加坡、曼谷等国际航线...',
+	},
+	{
+		title: '全国铁路五一期间加开旅客列车5000余列',
+		url: 'https://news.example.com/4',
+		snippet: '国铁集团表示，五一假期将增开夜间高铁、旅游专列等满足出行需求...',
+	},
+	{
+		title: '新一代人工智能芯片发布，算力提升300%',
+		url: 'https://news.example.com/5',
+		snippet: '国内半导体企业今日发布自研AI芯片，采用先进制程工艺...',
+	},
 ]
 
 const MOCK_WEATHER = `杭州今日天气（2026年5月1日）
@@ -99,7 +119,12 @@ async function searchHandler(args: Record<string, unknown>): Promise<string> {
 	}
 
 	// ===== Mock 模式：卦象/运势查询 =====
-	if (query.includes('卦') || query.includes('运势') || query.includes('占卜') || query.includes('fortune')) {
+	if (
+		query.includes('卦') ||
+		query.includes('运势') ||
+		query.includes('占卜') ||
+		query.includes('fortune')
+	) {
 		await sleep(15000)
 		return MOCK_FORTUNE
 	}
