@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from 'async_hooks'
+
 export interface ToolParameter {
 	type: string
 	description: string
@@ -53,3 +55,16 @@ class ToolRegistry {
 }
 
 export const toolRegistry = new ToolRegistry()
+
+// ===== 子代理上下文传递 =====
+// 用于让工具 handler 知道当前是哪个子代理在调用，从而给日志加前缀
+const agentContext = new AsyncLocalStorage<{ prefix: string }>()
+
+export function runWithAgentContext<T>(prefix: string, fn: () => Promise<T>): Promise<T> {
+	return agentContext.run({ prefix }, fn)
+}
+
+export function getAgentPrefix(): string {
+	const ctx = agentContext.getStore()
+	return ctx?.prefix ?? ''
+}

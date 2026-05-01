@@ -1,4 +1,4 @@
-import { CliAgent } from './agent.js'
+import { CliAgent, registerDelegateTool } from './agent.js'
 import { registerBashTools } from './tools/bash.js'
 import { registerFilesystemTools } from './tools/filesystem.js'
 import { registerSearchTools } from './tools/search.js'
@@ -7,6 +7,7 @@ import { registerSearchTools } from './tools/search.js'
 registerFilesystemTools()
 registerBashTools()
 registerSearchTools()
+registerDelegateTool()
 
 // 启动 Agent
 const agent = new CliAgent()
