@@ -15,10 +15,10 @@
 
 ```bash
 # 启动开发服务器
-pnpm --filter @briar/display dev
+bun run --filter @briar/display dev
 
 # 或使用快捷命令
-pnpm dev
+bun run dev
 # 或
 make dev
 ```
@@ -29,10 +29,10 @@ make dev
 
 ```bash
 # 构建生产版本
-pnpm --filter @briar/display build
+bun run --filter @briar/display build
 
 # 或
-pnpm build
+bun run build
 # 或
 make build
 ```
@@ -41,10 +41,10 @@ make build
 
 ```bash
 # 预览生产构建
-pnpm --filter @briar/display preview
+bun run --filter @briar/display preview
 
 # 或
-pnpm preview
+bun run preview
 # 或
 make preview
 ```

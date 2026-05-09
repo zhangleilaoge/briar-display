@@ -24,7 +24,7 @@ BRIAR_JWT_SECRET="your-jwt-secret"
 
 ```bash
 # 在项目根目录执行
-pnpm --filter @briar/node db:setup
+bun run --filter @briar/node db:setup
 ```
 
 该脚本会：

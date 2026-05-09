@@ -84,6 +84,16 @@ export const wikiController = {
 	 */
 	async getBySlug(c: Context) {
 		const slug = c.req.param('slug')
+		if (!slug) {
+			return c.json<ApiResponse>(
+				{
+					success: false,
+					message: 'Missing slug parameter',
+					code: HTTP_STATUS.BAD_REQUEST,
+				},
+				HTTP_STATUS.BAD_REQUEST,
+			)
+		}
 
 		try {
 			const article = await wikiService.getBySlug(slug)
@@ -128,6 +138,16 @@ export const wikiController = {
 	 */
 	async getById(c: Context) {
 		const id = c.req.param('id')
+		if (!id) {
+			return c.json<ApiResponse>(
+				{
+					success: false,
+					message: 'Missing id parameter',
+					code: HTTP_STATUS.BAD_REQUEST,
+				},
+				HTTP_STATUS.BAD_REQUEST,
+			)
+		}
 
 		try {
 			const article = await wikiService.getById(id)
@@ -246,6 +266,16 @@ export const wikiController = {
 
 		try {
 			const id = c.req.param('id')
+			if (!id) {
+				return c.json<ApiResponse>(
+					{
+						success: false,
+						message: 'Missing id parameter',
+						code: HTTP_STATUS.BAD_REQUEST,
+					},
+					HTTP_STATUS.BAD_REQUEST,
+				)
+			}
 			const body = await c.req.json()
 
 			const article = await wikiService.update(id, body, user.id)
@@ -296,6 +326,16 @@ export const wikiController = {
 
 		try {
 			const id = c.req.param('id')
+			if (!id) {
+				return c.json<ApiResponse>(
+					{
+						success: false,
+						message: 'Missing id parameter',
+						code: HTTP_STATUS.BAD_REQUEST,
+					},
+					HTTP_STATUS.BAD_REQUEST,
+				)
+			}
 			const success = await wikiService.delete(id, user.id)
 
 			if (!success) {
@@ -343,6 +383,16 @@ export const wikiController = {
 	async addView(c: Context) {
 		try {
 			const id = c.req.param('id')
+			if (!id) {
+				return c.json<ApiResponse>(
+					{
+						success: false,
+						message: 'Missing id parameter',
+						code: HTTP_STATUS.BAD_REQUEST,
+					},
+					HTTP_STATUS.BAD_REQUEST,
+				)
+			}
 			await wikiService.addView(id)
 
 			return c.json<ApiResponse>(

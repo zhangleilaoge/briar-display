@@ -35,13 +35,13 @@ console.log(APP_NAME) // 'Briar'
 
 ```bash
 # 构建
-pnpm --filter @briar/shared build
+bun run --filter @briar/shared build
 
 # 监听模式
-pnpm --filter @briar/shared dev
+bun run --filter @briar/shared dev
 
 # 清理
-pnpm --filter @briar/shared clean
+bun run --filter @briar/shared clean
 ```
 
 ## 自动构建

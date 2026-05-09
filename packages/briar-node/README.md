@@ -21,10 +21,10 @@ make init
 make db-setup
 
 # 3. 构建整个项目（shared → display → node）
-make build && pnpm --filter @briar/node build
+make build && bun run --filter @briar/node build
 
 # 4. 启动生产服务器
-pnpm --filter @briar/node start
+bun run --filter @briar/node start
 ```
 
 **日常更新部署：**

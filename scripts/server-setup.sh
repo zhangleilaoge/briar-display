@@ -23,24 +23,14 @@ log_error() {
   echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# 检查并安装 Node.js
-install_node() {
-  if command -v node &> /dev/null; then
-    log_info "Node.js 已安装: $(node -v)"
+# 检查并安装 Bun
+install_bun() {
+  if command -v bun &> /dev/null; then
+    log_info "bun 已安装: $(bun -v)"
   else
-    log_info "安装 Node.js 20..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
-  fi
-}
-
-# 检查并安装 pnpm
-install_pnpm() {
-  if command -v pnpm &> /dev/null; then
-    log_info "pnpm 已安装: $(pnpm -v)"
-  else
-    log_info "安装 pnpm..."
-    npm install -g pnpm
+    log_info "安装 bun..."
+    curl -fsSL https://bun.sh/install | bash
+    export PATH="$HOME/.bun/bin:$PATH"
   fi
 }
 
@@ -50,7 +40,7 @@ install_pm2() {
     log_info "PM2 已安装: $(pm2 -v)"
   else
     log_info "安装 PM2..."
-    npm install -g pm2
+    bun add -g pm2
     
     # 设置 PM2 开机自启
     log_info "配置 PM2 开机自启..."
@@ -105,9 +95,9 @@ init_project() {
   make db-setup
   
   log_info "构建项目（shared → display → node）..."
-  pnpm --filter @briar/shared build
-  pnpm --filter @briar/display build
-  pnpm --filter @briar/node build
+  bun run --filter @briar/shared build
+  bun run --filter @briar/display build
+  bun run --filter @briar/node build
 }
 
 # 启动服务
@@ -133,8 +123,7 @@ main() {
   log_info "开始服务器初始化..."
   
   # 安装依赖
-  install_node
-  install_pnpm
+  install_bun
   install_pm2
   
   # 克隆项目

@@ -39,7 +39,7 @@ init:
 	fi
 	@echo ""
 	@echo "📦 Step 3: 安装项目依赖..."
-	@pnpm install
+	@bun install
 	@echo ""
 	@echo "================================================"
 	@echo "✅ 项目初始化完成！"
@@ -52,44 +52,44 @@ init:
 
 # 安装依赖
 install:
-	pnpm install
+	bun install
 
 # 初始化数据库
 db-setup:
 	@echo "🗄️  初始化数据库..."
-	@pnpm --filter @briar/node db:setup
+	@bun run --filter @briar/node db:setup
 
 # 启动前端开发服务器
 dev:
-	pnpm --filter @briar/display dev
+	bun run --filter @briar/display dev
 
 # 启动后端开发服务
 dev-node:
-	pnpm --filter @briar/node dev
+	bun run --filter @briar/node dev
 
 # 启动 shared 包监听模式
 dev-shared:
-	pnpm --filter @briar/shared dev
+	bun run --filter @briar/shared dev
 
 # 构建所有包（先构建 shared，再构建 display）
 build:
-	pnpm run build
+	bun run build
 
 # 构建前端并上传到 CDN
 build-cdn:
-	pnpm run build && pnpm --filter @briar/node upload:cdn
+	bun run build && bun run --filter @briar/node upload:cdn
 
 # 上传前端构建产物到 CDN
 upload-cdn:
-	pnpm --filter @briar/node upload:cdn
+	bun run --filter @briar/node upload:cdn
 
 # 仅构建 shared 包
 build-shared:
-	pnpm --filter @briar/shared build
+	bun run --filter @briar/shared build
 
 # 预览前端生产构建
 preview:
-	pnpm --filter @briar/display preview
+	bun run --filter @briar/display preview
 
 # 清理构建产物
 clean:

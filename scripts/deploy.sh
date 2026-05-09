@@ -108,7 +108,7 @@ main() {
   
   # 检查必要命令
   check_command git
-  check_command pnpm
+  check_command bun
   check_command pm2
   
   # 检查 .env 文件
@@ -128,7 +128,7 @@ main() {
   # 安装依赖
   if [ "$SKIP_INSTALL" = false ]; then
     log_info "安装依赖..."
-    pnpm install
+    bun install
   else
     log_warn "跳过依赖安装"
   fi
@@ -140,9 +140,9 @@ main() {
   if [ "$SKIP_BUILD" = false ]; then
     log_info "构建项目（shared → display → node）..."
     
-    if ! (pnpm --filter @briar/shared build && \
-      pnpm --filter @briar/display build && \
-      pnpm --filter @briar/node build); then
+    if ! (bun run --filter @briar/shared build && \
+      bun run --filter @briar/display build && \
+      bun run --filter @briar/node build); then
       log_error "构建失败，正在恢复备份..."
       restore_backup
       exit 1

@@ -1,10 +1,10 @@
 {
 	"permissions": {
 		"allow": [
-			"Bash(pnpm lint:fix)",
-			"Bash(pnpm add:*)",
+			"Bash(bun run lint:fix)",
+			"Bash(bun add:*)",
 			"Bash(ls /Users/zhanglei/Documents/projects/briar-display/packages/briar-node/src/types*)",
-			"Bash(pnpm --filter @briar/node typecheck)",
+			"Bash(bun run --filter @briar/node typecheck)",
 			"WebFetch(domain:minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com)",
 			"mcp__MiniMax__understand_image",
 			"Read(//Users/zhanglei/.claude/**)",

@@ -8,18 +8,18 @@ pre-commit:
     # Biome 检查和格式化
     biome-check:
       glob: "*.{js,ts,jsx,tsx,json,cjs,mjs}"
-      run: pnpm biome check --write --no-errors-on-unmatched {staged_files}
+      run: bun biome check --write --no-errors-on-unmatched {staged_files}
       stage_fixed: true
 
     # 类型检查
     typecheck-shared:
       glob: "packages/briar-shared/**/*.{ts,tsx}"
-      run: pnpm --filter @briar/shared typecheck
+      run: bun run --filter @briar/shared typecheck
 
     # 类型检查 (node)
     typecheck-node:
       glob: "packages/briar-node/**/*.{ts,tsx}"
-      run: pnpm --filter @briar/node typecheck
+      run: bun run --filter @briar/node typecheck
 
 # 提交信息检查 (可选，如果需要规范提交信息)
 commit-msg:

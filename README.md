@@ -1,6 +1,6 @@
 # Briar Monorepo
 
-基于 pnpm workspace 的 monorepo 项目，包含前端展示和 Node.js 后端服务。
+基于 bun workspace 的 monorepo 项目，包含前端展示和 Node.js 后端服务。
 
 ## 本地开发
 
@@ -121,7 +121,7 @@ BRIAR_TX_BUCKET_NAME
 │   ├── briar-node/        # Node.js 后端服务
 │   └── briar-shared/      # 共享工具库和类型定义
 ├── briar-assets/          # 子模块：资源文件
-├── pnpm-workspace.yaml    # pnpm workspace 配置
+├── package.json           # 根 package.json（包含 workspaces 配置）
 ├── Makefile               # 构建命令
-└── package.json           # 根 package.json
+└── bun.lock               # bun 锁定文件
 ```

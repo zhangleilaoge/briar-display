@@ -6,7 +6,7 @@ import dotenv from 'dotenv'
 const findRepoRoot = (startDir: string) => {
 	let currentDir = startDir
 	while (true) {
-		if (fs.existsSync(path.join(currentDir, 'pnpm-workspace.yaml'))) {
+		if (fs.existsSync(path.join(currentDir, 'bun.lock'))) {
 			return currentDir
 		}
 		const parentDir = path.dirname(currentDir)

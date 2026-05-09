@@ -4,22 +4,22 @@
 	"private": true,
 	"type": "module",
 	"engines": {
-		"node": ">=22.0.0",
-		"pnpm": ">=8.0.0"
+		"node": ">=22.0.0"
 	},
-	"packageManager": "pnpm@8.15.0",
+	"packageManager": "bun@1.2.0",
+	"workspaces": ["packages/*"],
 	"scripts": {
-		"dev": "concurrently -k -n shared,display -c gray,cyan --hide shared \"pnpm --filter @briar/shared dev\" \"pnpm --filter @briar/display dev\"",
-		"dev:node": "concurrently -k -n shared,node -c gray,magenta --hide shared \"pnpm --filter @briar/shared dev\" \"pnpm --filter @briar/node dev\"",
-		"dev:shared": "pnpm --filter @briar/shared dev",
-		"build": "pnpm --filter @briar/shared build && pnpm --filter @briar/display build",
-		"build:shared": "pnpm --filter @briar/shared build",
-		"preview": "pnpm --filter @briar/display preview",
-		"install:all": "pnpm install",
+		"dev": "concurrently -k -n shared,display -c gray,cyan --hide shared \"bun run --filter @briar/shared dev\" \"bun run --filter @briar/display dev\"",
+		"dev:node": "concurrently -k -n shared,node -c gray,magenta --hide shared \"bun run --filter @briar/shared dev\" \"bun run --filter @briar/node dev\"",
+		"dev:shared": "bun run --filter @briar/shared dev",
+		"build": "bun run --filter @briar/shared build && bun run --filter @briar/display build",
+		"build:shared": "bun run --filter @briar/shared build",
+		"preview": "bun run --filter @briar/display preview",
+		"install:all": "bun install",
 		"lint": "biome check .",
 		"lint:fix": "biome check . --write",
 		"format": "biome format . --write",
-		"typecheck": "pnpm --filter @briar/shared typecheck && pnpm --filter @briar/node typecheck && pnpm --filter @briar/display typecheck",
+		"typecheck": "bun run --filter @briar/shared typecheck && bun run --filter @briar/node typecheck && bun run --filter @briar/display typecheck",
 		"scripts:zip": "bash packages/briar-scripts/scripts/clone-and-zip.sh"
 	},
 	"devDependencies": {
