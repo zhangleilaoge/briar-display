@@ -42,7 +42,8 @@ except ImportError:
 
 # 配置
 CONFIG_DIR = Path(__file__).parent.parent / "config"
-QDRANT_HOST = os.environ.get("QDRANT_HOST", "http://localhost:6333")
+QDRANT_PATH = str(Path(__file__).parent.parent / ".qdrant")
+QDRANT_HOST = os.environ.get("QDRANT_HOST", QDRANT_PATH)
 COLLECTION_NAME = "briar_code"
 EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"  # FastEmbed 内置模型，代码友好
 
@@ -169,13 +170,18 @@ def index_repository(
 
     points = []
     count = 0
+    excluded_dirs = {"node_modules", "vendor", "dist", "build", "target", ".git", "__pycache__", ".next", "out", "coverage", ".nuxt", ".output", ".venv", "venv", "env", ".env", "site-packages", "lib"}
 
-    # 遍历仓库中的代码文件
-    for ext in EXT_TO_LANG.keys():
-        for file_path in repo_path.rglob(f"*{ext}"):
-            # 跳过常见非业务目录
-            if any(part.startswith(("vendor", "node_modules", ".git", "dist", "build", "target")) for part in file_path.parts):
+    # 遍历仓库中的代码文件（目录层面排除依赖目录，避免 rglob 深入 node_modules）
+    for root, dirs, files in os.walk(repo_path):
+        dirs[:] = [d for d in dirs if d not in excluded_dirs]
+
+        for file in files:
+            ext = os.path.splitext(file)[1].lower()
+            if ext not in EXT_TO_LANG:
                 continue
+
+            file_path = Path(root) / file
 
             try:
                 with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
@@ -267,10 +273,13 @@ def main():
         return 1
 
     print("加载嵌入模型...")
-    embedding_model = TextEmbedding(model_name=EMBEDDING_MODEL)
+    embedding_model = TextEmbedding(model_name=EMBEDDING_MODEL, cache_dir="/tmp/fastembed_cache")
 
     print(f"连接 Qdrant: {args.qdrant_host}")
-    qdrant_client = QdrantClient(url=args.qdrant_host)
+    if args.qdrant_host.startswith("http"):
+        qdrant_client = QdrantClient(url=args.qdrant_host)
+    else:
+        qdrant_client = QdrantClient(path=args.qdrant_host)
     ensure_collection(qdrant_client)
 
     domains_config = load_domains()

@@ -34,7 +34,8 @@ except ImportError:
 # 配置
 CONFIG_DIR = Path(__file__).parent.parent / "config"
 ZOEKT_HOST = os.environ.get("ZOEKT_HOST", "http://localhost:6070")
-QDRANT_HOST = os.environ.get("QDRANT_HOST", "http://localhost:6333")
+QDRANT_PATH = str(Path(__file__).parent.parent / ".qdrant")
+QDRANT_HOST = os.environ.get("QDRANT_HOST", QDRANT_PATH)
 COLLECTION_NAME = "briar_code"
 EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 
@@ -55,29 +56,19 @@ def get_repo_patterns_for_domain(domain: str, domains_config: dict) -> list[str]
 
 def zoekt_search(query: str, num_results: int = 50) -> list[dict]:
     """调用 Zoekt API 进行全文搜索"""
-    url = f"{ZOEKT_HOST}/api/search"
-    payload = json.dumps({"q": query, "num": num_results}).encode("utf-8")
-
-    req = urllib.request.Request(
-        url,
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
+    encoded = urllib.parse.quote(query)
+    url = f"{ZOEKT_HOST}/search?q={encoded}&format=json&num={num_results}"
 
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(url, timeout=30) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-            return data.get("ResultFiles", [])
+            files = data.get("result", {}).get("FileMatches", [])
+            # 字段映射：Repo -> Repository
+            for f in files:
+                f["Repository"] = f.get("Repo", "")
+            return files
     except Exception:
-        try:
-            encoded = urllib.parse.quote(query)
-            url = f"{ZOEKT_HOST}/search?q={encoded}&num={num_results}"
-            with urllib.request.urlopen(url, timeout=30) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                return data.get("ResultFiles", [])
-        except Exception:
-            return []
+        return []
 
 
 def qdrant_search(
@@ -102,9 +93,9 @@ def qdrant_search(
         }
 
     try:
-        results = qdrant_client.search(
+        results = qdrant_client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=vector,
+            query=vector,
             query_filter=filter_conditions,
             limit=num_results,
             with_payload=True,
@@ -122,7 +113,7 @@ def qdrant_search(
                 "content": r.payload.get("content", ""),
                 "domains": r.payload.get("domains", []),
             }
-            for r in results
+            for r in results.points
         ]
     except Exception as e:
         print(f"Qdrant 查询失败: {e}")
@@ -292,8 +283,11 @@ def main():
             print("错误: 缺少依赖。请安装: pip install fastembed qdrant-client")
             return 1
         print(f"[语义查询: {semantic_query}]")
-        embedding_model = TextEmbedding(model_name=EMBEDDING_MODEL)
-        qdrant_client = QdrantClient(url=args.qdrant_host)
+        embedding_model = TextEmbedding(model_name=EMBEDDING_MODEL, cache_dir="/tmp/fastembed_cache")
+        if args.qdrant_host.startswith("http"):
+            qdrant_client = QdrantClient(url=args.qdrant_host)
+        else:
+            qdrant_client = QdrantClient(path=args.qdrant_host)
         results = qdrant_search(
             semantic_query,
             embedding_model,
@@ -313,8 +307,11 @@ def main():
         qdrant_results = []
         if TextEmbedding and QdrantClient:
             try:
-                embedding_model = TextEmbedding(model_name=EMBEDDING_MODEL)
-                qdrant_client = QdrantClient(url=args.qdrant_host)
+                embedding_model = TextEmbedding(model_name=EMBEDDING_MODEL, cache_dir="/tmp/fastembed_cache")
+                if args.qdrant_host.startswith("http"):
+                    qdrant_client = QdrantClient(url=args.qdrant_host)
+                else:
+                    qdrant_client = QdrantClient(path=args.qdrant_host)
                 qdrant_results = qdrant_search(
                     semantic_query,
                     embedding_model,

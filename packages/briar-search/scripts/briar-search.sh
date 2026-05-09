@@ -278,14 +278,12 @@ for p in config.get('domains', {}).get(domain, {}).get('repo_patterns', []):
 # 通过 Zoekt API 搜索
 search_api() {
     local query="$1"
-    local url="${ZOEKT_HOST}/api/search"
+    local encoded_query
+    encoded_query=$(python3 -c "import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1]))" "$query")
+    local url="${ZOEKT_HOST}/search?q=${encoded_query}&format=json&num=${NUM_RESULTS}"
 
-    # Zoekt JSON API 使用 POST /api/search
     local response
-    response=$(curl -s -X POST "$url" \
-        -H "Content-Type: application/json" \
-        -H "Accept: application/json" \
-        -d "{\"q\": $(echo "$query" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read().strip()))'), \"num\": $NUM_RESULTS}" 2>/dev/null || true)
+    response=$(curl -s "$url" 2>/dev/null || true)
 
     echo "$response"
 }
@@ -320,34 +318,37 @@ format_results() {
         return
     fi
 
-    # 解析 Zoekt JSON API 响应 (POST /api/search 返回 Result.Files)
+    # 解析 Zoekt JSON API 响应 (GET /search?q=...&format=json 返回 result.FileMatches)
     if [[ -n "$response" ]]; then
         if command -v python3 &>/dev/null; then
             python3 -c "
-import sys, json, base64
+import sys, json
 try:
     data = json.load(sys.stdin)
-    files = data.get('Result', {}).get('Files', [])
+    files = data.get('result', {}).get('FileMatches', [])
     if not files:
         print('未找到匹配结果')
         sys.exit(0)
 
     print(f'\033[0;32m找到 {len(files)} 个文件:\033[0m')
     for f in files[:20]:  # 最多显示20个
-        repo = f.get('Repository', 'unknown')
+        repo = f.get('Repo', 'unknown')
         fname = f.get('FileName', 'unknown')
         lang = f.get('Language', 'unknown')
-        matches = f.get('LineMatches', [])
+        matches = f.get('Matches', [])
         print('\n' + '='*50)
         print(f'📁 {repo}/{fname}')
         print(f'   语言: {lang} | 匹配: {len(matches)} 处')
-        for lm in matches[:3]:  # 最多显示3行
-            line_no = lm.get('LineNumber', 0)
-            line_raw = lm.get('Line', '')
-            try:
-                line = base64.b64decode(line_raw).decode('utf-8', errors='replace')[:200]
-            except:
-                line = line_raw[:200]
+        for m in matches[:3]:  # 最多显示3处
+            line_no = m.get('LineNum', 0)
+            frags = m.get('Fragments', [])
+            line_parts = []
+            for frag in frags[:3]:
+                pre = frag.get('Pre', '')
+                match = frag.get('Match', '')
+                post = frag.get('Post', '')
+                line_parts.append(f'{pre}\033[1;33m{match}\033[0m{post}')
+            line = ''.join(line_parts)[:200]
             print(f'   📌 L{line_no}: {line}')
         if len(matches) > 3:
             print(f'   ... 还有 {len(matches) - 3} 处匹配')
@@ -371,6 +372,40 @@ check_service() {
     return 1
 }
 
+# 临时启动本地 zoekt-webserver
+start_local_server() {
+    if ! command -v zoekt-webserver &>/dev/null; then
+        if [[ -x "$HOME/go/bin/zoekt-webserver" ]]; then
+            export PATH="$PATH:$HOME/go/bin"
+        else
+            log_error "zoekt-webserver 未安装"
+            return 1
+        fi
+    fi
+
+    zoekt-webserver -index "$ZOEKT_INDEX_DIR" -listen :6070 &>/dev/null &
+    local pid=$!
+
+    local max_wait=30
+    local waited=0
+    while ! check_service && [[ $waited -lt $max_wait ]]; do
+        sleep 0.5
+        waited=$((waited + 1))
+        if ! kill -0 "$pid" 2>/dev/null; then
+            log_error "zoekt-webserver 启动失败"
+            return 1
+        fi
+    done
+
+    if ! check_service; then
+        kill "$pid" 2>/dev/null || true
+        log_error "等待 zoekt-webserver 超时"
+        return 1
+    fi
+
+    echo "$pid"
+}
+
 # 主流程
 main() {
     if [[ -z "$QUERY" ]]; then
@@ -387,25 +422,34 @@ main() {
     log_info "查询: $final_query"
     log_info "服务: $ZOEKT_HOST"
 
-    local response=""
+    local local_pid=""
 
-    if check_service; then
-        response="$(search_api "$final_query")"
-        # 检查是否返回了有效的 JSON 结果
-        if [[ -n "$response" ]] && python3 -c "import sys,json; d=json.load(sys.stdin); exit(0 if d.get('Result',{}).get('Files') else 1)" <<< "$response" 2>/dev/null; then
-            format_results "$response"
-            # 后台延迟增量更新查询涉及的仓库
-            trigger_delayed_update "$response"
-            return
+    if ! check_service; then
+        log_info "Zoekt 服务未运行，临时启动中..."
+        local_pid=$(start_local_server)
+        if [[ -z "$local_pid" ]]; then
+            exit 1
         fi
+        log_success "服务已启动: $ZOEKT_HOST"
     fi
 
-    # API 不可用或无结果，尝试本地命令行搜索
-    log_warn "API 无结果，尝试本地 zoekt 搜索..."
-    local local_output
-    local_output="$(search_local "$final_query")"
-    if [[ -n "$local_output" ]]; then
-        echo "$local_output"
+    # 确保临时服务在脚本退出时被清理
+    cleanup_server() {
+        if [[ -n "${local_pid:-}" ]]; then
+            kill "$local_pid" 2>/dev/null || true
+            log_info "临时服务已关闭"
+        fi
+    }
+    trap cleanup_server EXIT
+
+    local response=""
+    response="$(search_api "$final_query")"
+
+    # 检查是否返回了有效的 JSON 结果
+    if [[ -n "$response" ]] && python3 -c "import sys,json; d=json.load(sys.stdin); exit(0 if d.get('result',{}).get('FileMatches') else 1)" <<< "$response" 2>/dev/null; then
+        format_results "$response"
+        # 后台延迟增量更新查询涉及的仓库
+        trigger_delayed_update "$response"
     else
         log_warn "未找到匹配结果"
     fi

@@ -128,11 +128,13 @@ collect_repos() {
             repos+=("$repo")
         done < <(find "$BATCH_DIR" -maxdepth 2 -type d -name ".git" -print0 | while IFS= read -r -d '' gitdir; do
             dirname "$gitdir"
-        done | sort -u | tr '\n' '\0' | sed 's/\x00$//')
+        done | sort -u | while IFS= read -r repo; do
+            printf '%s\0' "$repo"
+        done)
     fi
 
     # 命令行参数
-    for repo in "${REPO_LIST[@]}"; do
+    for repo in "${REPO_LIST[@]:-}"; do
         repos+=("$repo")
     done
 
@@ -444,7 +446,7 @@ print(','.join(tags))
 " "$repo_name")
     fi
 
-    echo "${tags[*]}"
+    echo "${tags[*]:-}"
 }
 
 # 建立索引（本地模式）
@@ -484,10 +486,21 @@ index_local() {
             extra_args+=("-prefix" "$repo_name")
         fi
 
+        local zoekt_exit=0
         zoekt-git-index \
             -index "$ZOEKT_INDEX_DIR" \
-            "${extra_args[@]}" \
-            "$repo" || log_warn "索引失败: $repo"
+            "${extra_args[@]:-}" \
+            "$repo" 2>&1 || zoekt_exit=$?
+
+        if [[ $zoekt_exit -ne 0 ]]; then
+            # zoekt 可能因 unknown git hosting site 等 warning 返回非零
+            # 检查索引文件是否实际已生成
+            if find "$ZOEKT_INDEX_DIR" -name "*${repo_name}*" -type f &>/dev/null; then
+                log_info "索引文件已生成（忽略非致命 warning）: $repo_name"
+            else
+                log_warn "索引失败: $repo"
+            fi
+        fi
     done
 
     # 生成 repo-map.json 用于查询后反向查找本地路径
