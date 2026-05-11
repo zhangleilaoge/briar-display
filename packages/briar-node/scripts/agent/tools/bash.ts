@@ -4,7 +4,7 @@ import { type ToolDefinition, toolRegistry } from './index.js'
 const bashTool: ToolDefinition = {
 	name: 'bash',
 	description:
-		'执行 bash 命令。用于运行 shell 命令、查看系统信息、操作 git 等。注意：只返回命令的输出，不会自动确认交互式提示。',
+		'执行 bash 命令。用于运行 shell 命令、查看系统信息、操作 git 等。注意：只返回命令的输出，不会自动确认交互式提示。当前环境为 macOS，grep 不支持 -P 选项（Perl 正则），如需复杂正则请用 grep -E 或 perl -ne 代替。',
 	input_schema: {
 		type: 'object',
 		properties: {

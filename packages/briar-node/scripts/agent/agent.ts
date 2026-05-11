@@ -28,8 +28,8 @@ dotenv.config({ path: path.join(repoRoot, '.env') })
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || process.env.KIMI_API_KEY || ''
 const ANTHROPIC_BASE_URL = process.env.ANTHROPIC_BASE_URL || 'https://api.kimi.com/coding'
 const MODEL = process.env.KIMI_MODEL || 'kimi-for-coding'
-const MAX_TURNS = 10
-const SUB_AGENT_MAX_TURNS = 3
+const MAX_TURNS = 40
+const SUB_AGENT_MAX_TURNS = 40
 
 const SYSTEM_PROMPT = `你是一个 helpful 的 AI Agent，运行在命令行环境中。
 你可以帮助用户解答问题、编写代码、分析数据、操作文件等。
@@ -71,8 +71,9 @@ const SYSTEM_PROMPT = `你是一个 helpful 的 AI Agent，运行在命令行环
 ## 子代理结果使用规则（绝对重要）
 
 - **子代理返回的结果已经足够完整和准确，你必须直接信任并使用**，绝对禁止再调用 web_search、fetch_url 或 bash 去验证、补充或重复获取相同信息。
-- 如果所有子代理都已返回结果，**立即基于这些结果汇总回复用户**，不要再调用任何工具。
+- **如果所有子代理都已返回结果，立即基于这些结果汇总回复用户，不要再调用任何工具。**
 - 子代理是专门处理子任务的专家，它的结果比你重新搜索更可靠。
+- 违反此规则会浪费 API 调用并降低用户体验。
 
 使用工具时，请直接调用，不要询问用户是否可以调用。`
 
@@ -89,8 +90,9 @@ const SUB_AGENT_SYSTEM_PROMPT = `你是一个子代理，负责执行主代理�
 **重要限制：你不能使用 delegate_to_subagent 工具，也不能创建其他子代理。**
 
 **效率要求：**
-- 拿到工具返回的结果后，**直接总结并返回给主代理**，不要继续调用其他工具验证或补充。
-- 子代理最多只有 3 轮对话，请珍惜每一次工具调用机会。
+- 子代理最多 40 轮对话，可以调用多个工具（比如先 web_search 搜索，再 fetch_url 抓取具体页面获取详细内容）。
+- **搜索次数限制**：对同一个主题，最多调用 2 次 web_search。如果 2 次都没找到满意结果，直接说"未找到相关信息"，不要无限搜索。
+- 拿到工具返回的结果后，**基于已有信息直接总结并返回给主代理**。不要继续调用相同或类似的工具去验证。
 - 如果搜索工具返回了有效结果，立即整理输出，不要追问"还需要更多信息吗"。
 
 **绝对禁止的行为：**
@@ -100,9 +102,9 @@ const SUB_AGENT_SYSTEM_PROMPT = `你是一个子代理，负责执行主代理�
 **返回质量要求（极其重要）：**
 - 你的返回结果会被主代理**直接呈现给用户**，主代理不会再补充搜索或验证。所以你必须一次性给足所有信息。
 - 返回结果开头必须明确写"【查询完成】"，让主代理知道你已经完成，不需要再搜。
-- 如果查询天气，必须返回：天气状况、温度范围、当前温度、风力、湿度、空气质量、未来3天预报。用 Markdown 表格呈现。
-- 如果查询新闻，必须返回：至少5条新闻，每条包含完整标题和2-3句话的详细摘要。用编号列表呈现。
-- 如果查询卦象/运势，必须返回：卦名、卦辞、事业/财运/感情/健康分析、宜忌、幸运色/数字/吉时。用表格呈现。
+- **必须基于搜索结果回答**：web_search 返回的是 Bing 搜索结果（包含标题、链接和摘要），你要从中**提取关键信息**，整理成用户需要的格式。不要编造工具不可用的借口。
+- **如实汇报**：如果搜索结果里确实没有相关信息，直接说"未找到相关信息"；如果搜索失败了，才说"搜索暂时不可用"。
+- **绝对禁止编造数据**：不允许虚构天气、新闻、运势等具体内容。只能从搜索结果中提取和总结。
 - 不要写"由于搜索结果有限"、"只获取到部分信息"等谦虚或保留的话。你获取到的就是完整结果，自信地呈现即可。
 
 请独立完成任务并返回结果。请用中文回复。`
@@ -175,11 +177,7 @@ class SubAgent {
 		let hasUsedTool = false
 
 		for (let turnCount = 0; turnCount < SUB_AGENT_MAX_TURNS; turnCount++) {
-			const availableTools = hasUsedTool
-				? undefined
-				: subAgentTools.length > 0
-					? subAgentTools
-					: undefined
+			const availableTools = subAgentTools.length > 0 ? subAgentTools : undefined
 
 			const response = await this.client.messages.create({
 				model: MODEL,
@@ -199,7 +197,7 @@ class SubAgent {
 					role: 'assistant',
 					content: content as MessageContent[],
 				})
-
+				// 工具并行
 				const toolResults = await Promise.all(
 					toolUseBlocks.map(async (block) => {
 						const toolName = block.name

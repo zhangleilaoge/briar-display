@@ -26,5 +26,8 @@
 		"@biomejs/biome": "1.9.4",
 		"concurrently": "^8.2.2",
 		"lefthook": "^1.10.0"
+	},
+	"dependencies": {
+		"esbuild": "0.27.3"
 	}
 }
