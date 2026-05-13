@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
 				setAuthToken(result.data.token)
 				setSuccess('密码重置成功，正在跳转...')
 				setTimeout(() => {
-					window.location.href = '/briar-display/business'
+					window.location.href = 'business'
 				}, 2000)
 			} else {
 				setError(result.message || '重置密码失败')
@@ -172,7 +172,7 @@ export default function ForgotPasswordPage() {
 									</Button>
 									<p className="text-center text-xs text-muted-foreground">
 										想起密码了？{' '}
-										<a href="/briar-display/login" className="text-primary hover:underline">
+										<a href="login" className="text-primary hover:underline">
 											返回登录
 										</a>
 									</p>
@@ -244,7 +244,7 @@ export default function ForgotPasswordPage() {
 										{countdown > 0 ? `重新发送 (${countdown}s)` : '没收到验证码？重新发送'}
 									</Button>
 									<p className="text-center text-xs text-muted-foreground">
-										<a href="/briar-display/login" className="text-primary hover:underline">
+										<a href="login" className="text-primary hover:underline">
 											返回登录
 										</a>
 									</p>

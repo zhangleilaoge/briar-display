@@ -104,7 +104,7 @@ export default function WikiBrowser() {
 		const token = typeof window !== 'undefined' ? localStorage.getItem('briar_token') : null
 		if (!token) {
 			alert('You need to sign in to create articles. Redirecting to login...')
-			window.location.href = '/briar-display/login'
+			window.location.href = 'login'
 			return
 		}
 		window.location.hash = 'new'
@@ -116,7 +116,7 @@ export default function WikiBrowser() {
 		const token = typeof window !== 'undefined' ? localStorage.getItem('briar_token') : null
 		if (!token) {
 			alert('You need to sign in to edit articles. Redirecting to login...')
-			window.location.href = '/briar-display/login'
+			window.location.href = 'login'
 			return
 		}
 		window.location.hash = `edit:${articleId}`

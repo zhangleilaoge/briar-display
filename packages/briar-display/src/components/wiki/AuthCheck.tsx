@@ -53,7 +53,7 @@ export default function AuthCheck({ onAuthorized, onUnauthorized }: AuthCheckPro
 					<h2 className="text-xl font-bold text-blue-900 mb-2">Sign In Required</h2>
 					<p className="text-blue-700 mb-4">You need to be signed in to create or edit articles.</p>
 					<Button asChild>
-						<a href="/briar-display/login">Sign In</a>
+						<a href="login">Sign In</a>
 					</Button>
 				</div>
 			</div>

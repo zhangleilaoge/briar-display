@@ -27,7 +27,7 @@ export default function LoginPage() {
 			const result = await login({ email, password })
 			if (result.success && result.data) {
 				setAuthToken(result.data.token)
-				window.location.href = '/briar-display/business'
+				window.location.href = 'business'
 				return
 			}
 			setError(result.message || '登录失败')
@@ -100,7 +100,7 @@ export default function LoginPage() {
 										<input type="checkbox" className="h-4 w-4 rounded border-input" />
 										记住我
 									</label>
-									<a href="/briar-display/forgot-password" className="text-primary hover:underline">
+									<a href="forgot-password" className="text-primary hover:underline">
 										忘记密码？
 									</a>
 								</div>
@@ -122,7 +122,7 @@ export default function LoginPage() {
 								</p>
 								<p className="text-center text-xs text-muted-foreground">
 									还没有账号？{' '}
-									<a href="/briar-display/register" className="text-primary hover:underline">
+									<a href="register" className="text-primary hover:underline">
 										创建账号
 									</a>
 								</p>
