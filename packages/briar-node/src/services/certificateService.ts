@@ -544,7 +544,10 @@ export const certificateService = {
 	/**
 	 * 完整的证书更新流程
 	 */
-	async renewCertificate(domain: string): Promise<{
+	async renewCertificate(
+		domain: string,
+		force = false,
+	): Promise<{
 		success: boolean
 		skipped?: boolean
 		certPath?: string
@@ -558,10 +561,14 @@ export const certificateService = {
 			console.log(`${'='.repeat(60)}\n`)
 
 			// 1. 检查是否需要续期
-			const needsRenew = await this.shouldRenew(domain)
-			if (!needsRenew) {
-				console.log('✅ 证书尚未到期，无需续期')
-				return { success: true, skipped: true }
+			if (!force) {
+				const needsRenew = await this.shouldRenew(domain)
+				if (!needsRenew) {
+					console.log('✅ 证书尚未到期，无需续期')
+					return { success: true, skipped: true }
+				}
+			} else {
+				console.log('⚡ 强制续期模式，跳过到期检查')
 			}
 
 			// 2. 申请证书
