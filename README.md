@@ -1,89 +1,178 @@
-# Briar Monorepo
+# Briar Display
 
-基于 bun workspace 的 monorepo 项目，包含前端展示和 Node.js 后端服务。
+基于 bun workspace 的 monorepo，包含前端展示站点（Astro）和 Node.js 后端服务（Hono）。
+
+线上地址：`https://stardew.site/briar-display/`
+
+## 技术栈
+
+| 包 | 技术 | 说明 |
+| :--- | :--- | :--- |
+| `@briar/shared` | TypeScript / tsup | 共享常量、类型和工具函数 |
+| `@briar/display` | Astro + React + Vue + TailwindCSS | 前端页面，部署在 `/briar-display/` 子路径 |
+| `@briar/node` | Hono + MySQL2 + JWT + bcryptjs | REST API 服务，端口 `3888` |
+| `@briar/scripts` | TypeScript | 构建和部署辅助脚本 |
 
 ## 本地开发
+
+### 环境要求
+
+- [Bun](https://bun.sh) >= 1.2.0
+- Node.js >= 22.0.0
+- MySQL 8.0
 
 ### 初始化项目
 
 ```bash
 # 1. 克隆仓库并初始化子模块
-git clone https://github.com/your-username/briar-display.git
+git clone --recurse-submodules <repo-url>
 cd briar-display
 
-# 2. 初始化项目（拉取子模块 + 安装依赖）
+# 2. 初始化（拷贝子模块中的 .env + 安装依赖）
 make init
 
-# 3. 初始化数据库
+# 3. 编辑环境变量
+cp .env.example .env   # 如果 make init 没成功拷贝
+nano .env
+
+# 4. 初始化数据库
 make db-setup
+```
+
+> `make init` 会尝试从 `briar-assets/briar/.env` 拷贝环境变量文件。如果子模块未初始化，会自动执行 `git submodule update --init --recursive`。
+
+### 环境变量
+
+核心配置（`.env`）：
+
+```bash
+# 数据库（必需）
+BRIAR_DATABASE_HOST=localhost
+BRIAR_DATABASE_USER=your_username
+BRIAR_DATABASE_PASSWORD=your_password
+BRIAR_DATABASE_PORT=3306
+
+# JWT 密钥（随机字符串）
+BRIAR_JWT_SECRET=your_jwt_secret_key_here
+
+# 服务器端口（默认 3888）
+PORT=3888
+
+# 腾讯云 COS（仅 CDN 上传需要）
+BRIAR_TX_BUCKET_REGION=ap-shanghai
+BRIAR_TX_SEC_ID=your_secret_id
+BRIAR_TX_SEC_KEY=your_secret_key
+BRIAR_TX_BUCKET_NAME=your_bucket_name
+BRIAR_TX_BUCKET_DOMAIN=https://your-bucket.cos.ap-shanghai.myqcloud.com
 ```
 
 ### 启动开发服务
 
 ```bash
-make dev          # 前端开发服务器
-make dev-node     # 后端开发服务
-make dev-shared   # shared 包监听模式
+# 前端开发服务器（http://localhost:4321）
+make dev
+
+# 后端开发服务（热重载，http://localhost:3888）
+make dev-node
+
+# shared 包监听模式（单独调试共享库）
+make dev-shared
 ```
 
-### 可用命令
+> `make dev` 会同时启动 `@briar/shared`（监听模式）和 `@briar/display`（Astro dev）。
 
-| 命令              | 说明                     |
-| :---------------- | :----------------------- |
-| `make init`       | 初始化项目（首次使用）   |
-| `make install`    | 安装所有依赖             |
-| `make db-setup`   | 初始化数据库             |
-| `make build`      | 构建所有包（含依赖顺序） |
-| `make build-cdn`  | 构建前端并上传到 CDN     |
-| `make upload-cdn` | 上传前端构建产物到 CDN   |
-| `make preview`    | 预览前端生产构建         |
-| `make clean`      | 清理构建产物             |
+### 常用命令
 
-### 环境变量配置
+| 命令 | 说明 |
+| :--- | :--- |
+| `make init` | 初始化项目（首次使用） |
+| `make install` | 安装所有依赖 |
+| `make db-setup` | 初始化数据库表结构 |
+| `make build` | 构建 shared + display |
+| `make build-shared` | 仅构建 shared 包 |
+| `make build-cdn` | 构建前端并上传到腾讯云 CDN |
+| `make upload-cdn` | 上传已有构建产物到 CDN |
+| `make preview` | 预览前端生产构建 |
+| `make clean` | 清理构建产物和缓存 |
 
-核心配置（可选）：
+## 项目结构
 
-```bash
-# 腾讯云 COS 配置
-BRIAR_TX_BUCKET_REGION=ap-shanghai
-BRIAR_TX_SEC_ID=...
-BRIAR_TX_SEC_KEY=...
-BRIAR_TX_BUCKET_NAME=...
-BRIAR_TX_BUCKET_DOMAIN=https://your-bucket.cos.ap-shanghai.myqcloud.com
-
-# 其他配置见 .env.example
+```
+/
+├── packages/
+│   ├── briar-display/       # 前端 (Astro + React + Vue)
+│   │   ├── src/
+│   │   │   ├── pages/       # Astro 页面路由
+│   │   │   │   ├── briar-display/   # 实际部署页面 (/briar-display/*)
+│   │   │   │   └── demo/            # Demo 页面
+│   │   │   ├── components/  # React / Vue 组件
+│   │   │   └── api/         # 前端 API 请求封装 (axios)
+│   ├── briar-node/          # 后端服务 (Hono)
+│   │   ├── src/
+│   │   │   ├── index.ts     # 服务入口
+│   │   │   ├── routes/      # API 路由 (auth, wiki)
+│   │   │   ├── middleware/  # 全局中间件 (auth, cors, logger)
+│   │   │   ├── controllers/ # 业务控制器
+│   │   │   ├── db/          # 数据库初始化和连接
+│   │   │   └── jobs/        # 定时任务 (bree)
+│   │   └── scripts/
+│   │       └── upload-cdn.ts
+│   ├── briar-shared/        # 共享库
+│   │   └── src/
+│   │       ├── constants.ts # 常量、端口、路径
+│   │       └── types/       # TypeScript 类型定义
+│   └── briar-scripts/       # 构建辅助脚本
+├── briar-assets/            # Git 子模块：证书、环境变量模板
+├── default.conf             # Nginx 配置模板
+├── ecosystem.config.cjs     # PM2 配置
+├── Makefile                 # 常用命令
+└── bun.lock                 # Bun 锁定文件
 ```
 
-**CDN 说明：** 前端构建时设置 `BRIAR_TX_BUCKET_DOMAIN`，所有静态资源会使用 CDN 地址，减轻服务器压力。
+## 部署
 
----
+### 服务器要求
 
-## 服务端部署
+- Ubuntu / Debian
+- Nginx
+- MySQL 8.0
+- Bun + PM2
 
 ### 首次部署
 
 ```bash
-# 方式一：一键初始化脚本
-bash <(curl -s https://raw.githubusercontent.com/your-username/briar-display/master/scripts/server-setup.sh)
-
-# 方式二：手动执行
-git clone --recurse-submodules <repo-url> ~/briar-display
+# 方式一：交互式初始化脚本
 ./scripts/server-setup.sh
+
+# 方式二：手动
+make init
+make db-setup
+make build
+pm2 start ecosystem.config.cjs
 ```
 
 ### 日常部署
 
 ```bash
-./scripts/deploy.sh                # 完整部署
-./scripts/deploy.sh --skip-install # 跳过依赖安装（更快）
-./scripts/deploy.sh --skip-build   # 跳过构建（仅重启）
+./scripts/deploy.sh                # 完整部署（拉代码、装依赖、构建、重启）
+./scripts/deploy.sh --skip-install # 跳过依赖安装
+./scripts/deploy.sh --skip-build   # 仅重启 PM2 进程
 ```
 
 ### Nginx 配置
 
+项目根目录的 `default.conf` 是 Nginx 配置模板：
+
 ```bash
-./scripts/deploy-nginx.sh  # 单独部署 Nginx 配置
+# 部署 Nginx 配置（会同步证书并 reload nginx）
+./scripts/deploy-nginx.sh
 ```
+
+实际生产部署在 `/briar-display/` 子路径，Nginx 配置要点：
+
+- `location /briar-display/` 代理到前端静态资源和页面
+- `location /api/` 代理到后端 API（`/api/*`）
+- 后端端口 `3888`
 
 ### PM2 进程管理
 
@@ -92,36 +181,18 @@ pm2 list                    # 查看状态
 pm2 logs briar-node         # 查看日志
 pm2 reload briar-node       # 重启服务
 pm2 stop briar-node         # 停止服务
-pm2 start ecosystem.config.cjs  # 使用配置文件启动
 ```
 
-### GitHub Actions 自动构建
+### CI / CDN 自动构建
 
-推送到 `master` 或 `main` 分支时自动触发构建并上传到 CDN。
+`.github/workflows/deploy.yml`：推送到 `master` / `main` 时自动构建并上传到腾讯云 CDN。
 
-需在 GitHub 仓库设置以下 Secrets：
+需要的 GitHub Secrets：
 
-```
-BRIAR_TX_BUCKET_REGION
-BRIAR_TX_SEC_ID
-BRIAR_TX_SEC_KEY
-BRIAR_TX_BUCKET_NAME
-```
+- `DOCKER_GITHUB_TOKEN`（用于拉取子模块）
+- `BRIAR_TX_BUCKET_REGION`
+- `BRIAR_TX_SEC_ID`
+- `BRIAR_TX_SEC_KEY`
+- `BRIAR_TX_BUCKET_NAME`
 
-> 📖 详细部署文档请查看 [DEPLOYMENT.md](DEPLOYMENT.md)
-
----
-
-## 项目结构
-
-```
-/
-├── packages/
-│   ├── briar-display/     # 前端项目 (Astro + React + Vue)
-│   ├── briar-node/        # Node.js 后端服务
-│   └── briar-shared/      # 共享工具库和类型定义
-├── briar-assets/          # 子模块：资源文件
-├── package.json           # 根 package.json（包含 workspaces 配置）
-├── Makefile               # 构建命令
-└── bun.lock               # bun 锁定文件
-```
+> GitHub Actions 不会自动部署到服务器，仅负责构建和 CDN 上传。
