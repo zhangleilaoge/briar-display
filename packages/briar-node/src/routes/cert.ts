@@ -6,8 +6,15 @@ const certRoutes = new Hono()
 
 certRoutes.post('/renew', async (c) => {
 	const domain = process.env.CERTIFICATE_DOMAIN || 'stardew.site'
-	const result = await certificateService.renewCertificate(domain, true)
-	return c.json(result, result.success ? HTTP_STATUS.OK : HTTP_STATUS.INTERNAL_SERVER_ERROR)
+
+	// 异步执行续期，避免 HTTP 超时（nginx 默认 60s）
+	void certificateService.renewCertificate(domain, true)
+
+	return c.json({
+		success: true,
+		message: '证书续期任务已启动，请通过 pm2 logs 查看进度',
+		code: HTTP_STATUS.OK,
+	})
 })
 
 export default certRoutes

@@ -205,6 +205,9 @@ export const certificateService = {
 			const client = new acme.Client({
 				directoryUrl: acmeDirectoryUrl,
 				accountKey: accountKey,
+				backoffAttempts: 10,
+				backoffMin: 5000,
+				backoffMax: 30000,
 			})
 
 			// 2. 获取或创建账户
@@ -264,16 +267,21 @@ export const certificateService = {
 			console.log('📤 将在 60 秒后继续进行 DNS 验证...')
 			console.log('💡 如果 DNS 还未生效，验证可能会失败。可以 Ctrl+C 中断并重新运行')
 
-			await new Promise((resolve) => setTimeout(resolve, 60000))
+			await new Promise((resolve) => setTimeout(resolve, 180000))
 
 			// 验证挑战
 			console.log('正在验证挑战...')
 			await Promise.all(challenges.map((c) => client.completeChallenge(c.challenge)))
 			console.log('挑战已提交，等待 ACME 服务器验证...\n')
 
-			// 等待订单准备就绪
+			// 等待订单准备就绪（最多等 2 分钟，防止 HTTP 挂死）
 			console.log('等待订单验证完成...')
-			await client.waitForValidStatus(order)
+			await Promise.race([
+				client.waitForValidStatus(order),
+				new Promise((_, reject) =>
+					setTimeout(() => reject(new Error('ACME validation timed out after 120s')), 120000),
+				),
+			])
 			console.log('✅ 订单验证成功\n')
 
 			// 清理 DNS 记录
@@ -293,8 +301,12 @@ export const certificateService = {
 				key: serverKey,
 			}
 		} catch (error) {
-			const errorMsg = error instanceof Error ? error.message : String(error)
-			console.error(`❌ ACME 证书申请失败: ${errorMsg}\n`)
+			console.error('❌ ACME 证书申请失败')
+			if (error && typeof error === 'object') {
+				console.error('错误详情:', JSON.stringify(error, null, 2))
+			} else {
+				console.error('错误:', error)
+			}
 			throw error
 		}
 	},
