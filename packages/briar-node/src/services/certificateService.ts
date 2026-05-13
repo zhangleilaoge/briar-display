@@ -53,16 +53,42 @@ export const certificateService = {
 	},
 
 	/**
-	 * 创建 DNS TXT 记录用于 ACME 验证
+	 * 创建或更新 DNS TXT 记录用于 ACME 验证
 	 */
 	async createDnsRecord(domain: string, recordName: string, recordValue: string): Promise<number> {
 		const rootDomain = this.extractRootDomain(domain)
 		const subDomain = recordName.replace(`.${rootDomain}`, '')
 
-		console.log(`\n📋 添加 DNS TXT 记录: ${recordName} = ${recordValue}`)
+		console.log(`\n📋 添加/更新 DNS TXT 记录: ${recordName} = ${recordValue}`)
 
 		try {
 			const client = this.getDnsPodClient()
+
+			// 先查询是否已存在同名 TXT 记录
+			const listResult = await client.DescribeRecordList({
+				Domain: rootDomain,
+				Subdomain: subDomain,
+				RecordType: 'TXT',
+			})
+			const existing = listResult?.RecordList?.find(
+				(r: any) => r.Name === subDomain && r.Type === 'TXT',
+			)
+
+			if (existing) {
+				// 更新已有记录
+				await client.ModifyRecord({
+					Domain: rootDomain,
+					RecordId: existing.RecordId,
+					SubDomain: subDomain,
+					RecordType: 'TXT',
+					RecordLine: '默认',
+					Value: recordValue,
+				})
+				console.log(`✅ DNS TXT 记录已更新 (id: ${existing.RecordId})`)
+				return Number(existing.RecordId) || 0
+			}
+
+			// 创建新记录
 			const result = await client.CreateRecord({
 				Domain: rootDomain,
 				SubDomain: subDomain,
@@ -200,6 +226,14 @@ export const certificateService = {
 		console.log(`ACME 服务器: ${acmeDirectoryUrl}`)
 		console.log(`Email: ${acmeEmail}\n`)
 
+		let challenges: Array<{
+			authz: any
+			challenge: any
+			keyAuthorization: string
+			recordId: number
+			dnsRecord: string
+		}> = []
+
 		try {
 			// 1. 初始化 ACME 客户端
 			const client = new acme.Client({
@@ -233,21 +267,15 @@ export const certificateService = {
 			// 4. 处理验证
 			console.log('正在处理 DNS 验证...')
 			const authorizations = await client.getAuthorizations(order)
-			const challenges = await Promise.all(
+			challenges = await Promise.all(
 				authorizations.map(async (authz) => {
 					const challenge = authz.challenges.find((c) => c.type === 'dns-01')
 					if (!challenge) {
 						throw new Error(`未找到 dns-01 challenge for ${authz.identifier.value}`)
 					}
 					const keyAuthorization = await client.getChallengeKeyAuthorization(challenge)
-					// 使用 crypto 方法计算 DNS 记录值（base64url 编码的 sha256）
-					const crypto = await import('crypto')
-					const digest = crypto.createHash('sha256').update(keyAuthorization).digest()
-					const dnsRecord = Buffer.from(digest)
-						.toString('base64')
-						.replace(/\+/g, '-')
-						.replace(/\//g, '_')
-						.replace(/=/g, '')
+					// acme-client 对 dns-01 已自动做 SHA-256 + base64url，直接使用即可
+					const dnsRecord = keyAuthorization
 					console.log(`DNS 记录值 (_acme-challenge.${authz.identifier.value}): ${dnsRecord}`)
 
 					// 自动更新 DNS 记录
@@ -287,9 +315,18 @@ export const certificateService = {
 			// 清理 DNS 记录
 			console.log('ℹ️  DNS 验证已完成，无需手动删除 DNS 记录（保留不影响）')
 
-			// 5. 最终化订单并获取证书
+			// 5. 生成 CSR 并最终化订单
+			console.log('正在生成证书签名请求 (CSR)...')
+			const [, csr] = await acme.forge.createCsr(
+				{
+					altNames: [domain],
+				},
+				Buffer.from(serverKey),
+			)
+			console.log('CSR 生成完成\n')
+
 			console.log('正在最终化订单...')
-			const finalizedOrder = await client.finalizeOrder(order, serverKey)
+			const finalizedOrder = await client.finalizeOrder(order, csr)
 			console.log('订单最终化完成\n')
 
 			console.log('正在获取证书...')
@@ -308,6 +345,20 @@ export const certificateService = {
 				console.error('错误:', error)
 			}
 			throw error
+		} finally {
+			// 清理 DNS 记录（无论成功失败都执行）
+			if (challenges.length > 0) {
+				console.log('\n🧹 清理 DNS TXT 记录...')
+				for (const c of challenges) {
+					if (c.recordId) {
+						try {
+							await this.deleteDnsRecord(c.authz.identifier.value, c.recordId)
+						} catch {
+							// 忽略清理错误
+						}
+					}
+				}
+			}
 		}
 	},
 
