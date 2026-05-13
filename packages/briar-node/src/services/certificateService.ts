@@ -18,17 +18,17 @@ export const certificateService = {
 		action: string,
 		params: Record<string, string | number>,
 	): Promise<Record<string, unknown>> {
-		const secretId = process.env.BRIAR_TX_SEC_ID
-		const secretKey = process.env.BRIAR_TX_SEC_KEY
+		const dnsPodToken = process.env.DNSPOD_TOKEN
 
-		if (!secretId || !secretKey) {
-			console.warn('⚠️  未配置 DNSPOD_SECRET_ID/DNSPOD_SECRET_KEY，跳过自动 DNS 更新')
-			return { status: { code: 0 } }
+		if (!dnsPodToken) {
+			console.warn('⚠️  未配置 DNSPOD_TOKEN，跳过自动 DNS 更新')
+			console.warn('   请在 https://www.dnspod.cn/console/user/token 创建 API Token')
+			return { status: { code: '1' } }
 		}
 
 		// 构建请求参数
 		const body = new URLSearchParams()
-		body.append('login_token', `${secretId},${secretKey}`)
+		body.append('login_token', dnsPodToken)
 		body.append('format', 'json')
 		Object.entries(params).forEach(([key, value]) => {
 			body.append(key, String(value))
@@ -66,7 +66,7 @@ export const certificateService = {
 			}
 
 			const statusCode = (result.status as Record<string, unknown>)?.code
-			if (statusCode !== 0) {
+			if (statusCode !== '1' && statusCode !== 1) {
 				const message = (result.status as Record<string, unknown>)?.message
 				throw new Error(`DNSPod API error (code ${statusCode}): ${message || 'Unknown error'}`)
 			}
@@ -97,18 +97,23 @@ export const certificateService = {
 		const rootDomain = this.extractRootDomain(domain)
 		const subDomain = recordName.replace(`.${rootDomain}`, '')
 
-		console.log('\n📋 需要添加 DNS TXT 记录:')
-		console.log(`   名称: ${recordName}`)
-		console.log('   类型: TXT')
-		console.log(`   值:   ${recordValue}`)
-		console.log('\n   操作步骤:')
-		console.log('   1. 登录腾讯云控制台 https://console.cloud.tencent.com/')
-		console.log('   2. 进入 DNSPod 域名解析')
-		console.log(`   3. 找到 "${rootDomain}" 的记录`)
-		console.log(`   4. 添加新的 TXT 记录，名称为 "${subDomain}"，值为上面的内容`)
-		console.log('   5. 保存后等待 DNS 刷新\n')
+		console.log(`\n📋 添加 DNS TXT 记录: ${recordName} = ${recordValue}`)
 
-		return 0
+		try {
+			const result = await this.callDnsPodApi('Record.Create', {
+				domain: rootDomain,
+				sub_domain: subDomain,
+				record_type: 'TXT',
+				record_line: '默认',
+				value: recordValue,
+			})
+			const recordId = (result.record as Record<string, unknown>)?.id
+			console.log(`✅ DNS TXT 记录已添加 (id: ${recordId})`)
+			return Number(recordId) || 0
+		} catch (error) {
+			console.error('❌ 添加 DNS 记录失败:', error)
+			throw error
+		}
 	},
 
 	/**
@@ -451,10 +456,133 @@ export const certificateService = {
 	},
 
 	/**
+	 * 检查证书是否需要续期
+	 */
+	async shouldRenew(domain: string): Promise<boolean> {
+		const repoRoot = this.findRepoRoot(process.cwd())
+		const certPath = path.join(repoRoot, 'briar-assets/ssl', `${domain}_bundle.crt`)
+
+		if (!fs.existsSync(certPath)) {
+			console.log('证书文件不存在，需要申请新证书')
+			return true
+		}
+
+		try {
+			const { execSync } = await import('child_process')
+			const output = execSync(`openssl x509 -in "${certPath}" -noout -enddate`, {
+				encoding: 'utf-8',
+			})
+			const match = output.match(/notAfter=(.+)/)
+			if (!match) {
+				console.warn('无法解析证书过期时间')
+				return true
+			}
+
+			const expiryDate = new Date(match[1])
+			const now = new Date()
+			const daysUntilExpiry = (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+
+			console.log(`证书过期时间: ${expiryDate.toISOString()}`)
+			console.log(`距离过期还有 ${Math.floor(daysUntilExpiry)} 天`)
+
+			if (daysUntilExpiry <= 30) {
+				console.log('证书将在 30 天内过期，需要续期')
+				return true
+			}
+
+			return false
+		} catch (error) {
+			console.error('检查证书过期时间失败:', error)
+			return true
+		}
+	},
+
+	/**
+	 * 提交证书到 briar-assets 子模块并推送
+	 */
+	async commitAndPushAssets(domain: string): Promise<void> {
+		const { execSync } = await import('child_process')
+		const repoRoot = this.findRepoRoot(process.cwd())
+		const assetsDir = path.join(repoRoot, 'briar-assets')
+
+		console.log('\n📦 提交证书到 briar-assets...')
+
+		try {
+			// 配置 git 用户信息
+			try {
+				execSync('git config user.email', { cwd: assetsDir, stdio: 'pipe' })
+			} catch {
+				execSync('git config user.email "certbot@briar.dev"', { cwd: assetsDir })
+				execSync('git config user.name "Briar CertBot"', { cwd: assetsDir })
+			}
+
+			execSync('git add ssl/', { cwd: assetsDir })
+			execSync(`git commit -m "chore: update SSL certificates for ${domain}"`, { cwd: assetsDir })
+			execSync('git push origin main', { cwd: assetsDir })
+			console.log('✅ briar-assets 已提交并推送')
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : String(error)
+			console.error('❌ briar-assets 提交失败:', msg)
+			throw error
+		}
+	},
+
+	/**
+	 * 更新主仓库的子模块引用并推送
+	 */
+	async updateMainRepoSubmodule(): Promise<void> {
+		const { execSync } = await import('child_process')
+		const repoRoot = this.findRepoRoot(process.cwd())
+
+		console.log('\n📦 更新主仓库子模块引用...')
+
+		try {
+			// 配置 git 用户信息
+			try {
+				execSync('git config user.email', { cwd: repoRoot, stdio: 'pipe' })
+			} catch {
+				execSync('git config user.email "certbot@briar.dev"', { cwd: repoRoot })
+				execSync('git config user.name "Briar CertBot"', { cwd: repoRoot })
+			}
+
+			execSync('git add briar-assets', { cwd: repoRoot })
+			execSync('git commit -m "chore: update briar-assets submodule (certificates)"', {
+				cwd: repoRoot,
+			})
+			execSync('git push origin master', { cwd: repoRoot })
+			console.log('✅ 主仓库子模块已更新')
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : String(error)
+			console.error('❌ 主仓库子模块更新失败:', msg)
+			throw error
+		}
+	},
+
+	/**
+	 * 部署 Nginx 配置（同步证书并重载）
+	 */
+	async deployNginx(): Promise<void> {
+		const { execSync } = await import('child_process')
+		const repoRoot = this.findRepoRoot(process.cwd())
+
+		console.log('\n🚀 部署 Nginx 配置...')
+
+		try {
+			execSync('./scripts/deploy-nginx.sh', { cwd: repoRoot, stdio: 'inherit' })
+			console.log('✅ Nginx 已重载')
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : String(error)
+			console.error('❌ Nginx 部署失败:', msg)
+			throw error
+		}
+	},
+
+	/**
 	 * 完整的证书更新流程
 	 */
 	async renewCertificate(domain: string): Promise<{
 		success: boolean
+		skipped?: boolean
 		certPath?: string
 		keyPath?: string
 		cdnUrls?: { certUrl: string; keyUrl: string }
@@ -462,24 +590,40 @@ export const certificateService = {
 	}> {
 		try {
 			console.log(`\n${'='.repeat(60)}`)
-			console.log(`开始更新证书: ${domain}`)
+			console.log(`🔍 检查证书续期状态: ${domain}`)
 			console.log(`${'='.repeat(60)}\n`)
 
-			// 1. 申请证书
+			// 1. 检查是否需要续期
+			const needsRenew = await this.shouldRenew(domain)
+			if (!needsRenew) {
+				console.log('✅ 证书尚未到期，无需续期')
+				return { success: true, skipped: true }
+			}
+
+			// 2. 申请证书
 			const { cert, key } = await this.requestCertificate(domain)
 
-			// 2. 保存到本地
+			// 3. 保存到本地
 			const { certPath, keyPath } = await this.saveCertificates(
 				cert,
 				key,
 				domain.replace(/\*/g, 'wildcard'),
 			)
 
-			// 3. 上传到 CDN
+			// 4. 上传到 CDN
 			const cdnUrls = await this.uploadCertificatesToCDN(domain.replace(/\*/g, 'wildcard'))
 
+			// 5. 提交到 briar-assets
+			await this.commitAndPushAssets(domain)
+
+			// 6. 更新主仓库子模块
+			await this.updateMainRepoSubmodule()
+
+			// 7. 部署 Nginx
+			await this.deployNginx()
+
 			console.log(`\n${'='.repeat(60)}`)
-			console.log('✅ 证书更新成功')
+			console.log('✅ 证书续期流程全部完成')
 			console.log(`${'='.repeat(60)}\n`)
 
 			return {
@@ -490,7 +634,7 @@ export const certificateService = {
 			}
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error)
-			console.error(`\n❌ 证书更新失败: ${errorMsg}\n`)
+			console.error(`\n❌ 证书续期失败: ${errorMsg}\n`)
 			return {
 				success: false,
 				error: errorMsg,
