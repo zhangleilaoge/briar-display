@@ -32,3 +32,9 @@ backups/
 
 # jetbrains setting folder
 .idea/
+
+# ACME certificates
+.certificates/
+
+# temp scripts
+cert-renew-fetch.js
