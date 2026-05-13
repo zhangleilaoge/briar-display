@@ -26,6 +26,7 @@
 		"jsonwebtoken": "^9.0.2",
 		"mysql2": "^3.17.1",
 		"tencentcloud-sdk-nodejs": "^4.0.0",
+		"tencentcloud-sdk-nodejs-dnspod": "^4.1.213",
 		"tencentcloud-sdk-nodejs-ses": "^4.1.182"
 	},
 	"devDependencies": {

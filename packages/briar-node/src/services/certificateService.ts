@@ -4,6 +4,7 @@ import * as path from 'path'
 import { fileURLToPath } from 'url'
 import * as acme from 'acme-client'
 import COS from 'cos-nodejs-sdk-v5'
+import * as dnspod from 'tencentcloud-sdk-nodejs-dnspod'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -12,70 +13,31 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
  */
 export const certificateService = {
 	/**
-	 * 调用 DNSPod API
+	 * 获取腾讯云云解析 DNSPod 客户端
 	 */
-	async callDnsPodApi(
-		action: string,
-		params: Record<string, string | number>,
-	): Promise<Record<string, unknown>> {
-		const dnsPodToken = process.env.DNSPOD_TOKEN
+	getDnsPodClient(): any {
+		const secretId = process.env.BRIAR_TX_SEC_ID
+		const secretKey = process.env.BRIAR_TX_SEC_KEY
 
-		if (!dnsPodToken) {
-			console.warn('⚠️  未配置 DNSPOD_TOKEN，跳过自动 DNS 更新')
-			console.warn('   请在 https://www.dnspod.cn/console/user/token 创建 API Token')
-			return { status: { code: '1' } }
+		if (!secretId || !secretKey) {
+			throw new Error('Missing BRIAR_TX_SEC_ID or BRIAR_TX_SEC_KEY for Tencent Cloud DNS')
 		}
 
-		// 构建请求参数
-		const body = new URLSearchParams()
-		body.append('login_token', dnsPodToken)
-		body.append('format', 'json')
-		Object.entries(params).forEach(([key, value]) => {
-			body.append(key, String(value))
-		})
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const Client = (dnspod as any).dnspod.v20210323.Client
 
-		const bodyString = body.toString()
-		const url = `https://dnsapi.cn/${action}`
-
-		try {
-			console.log(`📤 DNSPod API 请求: ${action}`)
-			const response = await fetch(url, {
-				method: 'POST',
-				body: bodyString,
-				headers: {
-					'Content-Type': 'application/x-www-form-urlencoded',
-					'User-Agent': 'briar-certificate-service',
+		return new Client({
+			credential: {
+				secretId,
+				secretKey,
+			},
+			region: '',
+			profile: {
+				httpProfile: {
+					endpoint: 'dnspod.tencentcloudapi.com',
 				},
-			})
-
-			const responseText = await response.text()
-
-			// 检查是否是 HTML 错误
-			if (responseText.includes('<html') || responseText.includes('<!DOCTYPE')) {
-				console.error('❌ DNSPod 返回 HTML，可能是认证失败或 API 错误')
-				console.error(`📄 响应内容: ${responseText.substring(0, 200)}`)
-				throw new Error('DNSPod API 返回 HTML，请检查 API 密钥或网络连接')
-			}
-
-			let result: Record<string, unknown>
-			try {
-				result = JSON.parse(responseText) as Record<string, unknown>
-			} catch (e) {
-				console.error(`❌ JSON 解析失败: ${responseText.substring(0, 100)}`)
-				throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`)
-			}
-
-			const statusCode = (result.status as Record<string, unknown>)?.code
-			if (statusCode !== '1' && statusCode !== 1) {
-				const message = (result.status as Record<string, unknown>)?.message
-				throw new Error(`DNSPod API error (code ${statusCode}): ${message || 'Unknown error'}`)
-			}
-
-			return result
-		} catch (error) {
-			const errorMsg = error instanceof Error ? error.message : String(error)
-			throw new Error(`DNSPod API call failed: ${errorMsg}`)
-		}
+			},
+		})
 	},
 
 	/**
@@ -100,14 +62,15 @@ export const certificateService = {
 		console.log(`\n📋 添加 DNS TXT 记录: ${recordName} = ${recordValue}`)
 
 		try {
-			const result = await this.callDnsPodApi('Record.Create', {
-				domain: rootDomain,
-				sub_domain: subDomain,
-				record_type: 'TXT',
-				record_line: '默认',
-				value: recordValue,
+			const client = this.getDnsPodClient()
+			const result = await client.CreateRecord({
+				Domain: rootDomain,
+				SubDomain: subDomain,
+				RecordType: 'TXT',
+				RecordLine: '默认',
+				Value: recordValue,
 			})
-			const recordId = (result.record as Record<string, unknown>)?.id
+			const recordId = result.RecordId
 			console.log(`✅ DNS TXT 记录已添加 (id: ${recordId})`)
 			return Number(recordId) || 0
 		} catch (error) {
@@ -128,9 +91,10 @@ export const certificateService = {
 			const rootDomain = this.extractRootDomain(domain)
 			console.log(`🗑️  删除 DNS 记录: ${recordId}`)
 
-			await this.callDnsPodApi('Record.Remove', {
-				domain: rootDomain,
-				record_id: recordId,
+			const client = this.getDnsPodClient()
+			await client.DeleteRecord({
+				Domain: rootDomain,
+				RecordId: Number(recordId),
 			})
 
 			console.log('✅ DNS 记录已删除')
