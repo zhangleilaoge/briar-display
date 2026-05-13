@@ -105,21 +105,13 @@ export const authController = {
 				code: HTTP_STATUS.OK,
 			})
 		} catch (error) {
-			const message =
-				error instanceof Error && error.message === 'USER_NOT_FOUND'
-					? 'User not found'
-					: 'Failed to send reset code'
-			const statusCode =
-				error instanceof Error && error.message === 'USER_NOT_FOUND'
-					? HTTP_STATUS.NOT_FOUND
-					: HTTP_STATUS.INTERNAL_SERVER_ERROR
 			return c.json<ApiResponse>(
 				{
 					success: false,
-					message,
-					code: statusCode,
+					message: 'Failed to send reset code',
+					code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
 				},
-				statusCode,
+				HTTP_STATUS.INTERNAL_SERVER_ERROR,
 			)
 		}
 	},

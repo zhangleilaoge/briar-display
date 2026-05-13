@@ -5,7 +5,11 @@
 
 export const RouteConfig = {
 	/** 完全公开的路径（前端页面） */
-	PUBLIC_PATHS: new Set(['/briar-display/login', '/briar-display/register']),
+	PUBLIC_PATHS: new Set([
+		'/briar-display/login',
+		'/briar-display/register',
+		'/briar-display/forgot-password',
+	]),
 
 	/** 公开的路径前缀 */
 	PUBLIC_PREFIXES: ['/demo'],

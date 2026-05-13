@@ -82,10 +82,10 @@ export const authService = {
 	},
 
 	async sendPasswordResetCode(email: string) {
-		// 验证用户是否存在
+		// 验证用户是否存在，不存在则静默返回（防止枚举攻击）
 		const user = await userDal.findByEmail(email)
 		if (!user) {
-			throw new Error('USER_NOT_FOUND')
+			return
 		}
 
 		// 生成验证码
