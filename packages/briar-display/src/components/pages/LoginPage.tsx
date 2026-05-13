@@ -100,7 +100,7 @@ export default function LoginPage() {
 										<input type="checkbox" className="h-4 w-4 rounded border-input" />
 										记住我
 									</label>
-									<a href="/forgot-password" className="text-primary hover:underline">
+									<a href="/briar-display/forgot-password" className="text-primary hover:underline">
 										忘记密码？
 									</a>
 								</div>
