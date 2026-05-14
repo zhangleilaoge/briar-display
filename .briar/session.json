@@ -1,0 +1,13 @@
+{
+	"messages": [
+		{
+			"role": "user",
+			"content": "/help"
+		},
+		{
+			"role": "assistant",
+			"content": "/sub <prompt>  - spawn a sub-agent to run task in background\n/sub-list      - list all sub-agents\n/sub-view <id> - view full output of a sub-agent\n/new           - start a new session (clear history)\n/exit, /quit   - exit briar\nCtrl+C         - cancel current request\nCtrl+D         - exit briar\n↑ ↓            - scroll messages"
+		}
+	],
+	"subAgents": []
+}
