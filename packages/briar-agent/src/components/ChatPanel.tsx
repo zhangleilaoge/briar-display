@@ -9,11 +9,13 @@ export function ChatPanel({
 	isLoading,
 	scrollRef,
 	onScroll,
+	onContentHeightChange,
 }: {
 	messages: Message[]
 	isLoading: boolean
 	scrollRef: React.RefObject<ScrollViewRef | null>
-	onScroll: () => void
+	onScroll: (offset: number) => void
+	onContentHeightChange?: (height: number, previousHeight: number) => void
 }) {
 	return (
 		<Box width="70%" flexDirection="column" paddingRight={1}>
@@ -25,7 +27,10 @@ export function ChatPanel({
 					ref={scrollRef}
 					onScroll={onScroll}
 					flexGrow={1}
-					onContentHeightChange={() => setTimeout(() => scrollRef.current?.scrollToBottom(), 10)}
+					onContentHeightChange={(height, prevHeight) => {
+						onContentHeightChange?.(height, prevHeight)
+						setTimeout(() => scrollRef.current?.scrollToBottom(), 10)
+					}}
 				>
 					{messages.map((msg, i) => (
 						<Box key={i} flexDirection="row" marginBottom={1}>

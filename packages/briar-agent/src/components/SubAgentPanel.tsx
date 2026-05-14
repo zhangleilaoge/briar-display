@@ -40,10 +40,21 @@ export function SubAgentPanel({
 								</Text>
 								<Text color="gray"> [{agent.status}]</Text>
 							</Box>
-							{lastOut && (
+							<Box paddingX={1}>
+								<Text color="gray" wrap="truncate-end">
+									{agent.prompt.slice(0, 40)}
+								</Text>
+							</Box>
+							{lastOut ? (
 								<Box paddingX={1}>
 									<Text color="gray" wrap="truncate-end">
 										{lastOut.slice(0, 40)}
+									</Text>
+								</Box>
+							) : (
+								<Box paddingX={1}>
+									<Text color="gray" wrap="truncate-end">
+										(no output)
 									</Text>
 								</Box>
 							)}

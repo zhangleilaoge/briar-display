@@ -3,7 +3,7 @@ import { getAgentDisplayName, getAgentName } from './agent.js'
 import { sendChatMessage } from './chat.js'
 import type { KimiCode } from './client/index.js'
 import { getHelpText } from './commands.js'
-import type { Session } from './session.js'
+import type { Session } from './types.js'
 import { createSession, getSessions, saveCurrentSession, saveSessions } from './session.js'
 import { createSubAgent } from './sub-agent.js'
 import type { FocusArea, Message, SubAgent } from './types.js'
@@ -43,6 +43,18 @@ function addSystemMessage(ctx: RouterCtx, userContent: string, assistantContent:
 export async function handleCommand(trimmed: string, ctx: RouterCtx): Promise<boolean> {
 	if (trimmed === '/exit' || trimmed === '/quit') {
 		ctx.exit()
+		return true
+	}
+
+	// /clear
+	if (trimmed === '/clear') {
+		for (const agent of ctx.subAgents) {
+			if (agent.process && !agent.process.killed) agent.process.kill()
+		}
+		ctx.setMessages([])
+		ctx.setSubAgents([])
+		ctx.nextSubAgentIdRef.current = 1
+		ctx.setInputValue('')
 		return true
 	}
 
@@ -128,8 +140,131 @@ export async function handleCommand(trimmed: string, ctx: RouterCtx): Promise<bo
 		return true
 	}
 
+	// /sub-list
+	if (trimmed === '/sub-list') {
+		const list = ctx.subAgents
+			.map((a) => {
+				const name = getAgentDisplayName(a, ctx.subAgents)
+				const outLen = a.output.join('').length
+				return `${name} [${a.status}] — ${a.prompt}\n  输出: ${outLen} chars`
+			})
+			.join('\n')
+		addSystemMessage(ctx, trimmed, list || 'No sub-agents running.')
+		ctx.setInputValue('')
+		return true
+	}
+
+	// /sub-view <id|name>
+	if (trimmed.startsWith('/sub-view')) {
+		const idOrName = trimmed.slice(9).trim()
+		let agent = ctx.subAgents.find((a) => a.id === Number.parseInt(idOrName))
+		if (!agent) {
+			agent = ctx.subAgents.find((a) => a.name.toLowerCase() === idOrName.toLowerCase())
+		}
+		const content = agent
+			? `${getAgentDisplayName(agent, ctx.subAgents)} [${agent.status}]:\n${agent.output.slice(-20).join('')}`
+			: `${idOrName} not found.`
+		addSystemMessage(ctx, trimmed, content)
+		ctx.setInputValue('')
+		return true
+	}
+
+	// /subChat <id|name> <prompt>
+	if (trimmed.startsWith('/subChat')) {
+		const rest = trimmed.slice(8).trim()
+		const spaceIdx = rest.indexOf(' ')
+		const idOrName = spaceIdx > 0 ? rest.slice(0, spaceIdx) : rest
+		const prompt = spaceIdx > 0 ? rest.slice(spaceIdx + 1).trim() : ''
+		let agent = ctx.subAgents.find((a) => a.id === Number.parseInt(idOrName))
+		if (!agent) {
+			agent = ctx.subAgents.find((a) => a.name.toLowerCase() === idOrName.toLowerCase())
+		}
+
+		if (!agent || !idOrName) {
+			addSystemMessage(ctx, trimmed, 'Usage: /subChat <id|name> <prompt>')
+			ctx.setInputValue('')
+			return true
+		}
+		if (!agent.sessionId) {
+			addSystemMessage(ctx, trimmed, `${agent.name} has no session ID. Cannot resume.`)
+			ctx.setInputValue('')
+			return true
+		}
+
+		ctx.setSubAgents((prev) => {
+			const next = [...prev]
+			const target = next.find((x) => x.id === agent!.id)
+			if (target) target.status = 'running'
+			return next
+		})
+		ctx.setInputValue('')
+		ctx.setIsLoading(true)
+
+		const resumeChild = spawn(
+			'kimi',
+			['-r', agent.sessionId, '-y', '--quiet', '-p', prompt || 'continue'],
+			{ env: { ...process.env } },
+		)
+		const resumeOutput: string[] = []
+
+		const filterResume = (text: string): string => {
+			return text
+				.split('\n')
+				.filter((line) => !line.includes('To resume this session:'))
+				.join('\n')
+		}
+
+		const appendOutput = (text: string) => {
+			if (!text) return
+			resumeOutput.push(text)
+			ctx.setSubAgents((prev) => {
+				const next = [...prev]
+				const target = next.find((x) => x.id === agent!.id)
+				if (target) target.output.push(text)
+				return next
+			})
+		}
+
+		resumeChild.stdout?.on('data', (data: Buffer) => appendOutput(filterResume(String(data))))
+		resumeChild.stderr?.on('data', (data: Buffer) => appendOutput(filterResume(String(data))))
+		resumeChild.on('close', (code) => {
+			ctx.setIsLoading(false)
+			const result = resumeOutput.join('').trim()
+			const a = ctx.subAgents.find((x) => x.id === agent!.id)
+			const displayName = a ? getAgentDisplayName(a, ctx.subAgents) : agent!.name
+			ctx.setSubAgents((prev) => {
+				const next = [...prev]
+				const target = next.find((x) => x.id === agent!.id)
+				if (target) target.status = code === 0 ? 'done' : 'error'
+				return next
+			})
+			if (code === 0 && result) {
+				ctx.setMessages((prev) => [
+					...prev,
+					{
+						role: 'assistant',
+						sender: agent!.name,
+						senderId: agent!.id,
+						content: `[${displayName} continued]\n\n${result}`,
+					},
+				])
+			} else if (code !== 0) {
+				ctx.setMessages((prev) => [
+					...prev,
+					{
+						role: 'assistant',
+						sender: agent!.name,
+						senderId: agent!.id,
+						content: `[${displayName} failed]\n\n${result || 'No output'}`,
+					},
+				])
+			}
+		})
+		return true
+	}
+
 	// /sub <prompt>
-	if (trimmed.startsWith('/sub')) {
+	if (trimmed === '/sub' || trimmed.startsWith('/sub ')) {
 		const prompt = trimmed.slice(4).trim()
 		if (!prompt) {
 			addSystemMessage(ctx, trimmed, 'Usage: /sub <prompt>')
@@ -148,107 +283,6 @@ export async function handleCommand(trimmed: string, ctx: RouterCtx): Promise<bo
 		)
 		addSystemMessage(ctx, trimmed, `Created ${displayName}: ${prompt}`)
 		ctx.setInputValue('')
-		return true
-	}
-
-	// /sub-list
-	if (trimmed === '/sub-list') {
-		const list = ctx.subAgents
-			.map((a) => `${getAgentDisplayName(a, ctx.subAgents)} [${a.status}]`)
-			.join('\n')
-		addSystemMessage(ctx, trimmed, list || 'No sub-agents running.')
-		ctx.setInputValue('')
-		return true
-	}
-
-	// /sub-view <id>
-	if (trimmed.startsWith('/sub-view')) {
-		const id = Number.parseInt(trimmed.slice(9).trim())
-		const agent = ctx.subAgents.find((a) => a.id === id)
-		const content = agent
-			? `${getAgentDisplayName(agent, ctx.subAgents)} [${agent.status}]:\n${agent.output.slice(-20).join('')}`
-			: `${getAgentName(id)} not found.`
-		addSystemMessage(ctx, trimmed, content)
-		ctx.setInputValue('')
-		return true
-	}
-
-	// /sub-del <id>
-	if (trimmed.startsWith('/sub-del')) {
-		const id = Number.parseInt(trimmed.slice(8).trim())
-		const agent = ctx.subAgents.find((a) => a.id === id)
-		if (!agent) {
-			addSystemMessage(ctx, trimmed, `${getAgentName(id)} not found.`)
-			ctx.setInputValue('')
-			return true
-		}
-		if (agent.process && !agent.process.killed) agent.process.kill()
-		ctx.setSubAgents((prev) => prev.filter((a) => a.id !== id))
-		addSystemMessage(ctx, trimmed, `${getAgentDisplayName(agent, ctx.subAgents)} deleted.`)
-		ctx.setInputValue('')
-		return true
-	}
-
-	// /subChat <id> <prompt>
-	if (trimmed.startsWith('/subChat')) {
-		const rest = trimmed.slice(8).trim()
-		const spaceIdx = rest.indexOf(' ')
-		const idStr = spaceIdx > 0 ? rest.slice(0, spaceIdx) : rest
-		const prompt = spaceIdx > 0 ? rest.slice(spaceIdx + 1).trim() : ''
-		const id = Number.parseInt(idStr)
-		const agent = ctx.subAgents.find((a) => a.id === id)
-
-		if (!agent || !idStr) {
-			addSystemMessage(ctx, trimmed, 'Usage: /subChat <id> <prompt>')
-			ctx.setInputValue('')
-			return true
-		}
-		if (!agent.sessionId) {
-			addSystemMessage(ctx, trimmed, `${getAgentName(id)} has no session ID. Cannot resume.`)
-			ctx.setInputValue('')
-			return true
-		}
-
-		addSystemMessage(ctx, trimmed, `Resuming ${getAgentName(id)}...`)
-		ctx.setInputValue('')
-		ctx.setIsLoading(true)
-
-		const resumeChild = spawn(
-			'kimi',
-			['-r', agent.sessionId, '-y', '--quiet', '-p', prompt || 'continue'],
-			{ env: { ...process.env } },
-		)
-		const resumeOutput: string[] = []
-
-		resumeChild.stdout?.on('data', (data: Buffer) => resumeOutput.push(String(data)))
-		resumeChild.stderr?.on('data', (data: Buffer) => resumeOutput.push(String(data)))
-		resumeChild.on('close', (code) => {
-			ctx.setIsLoading(false)
-			const result = resumeOutput.join('').trim()
-			const a = ctx.subAgents.find((x) => x.id === id)
-			const displayName = a ? getAgentDisplayName(a, ctx.subAgents) : getAgentName(id)
-			if (code === 0 && result) {
-				ctx.setMessages((prev) => [
-					...prev,
-					{
-						role: 'assistant',
-						sender: getAgentName(id),
-						senderId: id,
-						content: `[${displayName} continued]\n\n${result}`,
-					},
-				])
-			} else if (code !== 0) {
-				ctx.setMessages((prev) => [
-					...prev,
-					{
-						role: 'assistant',
-						sender: getAgentName(id),
-						senderId: id,
-						content: `[${displayName} failed]\n\n${result || 'No output'}`,
-					},
-				])
-			}
-		})
 		return true
 	}
 

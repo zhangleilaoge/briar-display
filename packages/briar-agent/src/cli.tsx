@@ -10,6 +10,7 @@ import { Header } from './components/Header.js'
 import { InputBar } from './components/InputBar.js'
 import { SessionPanel } from './components/SessionPanel.js'
 import { SubAgentPanel } from './components/SubAgentPanel.js'
+import { mouseEmitter } from './mouse-stdin.js'
 import {
 	createSession,
 	formatSessionName,
@@ -45,11 +46,15 @@ function App({
 	const [completionMode, setCompletionMode] = useState(false)
 	const [completionIndex, setCompletionIndex] = useState(0)
 	const [completionItems, setCompletionItems] = useState<typeof COMMANDS>([])
+	const [scrollInfo, setScrollInfo] = useState({ offset: 0, content: 0, viewport: 0 })
 
 	// ---- refs (mutable state, no re-render) ----
 	const abortCtrlRef = useRef<AbortController | null>(null)
 	const nextSubAgentIdRef = useRef(1)
 	const stickySenderIdRef = useRef<number | undefined>(undefined)
+	const historyIndexRef = useRef(-1)
+	const completionItemsRef = useRef(completionItems)
+	completionItemsRef.current = completionItems
 
 	// ---- derived: sticky label ----
 	const stickyLabel = (() => {
@@ -121,6 +126,17 @@ function App({
 		}
 	}, [stdout])
 
+	useEffect(() => {
+		const onWheel = (dir: string) => {
+			if (dir === 'up') scrollRef.current?.scrollBy(-3)
+			else if (dir === 'down') scrollRef.current?.scrollBy(3)
+		}
+		mouseEmitter.on('wheel', onWheel)
+		return () => {
+			mouseEmitter.off('wheel', onWheel)
+		}
+	}, [])
+
 	// ---- helpers ----
 
 	const archiveCurrentSession = useCallback(() => {
@@ -142,6 +158,7 @@ function App({
 	}, [currentSessionId, messages, subAgents])
 
 	const handleInputChange = useCallback((value: string) => {
+		historyIndexRef.current = -1
 		setInputValue(value)
 		if (value.startsWith('/') && !value.includes(' ')) {
 			const prefix = value.toLowerCase()
@@ -226,11 +243,11 @@ function App({
 				return
 			}
 			if (key.downArrow) {
-				setCompletionIndex((p) => Math.min(completionItems.length - 1, p + 1))
+				setCompletionIndex((p) => Math.min(completionItemsRef.current.length - 1, p + 1))
 				return
 			}
 			if (key.return || key.tab) {
-				const cmd = completionItems[completionIndex]
+				const cmd = completionItemsRef.current[completionIndex]
 				if (cmd) {
 					setInputValue(`${cmd.name} `)
 					setCompletionMode(false)
@@ -244,6 +261,17 @@ function App({
 		}
 
 		if (focus === 'chat') {
+			if (key.leftArrow && inputValue === '') {
+				const userMessages = messages.filter((m) => m.role === 'user')
+				if (userMessages.length > 0) {
+					historyIndexRef.current = Math.min(historyIndexRef.current + 1, userMessages.length - 1)
+					const msg = userMessages[userMessages.length - 1 - historyIndexRef.current]
+					if (msg) {
+						setInputValue(msg.content)
+					}
+				}
+				return
+			}
 			if (key.rightArrow && inputValue === '' && subAgents.length > 0) {
 				setFocus('subAgents')
 				setSelectedSubAgentIndex(subAgents.length - 1)
@@ -268,7 +296,7 @@ function App({
 			}
 			if (key.return) {
 				const agent = subAgents[selectedSubAgentIndex]
-				if (agent) setInputValue(`/subChat ${agent.id} `)
+				if (agent) setInputValue(`/subChat ${agent.name} `)
 				setFocus('chat')
 			}
 			if (input === 'd' || key.delete) {
@@ -313,12 +341,45 @@ function App({
 				}
 				setFocus('chat')
 			}
+			if (input === 'd' || key.delete) {
+				const selected = allSessions[selectedSessionIndex]
+				if (!selected) return
+				const sessions = getSessions()
+				const idx = sessions.findIndex((s) => s.id === selected.id)
+				if (idx >= 0) sessions.splice(idx, 1)
+				saveSessions(sessions)
+				setAllSessions(sessions)
+				if (selected.id === currentSessionId) {
+					const remaining = sessions[0]
+					if (remaining) {
+						setCurrentSessionId(remaining.id)
+						setCurrentSessionIdState(remaining.id)
+						setMessages(remaining.messages)
+						setSubAgents(
+							remaining.subAgents.map((a) => ({
+								...a,
+								status: a.status === 'running' ? 'error' : a.status,
+							})),
+						)
+						nextSubAgentIdRef.current =
+							remaining.subAgents.reduce((max, a) => Math.max(max, a.id), 0) + 1
+					} else {
+						const s = createSession()
+						setCurrentSessionId(s.id)
+						setCurrentSessionIdState(s.id)
+						setMessages([])
+						setSubAgents([])
+						nextSubAgentIdRef.current = 1
+					}
+				}
+				setSelectedSessionIndex((p) => Math.max(0, Math.min(p, sessions.length - 1)))
+			}
 		}
 	})
 
 	return (
 		<Box flexDirection="column" height={stdout.rows}>
-			<Header label={stickyLabel} senderId={stickySenderIdRef.current} />
+			<Header label={stickyLabel} senderId={stickySenderIdRef.current} scrollInfo={scrollInfo} />
 
 			<Box flexDirection="row" flexGrow={1} overflow="hidden">
 				{focus === 'sessions' ? (
@@ -326,29 +387,47 @@ function App({
 						sessions={allSessions}
 						selectedIndex={selectedSessionIndex}
 						currentId={currentSessionId}
-					/>
+			/>
 				) : (
 					<ChatPanel
 						messages={messages}
 						isLoading={isLoading}
 						scrollRef={scrollRef}
-						onScroll={() => {}}
+						onScroll={(offset: number) => {
+							const ref = scrollRef.current
+							if (!ref) return
+							setScrollInfo({
+								offset,
+								content: ref.getContentHeight(),
+								viewport: ref.getViewportHeight(),
+							})
+						}}
+						onContentHeightChange={() => {
+								const ref = scrollRef.current
+								if (!ref) return
+								setScrollInfo({
+									offset: ref.getScrollOffset(),
+									content: ref.getContentHeight(),
+									viewport: ref.getViewportHeight(),
+								})
+							}}
 					/>
 				)}
 				<SubAgentPanel subAgents={subAgents} focus={focus} selectedIndex={selectedSubAgentIndex} />
 			</Box>
 
-			{completionMode && (
-				<CompletionPopup items={completionItems} selectedIndex={completionIndex} />
-			)}
-
-			<InputBar
-				query={inputValue}
-				focus={focus}
-				completionMode={completionMode}
-				onChange={handleInputChange}
-				onSubmit={handleSubmit}
-			/>
+			<Box flexDirection="column" flexShrink={0}>
+				{completionMode && (
+					<CompletionPopup items={completionItems} selectedIndex={completionIndex} />
+				)}
+				<InputBar
+					query={inputValue}
+					focus={focus}
+					completionMode={completionMode}
+					onChange={handleInputChange}
+					onSubmit={handleSubmit}
+				/>
+			</Box>
 		</Box>
 	)
 }

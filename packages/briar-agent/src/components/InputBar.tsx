@@ -1,7 +1,7 @@
 import { Box, Text } from 'ink'
-import TextInput from 'ink-text-input'
 import React from 'react'
 import type { FocusArea } from '../types.js'
+import { TextInput } from './TextInput.js'
 
 export function InputBar({
 	query,
@@ -21,7 +21,7 @@ export function InputBar({
 			{focus === 'subAgents' ? (
 				<Text color="yellow">{'  [←/Esc=back  ↑↓=select  Enter=chat  d=del]'}</Text>
 			) : focus === 'sessions' ? (
-				<Text color="yellow">{'  [←/Esc=cancel  ↑↓=select  Enter=switch]'}</Text>
+				<Text color="yellow">{'  [←/Esc=cancel  ↑↓=select  Enter=switch  d=del]'}</Text>
 			) : (
 				<>
 					<Box width={2} flexShrink={0}>
@@ -34,6 +34,7 @@ export function InputBar({
 							onSubmit={(v) => {
 								if (!completionMode) onSubmit(v)
 							}}
+							focus={focus === 'chat'}
 						/>
 					</Box>
 				</>

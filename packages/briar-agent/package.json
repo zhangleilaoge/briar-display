@@ -17,6 +17,7 @@
 	},
 	"dependencies": {
 		"blessed": "^0.1.81",
+		"chalk": "^4.1.2",
 		"claude-code-sdk": "^0.1.0",
 		"dotenv": "16",
 		"ink": "^7.0.3",

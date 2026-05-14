@@ -45,21 +45,21 @@ export class BaseClient {
 	/**
 	 * Execute a message creation via Kimi HTTP API (Anthropic compatible)
 	 */
-	protected async executeApi(params: AnthropicMessageCreateParams) {
+	async executeApi(params: AnthropicMessageCreateParams) {
 		return this.apiExecutor.messagesCreate(params)
 	}
 
 	/**
 	 * Execute a streaming message creation via Kimi HTTP API
 	 */
-	protected executeApiStream(params: AnthropicMessageCreateParams) {
+	executeApiStream(params: AnthropicMessageCreateParams) {
 		return this.apiExecutor.messagesCreateStream(params)
 	}
 
 	/**
 	 * Execute a task via local kimi CLI
 	 */
-	protected async executeCli(prompt: string, options?: { workDir?: string }) {
+	async executeCli(prompt: string, options?: { workDir?: string }) {
 		return this.cliExecutor.execute({
 			prompt,
 			workDir: options?.workDir,
@@ -70,7 +70,7 @@ export class BaseClient {
 	/**
 	 * Execute a streaming task via local kimi CLI
 	 */
-	protected executeCliStream(prompt: string, options?: { workDir?: string }) {
+	executeCliStream(prompt: string, options?: { workDir?: string }) {
 		return this.cliExecutor.executeStream({
 			prompt,
 			workDir: options?.workDir,

@@ -5,7 +5,23 @@ import { render } from 'ink'
 import React from 'react'
 import { App } from './cli.js'
 import { KimiCode } from './client/index.js'
+import { createFilteredStdin } from './mouse-stdin.js'
 import { runPlainInteractive, runSingle } from './modes.js'
+
+/* 启用终端鼠标滚轮捕获，退出时恢复 */
+process.stdout.write('\x1b[?1000h\x1b[?1006h')
+const disableMouse = () => {
+	process.stdout.write('\x1b[?1000l\x1b[?1006l')
+}
+process.on('exit', disableMouse)
+process.on('SIGINT', () => {
+	disableMouse()
+	process.exit()
+})
+process.on('SIGTERM', () => {
+	disableMouse()
+	process.exit()
+})
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -57,7 +73,10 @@ export async function main() {
 	if (!prompt) {
 		if (!args.includes('--no-stream')) stream = true
 		if (process.stdin.isTTY) {
-			render(<App kimi={kimi} useCli={useCli} streamMode={stream} />)
+			const filteredStdin = createFilteredStdin()
+			render(<App kimi={kimi} useCli={useCli} streamMode={stream} />, {
+				stdin: filteredStdin as any,
+			})
 		} else {
 			await runPlainInteractive(kimi, useCli, stream)
 		}

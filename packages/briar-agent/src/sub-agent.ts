@@ -67,7 +67,6 @@ export function createSubAgent(prompt: string, options: CreateSubAgentOptions): 
 			return next
 		})
 
-		if (code !== 0) return
 		const full = outputBuffer.join('').trim()
 		if (!full) return
 		const MAX = 3000
@@ -77,11 +76,12 @@ export function createSubAgent(prompt: string, options: CreateSubAgentOptions): 
 				: full
 		const all = [...options.subAgents, newAgent]
 		const displayName = getAgentDisplayName(newAgent, all)
+		const label = code === 0 ? 'result' : 'failed'
 		options.onMessage({
 			role: 'assistant',
 			sender: name,
 			senderId: id,
-			content: `[${displayName} result]\n\n${display}`,
+			content: `[${displayName} ${label}]\n\n${display}`,
 		})
 	})
 
