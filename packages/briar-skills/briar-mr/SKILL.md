@@ -1,12 +1,14 @@
 ---
 name: briar-mr
 description: >
-  GitLab Merge Request（MR）全能工具：创建 MR、获取评论、发表评论、按评论修复代码。
+  GitLab Merge Request（MR）全能工具：创建 MR、获取评论、发表评论、回复 Discussion、获取 Pipeline、按评论修复代码。
   触发场景：
   1. 用户说"提个 MR"、"创建 MR"、"提交合并请求" → 触发【创建 MR】（自动推导标题和内容）
   2. 用户给出 GitLab MR 链接，要求"看看评论"、"获取评论"、"列出评论" → 触发【获取评论】
-  3. 用户要求在 MR 中"发表评论"、"加一条评论"、"回复评论" → 触发【发表评论】
-  4. 用户要求"按评论修复代码"、"处理 code review"、"修掉评论里的问题" → 触发【修复评论】
+  3. 用户要求在 MR 中"发表评论"、"加一条评论" → 触发【发表评论】
+  4. 用户要求"回复这些评论"、"逐条回复"、"给评论写回复" → 触发【回复 Discussion】
+  5. 用户说"看看 pipeline"、"CI 状态"、"构建结果" → 触发【获取 Pipeline】
+  6. 用户要求"按评论修复代码"、"处理 code review"、"修掉评论里的问题" → 触发【修复评论】
   本 skill 不会默认执行全部能力，严格根据用户意图触发对应行为。
 ---
 
@@ -164,13 +166,14 @@ DiffNote 额外标注：文件路径 + 行号。
 
 ## 行为三：发表评论（comment）
 
-**触发条件**：用户说"在 MR 里加条评论"、"回复这条评论"、"发表一下意见"。
+**触发条件**：用户说"在 MR 里加条评论"、"发表一下意见"。
 
-**只做一件事**：在 MR 中发表一条新评论，**不获取、不修复**。
+**只做一件事**：在 MR 中**发表一条全新的顶层评论**，**不获取、不修复、不回复已有 discussion**。
 
 ### API
 
 ```bash
+# 注意：此 API 发表的是 MR 的顶层 Note，不会关联到任何 Discussion/DiffNote
 curl -s -X POST \
   --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
   --header "Content-Type: application/json" \
@@ -191,19 +194,140 @@ curl -s -X POST \
 
 ---
 
-## 行为四：修复评论（fix）
+## 行为四：回复 Discussion（reply）
+
+**触发条件**：用户要求"回复这些评论"、"逐条回复"、"给评论写回复"。
+
+> 此行为可**独立执行**，也可在「修复评论」后由用户要求执行。不需要必须先修复才能回复——用户可能只想对已有评论写回复而不修改代码。
+
+**只做一件事**：在已有的 Discussion（包括 DiffNote 和 DiscussionNote）下追加回复。
+
+> **重要区别**：DiffNote 和 DiscussionNote 都属于 Discussion，**必须在 discussion 下回复**，用 `/notes` API 发表的新评论不会出现在原 discussion 的线程中，reviewer 看不到。
+
+### API
+
+```bash
+# 在指定 discussion 下追加回复
+# discussion_id 从 fetch discussions 的返回中获取（字段名为 id）
+curl -s -X POST \
+  --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  --header "Content-Type: application/json" \
+  --data '{"body":"回复内容"}' \
+  "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID/discussions/$DISCUSSION_ID/notes"
+```
+
+或直接用脚本：
+```bash
+./packages/briar-skills/briar-mr/scripts/briar-mr.sh reply <domain> <project_path> <mr_iid> <discussion_id> "回复内容"
+```
+
+### ⚠️ Shell JSON 引号坑（必看）
+
+回复内容中经常包含反引号 `` ` ``、双引号 `"`、单引号 `'`（如代码片段 `alt=""`），直接在 `--data` 中拼接 JSON 会导致 bash 解析失败。
+
+**推荐方案 A：用 `jq` 构造 JSON（最稳）**
+```bash
+BODY="已修复，将 \`alt=\"\"\` 改为 \`alt={item.content || ''}\` ✅"
+JSON_PAYLOAD=$(jq -n --arg body "$BODY" '{body: $body}')
+curl -s -X POST \
+  --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  --header "Content-Type: application/json" \
+  --data "$JSON_PAYLOAD" \
+  "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID/discussions/$DISCUSSION_ID/notes"
+```
+
+**推荐方案 B：写临时文件**
+```bash
+cat > /tmp/reply.json << 'EOF'
+{"body":"已修复，将 `alt=\"\"` 改为 `alt={item.content || ''}` ✅"}
+EOF
+curl -s -X POST \
+  --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  --header "Content-Type: application/json" \
+  --data @/tmp/reply.json \
+  "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID/discussions/$DISCUSSION_ID/notes"
+```
+
+### 回复内容模板
+
+| 场景 | 模板 |
+|------|------|
+| 已修复 | `已修复，将 xxx 改为 yyy ✅` 或 `已修复，移除了未使用的 zzz ✅` |
+| 跳过（防御性建议） | `该建议属于防御性优化，当前异常场景极少，增加处理逻辑会增加代码复杂度且收益有限，建议保持现状。⏸️` |
+| 跳过（业务待确认） | `该 TODO/设计涉及业务进度，需产品/后端确认 xxx 是否已就绪后才能处理。当前保留可避免遗漏，建议合入前与相关同学确认。⏸️` |
+| 跳过（无法确认 DOM/结构） | `该建议取决于页面实际 xxx 方式，当前代码在 yyy 场景下有效。当前无法从代码层面 100% 确认，贸然修改可能导致 zzz 失效。如后续确认存在问题可针对性调整。⏸️` |
+
+### 标记 Discussion 为已解决（resolved）
+
+对于已修复且回复过的 discussion，可以标记为 resolved（可选，取决于团队习惯）：
+
+```bash
+curl -s -X PUT \
+  --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  --header "Content-Type: application/json" \
+  --data '{"resolved": true}' \
+  "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID/discussions/$DISCUSSION_ID"
+```
+
+---
+
+## 行为五：获取 Pipeline（pipeline）
+
+**触发条件**：用户说"看看 pipeline"、"CI 怎么样"、"构建状态"、"检查构建结果"。
+
+**只做一件事**：获取 MR 关联的 Pipeline 信息和各 Job 的执行状态。
+
+### API
+
+```bash
+export GITLAB_TOKEN=$(grep GITLAB_TOKEN /Users/zhanglei/Documents/projects/briar-display/packages/briar-skills/.env | cut -d= -f2-)
+ENCODED_PATH=$(echo "$PROJECT_PATH" | sed 's/\//%2F/g')
+
+# 获取 MR 详情中的 head_pipeline
+curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID" | jq '.head_pipeline'
+
+# 获取 Pipeline 的 Jobs
+curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/pipelines/$PIPELINE_ID/jobs"
+```
+
+或直接用脚本：
+```bash
+./packages/briar-skills/briar-mr/scripts/briar-mr.sh pipeline <domain> <project_path> <mr_iid>
+```
+
+### 输出格式
+
+整理成清晰的表格展示：
+
+| Job 名称 | Stage | 状态 | 耗时 | 失败原因 |
+|---------|-------|------|------|---------|
+| lint | lint | ❌ failed | 283s | - |
+| test | test | ✅ passed | 45s | - |
+| build | build | ⏳ running | - | - |
+
+同时展示 Pipeline 总体信息：状态、耗时、链接。
+
+---
+
+## 行为六：修复评论（fix）
 
 **触发条件**：用户说"按评论修复"、"处理 code review"、"修掉问题"、"分析并修复"。
 
-**依赖行为二**：必须先获取所有评论，再分析和修复。
+### 行为依赖
 
-### 步骤
+```
+获取评论（行为二） ← 修复评论（行为五） → 回复 Discussion（行为四，可选）
+```
 
-1. **获取评论**（同行为二）
-2. **分析合理性**：逐条判断是否合理、是否该修复
-3. **执行修复**：合理的修复，不合理的跳过并说明原因
-4. **验证**：TypeScript 编译检查
-5. **输出总结**
+- **修复评论**内部需要先**获取评论**（同行为二），分析后再修复。
+- **回复 Discussion**不是修复评论的子步骤，而是一个**可选的后续独立行为**。用户可能只修复不回复，也可能修复后要求逐条回复。
+- 不要自动执行回复 Discussion，必须等用户明确要求后再触发。
+
+### 工作流程
+
+**获取评论** → 逐条分析合理性 → 执行修复（合理的）/ 跳过并说明原因（不合理的） → TypeScript 编译检查 → 输出总结表格
 
 ### 评论判断标准
 
@@ -251,13 +375,15 @@ https://gitlab.qima-inc.com/wsc-node/wsc-pc-channel/-/merge_requests/932
 
 ---
 
-## 四种行为速查
+## 六种行为速查
 
 | 行为 | 触发关键词 | 所需权限 | 自动执行？ |
 |------|-----------|---------|-----------|
 | 创建 MR | "提个 MR"、"创建 MR"、"提交合并请求" | `api` | 是（自动推导标题内容） |
 | 获取评论 | "看看评论"、"获取评论"、"列出" | `read_api` | 是 |
-| 发表评论 | "发表评论"、"加条评论"、"回复" | `api` | 需确认内容 |
+| 发表评论 | "发表评论"、"加条评论" | `api` | 需确认内容 |
+| 回复 Discussion | "回复这些评论"、"逐条回复"、"给评论写回复" | `api` | 需确认内容 |
+| 获取 Pipeline | "看看 pipeline"、"CI 状态"、"构建结果" | `read_api` | 是 |
 | 修复评论 | "修复"、"处理 review"、"修掉" | `read_api` | 是（分析后） |
 
-**重要**：用户只说"MR 链接"而没有明确意图时，默认触发【获取评论】，**不要自动修复**。
+**重要**：用户只说"MR 链接"而没有明确意图时，默认触发【获取评论】，**不要自动修复**；修复后不要自动回复 Discussion，需等用户明确要求。

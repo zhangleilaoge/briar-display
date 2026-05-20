@@ -3,6 +3,7 @@
 # Usage:
 #   ./briar-mr.sh fetch   <domain> <project_path> <mr_iid>
 #   ./briar-mr.sh comment <domain> <project_path> <mr_iid> <body>
+#   ./briar-mr.sh reply   <domain> <project_path> <mr_iid> <discussion_id> <body>
 #   ./briar-mr.sh create  <domain> <project_path> <source_branch> <target_branch> <title> <description>
 #
 # Expects GITLAB_TOKEN to be set in environment.
@@ -15,14 +16,19 @@ PROJECT_PATH="${3}"
 
 if [ -z "$PROJECT_PATH" ]; then
 	echo "Usage:"
-	echo "  $0 fetch   <domain> <project_path> <mr_iid>"
-	echo "  $0 comment <domain> <project_path> <mr_iid> <comment_body>"
-	echo "  $0 create  <domain> <project_path> <source_branch> <target_branch> <title> <description>"
+	echo "  $0 fetch    <domain> <project_path> <mr_iid>"
+	echo "  $0 comment  <domain> <project_path> <mr_iid> <comment_body>"
+	echo "  $0 reply    <domain> <project_path> <mr_iid> <discussion_id> <reply_body>"
+	echo "  $0 pipeline <domain> <project_path> <mr_iid>"
+	echo "  $0 create   <domain> <project_path> <source_branch> <target_branch> <title> <description>"
 	echo ""
 	echo "Examples:"
-	echo "  $0 fetch   gitlab.qima-inc.com wsc-node/wsc-pc-channel 932"
-	echo "  $0 comment gitlab.qima-inc.com wsc-node/wsc-pc-channel 932 'LGTM!'"
-	echo "  $0 create  gitlab.qima-inc.com wsc-node/wsc-pc-channel feat/foo master 'feat: foo' 'Details...'"
+	echo "  $0 fetch    gitlab.qima-inc.com wsc-node/wsc-pc-channel 932"
+	echo "  $0 comment  gitlab.qima-inc.com wsc-node/wsc-pc-channel 932 'LGTM!'"
+	echo "  $0 reply    gitlab.qima-inc.com wsc-node/wsc-pc-channel 932 abc123 '已修复 ✅'"
+	echo "  $0 pipeline gitlab.qima-inc.com fe/scrm-mono 4849"
+	echo "  $0 create   gitlab.qima-inc.com wsc-node/wsc-pc-channel feat/foo master 'feat: foo' 'Details...'"
+
 	exit 1
 fi
 
@@ -67,6 +73,24 @@ elif [ "$ACTION" = "comment" ]; then
 	echo ""
 	echo "Comment posted."
 
+elif [ "$ACTION" = "reply" ]; then
+	MR_IID="${4}"
+	DISCUSSION_ID="${5}"
+	BODY="${6}"
+	if [ -z "$MR_IID" ] || [ -z "$DISCUSSION_ID" ] || [ -z "$BODY" ]; then
+		echo "Error: mr_iid, discussion_id and reply body are required for 'reply' action."
+		exit 1
+	fi
+	BASE_URL="https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/merge_requests/${MR_IID}"
+	JSON_PAYLOAD=$(jq -n --arg body "$BODY" '{body: $body}')
+	curl -s -X POST \
+		--header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+		--header "Content-Type: application/json" \
+		--data "$JSON_PAYLOAD" \
+		"${BASE_URL}/discussions/${DISCUSSION_ID}/notes" | jq . 2>/dev/null || true
+	echo ""
+	echo "Reply posted."
+
 elif [ "$ACTION" = "create" ]; then
 	SOURCE_BRANCH="${4}"
 	TARGET_BRANCH="${5}"
@@ -108,8 +132,51 @@ elif [ "$ACTION" = "create" ]; then
 		echo "❌ Failed to create MR. See response above."
 		exit 1
 	fi
-else
-	echo "Unknown action: $ACTION"
-	echo "Supported actions: fetch, comment, create"
-	exit 1
-fi
+elif [ "$ACTION" = "pipeline" ]; then
+		MR_IID="${4}"
+		if [ -z "$MR_IID" ]; then
+			echo "Error: mr_iid is required for 'pipeline' action."
+			exit 1
+		fi
+		BASE_URL="https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/merge_requests/${MR_IID}"
+
+		MR_DATA=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$BASE_URL")
+		HEAD_PIPELINE=$(echo "$MR_DATA" | jq '.head_pipeline // empty')
+
+		if [ -z "$HEAD_PIPELINE" ] || [ "$HEAD_PIPELINE" = "null" ]; then
+			echo "No pipeline found for this MR."
+			exit 0
+		fi
+
+		PIPELINE_ID=$(echo "$HEAD_PIPELINE" | jq -r '.id')
+
+		echo "=== Pipeline Info ==="
+		echo "$HEAD_PIPELINE" | jq '{
+			id,
+			status,
+			duration,
+			started_at,
+			finished_at,
+			web_url,
+			ref,
+			sha
+		}'
+
+		echo ""
+		echo "=== Pipeline Jobs ==="
+		curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+			"https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/pipelines/${PIPELINE_ID}/jobs" \
+			| jq '[.[] | {
+				id,
+				name,
+				stage,
+				status,
+				duration,
+				failure_reason,
+				web_url
+			}]'
+	else
+		echo "Unknown action: $ACTION"
+		echo "Supported actions: fetch, comment, reply, pipeline, create"
+		exit 1
+	fi
