@@ -319,22 +319,45 @@ curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
 
 ### 流程
 
-1. **获取 MR diff**
+1. **准备仓库与完整 diff（推荐）**
 
+   > ⚠️ **不要只基于 API 返回的局部 diff 做 review**。MR 中的 diff 往往缺少上下文（如被修改函数的完整逻辑、相关依赖文件），容易误判。
+
+   **推荐做法**：先把仓库拉到本地，看完整的 `target..source` diff：
+
+   ```bash
+   # 从 project_path 推断仓库名（如 wsc-node/wsc-pc-channel → wsc-pc-channel）
+   REPO_NAME=$(echo "$PROJECT_PATH" | sed 's/.*\///')
+   LOCAL_REPO="/Users/zhanglei/Documents/projects/$REPO_NAME"
+
+   # 1. 检查本地是否已有该仓库
+   if [ ! -d "$LOCAL_REPO/.git" ]; then
+       # 没有则拉取（复用 briar-repo）
+       ./packages/briar-skills/briar-repo/scripts/briar-repo.sh pull "$REPO_NAME"
+   fi
+
+   # 2. 获取 MR 的 source_branch 和 target_branch
+   MR_INFO=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+     "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID")
+   SOURCE_BRANCH=$(echo "$MR_INFO" | jq -r '.source_branch')
+   TARGET_BRANCH=$(echo "$MR_INFO" | jq -r '.target_branch')
+
+   # 3. 在本地查看完整 diff
+   cd "$LOCAL_REPO"
+   git fetch origin "$SOURCE_BRANCH" "$TARGET_BRANCH"
+   git diff "origin/$TARGET_BRANCH..origin/$SOURCE_BRANCH"
+   ```
+
+   **API diff 作为 fallback**：如果本地无法获取（仓库太大、网络问题等），再用 API：
    ```bash
    ./packages/briar-skills/briar-mr/scripts/briar-mr.sh diff <domain> <project_path> <mr_iid>
    ```
 
-   或直接用 API：
+   同时用 API 获取 `diff_refs`（后续添加行级评论时需要）：
    ```bash
    curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-     "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID/changes"
+     "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID" | jq '.diff_refs'
    ```
-
-   返回的 JSON 中：
-   - `changes[].diff`：文件 diff 内容（unified diff 格式）
-   - `changes[].new_path`：文件路径
-   - `diff_refs`：`base_sha`、`head_sha`、`start_sha`（用于后续添加行级评论）
 
 2. **分析 diff**
 
