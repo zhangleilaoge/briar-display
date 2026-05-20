@@ -59,7 +59,6 @@ function App({
 	useInput((input, key) => {
 		const state = appStateRef.current
 
-
 		// Ctrl+X: cancel
 		if (key.ctrl && input === 'x') {
 			state.cancelRequest()
@@ -100,8 +99,7 @@ function App({
 							state.historyIndexRef.current + 1,
 							userMessages.length - 1,
 						)
-						const msg =
-							userMessages[userMessages.length - 1 - state.historyIndexRef.current]
+						const msg = userMessages[userMessages.length - 1 - state.historyIndexRef.current]
 						if (msg) state.setInputValue(msg.content)
 					}
 					return
@@ -113,8 +111,7 @@ function App({
 						if (state.historyIndexRef.current < 0) {
 							state.setInputValue('')
 						} else {
-							const msg =
-								userMessages[userMessages.length - 1 - state.historyIndexRef.current]
+							const msg = userMessages[userMessages.length - 1 - state.historyIndexRef.current]
 							if (msg) state.setInputValue(msg.content)
 						}
 					}
@@ -138,9 +135,7 @@ function App({
 					return
 				}
 				if (key.downArrow) {
-					state.setSelectedSubAgentIndex((p) =>
-						Math.min(state.subAgents.length - 1, p + 1),
-					)
+					state.setSelectedSubAgentIndex((p) => Math.min(state.subAgents.length - 1, p + 1))
 					return
 				}
 				if (key.return) {
@@ -174,9 +169,7 @@ function App({
 					return
 				}
 				if (key.downArrow) {
-					state.setSelectedSessionIndex((p) =>
-						Math.min(state.allSessions.length - 1, p + 1),
-					)
+					state.setSelectedSessionIndex((p) => Math.min(state.allSessions.length - 1, p + 1))
 					return
 				}
 				if (key.return) {
@@ -231,9 +224,7 @@ function App({
 			const pos = ref.getItemPosition(i)
 			if (pos && pos.top <= offset) {
 				stickySenderIdRef.current = appState.messages[i].senderId
-				return appState.messages[i].role === 'user'
-					? 'You'
-					: appState.messages[i].sender || 'Briar'
+				return appState.messages[i].role === 'user' ? 'You' : appState.messages[i].sender || 'Briar'
 			}
 		}
 		return ''

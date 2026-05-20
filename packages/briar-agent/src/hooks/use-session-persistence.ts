@@ -1,5 +1,4 @@
-import { useEffect, useCallback } from 'react'
-import type { AppState } from './use-app-state.js'
+import { useCallback, useEffect } from 'react'
 import {
 	createSession,
 	formatSessionName,
@@ -10,6 +9,7 @@ import {
 	setCurrentSessionId,
 	stripProcess,
 } from '../session.js'
+import type { AppState } from './use-app-state.js'
 
 export interface SessionPersistence {
 	archiveCurrentSession: () => void

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { COMMANDS } from '../commands.js'
 import type { CommandDef, FocusArea, Message, SubAgent } from '../types.js'
 
@@ -44,7 +44,9 @@ export interface AppState {
 	exitCompletion: () => void
 	nextCompletion: () => void
 	prevCompletion: () => void
-	setScrollInfo: React.Dispatch<React.SetStateAction<{ offset: number; content: number; viewport: number }>>
+	setScrollInfo: React.Dispatch<
+		React.SetStateAction<{ offset: number; content: number; viewport: number }>
+	>
 	cancelRequest: () => void
 }
 
@@ -125,15 +127,18 @@ export function useAppState(): AppState {
 		setCompletionIndex((p) => Math.max(0, p - 1))
 	}, [])
 
-	const handleInputChange = useCallback((value: string) => {
-		historyIndexRef.current = -1
-		setInputValue(value)
-		if (value.startsWith('/') && !value.includes(' ')) {
-			enterCompletion(value)
-		} else {
-			exitCompletion()
-		}
-	}, [enterCompletion, exitCompletion])
+	const handleInputChange = useCallback(
+		(value: string) => {
+			historyIndexRef.current = -1
+			setInputValue(value)
+			if (value.startsWith('/') && !value.includes(' ')) {
+				enterCompletion(value)
+			} else {
+				exitCompletion()
+			}
+		},
+		[enterCompletion, exitCompletion],
+	)
 
 	const cancelRequest = useCallback(() => {
 		if (abortCtrlRef.current) {

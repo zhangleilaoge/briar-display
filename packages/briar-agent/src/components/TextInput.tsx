@@ -19,7 +19,6 @@ export function TextInput({ value, onChange, onSubmit, focus = true }: TextInput
 
 	useInput(
 		(input, key) => {
-
 			// 忽略鼠标滚轮序列残留（SGR 1006 格式）
 			if (input && /^<6[45];\d+;\d+[Mm]$/.test(input)) return
 
