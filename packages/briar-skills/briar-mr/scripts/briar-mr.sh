@@ -20,6 +20,7 @@ if [ -z "$PROJECT_PATH" ]; then
 	echo "  $0 comment  <domain> <project_path> <mr_iid> <comment_body>"
 	echo "  $0 reply    <domain> <project_path> <mr_iid> <discussion_id> <reply_body>"
 	echo "  $0 pipeline <domain> <project_path> <mr_iid>"
+	echo "  $0 diff     <domain> <project_path> <mr_iid>"
 	echo "  $0 create   <domain> <project_path> <source_branch> <target_branch> <title> <description>"
 	echo ""
 	echo "Examples:"
@@ -27,6 +28,7 @@ if [ -z "$PROJECT_PATH" ]; then
 	echo "  $0 comment  gitlab.qima-inc.com wsc-node/wsc-pc-channel 932 'LGTM!'"
 	echo "  $0 reply    gitlab.qima-inc.com wsc-node/wsc-pc-channel 932 abc123 '已修复 ✅'"
 	echo "  $0 pipeline gitlab.qima-inc.com fe/scrm-mono 4849"
+	echo "  $0 diff     gitlab.qima-inc.com fe/scrm-mono 4849"
 	echo "  $0 create   gitlab.qima-inc.com wsc-node/wsc-pc-channel feat/foo master 'feat: foo' 'Details...'"
 
 	exit 1
@@ -133,50 +135,76 @@ elif [ "$ACTION" = "create" ]; then
 		exit 1
 	fi
 elif [ "$ACTION" = "pipeline" ]; then
-		MR_IID="${4}"
-		if [ -z "$MR_IID" ]; then
-			echo "Error: mr_iid is required for 'pipeline' action."
-			exit 1
-		fi
-		BASE_URL="https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/merge_requests/${MR_IID}"
-
-		MR_DATA=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$BASE_URL")
-		HEAD_PIPELINE=$(echo "$MR_DATA" | jq '.head_pipeline // empty')
-
-		if [ -z "$HEAD_PIPELINE" ] || [ "$HEAD_PIPELINE" = "null" ]; then
-			echo "No pipeline found for this MR."
-			exit 0
-		fi
-
-		PIPELINE_ID=$(echo "$HEAD_PIPELINE" | jq -r '.id')
-
-		echo "=== Pipeline Info ==="
-		echo "$HEAD_PIPELINE" | jq '{
-			id,
-			status,
-			duration,
-			started_at,
-			finished_at,
-			web_url,
-			ref,
-			sha
-		}'
-
-		echo ""
-		echo "=== Pipeline Jobs ==="
-		curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-			"https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/pipelines/${PIPELINE_ID}/jobs" \
-			| jq '[.[] | {
-				id,
-				name,
-				stage,
-				status,
-				duration,
-				failure_reason,
-				web_url
-			}]'
-	else
-		echo "Unknown action: $ACTION"
-		echo "Supported actions: fetch, comment, reply, pipeline, create"
+	MR_IID="${4}"
+	if [ -z "$MR_IID" ]; then
+		echo "Error: mr_iid is required for 'pipeline' action."
 		exit 1
 	fi
+	BASE_URL="https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/merge_requests/${MR_IID}"
+
+	MR_DATA=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$BASE_URL")
+	HEAD_PIPELINE=$(echo "$MR_DATA" | jq '.head_pipeline // empty')
+
+	if [ -z "$HEAD_PIPELINE" ] || [ "$HEAD_PIPELINE" = "null" ]; then
+		echo "No pipeline found for this MR."
+		exit 0
+	fi
+
+	PIPELINE_ID=$(echo "$HEAD_PIPELINE" | jq -r '.id')
+
+	echo "=== Pipeline Info ==="
+	echo "$HEAD_PIPELINE" | jq '{
+		id,
+		status,
+		duration,
+		started_at,
+		finished_at,
+		web_url,
+		ref,
+		sha
+	}'
+
+	echo ""
+	echo "=== Pipeline Jobs ==="
+	curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+		"https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/pipelines/${PIPELINE_ID}/jobs" \
+		| jq '[.[] | {
+			id,
+			name,
+			stage,
+			status,
+			duration,
+			failure_reason,
+			web_url
+		}]'
+
+elif [ "$ACTION" = "diff" ]; then
+	MR_IID="${4}"
+	if [ -z "$MR_IID" ]; then
+		echo "Error: mr_iid is required for 'diff' action."
+		exit 1
+	fi
+	BASE_URL="https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/merge_requests/${MR_IID}"
+
+	echo "=== MR Diff ===" >&2
+	curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+		"${BASE_URL}/changes" | jq '{
+			iid,
+			title,
+			source_branch,
+			target_branch,
+			changes_count,
+			diff_refs,
+			changes: [.changes[] | {
+				old_path,
+				new_path,
+				new_file,
+				deleted_file,
+				diff
+			}]
+		}'
+else
+	echo "Unknown action: $ACTION"
+	echo "Supported actions: fetch, comment, reply, pipeline, diff, create"
+	exit 1
+fi

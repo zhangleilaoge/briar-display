@@ -1,14 +1,15 @@
 ---
 name: briar-mr
 description: >
-  GitLab Merge Request（MR）全能工具：创建 MR、获取评论、发表评论、回复 Discussion、获取 Pipeline、按评论修复代码。
+  GitLab Merge Request（MR）全能工具：创建 MR、获取评论、发表评论、回复 Discussion、获取 Pipeline、Review 代码、按评论修复代码。
   触发场景：
   1. 用户说"提个 MR"、"创建 MR"、"提交合并请求" → 触发【创建 MR】（自动推导标题和内容）
   2. 用户给出 GitLab MR 链接，要求"看看评论"、"获取评论"、"列出评论" → 触发【获取评论】
   3. 用户要求在 MR 中"发表评论"、"加一条评论" → 触发【发表评论】
   4. 用户要求"回复这些评论"、"逐条回复"、"给评论写回复" → 触发【回复 Discussion】
   5. 用户说"看看 pipeline"、"CI 状态"、"构建结果" → 触发【获取 Pipeline】
-  6. 用户要求"按评论修复代码"、"处理 code review"、"修掉评论里的问题" → 触发【修复评论】
+  6. 用户说"review 这个 MR"、"帮我看看代码"、"code review" → 触发【Review 代码】
+  7. 用户要求"按评论修复代码"、"处理 code review"、"修掉评论里的问题" → 触发【修复评论】
   本 skill 不会默认执行全部能力，严格根据用户意图触发对应行为。
 ---
 
@@ -113,15 +114,16 @@ FILES_CHANGED=$(git diff --name-only <target>..<source>)
   <domain> <project_path> <source_branch> <target_branch> "<title>" "<description>"
 ```
 
-### 输出示例
+### 输出与反馈
 
-创建成功后返回：
+创建成功后**必须将 MR 链接展示给用户**：
 
 ```
-✅ MR created successfully!
-   IID: 1234
-   URL: https://gitlab.qima-inc.com/wsc-node/wsc-pc-channel/-/merge_requests/1234
+✅ MR created成功！
+   链接：https://gitlab.qima-inc.com/wsc-node/wsc-pc-channel/-/merge_requests/1234
 ```
+
+> 不要只返回 IID 或只写"创建成功"，用户需要直接点击链接查看 MR。
 
 ---
 
@@ -311,14 +313,106 @@ curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
 
 ---
 
-## 行为六：修复评论（fix）
+## 行为六：Review 代码（review）
+
+**触发条件**：用户说"review 这个 MR"、"帮我看看代码"、"code review"、"审查一下代码"。
+
+### 流程
+
+1. **获取 MR diff**
+
+   ```bash
+   ./packages/briar-skills/briar-mr/scripts/briar-mr.sh diff <domain> <project_path> <mr_iid>
+   ```
+
+   或直接用 API：
+   ```bash
+   curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+     "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID/changes"
+   ```
+
+   返回的 JSON 中：
+   - `changes[].diff`：文件 diff 内容（unified diff 格式）
+   - `changes[].new_path`：文件路径
+   - `diff_refs`：`base_sha`、`head_sha`、`start_sha`（用于后续添加行级评论）
+
+2. **分析 diff**
+
+   对变更代码进行 review，关注：
+   - 语法/类型问题
+   - 语义一致性（变量命名、常量值等）
+   - 代码简化机会
+   - 异常处理是否完善
+   - 性能隐患
+   - 可读性与可维护性
+
+3. **输出 review 结果**
+
+   按文件组织，每条意见包含：
+   - 🔴 **严重**：明显 bug、类型错误、会导致运行时异常
+   - 🟡 **建议**：可优化、可简化、命名不规范
+   - 🟢 **优点**：设计合理、写法简洁、值得保留
+
+4. **主动询问**
+
+   Review 结束后**必须主动询问**：
+   > "以上是我的 review 意见。是否需要我将这些意见作为行级评论添加到 MR 中？"
+
+### 添加行级评论（DiffNote）
+
+如果用户同意，使用 Discussion API 在对应位置添加评论：
+
+```bash
+# 先获取 diff_refs
+DIFF_REFS=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID" | jq '.diff_refs')
+BASE_SHA=$(echo "$DIFF_REFS" | jq -r '.base_sha')
+HEAD_SHA=$(echo "$DIFF_REFS" | jq -r '.head_sha')
+START_SHA=$(echo "$DIFF_REFS" | jq -r '.start_sha')
+
+# 添加 DiffNote
+JSON_PAYLOAD=$(jq -n \
+  --arg body "review 评论内容" \
+  --arg base_sha "$BASE_SHA" \
+  --arg head_sha "$HEAD_SHA" \
+  --arg start_sha "$START_SHA" \
+  --arg new_path "文件路径.ts" \
+  --argjson new_line 10 \
+  '{
+    body: $body,
+    position: {
+      base_sha: $base_sha,
+      head_sha: $head_sha,
+      start_sha: $start_sha,
+      position_type: "text",
+      new_path: $new_path,
+      new_line: $new_line
+    }
+  }')
+
+curl -s -X POST \
+  --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  --header "Content-Type: application/json" \
+  --data "$JSON_PAYLOAD" \
+  "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID/discussions"
+```
+
+### 注意
+
+- 如果 diff 文件过多（>5 个）或单文件 diff 过长（>200 行），先展示文件列表和统计，询问用户重点关注哪些文件
+- 添加评论前**必须获得用户明确同意**，不要自动发表
+- 添加评论时精确定位到行号，确保 reviewer 能在 MR 页面直接看到
+
+---
+
+## 行为七：修复评论（fix）
 
 **触发条件**：用户说"按评论修复"、"处理 code review"、"修掉问题"、"分析并修复"。
 
 ### 行为依赖
 
 ```
-获取评论（行为二） ← 修复评论（行为五） → 回复 Discussion（行为四，可选）
+获取评论（行为二） ← 修复评论（行为七） → 回复 Discussion（行为四，可选）
 ```
 
 - **修复评论**内部需要先**获取评论**（同行为二），分析后再修复。
@@ -375,7 +469,7 @@ https://gitlab.qima-inc.com/wsc-node/wsc-pc-channel/-/merge_requests/932
 
 ---
 
-## 六种行为速查
+## 七种行为速查
 
 | 行为 | 触发关键词 | 所需权限 | 自动执行？ |
 |------|-----------|---------|-----------|
@@ -384,6 +478,7 @@ https://gitlab.qima-inc.com/wsc-node/wsc-pc-channel/-/merge_requests/932
 | 发表评论 | "发表评论"、"加条评论" | `api` | 需确认内容 |
 | 回复 Discussion | "回复这些评论"、"逐条回复"、"给评论写回复" | `api` | 需确认内容 |
 | 获取 Pipeline | "看看 pipeline"、"CI 状态"、"构建结果" | `read_api` | 是 |
+| Review 代码 | "review"、"看看代码"、"code review"、"审查代码" | `read_api` | 是（分析后询问是否添加评论） |
 | 修复评论 | "修复"、"处理 review"、"修掉" | `read_api` | 是（分析后） |
 
 **重要**：用户只说"MR 链接"而没有明确意图时，默认触发【获取评论】，**不要自动修复**；修复后不要自动回复 Discussion，需等用户明确要求。
