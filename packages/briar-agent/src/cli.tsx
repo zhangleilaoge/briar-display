@@ -1,123 +1,207 @@
 import { Box, useApp, useInput, useStdout } from 'ink'
 import type { ScrollViewRef } from 'ink-scroll-view'
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useRef, useEffect, useCallback } from 'react'
 import type { KimiCode } from './client/index.js'
-import { type RouterCtx, handleCommand } from './command-router.js'
-import { COMMANDS } from './commands.js'
+import { handleCommand } from './commands/index.js'
 import { ChatPanel } from './components/ChatPanel.js'
 import { CompletionPopup } from './components/CompletionPopup.js'
 import { Header } from './components/Header.js'
 import { InputBar } from './components/InputBar.js'
 import { SessionPanel } from './components/SessionPanel.js'
 import { SubAgentPanel } from './components/SubAgentPanel.js'
+import { useAppState } from './hooks/use-app-state.js'
+import { useSessionPersistence } from './hooks/use-session-persistence.js'
 import { mouseEmitter } from './mouse-stdin.js'
-import {
-	createSession,
-	formatSessionName,
-	getCurrentSessionId,
-	getSessions,
-	loadCurrentSession,
-	saveCurrentSession,
-	saveSessions,
-	setCurrentSessionId,
-	stripProcess,
-} from './session.js'
-import type { FocusArea, Message, SubAgent } from './types.js'
 
 function App({
 	kimi,
 	useCli,
 	streamMode,
-}: { kimi: KimiCode; useCli: boolean; streamMode: boolean }) {
+}: {
+	kimi: KimiCode
+	useCli: boolean
+	streamMode: boolean
+}) {
 	const { exit } = useApp()
 	const { stdout } = useStdout()
 	const scrollRef = useRef<ScrollViewRef | null>(null)
-
-	// ---- state ----
-	const [messages, setMessages] = useState<Message[]>([])
-	const [inputValue, setInputValue] = useState('')
-	const [isLoading, setIsLoading] = useState(false)
-	const [subAgents, setSubAgents] = useState<SubAgent[]>([])
-	const [focus, setFocus] = useState<FocusArea>('chat')
-	const [selectedSubAgentIndex, setSelectedSubAgentIndex] = useState(0)
-	const [selectedSessionIndex, setSelectedSessionIndex] = useState(0)
-	const [allSessions, setAllSessions] = useState(getSessions())
-	const [currentSessionId, setCurrentSessionIdState] = useState(getCurrentSessionId() || '')
-	const [completionMode, setCompletionMode] = useState(false)
-	const [completionIndex, setCompletionIndex] = useState(0)
-	const [completionItems, setCompletionItems] = useState<typeof COMMANDS>([])
-	const [scrollInfo, setScrollInfo] = useState({ offset: 0, content: 0, viewport: 0 })
-
-	// ---- refs (mutable state, no re-render) ----
-	const abortCtrlRef = useRef<AbortController | null>(null)
-	const nextSubAgentIdRef = useRef(1)
 	const stickySenderIdRef = useRef<number | undefined>(undefined)
-	const historyIndexRef = useRef(-1)
-	const completionItemsRef = useRef(completionItems)
-	completionItemsRef.current = completionItems
 
-	// ---- derived: sticky label ----
-	const stickyLabel = (() => {
-		const ref = scrollRef.current
-		if (!ref || messages.length === 0) return ''
-		const offset = ref.getScrollOffset()
-		for (let i = messages.length - 1; i >= 0; i--) {
-			const pos = ref.getItemPosition(i)
-			if (pos && pos.top <= offset) {
-				stickySenderIdRef.current = messages[i].senderId
-				return messages[i].role === 'user' ? 'You' : messages[i].sender || 'Briar'
+	const appState = useAppState()
+	const sessions = useSessionPersistence(appState)
+
+	// 用 ref 绕过 useEffectEvent 的闭包问题，确保 useInput handler 永远读到最新状态
+	const appStateRef = useRef(appState)
+	appStateRef.current = appState
+
+	// 提交处理
+	const handleSubmit = useCallback(
+		async (value: string) => {
+			const trimmed = value.trim()
+			if (!trimmed || appStateRef.current.isLoading) return
+			appStateRef.current.setInputValue('')
+			await handleCommand(trimmed, {
+				kimi,
+				useCli,
+				streamMode,
+				exit,
+				appState: appStateRef.current,
+				sessions,
+			})
+		},
+		[kimi, useCli, streamMode, exit, sessions],
+	)
+
+	// 键盘事件
+	const completionItemsRef = useRef(appState.completionItems)
+	completionItemsRef.current = appState.completionItems
+
+	useInput((input, key) => {
+		const state = appStateRef.current
+
+
+		// Ctrl+X: cancel
+		if (key.ctrl && input === 'x') {
+			state.cancelRequest()
+			return
+		}
+
+		// Completion mode
+		if (state.completionMode) {
+			if (key.upArrow) {
+				state.prevCompletion()
+				return
+			}
+			if (key.downArrow) {
+				state.nextCompletion()
+				return
+			}
+			if (key.return || key.tab) {
+				const cmd = completionItemsRef.current[state.completionIndex]
+				if (cmd) {
+					state.setInputValue(`${cmd.name} `)
+					state.exitCompletion()
+				}
+				return
+			}
+			if (key.escape) {
+				state.exitCompletion()
+				return
 			}
 		}
-		return ''
-	})()
 
-	// ---- effects ----
-
-	useEffect(() => {
-		const loaded = loadCurrentSession()
-		if (loaded) {
-			setMessages(loaded.messages)
-			setSubAgents(
-				loaded.subAgents.map((a) => ({
-					...a,
-					status: a.status === 'running' ? 'error' : a.status,
-				})),
-			)
-			nextSubAgentIdRef.current = loaded.subAgents.reduce((max, a) => Math.max(max, a.id), 0) + 1
-			setCurrentSessionIdState(loaded.id)
-		} else {
-			const s = createSession()
-			setCurrentSessionId(s.id)
-			setCurrentSessionIdState(s.id)
-			saveCurrentSession(s)
-			setAllSessions(getSessions())
-		}
-	}, [])
-
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			if (!currentSessionId) return
-			const session = {
-				id: currentSessionId,
-				name: formatSessionName({
-					id: currentSessionId,
-					name: 'New session',
-					messages,
-					subAgents: stripProcess(subAgents),
-					createdAt: Date.now(),
-					updatedAt: Date.now(),
-				}),
-				messages,
-				subAgents: stripProcess(subAgents),
-				createdAt: Date.now(),
-				updatedAt: Date.now(),
+		// Focus-based navigation
+		switch (state.focus) {
+			case 'chat': {
+				if (key.upArrow && state.inputValue === '') {
+					const userMessages = state.messages.filter((m) => m.role === 'user')
+					if (userMessages.length > 0) {
+						state.historyIndexRef.current = Math.min(
+							state.historyIndexRef.current + 1,
+							userMessages.length - 1,
+						)
+						const msg =
+							userMessages[userMessages.length - 1 - state.historyIndexRef.current]
+						if (msg) state.setInputValue(msg.content)
+					}
+					return
+				}
+				if (key.downArrow && state.inputValue === '') {
+					const userMessages = state.messages.filter((m) => m.role === 'user')
+					if (userMessages.length > 0) {
+						state.historyIndexRef.current = Math.max(-1, state.historyIndexRef.current - 1)
+						if (state.historyIndexRef.current < 0) {
+							state.setInputValue('')
+						} else {
+							const msg =
+								userMessages[userMessages.length - 1 - state.historyIndexRef.current]
+							if (msg) state.setInputValue(msg.content)
+						}
+					}
+					return
+				}
+				if (key.rightArrow && state.inputValue === '' && state.subAgents.length > 0) {
+					state.setFocus('subAgents')
+					state.setSelectedSubAgentIndex(state.subAgents.length - 1)
+					return
+				}
+				return
 			}
-			saveCurrentSession(session)
-			setAllSessions(getSessions())
-		}, 300)
-		return () => clearTimeout(timer)
-	}, [messages, subAgents, currentSessionId])
 
+			case 'subAgents': {
+				if (key.leftArrow || key.escape) {
+					state.setFocus('chat')
+					return
+				}
+				if (key.upArrow) {
+					state.setSelectedSubAgentIndex((p) => Math.max(0, p - 1))
+					return
+				}
+				if (key.downArrow) {
+					state.setSelectedSubAgentIndex((p) =>
+						Math.min(state.subAgents.length - 1, p + 1),
+					)
+					return
+				}
+				if (key.return) {
+					const agent = state.subAgents[state.selectedSubAgentIndex]
+					if (agent) state.setInputValue(`/subChat ${agent.name} `)
+					state.setFocus('chat')
+					return
+				}
+				if (input === 'd' || key.delete) {
+					const idx = state.selectedSubAgentIndex
+					const agent = state.subAgents[idx]
+					if (agent) {
+						if (agent.process && !agent.process.killed) agent.process.kill()
+						const nextLength = state.subAgents.length - 1
+						const nextIndex = idx >= nextLength ? Math.max(0, nextLength - 1) : idx
+						state.removeSubAgent(agent.id)
+						state.setSelectedSubAgentIndex(nextIndex)
+					}
+					return
+				}
+				return
+			}
+
+			case 'sessions': {
+				if (key.escape || key.leftArrow) {
+					state.setFocus('chat')
+					return
+				}
+				if (key.upArrow) {
+					state.setSelectedSessionIndex((p) => Math.max(0, p - 1))
+					return
+				}
+				if (key.downArrow) {
+					state.setSelectedSessionIndex((p) =>
+						Math.min(state.allSessions.length - 1, p + 1),
+					)
+					return
+				}
+				if (key.return) {
+					const selected = state.allSessions[state.selectedSessionIndex]
+					if (selected && selected.id !== state.currentSessionId) {
+						sessions.switchToSession(selected.id)
+					}
+					state.setFocus('chat')
+					return
+				}
+				if (input === 'd' || key.delete) {
+					const selected = state.allSessions[state.selectedSessionIndex]
+					if (!selected) return
+					sessions.deleteSession(selected.id)
+					state.setSelectedSessionIndex((p) =>
+						Math.max(0, Math.min(p, state.allSessions.length - 1)),
+					)
+					return
+				}
+				return
+			}
+		}
+	})
+
+	// 终端 resize
 	useEffect(() => {
 		const handler = () => scrollRef.current?.remeasure()
 		stdout?.on('resize', handler)
@@ -126,6 +210,7 @@ function App({
 		}
 	}, [stdout])
 
+	// 鼠标滚轮
 	useEffect(() => {
 		const onWheel = (dir: string) => {
 			if (dir === 'up') scrollRef.current?.scrollBy(-3)
@@ -137,294 +222,82 @@ function App({
 		}
 	}, [])
 
-	// ---- helpers ----
-
-	const archiveCurrentSession = useCallback(() => {
-		saveCurrentSession({
-			id: currentSessionId,
-			name: formatSessionName({
-				id: currentSessionId,
-				name: 'New session',
-				messages,
-				subAgents: stripProcess(subAgents),
-				createdAt: Date.now(),
-				updatedAt: Date.now(),
-			}),
-			messages,
-			subAgents: stripProcess(subAgents),
-			createdAt: Date.now(),
-			updatedAt: Date.now(),
-		})
-	}, [currentSessionId, messages, subAgents])
-
-	const handleInputChange = useCallback((value: string) => {
-		historyIndexRef.current = -1
-		setInputValue(value)
-		if (value.startsWith('/') && !value.includes(' ')) {
-			const prefix = value.toLowerCase()
-			const items = COMMANDS.filter((c) => c.name.toLowerCase().startsWith(prefix))
-			setCompletionItems(items)
-			setCompletionMode(items.length > 0 && value.length > 0)
-			setCompletionIndex(0)
-		} else {
-			setCompletionMode(false)
-		}
-	}, [])
-
-	// 处理提交
-	const handleSubmit = useCallback(
-		async (value: string) => {
-			const trimmed = value.trim()
-			if (!trimmed || isLoading) return
-			setInputValue('')
-
-			const ctx: RouterCtx = {
-				kimi,
-				useCli,
-				streamMode,
-				isLoading,
-				exit,
-				messages,
-				subAgents,
-				currentSessionId,
-				abortCtrlRef,
-				nextSubAgentIdRef,
-				setMessages,
-				setSubAgents,
-				setIsLoading,
-				setInputValue,
-				setFocus,
-				setAllSessions,
-				setSelectedSubAgentIndex,
-				setSelectedSessionIndex,
-				setCurrentSessionId,
-				setCurrentSessionIdState,
-				archiveCurrentSession,
-			}
-
-			await handleCommand(trimmed, ctx)
-		},
-		[
-			kimi,
-			useCli,
-			streamMode,
-			isLoading,
-			exit,
-			messages,
-			subAgents,
-			currentSessionId,
-			archiveCurrentSession,
-		],
-	)
-
-	// 键盘处理
-	useInput((input, key) => {
-		if (key.ctrl && input === 'x') {
-			if (abortCtrlRef.current) {
-				abortCtrlRef.current.abort()
-				setIsLoading(false)
-				setMessages((prev) => {
-					const next = [...prev]
-					const last = next[next.length - 1]
-					if (last && last.role === 'assistant') {
-						next[next.length - 1] = { ...last, cancelled: true }
-					} else {
-						next.push({ role: 'assistant', content: '[Cancelled]', cancelled: true })
-					}
-					return next
-				})
-			}
-			return
-		}
-
-		if (completionMode) {
-			if (key.upArrow) {
-				setCompletionIndex((p) => Math.max(0, p - 1))
-				return
-			}
-			if (key.downArrow) {
-				setCompletionIndex((p) => Math.min(completionItemsRef.current.length - 1, p + 1))
-				return
-			}
-			if (key.return || key.tab) {
-				const cmd = completionItemsRef.current[completionIndex]
-				if (cmd) {
-					setInputValue(`${cmd.name} `)
-					setCompletionMode(false)
-				}
-				return
-			}
-			if (key.escape) {
-				setCompletionMode(false)
-				return
+	// Sticky label
+	const stickyLabel = (() => {
+		const ref = scrollRef.current
+		if (!ref || appState.messages.length === 0) return ''
+		const offset = ref.getScrollOffset()
+		for (let i = appState.messages.length - 1; i >= 0; i--) {
+			const pos = ref.getItemPosition(i)
+			if (pos && pos.top <= offset) {
+				stickySenderIdRef.current = appState.messages[i].senderId
+				return appState.messages[i].role === 'user'
+					? 'You'
+					: appState.messages[i].sender || 'Briar'
 			}
 		}
-
-		if (focus === 'chat') {
-			if (key.leftArrow && inputValue === '') {
-				const userMessages = messages.filter((m) => m.role === 'user')
-				if (userMessages.length > 0) {
-					historyIndexRef.current = Math.min(historyIndexRef.current + 1, userMessages.length - 1)
-					const msg = userMessages[userMessages.length - 1 - historyIndexRef.current]
-					if (msg) {
-						setInputValue(msg.content)
-					}
-				}
-				return
-			}
-			if (key.rightArrow && inputValue === '' && subAgents.length > 0) {
-				setFocus('subAgents')
-				setSelectedSubAgentIndex(subAgents.length - 1)
-				return
-			}
-			if (key.upArrow) {
-				scrollRef.current?.scrollBy(-3)
-			}
-			if (key.downArrow) {
-				scrollRef.current?.scrollBy(3)
-			}
-		} else if (focus === 'subAgents') {
-			if (key.leftArrow || key.escape) {
-				setFocus('chat')
-				return
-			}
-			if (key.upArrow) {
-				setSelectedSubAgentIndex((p) => Math.max(0, p - 1))
-			}
-			if (key.downArrow) {
-				setSelectedSubAgentIndex((p) => Math.min(subAgents.length - 1, p + 1))
-			}
-			if (key.return) {
-				const agent = subAgents[selectedSubAgentIndex]
-				if (agent) setInputValue(`/subChat ${agent.name} `)
-				setFocus('chat')
-			}
-			if (input === 'd' || key.delete) {
-				const agent = subAgents[selectedSubAgentIndex]
-				if (agent) {
-					if (agent.process && !agent.process.killed) agent.process.kill()
-					setSubAgents((prev) => {
-						const next = prev.filter((a) => a.id !== agent.id)
-						if (selectedSubAgentIndex >= next.length)
-							setSelectedSubAgentIndex(Math.max(0, next.length - 1))
-						return next
-					})
-				}
-			}
-		} else if (focus === 'sessions') {
-			if (key.escape || key.leftArrow) {
-				setFocus('chat')
-				return
-			}
-			if (key.upArrow) {
-				setSelectedSessionIndex((p) => Math.max(0, p - 1))
-			}
-			if (key.downArrow) {
-				setSelectedSessionIndex((p) => Math.min(allSessions.length - 1, p + 1))
-			}
-			if (key.return) {
-				const selected = allSessions[selectedSessionIndex]
-				if (selected && selected.id !== currentSessionId) {
-					archiveCurrentSession()
-					setCurrentSessionId(selected.id)
-					setCurrentSessionIdState(selected.id)
-					setMessages(selected.messages)
-					setSubAgents(
-						selected.subAgents.map((a) => ({
-							...a,
-							status: a.status === 'running' ? 'error' : a.status,
-						})),
-					)
-					nextSubAgentIdRef.current =
-						selected.subAgents.reduce((max, a) => Math.max(max, a.id), 0) + 1
-					setAllSessions(getSessions())
-				}
-				setFocus('chat')
-			}
-			if (input === 'd' || key.delete) {
-				const selected = allSessions[selectedSessionIndex]
-				if (!selected) return
-				const sessions = getSessions()
-				const idx = sessions.findIndex((s) => s.id === selected.id)
-				if (idx >= 0) sessions.splice(idx, 1)
-				saveSessions(sessions)
-				setAllSessions(sessions)
-				if (selected.id === currentSessionId) {
-					const remaining = sessions[0]
-					if (remaining) {
-						setCurrentSessionId(remaining.id)
-						setCurrentSessionIdState(remaining.id)
-						setMessages(remaining.messages)
-						setSubAgents(
-							remaining.subAgents.map((a) => ({
-								...a,
-								status: a.status === 'running' ? 'error' : a.status,
-							})),
-						)
-						nextSubAgentIdRef.current =
-							remaining.subAgents.reduce((max, a) => Math.max(max, a.id), 0) + 1
-					} else {
-						const s = createSession()
-						setCurrentSessionId(s.id)
-						setCurrentSessionIdState(s.id)
-						setMessages([])
-						setSubAgents([])
-						nextSubAgentIdRef.current = 1
-					}
-				}
-				setSelectedSessionIndex((p) => Math.max(0, Math.min(p, sessions.length - 1)))
-			}
-		}
-	})
+		return ''
+	})()
 
 	return (
 		<Box flexDirection="column" height={stdout.rows}>
-			<Header label={stickyLabel} senderId={stickySenderIdRef.current} scrollInfo={scrollInfo} />
+			<Header
+				label={stickyLabel}
+				senderId={stickySenderIdRef.current}
+				scrollInfo={appState.scrollInfo}
+			/>
 
 			<Box flexDirection="row" flexGrow={1} overflow="hidden">
-				{focus === 'sessions' ? (
+				{appState.focus === 'sessions' ? (
 					<SessionPanel
-						sessions={allSessions}
-						selectedIndex={selectedSessionIndex}
-						currentId={currentSessionId}
-			/>
+						sessions={appState.allSessions}
+						selectedIndex={appState.selectedSessionIndex}
+						currentId={appState.currentSessionId}
+					/>
 				) : (
 					<ChatPanel
-						messages={messages}
-						isLoading={isLoading}
+						messages={appState.messages}
+						isLoading={appState.isLoading}
 						scrollRef={scrollRef}
 						onScroll={(offset: number) => {
 							const ref = scrollRef.current
 							if (!ref) return
-							setScrollInfo({
+							appState.setScrollInfo({
 								offset,
 								content: ref.getContentHeight(),
 								viewport: ref.getViewportHeight(),
 							})
 						}}
 						onContentHeightChange={() => {
-								const ref = scrollRef.current
-								if (!ref) return
-								setScrollInfo({
-									offset: ref.getScrollOffset(),
-									content: ref.getContentHeight(),
-									viewport: ref.getViewportHeight(),
-								})
-							}}
+							const ref = scrollRef.current
+							if (!ref) return
+							appState.setScrollInfo({
+								offset: ref.getScrollOffset(),
+								content: ref.getContentHeight(),
+								viewport: ref.getViewportHeight(),
+							})
+						}}
 					/>
 				)}
-				<SubAgentPanel subAgents={subAgents} focus={focus} selectedIndex={selectedSubAgentIndex} />
+				<SubAgentPanel
+					subAgents={appState.subAgents}
+					focus={appState.focus}
+					selectedIndex={appState.selectedSubAgentIndex}
+				/>
 			</Box>
 
 			<Box flexDirection="column" flexShrink={0}>
-				{completionMode && (
-					<CompletionPopup items={completionItems} selectedIndex={completionIndex} />
+				{appState.completionMode && (
+					<CompletionPopup
+						items={appState.completionItems}
+						selectedIndex={appState.completionIndex}
+					/>
 				)}
 				<InputBar
-					query={inputValue}
-					focus={focus}
-					completionMode={completionMode}
-					onChange={handleInputChange}
+					query={appState.inputValue}
+					focus={appState.focus}
+					completionMode={appState.completionMode}
+					onChange={appState.handleInputChange}
 					onSubmit={handleSubmit}
 				/>
 			</Box>

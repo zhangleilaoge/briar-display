@@ -16,24 +16,20 @@ class FilteredStdin extends Readable {
 			let match
 			let lastIndex = 0
 			while ((match = MOUSE_REGEX.exec(this.buffer)) !== null) {
-				const button = parseInt(match[1], 10)
+				const button = Number.parseInt(match[1], 10)
 				if (button === 64) mouseEmitter.emit('wheel', 'up')
 				else if (button === 65) mouseEmitter.emit('wheel', 'down')
 				lastIndex = MOUSE_REGEX.lastIndex
 			}
 
-			// 保留可能不完整的 escape sequence
 			const output = this.buffer.slice(0, lastIndex).replace(MOUSE_REGEX, '')
 			const remaining = this.buffer.slice(lastIndex)
 			this.buffer = remaining
 
-			// 如果缓冲区没有 escape，说明不可能是不完整的鼠标序列
-			if (this.buffer && !this.buffer.includes('\x1b')) {
-				if (output) {
-					this.push(output + this.buffer)
-				} else {
-					this.push(this.buffer)
-				}
+			// 只有以 \x1b[< 开头的残留才可能是不完整的鼠标序列，
+			// 其他 escape 序列（如 \x1b[C 右箭头）应立刻 push，避免键盘事件被卡住。
+			if (this.buffer && !this.buffer.startsWith('\x1b[<')) {
+				this.push(output + this.buffer)
 				this.buffer = ''
 				return
 			}

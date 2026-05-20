@@ -32,7 +32,9 @@ export function SessionPanel({
 							{isSel ? '> ' : '  '}
 							{s.name}
 							{isCur ? ' (current)' : ''}{' '}
-							<Text color="gray">[{s.id.slice(0, 6)}] {new Date(s.updatedAt).toLocaleString()}</Text>
+							<Text color="gray">
+								[{s.id.slice(0, 6)}] {new Date(s.updatedAt).toLocaleString()}
+							</Text>
 						</Text>
 					</Box>
 				)

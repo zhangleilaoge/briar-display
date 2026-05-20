@@ -16,29 +16,30 @@ export function InputBar({
 	onChange: (v: string) => void
 	onSubmit: (v: string) => void
 }) {
+	const isChat = focus === 'chat'
 	return (
 		<Box height={1} flexShrink={0} flexDirection="row">
-			{focus === 'subAgents' ? (
+			{focus === 'subAgents' && (
 				<Text color="yellow">{'  [←/Esc=back  ↑↓=select  Enter=chat  d=del]'}</Text>
-			) : focus === 'sessions' ? (
-				<Text color="yellow">{'  [←/Esc=cancel  ↑↓=select  Enter=switch  d=del]'}</Text>
-			) : (
-				<>
-					<Box width={2} flexShrink={0}>
-						<Text color="magenta">{'>'} </Text>
-					</Box>
-					<Box flexGrow={1}>
-						<TextInput
-							value={query}
-							onChange={onChange}
-							onSubmit={(v) => {
-								if (!completionMode) onSubmit(v)
-							}}
-							focus={focus === 'chat'}
-						/>
-					</Box>
-				</>
 			)}
+			{focus === 'sessions' && (
+				<Text color="yellow">{'  [←/Esc=cancel  ↑↓=select  Enter=switch  d=del]'}</Text>
+			)}
+			{isChat && (
+				<Box width={2} flexShrink={0}>
+					<Text color="magenta">{'>'} </Text>
+				</Box>
+			)}
+			<Box flexGrow={1}>
+				<TextInput
+					value={query}
+					onChange={onChange}
+					onSubmit={(v) => {
+						if (!completionMode) onSubmit(v)
+					}}
+					focus={isChat}
+				/>
+			</Box>
 		</Box>
 	)
 }

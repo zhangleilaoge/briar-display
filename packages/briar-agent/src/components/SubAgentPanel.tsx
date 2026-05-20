@@ -45,19 +45,11 @@ export function SubAgentPanel({
 									{agent.prompt.slice(0, 40)}
 								</Text>
 							</Box>
-							{lastOut ? (
-								<Box paddingX={1}>
-									<Text color="gray" wrap="truncate-end">
-										{lastOut.slice(0, 40)}
-									</Text>
-								</Box>
-							) : (
-								<Box paddingX={1}>
-									<Text color="gray" wrap="truncate-end">
-										(no output)
-									</Text>
-								</Box>
-							)}
+							<Box paddingX={1}>
+								<Text color="gray" wrap="truncate-end">
+									{agent.output.join('').trim().slice(0, 40) || '(no output)'}
+								</Text>
+							</Box>
 						</Box>
 					)
 				})}

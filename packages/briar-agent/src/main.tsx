@@ -5,8 +5,8 @@ import { render } from 'ink'
 import React from 'react'
 import { App } from './cli.js'
 import { KimiCode } from './client/index.js'
-import { createFilteredStdin } from './mouse-stdin.js'
 import { runPlainInteractive, runSingle } from './modes.js'
+import { createFilteredStdin } from './mouse-stdin.js'
 
 /* 启用终端鼠标滚轮捕获，退出时恢复 */
 process.stdout.write('\x1b[?1000h\x1b[?1006h')
