@@ -20,6 +20,9 @@ export const RouteConfig = {
 		'/api/auth/register',
 		'/api/auth/send-reset-code',
 		'/api/auth/reset-password',
+		'/api/readme-ai',
+		'/api/readme-ai/init',
+		'/api/readme-ai/rewrite',
 	],
 
 	/** API 不需要认证的路径前缀 */

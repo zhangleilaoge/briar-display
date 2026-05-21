@@ -8,6 +8,19 @@ CREATE DATABASE IF NOT EXISTS briar_display
 
 USE briar_display;
 
+-- AI 项目认知表
+CREATE TABLE IF NOT EXISTS readme_ai (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  project_path VARCHAR(512) NOT NULL UNIQUE COMMENT '项目绝对路径',
+  project_name VARCHAR(255) NOT NULL COMMENT '项目名称',
+  content LONGTEXT NOT NULL COMMENT 'readme.ai.md 内容',
+  code_hash VARCHAR(64) COMMENT '代码目录结构hash，用于变更检测',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  INDEX idx_project_path (project_path),
+  INDEX idx_project_name (project_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI 项目认知表';
+
 -- 用户表
 CREATE TABLE IF NOT EXISTS users (
   id VARCHAR(36) PRIMARY KEY COMMENT '用户唯一标识',
