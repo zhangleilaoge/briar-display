@@ -56,9 +56,11 @@ chmod 600 "$ENV_FILE"
 | 发表评论 | "发表评论"、"加条评论" | [docs/review.md](docs/review.md) | `briar-mr-review.sh comment` |
 | 回复 Discussion | "回复这些评论"、"逐条回复"、"给评论写回复" | [docs/review.md](docs/review.md) | `briar-mr-review.sh reply` |
 | Review 代码 | "review"、"看看代码"、"code review" | [docs/review.md](docs/review.md) | `briar-mr-review.sh diff` |
-| 修复评论 | "修复"、"处理 review"、"修掉" | [docs/review.md](docs/review.md) | 手动修复 + `briar-mr-review.sh reply` |
+| 修复评论 | "修复"、"处理 review"、"修掉" | [docs/review.md](docs/review.md) | **代码修复 → [briar-fix](../../briar-fix/SKILL.md)** |
 | 获取 Pipeline | "看看 pipeline"、"CI 状态"、"构建结果" | [docs/pipeline.md](docs/pipeline.md) | `briar-mr-pipeline.sh` |
 | 列出未回复评论 | "最近 MR 评论"、"待回复评论"、"pending" | [docs/pending.md](docs/pending.md) | `briar-mr-pending.sh [days] [project_filter]` |
+
+> **代码修复统一由 [briar-fix](../../briar-fix/SKILL.md) 处理**：按 comments 修复代码、Pipeline 失败后修复代码等场景，都通过 `briar-fix` 的 worktree 工作流完成。
 
 **重要**：用户只说"MR 链接"而没有明确意图时，默认触发【获取评论】，**不要自动修复**；修复后不要自动回复 Discussion，需等用户明确要求。
 

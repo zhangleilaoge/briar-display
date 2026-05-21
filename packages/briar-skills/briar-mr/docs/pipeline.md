@@ -42,3 +42,48 @@ curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
 | build | build | ⏳ running | - | - |
 
 同时展示 Pipeline 总体信息：状态、耗时、链接。
+
+---
+
+## Pipeline 失败后的代码修复
+
+如果 Pipeline 中有 `lint`、`test`、`build` 等 Job 失败，通常需要修复代码后重新触发。
+
+**代码修复由 briar-fix 处理**，流程如下：
+
+```
+briar-mr pipeline（获取失败日志）
+  ↓
+分析失败原因（lint 错误 / 类型错误 / 测试失败）
+  ↓
+调用 briar-fix
+  │   1. setup worktree（基于 pipeline 对应分支）
+  │   2. 读取失败日志，定位问题文件
+  │   3. 修复代码
+  │   4. verify（重点验证失败的 job）
+  │   5. 展示 diff，等用户确认
+  │   6. commit + push
+  │   7. cleanup worktree
+  ↓
+重新触发 pipeline（用户手动或自动）
+```
+
+详见 [briar-fix 文档](../../briar-fix/SKILL.md)。
+
+### 修复脚本速查
+
+```bash
+# 创建 worktree
+./packages/briar-skills/briar-fix/scripts/briar-fix.sh setup \
+  /Users/zhanglei/Documents/projects/<repo> <branch> fix-pipeline-<mr_iid>
+
+# 验证（会自动检测项目类型运行 lint/typecheck）
+./packages/briar-skills/briar-fix/scripts/briar-fix.sh verify <worktree_path>
+
+# 用户确认后提交
+./packages/briar-skills/briar-fix/scripts/briar-fix.sh commit <worktree_path> "fix: 修复 CI 失败"
+./packages/briar-skills/briar-fix/scripts/briar-fix.sh push <worktree_path>
+
+# 清理
+./packages/briar-skills/briar-fix/scripts/briar-fix.sh cleanup <repo_path> <worktree_path>
+```

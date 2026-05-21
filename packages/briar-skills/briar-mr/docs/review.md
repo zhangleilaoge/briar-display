@@ -280,6 +280,8 @@ curl -s -X POST \
 
 **触发条件**：用户说"按评论修复"、"处理 code review"、"修掉问题"、"分析并修复"。
 
+> **代码修复由 briar-fix 处理**。本章节只描述判断标准和决策逻辑，实际修复操作见 [briar-fix 文档](../../briar-fix/SKILL.md)。
+
 ### 行为依赖
 
 ```
@@ -287,12 +289,28 @@ curl -s -X POST \
 ```
 
 - **修复评论**内部需要先**获取评论**（同 fetch），分析后再修复。
+- **代码修复阶段**调用 `briar-fix`：创建 worktree → 读取 comments + diff 上下文 → 修复 → 验证 → 用户确认 → 提交 → 清理 worktree。
 - **回复 Discussion**不是修复评论的子步骤，而是一个**可选的后续独立行为**。用户可能只修复不回复，也可能修复后要求逐条回复。
 - 不要自动执行回复 Discussion，必须等用户明确要求后再触发。
 
 ### 工作流程
 
-**获取评论** → 逐条分析合理性 → 执行修复（合理的）/ 跳过并说明原因（不合理的） → TypeScript 编译检查 → 输出总结表格
+```
+获取评论（fetch）
+  ↓
+逐条分析合理性
+  ↓
+调用 briar-fix 修复代码
+  │   1. setup worktree（基于 MR source_branch）
+  │   2. 读取 comments + diff 上下文
+  │   3. 修复代码
+  │   4. verify（typecheck / lint）
+  │   5. 展示 diff，等用户确认
+  │   6. commit + push
+  │   7. cleanup worktree
+  ↓
+输出修复总结表格
+```
 
 ### 评论判断标准
 
@@ -306,11 +324,25 @@ curl -s -X POST \
 | 防御性建议 | 增加错误提示、日志，异常场景极少 | ❌ 跳过（说明原因） |
 | 设计争议 | 涉及架构决策，无明确对错 | ❌ 跳过（说明原因） |
 
-### 验证
+### 修复脚本速查
 
 ```bash
-npx tsc --noEmit
-# 或项目特定的 typecheck 命令
+# 创建 worktree
+./packages/briar-skills/briar-fix/scripts/briar-fix.sh setup \
+  /Users/zhanglei/Documents/projects/<repo> <branch> fix-<mr_iid>
+
+# 验证
+./packages/briar-skills/briar-fix/scripts/briar-fix.sh verify <worktree_path>
+
+# 展示 diff 等用户确认
+./packages/briar-skills/briar-fix/scripts/briar-fix.sh diff <worktree_path>
+
+# 用户确认后提交
+./packages/briar-skills/briar-fix/scripts/briar-fix.sh commit <worktree_path> "fix: 按 review 修复"
+./packages/briar-skills/briar-fix/scripts/briar-fix.sh push <worktree_path>
+
+# 清理
+./packages/briar-skills/briar-fix/scripts/briar-fix.sh cleanup <repo_path> <worktree_path>
 ```
 
 ### 输出总结
