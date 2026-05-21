@@ -29,50 +29,45 @@ description: >
 
 ---
 
-## 支持的信息源
+## 信息源分类与获取策略
 
-| 类型 | URL 特征 | 获取方式 | 备注 |
+### 分类规则（按 URL 特征）
+
+| 类型 | URL 特征 | 获取策略 | 备注 |
 |------|---------|---------|------|
-| Jira | 包含 `jira.`、`/browse/` | AppleScript + Chrome（需登录态） | 获取需求描述、背景信息 |
+| 需登录内网页 | 任意需要浏览器登录态的系统（如 Jira、内部平台） | AppleScript + Chrome | 利用浏览器已有的登录态 |
 | GitLab MR（背景） | 包含 `gitlab.`、`/-/merge_requests/` | GitLab API | **仅获取 MR 元信息**（标题、描述、关联 Jira），不处理评论/review |
 | GitLab Wiki | 包含 `gitlab.`、`/-/wikis/` | GitLab API / 页面抓取 | 获取 Wiki 页面内容 |
 | 公开页面 | 任意公开 HTTP/HTTPS | `curl` / `fetch` | 通用页面抓取 |
-| 需登录内网页 | 任意内网系统（有赞系） | AppleScript + Chrome | 内网系统登录态获取 |
-
----
-
-## 核心流程
-
-### 1. 解析 URL，判断信息源类型
-
-```bash
-URL="https://jira.qima-inc.com/browse/CSWT-191480"
-
-if echo "$URL" | grep -qE 'jira\..*/browse/'; then
-    TYPE="jira"
-elif echo "$URL" | grep -qE 'gitlab\..*/-/merge_requests/'; then
-    TYPE="gitlab-mr-bg"  # 仅获取 MR 背景信息，MR 业务操作由 briar-mr 处理
-elif echo "$URL" | grep -qE 'gitlab\..*/-/wikis/'; then
-    TYPE="gitlab-wiki"
-else
-    TYPE="generic"
-fi
-```
-
-### 2. 选择获取方式
-
-| 方式 | 适用场景 | 工具 |
-|------|---------|------|
-| **HTTP 直接请求** | 公开页面、有 API Token 的系统 | `curl` |
-| **GitLab API** | GitLab MR / Wiki / 项目信息 | `curl` + `PRIVATE-TOKEN` |
-| **AppleScript + Chrome** | 需要浏览器登录态的内网页面 | `osascript` |
 
 **判断逻辑**：
 - 如果是 GitLab 且有 Token → 走 GitLab API
-- 如果是 Jira / 有赞内网系统 → 走 AppleScript + Chrome
+- 如果页面需要登录态（已知内网系统，或 `curl` 返回登录页） → 走 AppleScript + Chrome
 - 其他 → 先尝试 `curl`，如果返回登录页再降级到 AppleScript
 
-### 3. AppleScript + Chrome 获取页面（内网登录态）
+---
+
+## 通用获取方式
+
+### 方式一：HTTP 直接请求（curl）
+
+适用于公开页面、有 API Token 的系统。
+
+```bash
+curl -s -L "$URL"
+```
+
+### 方式二：GitLab API
+
+```bash
+export GITLAB_TOKEN=$(grep GITLAB_TOKEN /Users/zhanglei/Documents/projects/briar-display/packages/briar-skills/.env | cut -d= -f2-)
+ENCODED_PATH=$(echo "$PROJECT_PATH" | sed 's/\//%2F/g')
+
+curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID"
+```
+
+### 方式三：AppleScript + Chrome（需登录态页面）
 
 **前提条件**：
 - macOS 系统
@@ -87,7 +82,8 @@ osascript -e 'tell application "Google Chrome" to return version'
 **开启方式**（如未开启）：
 > 菜单栏 → **查看 → 开发者 → 允许 Apple 事件中的 JavaScript**
 
-**获取脚本**：
+**通用获取脚本**：
+
 ```applescript
 tell application "Google Chrome"
     activate
@@ -98,7 +94,11 @@ tell application "Google Chrome"
         set pageTitle to title of newTab
         set pageText to execute newTab javascript "document.body.innerText"
         set cookies to execute newTab javascript "document.cookie"
-        return "TITLE:" & pageTitle & "\n---COOKIES---\n" & cookies & "\n---BODY---\n" & pageText
+        -- 通用图片/附件 URL 提取：查找页面中的图片和附件链接
+        set imageUrls to execute newTab javascript "
+          Array.from(document.querySelectorAll('a, img')).map(el => el.href || el.src).filter(u => u && (u.match(/\\.(png|jpg|jpeg|gif|webp)$/i) || u.includes('attachment') || u.includes('download'))).join('\\n')
+        "
+        return "TITLE:" & pageTitle & "\n---COOKIES---\n" & cookies & "\n---BODY---\n" & pageText & "\n---IMAGES---\n" & imageUrls
     end tell
 end tell
 ```
@@ -110,32 +110,80 @@ tell application "Google Chrome"
 end tell
 ```
 
-### 4. GitLab API 获取 MR 信息
+---
 
-```bash
-export GITLAB_TOKEN=$(grep GITLAB_TOKEN /Users/zhanglei/Documents/projects/briar-display/packages/briar-skills/.env | cut -d= -f2-)
-ENCODED_PATH=$(echo "$PROJECT_PATH" | sed 's/\//%2F/g')
+## 图片/附件识别（通用策略）
 
-curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID"
+如果页面包含截图或图片附件（`---IMAGES---` 后有内容），**必须**主动下载并识别，不能只列出文件名。
+
+### 坑点与解决路径
+
+1. **`curl` + `document.cookie` 大概率会失败**
+   - `document.cookie` 只能获取**非 HTTP-only** 的 cookie
+   - 大多数内网系统（Jira、内部平台）的核心会话 cookie（如 `JSESSIONID`）都是 **HTTP-only**
+   - `curl --cookie "$DOCUMENT_COOKIE"` 下载附件几乎一定会被重定向到登录页
+
+2. **Chrome 的 Cookies SQLite 数据库不可信**
+   - `~/Library/Application Support/Google/Chrome/Profile 1/Cookies` 可能为空或不包含当前会话的实时 cookie
+   - Chrome 可能将 session cookie 保存在内存中，不会立即持久化到 SQLite
+
+3. **base64 直传不可行**
+   - 通过 AppleScript `execute javascript` 返回图片的 base64，`stdout` 很容易因超长输出而截断或报错
+
+### 推荐方案：通过 Chrome 自身触发下载
+
+这是最可靠的绕过方式——利用浏览器已有的完整登录态（含 HTTP-only cookie）让 Chrome 自己下载附件。
+
+```applescript
+tell application "Google Chrome"
+    tell front window
+        set imgTab to make new tab at end of tabs
+        set URL of imgTab to "ATTACHMENT_URL"
+        delay 3
+        execute imgTab javascript "
+            var img = document.querySelector('img');
+            if (img) {
+                var canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                var link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = 'context_image.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        "
+        delay 2
+    end tell
+end tell
 ```
 
-### 5. 结构化输出
+然后到 `~/Downloads/` 目录读取下载的文件，并用 `ReadMediaFile` 识别。
+
+> 如果目标页面不是直接展示图片（而是触发下载），上述方式可能不适用。此时可尝试在 Chrome 中打开附件链接后，观察 URL 是否变化，或检查 Network 面板找到实际请求地址。
+
+---
+
+## 结构化输出
 
 获取原始内容后，提取关键字段并结构化输出，方便下游 skill 消费。
 
-**Jira 输出模板**：
+**通用页面输出模板**：
 ```
-【Jira 上下文】CSWT-191480
+【页面上下文】URL
 - 标题: xxx
-- 类型: Bug / 需求 / 任务
-- 状态: 进行中 / 已解决 / 已关闭
-- 优先级: P0 / P1 / P2
-- 描述: xxx
-- 期望结果: xxx
-- 实际结果: xxx
-- 相关 MR: https://gitlab.../merge_requests/936
-- 评论摘要: xxx
+- 关键状态/字段: xxx（根据页面类型提取，如 Bug 状态、优先级、作者等）
+- 正文摘要: xxx
+- 评论/讨论摘要: xxx
+
+**附件/截图分析**:
+（如果页面包含截图或图片附件，在此处结合图片内容进行描述：
+- 图片展示了什么界面/场景？
+- 图片中有什么关键信息（错误提示、数据状态、UI 状态）？
+- 图片内容与文字描述是否一致？）
 ```
 
 **MR 背景信息输出模板**（供 briar-mr 使用，不替代 briar-mr 的评论获取）：
@@ -157,6 +205,7 @@ curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
 3. **Chrome 文件锁**：SQLite 中的 cookie 不是实时的，不能通过复制 `~/Library/Application Support/Google/Chrome/Profile 1/Cookies` 来获取登录态
 4. **降级策略**：如果 AppleScript 获取失败（Chrome 未开启支持），提示用户开启或手动复制页面内容
 5. **超时控制**：AppleScript 等待页面加载的时间根据网络状况调整（通常 3-5 秒）
+6. **图片附件必须主动识别**：遇到页面中包含截图/图片附件时，不能只列出文件名，必须下载图片并用 `ReadMediaFile` 识别内容，将图片信息融入回答
 
 ---
 
