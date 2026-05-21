@@ -38,3 +38,6 @@ backups/
 
 # temp scripts
 cert-renew-fetch.js
+
+# agent skills symlinks
+.agents/skills/

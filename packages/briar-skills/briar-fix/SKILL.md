@@ -53,7 +53,7 @@ description: >
 ```bash
 # 参数：仓库路径、基础分支、worktree 名称
 ./packages/briar-skills/briar-fix/scripts/briar-fix.sh setup \
-  /Users/zhanglei/Documents/projects/<repo-name> \
+  "$HOME/projects/<repo-name>" \
   <branch> \
   <worktree-name>
 ```

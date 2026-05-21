@@ -9,7 +9,14 @@
 ## API
 
 ```bash
-export GITLAB_TOKEN=$(grep GITLAB_TOKEN /Users/zhanglei/Documents/projects/briar-display/packages/briar-skills/.env | cut -d= -f2-)
+# 读取 GITLAB_TOKEN：优先环境变量 → 全局配置
+if [ -z "$GITLAB_TOKEN" ]; then
+    ENV_FILE="$HOME/.config/briar-skills/.env"
+    if [ -f "$ENV_FILE" ]; then
+        export GITLAB_TOKEN=$(grep GITLAB_TOKEN "$ENV_FILE" | cut -d= -f2-)
+    fi
+fi
+
 ENCODED_PATH=$(echo "$PROJECT_PATH" | sed 's/\//%2F/g')
 
 # 获取 MR 详情中的 head_pipeline
@@ -75,7 +82,7 @@ briar-mr pipeline（获取失败日志）
 ```bash
 # 创建 worktree
 ./packages/briar-skills/briar-fix/scripts/briar-fix.sh setup \
-  /Users/zhanglei/Documents/projects/<repo> <branch> fix-pipeline-<mr_iid>
+  "$HOME/projects/<repo>" <branch> fix-pipeline-<mr_iid>
 
 # 验证（会自动检测项目类型运行 lint/typecheck）
 ./packages/briar-skills/briar-fix/scripts/briar-fix.sh verify <worktree_path>

@@ -27,10 +27,19 @@ echo ""
 
 # --- GitLab MR: 优先用 API ---
 if [ "$TYPE" = "gitlab-mr" ]; then
-    ENV_FILE="/Users/zhanglei/Documents/projects/briar-display/packages/briar-skills/.env"
-    GITLAB_TOKEN=""
-    if [ -f "$ENV_FILE" ]; then
-        GITLAB_TOKEN=$(grep GITLAB_TOKEN "$ENV_FILE" | cut -d= -f2-)
+    # 读取 GITLAB_TOKEN：优先环境变量 → 全局配置 → 项目内配置
+    if [ -z "$GITLAB_TOKEN" ]; then
+        GLOBAL_ENV="$HOME/.config/briar-skills/.env"
+        if [ -f "$GLOBAL_ENV" ]; then
+            GITLAB_TOKEN=$(grep GITLAB_TOKEN "$GLOBAL_ENV" | cut -d= -f2-)
+        fi
+    fi
+    # 向后兼容：如果仍在 briar-display 项目内
+    if [ -z "$GITLAB_TOKEN" ]; then
+        PROJECT_ENV="$HOME/Documents/projects/briar-display/packages/briar-skills/.env"
+        if [ -f "$PROJECT_ENV" ]; then
+            GITLAB_TOKEN=$(grep GITLAB_TOKEN "$PROJECT_ENV" | cut -d= -f2-)
+        fi
     fi
 
     if [ -n "$GITLAB_TOKEN" ]; then

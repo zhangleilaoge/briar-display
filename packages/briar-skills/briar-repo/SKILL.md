@@ -13,8 +13,13 @@ description: >
 与 `briar-mr` 共用同一个 `.env` 文件：
 
 ```bash
-ENV_FILE="/Users/zhanglei/Documents/projects/briar-display/packages/briar-skills/.env"
-export GITLAB_TOKEN=$(grep GITLAB_TOKEN "$ENV_FILE" | cut -d= -f2-)
+# 读取 GITLAB_TOKEN：优先环境变量 → 全局配置
+if [ -z "$GITLAB_TOKEN" ]; then
+    ENV_FILE="$HOME/.config/briar-skills/.env"
+    if [ -f "$ENV_FILE" ]; then
+        export GITLAB_TOKEN=$(grep GITLAB_TOKEN "$ENV_FILE" | cut -d= -f2-)
+    fi
+fi
 ```
 
 如果 `.env` 中不存在 `GITLAB_TOKEN`，**必须主动向用户索要**：
@@ -31,7 +36,7 @@ export GITLAB_TOKEN=$(grep GITLAB_TOKEN "$ENV_FILE" | cut -d= -f2-)
 
 1. **检查本地是否已存在**
    ```bash
-   LOCAL_PATH="/Users/zhanglei/Documents/projects/<repo-name>"
+   LOCAL_PATH="$HOME/projects/<repo-name>"
    if [ -d "$LOCAL_PATH/.git" ]; then
        echo "本地已有该仓库"
    fi
@@ -49,7 +54,7 @@ export GITLAB_TOKEN=$(grep GITLAB_TOKEN "$ENV_FILE" | cut -d= -f2-)
 
 4. **执行克隆**
    ```bash
-   git clone <ssh_url> /Users/zhanglei/Documents/projects/<repo-name>
+   git clone <ssh_url> "$HOME/projects/<repo-name>"
    ```
 
 5. **反馈结果**
@@ -70,19 +75,19 @@ export GITLAB_TOKEN=$(grep GITLAB_TOKEN "$ENV_FILE" | cut -d= -f2-)
 $ ./briar-repo.sh pull wsc-pc-trade
 📦 准备克隆 wsc-node/wsc-pc-trade
    URL: git@gitlab.qima-inc.com:wsc-node/wsc-pc-trade.git
-   目标: /Users/zhanglei/Documents/projects/wsc-pc-trade
+   目标: $HOME/projects/wsc-pc-trade
 
 Cloning into 'wsc-pc-trade'...
-✅ 克隆完成：/Users/zhanglei/Documents/projects/wsc-pc-trade
+✅ 克隆完成：$HOME/projects/wsc-pc-trade
    Web: https://gitlab.qima-inc.com/wsc-node/wsc-pc-trade
 ```
 
 **本地已有**：
 ```bash
 $ ./briar-repo.sh pull wsc-pc-trade
-本地已有该仓库：/Users/zhanglei/Documents/projects/wsc-pc-trade
+本地已有该仓库：$HOME/projects/wsc-pc-trade
 远程地址：git@gitlab.qima-inc.com:wsc-node/wsc-pc-trade.git
-如需更新请执行：cd /Users/zhanglei/Documents/projects/wsc-pc-trade && git pull
+如需更新请执行：cd "$HOME/projects/wsc-pc-trade" && git pull
 ```
 
 ### 注意

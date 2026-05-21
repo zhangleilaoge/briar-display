@@ -60,7 +60,14 @@ curl -s -L "$URL"
 ### 方式二：GitLab API
 
 ```bash
-export GITLAB_TOKEN=$(grep GITLAB_TOKEN /Users/zhanglei/Documents/projects/briar-display/packages/briar-skills/.env | cut -d= -f2-)
+# 读取 GITLAB_TOKEN：优先环境变量 → 全局配置
+if [ -z "$GITLAB_TOKEN" ]; then
+    GLOBAL_ENV="$HOME/.config/briar-skills/.env"
+    if [ -f "$GLOBAL_ENV" ]; then
+        export GITLAB_TOKEN=$(grep GITLAB_TOKEN "$GLOBAL_ENV" | cut -d= -f2-)
+    fi
+fi
+
 ENCODED_PATH=$(echo "$PROJECT_PATH" | sed 's/\//%2F/g')
 
 curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \

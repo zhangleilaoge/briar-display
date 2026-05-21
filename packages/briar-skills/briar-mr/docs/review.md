@@ -13,7 +13,14 @@
 ### API
 
 ```bash
-export GITLAB_TOKEN=$(grep GITLAB_TOKEN /Users/zhanglei/Documents/projects/briar-display/packages/briar-skills/.env | cut -d= -f2-)
+# 读取 GITLAB_TOKEN：优先环境变量 → 全局配置
+if [ -z "$GITLAB_TOKEN" ]; then
+    ENV_FILE="$HOME/.config/briar-skills/.env"
+    if [ -f "$ENV_FILE" ]; then
+        export GITLAB_TOKEN=$(grep GITLAB_TOKEN "$ENV_FILE" | cut -d= -f2-)
+    fi
+fi
+
 ENCODED_PATH=$(echo "$PROJECT_PATH" | sed 's/\//%2F/g')
 
 # Notes（普通评论）
@@ -202,7 +209,7 @@ curl -s -X PUT \
    ```bash
    # 从 project_path 推断仓库名（如 wsc-node/wsc-pc-channel → wsc-pc-channel）
    REPO_NAME=$(echo "$PROJECT_PATH" | sed 's/.*\///')
-   LOCAL_REPO="/Users/zhanglei/Documents/projects/$REPO_NAME"
+   LOCAL_REPO="$HOME/projects/$REPO_NAME"
 
    # 检查本地是否已有该仓库
    if [ ! -d "$LOCAL_REPO/.git" ]; then
@@ -218,7 +225,7 @@ curl -s -X PUT \
    输出示例：
    ```
    === Review Worktree ===
-   Path: /Users/zhanglei/Documents/projects/wsc-pc-channel-review-932
+   Path: $HOME/projects/wsc-pc-channel-review-932
    Branch: feat/channel-refactor
    Target: master
 
@@ -458,7 +465,7 @@ for c in comments:
 ```bash
 # 创建 worktree
 ./packages/briar-skills/briar-fix/scripts/briar-fix.sh setup \
-  /Users/zhanglei/Documents/projects/<repo> <branch> fix-<mr_iid>
+  "$HOME/projects/<repo>" <branch> fix-<mr_iid>
 
 # 验证
 ./packages/briar-skills/briar-fix/scripts/briar-fix.sh verify <worktree_path>

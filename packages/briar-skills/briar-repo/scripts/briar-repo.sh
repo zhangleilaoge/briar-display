@@ -9,7 +9,7 @@ set -e
 
 ACTION="${1}"
 REPO_NAME="${2}"
-BASE_DIR="${3:-/Users/zhanglei/Documents/projects}"
+BASE_DIR="${3:-$HOME/projects}"
 DOMAIN="${4:-gitlab.qima-inc.com}"
 
 if [ "$ACTION" != "pull" ]; then
@@ -18,7 +18,7 @@ if [ "$ACTION" != "pull" ]; then
 	echo ""
 	echo "Examples:"
 	echo "  $0 pull wsc-pc-channel"
-	echo "  $0 pull wsc-pc-trade /Users/zhanglei/work"
+	echo "  $0 pull wsc-pc-trade $HOME/work"
 	exit 1
 fi
 

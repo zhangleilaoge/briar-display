@@ -23,9 +23,12 @@ description: >
 读取 skill 目录下的 `.env` 文件：
 
 ```bash
-ENV_FILE="/Users/zhanglei/Documents/projects/briar-display/packages/briar-skills/.env"
-if [ -f "$ENV_FILE" ]; then
-  export GITLAB_TOKEN=$(grep GITLAB_TOKEN "$ENV_FILE" | cut -d= -f2-)
+# 读取 GITLAB_TOKEN：优先环境变量 → 全局配置
+if [ -z "$GITLAB_TOKEN" ]; then
+    ENV_FILE="$HOME/.config/briar-skills/.env"
+    if [ -f "$ENV_FILE" ]; then
+        export GITLAB_TOKEN=$(grep GITLAB_TOKEN "$ENV_FILE" | cut -d= -f2-)
+    fi
 fi
 ```
 
@@ -40,9 +43,9 @@ fi
 拿到 token 后写入 `.env`：
 
 ```bash
-mkdir -p /Users/zhanglei/Documents/projects/briar-display/packages/briar-skills
-echo "GITLAB_TOKEN=YOUR_TOKEN" > "$ENV_FILE"
-chmod 600 "$ENV_FILE"
+mkdir -p "$HOME/.config/briar-skills"
+echo "GITLAB_TOKEN=YOUR_TOKEN" > "$HOME/.config/briar-skills/.env"
+chmod 600 "$HOME/.config/briar-skills/.env"
 ```
 
 ---

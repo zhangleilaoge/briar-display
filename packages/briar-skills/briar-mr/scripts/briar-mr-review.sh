@@ -126,7 +126,7 @@ elif [ "$ACTION" = "setup-worktree" ]; then
 	fi
 
 	REPO_NAME=$(echo "$PROJECT_PATH" | sed 's/.*\///')
-	LOCAL_REPO="/Users/zhanglei/Documents/projects/$REPO_NAME"
+	LOCAL_REPO="$HOME/projects/$REPO_NAME"
 
 	if [ ! -d "$LOCAL_REPO/.git" ]; then
 		echo "Error: Local repository not found at $LOCAL_REPO"
