@@ -62,7 +62,9 @@ chmod 600 "$ENV_FILE"
 
 > **代码修复统一由 [briar-fix](../../briar-fix/SKILL.md) 处理**：按 comments 修复代码、Pipeline 失败后修复代码等场景，都通过 `briar-fix` 的 worktree 工作流完成。
 
-**重要**：用户只说"MR 链接"而没有明确意图时，默认触发【获取评论】，**不要自动修复**；修复后不要自动回复 Discussion，需等用户明确要求。
+**重要**：
+- 用户只说"MR 链接"而没有明确意图时，默认触发【获取评论】，**不要自动修复**；修复后不要自动回复 Discussion，需等用户明确要求。
+- **与 briar-context 的分工**：如果用户在 review MR 前要求"获取这个 MR 的关联需求/背景信息"，调用 `briar-context` 获取 Jira/背景；MR 本身的评论、review、pipeline 等业务操作由本 skill 处理。
 
 ---
 
