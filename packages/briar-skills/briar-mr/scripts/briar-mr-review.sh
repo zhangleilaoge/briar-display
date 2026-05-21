@@ -134,7 +134,7 @@ elif [ "$ACTION" = "setup-worktree" ]; then
 		exit 1
 	fi
 
-	FIX_SCRIPT="$(cd "$(dirname "$0")/../briar-fix/scripts" && pwd)/briar-fix.sh"
+	FIX_SCRIPT="$(cd "$(dirname "$0")/../../briar-fix/scripts" && pwd)/briar-fix.sh"
 	if [ ! -f "$FIX_SCRIPT" ]; then
 		echo "Error: briar-fix.sh not found at $FIX_SCRIPT"
 		exit 1

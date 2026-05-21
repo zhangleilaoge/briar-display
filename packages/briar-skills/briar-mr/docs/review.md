@@ -175,6 +175,8 @@ curl -s -X PUT \
    ./packages/briar-skills/briar-mr/scripts/briar-mr.sh diff <domain> <project_path> <mr_iid>
    ```
 
+   > 注：`diff` 子命令内部调用 GitLab `changes` API（`/merge_requests/:iid/changes`）。如需直接 curl，请使用 `changes` endpoint，部分 GitLab 实例的 `/diffs` 可能返回 404。
+
    同时获取 `diff_refs`（后续添加行级评论时需要）：
    ```bash
    curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
@@ -279,14 +281,19 @@ curl -s -X PUT \
    如果第 2 步创建了 worktree，review 完成后（无论是否发表了评论）**立即清理**：
 
    ```bash
+   # 方式一：通过 briar-fix 脚本（自动处理分支和目录）
    ./packages/briar-skills/briar-fix/scripts/briar-fix.sh cleanup \
        "$LOCAL_REPO" \
        "$WORKTREE_PATH"
+
+   # 方式二：手动清理（如果脚本不可用）
+   cd "$LOCAL_REPO" && git worktree remove "$WORKTREE_PATH" --force
+   rm -rf "$WORKTREE_PATH"
    ```
 
    > 如果用户说"先不清理，我还要看看"，则推迟清理，但**必须提醒**用户后续手动清理：
    > ```bash
-   > git worktree remove <worktree_path>
+   > cd "$LOCAL_REPO" && git worktree remove "$WORKTREE_PATH" --force
    > ```
 
 ### 添加行级评论（DiffNote）
@@ -333,6 +340,68 @@ curl -s -X POST \
 - 如果 diff 文件过多（>5 个）或单文件 diff 过长（>200 行），先展示文件列表和统计，询问用户重点关注哪些文件
 - 添加评论前**必须获得用户明确同意**，不要自动发表
 - **评论应优先使用 DiffNote（行级评论）**，精确定位到新增/修改的代码行，确保 reviewer 能在 MR diff 页面直接看到。只有在用户明确只需要总结时才只发顶层 Note
+
+### `new_line` 的取值规则
+
+| 文件类型 | `new_line` 如何确定 |
+|---------|-------------------|
+| 新增文件（`new_file: true`） | 直接等于该文件中的实际行号 |
+| 修改文件 | 等于该文件在**合并后版本**中的行号；如果目标行在 diff 中是新增侧（`+` 开头），直接用文件中的行号即可 |
+
+> 简记：**`new_line` 永远指向「合并后文件」中的行号**。对新增文件没有歧义；对修改文件，只要确认目标行属于本次新增/修改的内容，直接用文件中的行号即可。
+
+### 批量添加 DiffNote 脚本模板
+
+当 review 意见较多时，可用以下 Python 脚本批量添加（避免手敲 8 条 curl）：
+
+```bash
+export GITLAB_TOKEN="..."
+DOMAIN="gitlab.qima-inc.com"
+PROJECT_PATH="group/project"
+MR_IID="932"
+ENCODED_PATH=$(echo "$PROJECT_PATH" | sed 's/\//%2F/g')
+API_URL="https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID/discussions"
+
+# 先获取 diff_refs
+DIFF_REFS=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID" | jq '.diff_refs')
+BASE_SHA=$(echo "$DIFF_REFS" | jq -r '.base_sha')
+HEAD_SHA=$(echo "$DIFF_REFS" | jq -r '.head_sha')
+START_SHA=$(echo "$DIFF_REFS" | jq -r '.start_sha')
+
+python3 -c "
+import json, urllib.request, os
+
+comments = [
+  {'path': 'src/Foo.ts', 'line': 42, 'body': '🔴 严重：...'},
+  # 更多评论...
+]
+
+for c in comments:
+    payload = json.dumps({
+        'body': c['body'],
+        'position': {
+            'base_sha': '$BASE_SHA',
+            'head_sha': '$HEAD_SHA',
+            'start_sha': '$START_SHA',
+            'position_type': 'text',
+            'new_path': c['path'],
+            'new_line': c['line']
+        }
+    })
+    req = urllib.request.Request(
+        '$API_URL',
+        data=payload.encode('utf-8'),
+        headers={'PRIVATE-TOKEN': os.environ['GITLAB_TOKEN'], 'Content-Type': 'application/json'},
+        method='POST'
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            print(f'OK: {c[\"path\"]}:{c[\"line\"]}')
+    except urllib.error.HTTPError as e:
+        print(f'Fail: {c[\"path\"]}:{c[\"line\"]} HTTP {e.code}')
+"
+```
 
 ---
 
