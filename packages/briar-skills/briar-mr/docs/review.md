@@ -357,6 +357,44 @@ curl -s -X POST \
 
 > 简记：**`new_line` 永远指向「合并后文件」中的行号**。对新增文件没有歧义；对修改文件，只要确认目标行属于本次新增/修改的内容，直接用文件中的行号即可。
 
+#### 如何从 diff 计算 `new_line`（逐 hunk 法）
+
+GitLab `changes` API 返回的 diff 中，每个 hunk 以 `@@ -old_start,old_count +new_start,new_count @@` 开头：
+
+- **`new_start`** = 该 hunk 在**合并后文件**中的起始行号（已包含前面所有 hunks 的行号偏移）
+- 从 `new_start` 开始，对 hunk 内每一行**上下文行**（空格开头）和**新增行**（`+` 开头）逐行 +1
+- **删除行**（`-` 开头）不占新文件行号，跳过
+
+**示例**：
+
+```
+@@ -68,7 +69,13 @@ const getTip = (...) => {
+     return '...';
+   }
+ 
+-  return `旧文案`;            ← 删除行，不占新文件行号
++  if (x) {                    ← 新文件第 73 行（new_start=69 + 偏移4）
++    return check(...);        ← 新文件第 74 行（目标行）
++      ? 'A'
++      : 'B';
++  }
++
++  return '新文案';             ← 新文件第 79 行
+ };
+```
+
+上例中 `new_start=69`，目标行 `return check(...)` 是该 hunk 第 6 个有效行（69 → 70 → 71 → 72 → 73 → **74**），所以 `new_line=74`。
+
+#### 不确定行号时
+
+如果 diff 复杂、hunk 多、难以一眼定位准确行号，**建议切 worktree 后用 `cat -n` 确认**：
+
+```bash
+cd "$WORKTREE_PATH" && cat -n path/to/file.ts | head -80 | tail -20
+```
+
+不要凭猜测填写 `new_line`，400 错误会浪费调用次数。
+
 ### 批量添加 DiffNote 脚本模板
 
 当 review 意见较多时，可用以下 Python 脚本批量添加（避免手敲 8 条 curl）：

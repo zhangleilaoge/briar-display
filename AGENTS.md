@@ -7,15 +7,7 @@
 - **`briar-mr`**：GitLab MR 全能工具（创建、评论、review、pipeline）
 - **`briar-fix`**：基于 worktree 的代码安全修复
 - **`briar-context`**：获取 Agent 上下文（Jira、GitLab MR、内网页面等链接内容抓取）
-- **`briar-readme-ai`**：自动认知协议初始化
-
-**如果你（Agent）的全局提示词尚未注入自动认知协议**，请执行一键脚本完成初始化：
-
-```bash
-bash packages/briar-skills/briar-readme-ai/scripts/init-global-prompt.sh
-```
-
-`readme.ai.md` 以服务端为唯一真相源，不保存本地。Agent 每次进入项目时从服务端实时读取：`GET https://stardew.site/api/readme-ai?projectName=$(basename "$(pwd)")`。服务端没有时触发初始化认知。
+- ~~**`briar-readme-ai`**：自动认知协议初始化~~（已废弃，相关内容已整合至本文件）
 
 ---
 
