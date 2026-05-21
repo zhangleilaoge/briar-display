@@ -4,12 +4,13 @@
 #
 # Usage:
 #   ./briar-mr.sh create  <domain> <project_path> <source_branch> <target_branch> <title> [description]
-#   ./briar-mr.sh fetch   <domain> <project_path> <mr_iid>
-#   ./briar-mr.sh comment <domain> <project_path> <mr_iid> <body>
-#   ./briar-mr.sh reply   <domain> <project_path> <mr_iid> <discussion_id> <body>
-#   ./briar-mr.sh diff    <domain> <project_path> <mr_iid>
-#   ./briar-mr.sh pipeline <domain> <project_path> <mr_iid>
-#   ./briar-mr.sh pending [domain] [days]
+#   ./briar-mr.sh fetch         <domain> <project_path> <mr_iid>
+#   ./briar-mr.sh comment       <domain> <project_path> <mr_iid> <body>
+#   ./briar-mr.sh reply         <domain> <project_path> <mr_iid> <discussion_id> <body>
+#   ./briar-mr.sh diff          <domain> <project_path> <mr_iid>
+#   ./briar-mr.sh setup-worktree <domain> <project_path> <mr_iid>
+#   ./briar-mr.sh pipeline      <domain> <project_path> <mr_iid>
+#   ./briar-mr.sh pending       [domain] [days]
 #
 # 也可以直接调用原子脚本：
 #   ./briar-mr-create.sh   ...
@@ -25,20 +26,22 @@ ACTION="${1}"
 show_usage() {
 	echo "Usage:"
 	echo "  $0 create   <domain> <project_path> <source_branch> <target_branch> <title> [description]"
-	echo "  $0 fetch    <domain> <project_path> <mr_iid>"
-	echo "  $0 comment  <domain> <project_path> <mr_iid> <comment_body>"
-	echo "  $0 reply    <domain> <project_path> <mr_iid> <discussion_id> <reply_body>"
-	echo "  $0 diff     <domain> <project_path> <mr_iid>"
-	echo "  $0 pipeline <domain> <project_path> <mr_iid>"
-	echo "  $0 pending  [domain] [days]"
+	echo "  $0 fetch         <domain> <project_path> <mr_iid>"
+	echo "  $0 comment       <domain> <project_path> <mr_iid> <comment_body>"
+	echo "  $0 reply         <domain> <project_path> <mr_iid> <discussion_id> <reply_body>"
+	echo "  $0 diff          <domain> <project_path> <mr_iid>"
+	echo "  $0 setup-worktree <domain> <project_path> <mr_iid>"
+	echo "  $0 pipeline      <domain> <project_path> <mr_iid>"
+	echo "  $0 pending       [domain] [days]"
 	echo ""
 	echo "Examples:"
 	echo "  $0 create   gitlab.qima-inc.com wsc-node/wsc-pc-channel feat/foo master 'feat: foo' 'Details...'"
-	echo "  $0 fetch    gitlab.qima-inc.com wsc-node/wsc-pc-channel 932"
-	echo "  $0 comment  gitlab.qima-inc.com wsc-node/wsc-pc-channel 932 'LGTM!'"
-	echo "  $0 reply    gitlab.qima-inc.com wsc-node/wsc-pc-channel 932 abc123 '已修复 ✅'"
-	echo "  $0 pipeline gitlab.qima-inc.com fe/scrm-mono 4849"
-	echo "  $0 pending  gitlab.qima-inc.com 7"
+	echo "  $0 fetch         gitlab.qima-inc.com wsc-node/wsc-pc-channel 932"
+	echo "  $0 comment       gitlab.qima-inc.com wsc-node/wsc-pc-channel 932 'LGTM!'"
+	echo "  $0 reply         gitlab.qima-inc.com wsc-node/wsc-pc-channel 932 abc123 '已修复 ✅'"
+	echo "  $0 setup-worktree gitlab.qima-inc.com wsc-node/wsc-pc-channel 932"
+	echo "  $0 pipeline      gitlab.qima-inc.com fe/scrm-mono 4849"
+	echo "  $0 pending       gitlab.qima-inc.com 7"
 }
 
 if [ -z "$ACTION" ] || [ "$ACTION" = "-h" ] || [ "$ACTION" = "--help" ]; then
@@ -67,7 +70,7 @@ case "$ACTION" in
 	create)
 		exec "${SCRIPT_DIR}/briar-mr-create.sh" "$DOMAIN" "$PROJECT_PATH" "$@"
 		;;
-	fetch|comment|reply|diff)
+	fetch|comment|reply|diff|setup-worktree)
 		exec "${SCRIPT_DIR}/briar-mr-review.sh" "$ACTION" "$DOMAIN" "$PROJECT_PATH" "$@"
 		;;
 	pipeline)

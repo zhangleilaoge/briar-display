@@ -1,10 +1,11 @@
 #!/bin/bash
-# briar-mr-review.sh - MR 评论操作（fetch / comment / reply / diff）
+# briar-mr-review.sh - MR 评论操作（fetch / comment / reply / diff / setup-worktree）
 # Usage:
-#   ./briar-mr-review.sh fetch    <domain> <project_path> <mr_iid>
-#   ./briar-mr-review.sh comment  <domain> <project_path> <mr_iid> <body>
-#   ./briar-mr-review.sh reply    <domain> <project_path> <mr_iid> <discussion_id> <body>
-#   ./briar-mr-review.sh diff     <domain> <project_path> <mr_iid>
+#   ./briar-mr-review.sh fetch         <domain> <project_path> <mr_iid>
+#   ./briar-mr-review.sh comment       <domain> <project_path> <mr_iid> <body>
+#   ./briar-mr-review.sh reply         <domain> <project_path> <mr_iid> <discussion_id> <body>
+#   ./briar-mr-review.sh diff          <domain> <project_path> <mr_iid>
+#   ./briar-mr-review.sh setup-worktree <domain> <project_path> <mr_iid>
 
 set -e
 
@@ -14,10 +15,11 @@ PROJECT_PATH="${3}"
 
 if [ -z "$PROJECT_PATH" ]; then
 	echo "Usage:"
-	echo "  $0 fetch    <domain> <project_path> <mr_iid>"
-	echo "  $0 comment  <domain> <project_path> <mr_iid> <comment_body>"
-	echo "  $0 reply    <domain> <project_path> <mr_iid> <discussion_id> <reply_body>"
-	echo "  $0 diff     <domain> <project_path> <mr_iid>"
+	echo "  $0 fetch         <domain> <project_path> <mr_iid>"
+	echo "  $0 comment       <domain> <project_path> <mr_iid> <comment_body>"
+	echo "  $0 reply         <domain> <project_path> <mr_iid> <discussion_id> <reply_body>"
+	echo "  $0 diff          <domain> <project_path> <mr_iid>"
+	echo "  $0 setup-worktree <domain> <project_path> <mr_iid>"
 	exit 1
 fi
 
@@ -106,8 +108,53 @@ elif [ "$ACTION" = "diff" ]; then
 			}]
 		}'
 
+elif [ "$ACTION" = "setup-worktree" ]; then
+	MR_IID="${4}"
+	if [ -z "$MR_IID" ]; then
+		echo "Error: mr_iid is required for 'setup-worktree' action."
+		exit 1
+	fi
+
+	BASE_URL="https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/merge_requests/${MR_IID}"
+	MR_INFO=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "${BASE_URL}")
+	SOURCE_BRANCH=$(echo "$MR_INFO" | jq -r '.source_branch')
+	TARGET_BRANCH=$(echo "$MR_INFO" | jq -r '.target_branch')
+
+	if [ -z "$SOURCE_BRANCH" ] || [ "$SOURCE_BRANCH" = "null" ]; then
+		echo "Error: Failed to get source_branch from MR ${MR_IID}."
+		exit 1
+	fi
+
+	REPO_NAME=$(echo "$PROJECT_PATH" | sed 's/.*\///')
+	LOCAL_REPO="/Users/zhanglei/Documents/projects/$REPO_NAME"
+
+	if [ ! -d "$LOCAL_REPO/.git" ]; then
+		echo "Error: Local repository not found at $LOCAL_REPO"
+		echo "Please clone it first using briar-repo."
+		exit 1
+	fi
+
+	FIX_SCRIPT="$(cd "$(dirname "$0")/../briar-fix/scripts" && pwd)/briar-fix.sh"
+	if [ ! -f "$FIX_SCRIPT" ]; then
+		echo "Error: briar-fix.sh not found at $FIX_SCRIPT"
+		exit 1
+	fi
+
+	WORKTREE_PATH=$("$FIX_SCRIPT" setup "$LOCAL_REPO" "$SOURCE_BRANCH" "review-${MR_IID}")
+
+	echo ""
+	echo "=== Review Worktree ==="
+	echo "Path: $WORKTREE_PATH"
+	echo "Branch: $SOURCE_BRANCH"
+	echo "Target: $TARGET_BRANCH"
+	echo ""
+	echo "Commands:"
+	echo "  View diff:       cd \"$WORKTREE_PATH\" && git diff origin/$TARGET_BRANCH..HEAD"
+	echo "  View file:       cd \"$WORKTREE_PATH\" && cat <file>"
+	echo "  Cleanup:         $FIX_SCRIPT cleanup \"$LOCAL_REPO\" \"$WORKTREE_PATH\""
+
 else
 	echo "Unknown action: $ACTION"
-	echo "Supported actions: fetch, comment, reply, diff"
+	echo "Supported actions: fetch, comment, reply, diff, setup-worktree"
 	exit 1
 fi
