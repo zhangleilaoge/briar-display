@@ -53,13 +53,17 @@ fi
 
 | 行为 | 触发关键词 | 命令 |
 |------|-----------|------|
-| 拉取仓库 | "帮我拉 xxx"、"克隆 xxx" | `briar-repo.sh pull <repo>` |
-| 更新仓库 | "更新 xxx"、"pull 一下" | `briar-repo.sh update <repo>` |
-| 清理工作区 | "保持干净"、"清理 xxx" | `briar-repo.sh clean <repo>` |
-| 创建 Worktree | "建 worktree"、"开分支工作区" | `briar-repo.sh worktree add <repo> <branch>` |
-| 删除 Worktree | "删 worktree" | `briar-repo.sh worktree remove <repo> <branch>` |
-| 列出 Worktree | "看看 worktree" | `briar-repo.sh worktree list <repo>` |
-| 清理所有 Worktree | "删掉所有 worktree" | `briar-repo.sh worktree clean <repo>` |
+| 拉取仓库 | "帮我拉 xxx"、"克隆 xxx" | `briar-repo.sh pull <repo> [base_dir]` |
+| 更新仓库 | "更新 xxx"、"pull 一下" | `briar-repo.sh update <repo> [base_dir]` |
+| 清理工作区 | "保持干净"、"清理 xxx" | `briar-repo.sh clean <repo> [base_dir]` |
+| 创建 Worktree | "建 worktree"、"开分支工作区" | `briar-repo.sh worktree add <repo> <branch> [base_dir]` |
+| 删除 Worktree | "删 worktree" | `briar-repo.sh worktree remove <repo> <branch> [base_dir]` |
+| 列出 Worktree | "看看 worktree" | `briar-repo.sh worktree list <repo> [base_dir]` |
+| 清理所有 Worktree | "删掉所有 worktree" | `briar-repo.sh worktree clean <repo> [base_dir]` |
+
+**参数说明**：
+- `<repo>`: 仓库名称（脚本默认在 `base_dir` 下查找 `base_dir/<repo>`）
+- `[base_dir]`: 可选，仓库所在的父目录，**默认为 `$HOME/projects`**。如果仓库不在该路径下，必须显式传入。
 
 ---
 
@@ -95,7 +99,7 @@ fi
 ### 脚本
 
 ```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh pull <repo-name>
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh pull <repo-name> [base_dir]
 ```
 
 ---
@@ -131,7 +135,7 @@ git checkout "$CURRENT_BRANCH"
 ### 脚本
 
 ```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh update <repo-name>
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh update <repo-name> [base_dir]
 ```
 
 ---
@@ -161,7 +165,7 @@ git worktree prune
 ### 脚本
 
 ```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh clean <repo-name>
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh clean <repo-name> [base_dir]
 ```
 
 ---
@@ -174,17 +178,19 @@ git worktree prune
 
 - 名称格式：`仓库名-分支名`
 - 分支名中的 `/` 替换为 `-`
-- 存放位置：仓库**同级目录**
+- 存放位置：仓库**同级目录**（由脚本自动计算）
 
 示例：
 - 仓库：`~/projects/wsc-pc-channel`
 - 分支：`feat/foo`
 - Worktree：`~/projects/wsc-pc-channel-feat-foo`
 
+> ⚠️ **注意**：如果直接手动执行 `git worktree add`，存放位置由调用者决定（如 `.worktrees/xxx`），不受上述规则约束。
+
 ### 创建 Worktree
 
 ```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree add <repo-name> <branch>
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree add <repo-name> <branch> [base_dir]
 ```
 
 - 如果 worktree 已存在，复用并 stash 已有改动
@@ -193,7 +199,7 @@ git worktree prune
 ### 删除指定 Worktree
 
 ```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree remove <repo-name> <branch>
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree remove <repo-name> <branch> [base_dir]
 ```
 
 - 先 stash 未提交改动
@@ -202,14 +208,40 @@ git worktree prune
 ### 列出所有 Worktree
 
 ```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree list <repo-name>
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree list <repo-name> [base_dir]
 ```
 
 ### 清理所有 Worktree
 
 ```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree clean <repo-name>
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree clean <repo-name> [base_dir]
 ```
+
+---
+
+## 已知陷阱
+
+### 1. 脚本默认 `BASE_DIR` 为 `$HOME/projects`
+
+**错误示例**（仓库实际在 `~/Documents/projects/briar-display`）：
+```bash
+./briar-repo.sh clean briar-display
+# Error: /Users/xxx/projects/briar-display is not a git repository.
+```
+
+**正确做法**：显式传入 `base_dir` 参数：
+```bash
+./briar-repo.sh clean briar-display "$HOME/Documents/projects"
+./briar-repo.sh worktree add briar-display test/20260522 "$HOME/Documents/projects"
+```
+
+> 当不确定仓库路径时，优先使用 `pwd` 或向用户确认，而不是依赖默认值。
+
+### 2. 手动 `git worktree add` 与脚本行为不一致
+
+手动执行 `git worktree add .worktrees/test-20260522 test/20260522` 会把 worktree 放在仓库**子目录**下，而脚本 `briar-repo.sh worktree add` 会放在仓库**同级目录**下。
+
+清理工作区时，如果 worktree 是手动创建的，脚本可能找不到（因为脚本按同级目录规则计算路径）。此时应直接使用 `git worktree list` 查看实际路径，再手动删除或直接用 `git worktree remove <path>`。
 
 ---
 

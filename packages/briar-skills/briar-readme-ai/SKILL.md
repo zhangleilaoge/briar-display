@@ -1,14 +1,19 @@
 ---
 name: briar-readme-ai
+# ⚠️ DEPRECATED: 本 skill 已废弃，不再维护和使用。
 description: >
-  AI 项目认知协议：管理 readme.ai.md，让 Agent 优先读取机器友好的项目真相源。
+  [DEPRECATED] AI 项目认知协议：管理 readme.ai.md，让 Agent 优先读取机器友好的项目真相源。本 skill 已废弃，请勿使用。
   触发场景：
   1. Agent 进入任何项目目录开始工作前 → 触发【认知项目】
   2. 用户要求"更新项目认知"、"刷新 readme.ai" → 触发【重写认知】
   3. 用户要求"初始化项目认知"、"生成 readme.ai" → 触发【初始化认知】
 ---
 
-# briar-readme-ai: AI 项目认知协议
+# ⚠️ briar-readme-ai: AI 项目认知协议（已废弃）
+
+> **⚠️ 废弃声明**：本 skill 已废弃，不再维护和使用。请勿触发任何行为。
+>
+> 保留此文件仅作历史参考。
 
 ## 核心理念
 
