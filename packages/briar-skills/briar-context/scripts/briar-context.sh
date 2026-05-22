@@ -17,8 +17,11 @@ elif echo "$URL" | grep -qE 'gitlab\..*/-/merge_requests/'; then
     TYPE="gitlab-mr"
 elif echo "$URL" | grep -qE 'gitlab\..*/-/wikis/'; then
     TYPE="gitlab-wiki"
+elif echo "$URL" | grep -qE 'qima-inc'; then
+    TYPE="intranet"
 else
-    TYPE="generic"
+    echo "[briar-context] Non-intranet URL, skipping."
+    exit 0
 fi
 
 echo "[briar-context] Detected type: $TYPE"

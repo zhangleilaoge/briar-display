@@ -1,12 +1,14 @@
 #!/bin/bash
 # briar-fix.sh - 代码修复基础设施
 # Usage:
-#   ./briar-fix.sh setup   <repo_path> <branch> <worktree_name>
+#   ./briar-fix.sh setup   <repo_path> <branch>
 #   ./briar-fix.sh verify  <worktree_path>
 #   ./briar-fix.sh diff    <worktree_path>
 #   ./briar-fix.sh commit  <worktree_path> <message>
 #   ./briar-fix.sh push    <worktree_path>
 #   ./briar-fix.sh cleanup <repo_path> <worktree_path>
+#
+# worktree 管理由 briar-repo 提供，本脚本只做修复相关操作。
 
 set -e
 
@@ -14,7 +16,7 @@ CMD="${1}"
 
 show_usage() {
 	echo "Usage:"
-	echo "  $0 setup   <repo_path> <branch> <worktree_name>"
+	echo "  $0 setup   <repo_path> <branch>"
 	echo "  $0 verify  <worktree_path>"
 	echo "  $0 diff    <worktree_path>"
 	echo "  $0 commit  <worktree_path> <message>"
@@ -27,13 +29,12 @@ if [ -z "$CMD" ] || [ "$CMD" = "-h" ] || [ "$CMD" = "--help" ]; then
 	exit 0
 fi
 
-# --- setup: 创建 worktree ---
+# --- setup: 创建 worktree（委托给 briar-repo） ---
 if [ "$CMD" = "setup" ]; then
 	REPO_PATH="${2}"
 	BRANCH="${3}"
-	WT_NAME="${4}"
 
-	if [ -z "$REPO_PATH" ] || [ -z "$BRANCH" ] || [ -z "$WT_NAME" ]; then
+	if [ -z "$REPO_PATH" ] || [ -z "$BRANCH" ]; then
 		show_usage
 		exit 1
 	fi
@@ -43,34 +44,16 @@ if [ "$CMD" = "setup" ]; then
 		exit 1
 	fi
 
-	# worktree 放在仓库同级目录
 	REPO_NAME=$(basename "$REPO_PATH")
-	WT_PATH="$(cd "$REPO_PATH/.." && pwd)/${REPO_NAME}-${WT_NAME}"
-
-	cd "$REPO_PATH"
-
-	# 检查 worktree 是否已存在
-	if [ -d "$WT_PATH" ]; then
-		echo "Worktree already exists at $WT_PATH"
-		cd "$WT_PATH"
-		# 如果有未提交改动，先 stash
-		if ! git diff --quiet HEAD 2>/dev/null || ! git diff --cached --quiet HEAD 2>/dev/null; then
-			echo "Stashing existing changes..."
-			git stash push -m "briar-fix auto-stash $(date +%s)"
-		fi
-		git checkout "$BRANCH" 2>/dev/null || git checkout -b "$BRANCH" origin/"$BRANCH" 2>/dev/null || true
-		echo "$WT_PATH"
-		exit 0
+	REPO_SCRIPT="$(cd "$(dirname "$0")/../briar-repo/scripts" && pwd)/briar-repo.sh"
+	if [ ! -f "$REPO_SCRIPT" ]; then
+		echo "Error: briar-repo.sh not found at $REPO_SCRIPT"
+		exit 1
 	fi
 
-	# 确保远程分支已获取
-	git fetch origin "$BRANCH" 2>/dev/null || true
-
-	# 创建 worktree
-	git worktree add "$WT_PATH" "$BRANCH" 2>/dev/null || git worktree add -b "$BRANCH" "$WT_PATH" origin/"$BRANCH"
-
-	echo "Worktree created: $WT_PATH"
-	echo "$WT_PATH"
+	BASE_DIR=$(cd "$REPO_PATH/.." && pwd)
+	WORKTREE_PATH=$("$REPO_SCRIPT" worktree add "$REPO_NAME" "$BRANCH" "$BASE_DIR")
+	echo "$WORKTREE_PATH"
 
 # --- verify: 运行项目验证 ---
 elif [ "$CMD" = "verify" ]; then
@@ -161,7 +144,7 @@ elif [ "$CMD" = "push" ]; then
 	git push origin "$BRANCH"
 	echo "Pushed $BRANCH to origin"
 
-# --- cleanup: 清理 worktree ---
+# --- cleanup: 清理 worktree（委托给 briar-repo） ---
 elif [ "$CMD" = "cleanup" ]; then
 	REPO_PATH="${2}"
 	WT_PATH="${3}"
@@ -171,28 +154,25 @@ elif [ "$CMD" = "cleanup" ]; then
 		exit 1
 	fi
 
-	cd "$REPO_PATH"
+	REPO_NAME=$(basename "$REPO_PATH")
+	WT_BASENAME=$(basename "$WT_PATH")
+	# 从 worktree 名称中提取分支：wsc-pc-channel-feat-foo → feat-foo
+	BRANCH="${WT_BASENAME#${REPO_NAME}-}"
 
-	# 先检查是否有未提交改动
-	if [ -d "$WT_PATH" ]; then
-		cd "$WT_PATH"
-		if ! git diff --quiet HEAD 2>/dev/null || ! git diff --cached --quiet HEAD 2>/dev/null; then
-			echo "Warning: $WT_PATH has uncommitted changes. Stashing before cleanup..."
-			git stash push -m "briar-fix auto-stash $(date +%s)"
-		fi
-		cd "$REPO_PATH"
+	if [ -z "$BRANCH" ] || [ "$BRANCH" = "$WT_BASENAME" ]; then
+		echo "Error: Cannot extract branch from worktree path: $WT_PATH"
+		echo "Expected format: <repo-name>-<branch>"
+		exit 1
 	fi
 
-	# 使用 git worktree remove 清理（安全，会检查）
-	git worktree remove "$WT_PATH" 2>/dev/null || true
-
-	# 如果目录还在（可能 remove 失败），强制清理
-	if [ -d "$WT_PATH" ]; then
-		rm -rf "$WT_PATH"
-		git worktree prune
+	REPO_SCRIPT="$(cd "$(dirname "$0")/../briar-repo/scripts" && pwd)/briar-repo.sh"
+	if [ ! -f "$REPO_SCRIPT" ]; then
+		echo "Error: briar-repo.sh not found at $REPO_SCRIPT"
+		exit 1
 	fi
 
-	echo "Worktree cleaned up: $WT_PATH"
+	BASE_DIR=$(cd "$REPO_PATH/.." && pwd)
+	"$REPO_SCRIPT" worktree remove "$REPO_NAME" "$BRANCH" "$BASE_DIR"
 
 else
 	echo "Unknown command: $CMD"

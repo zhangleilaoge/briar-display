@@ -1,12 +1,33 @@
 ---
 name: briar-repo
 description: >
-  仓库拉取工具。自动从 GitLab 搜索仓库并克隆到本地 projects 目录。
+  仓库管理工具。支持拉取仓库、更新代码、清理工作区、管理 worktree。
   触发场景：
-  1. 用户说"帮我拉 xxx"、"克隆 xxx 仓库"、"pull 一下 xxx" → 触发【拉取仓库】
+  1. 用户说"帮我拉 xxx"、"克隆 xxx 仓库" → 触发【拉取仓库】
+  2. 用户说"更新 xxx 代码"、"pull 一下 xxx" → 触发【更新仓库】
+  3. 用户说"保持工作区干净"、"清理 xxx" → 触发【清理工作区】
+  4. 用户说"给 xxx 建个 worktree"、"开个 xxx 分支工作区" → 触发【创建 Worktree】
 ---
 
-# briar-repo: 仓库拉取工具
+# briar-repo: 仓库管理工具
+
+## 概述
+
+本 skill 负责仓库的**全生命周期管理**：
+
+| 能力 | 说明 |
+|------|------|
+| **拉取仓库** | 从 GitLab 搜索并克隆到本地 |
+| **更新仓库** | stash 当前改动 → fetch --all → pull 所有跟踪分支 |
+| **清理工作区** | 删除所有 worktree → update（保持主仓库干净最新） |
+| **Worktree 管理** | 创建/删除/列出/清理 worktree |
+
+**与 briar-fix 的关系**：
+- `briar-repo` 负责 worktree 的**创建和删除**
+- `briar-fix` 负责 worktree 内的**代码修复**（verify、diff、commit、push）
+- `briar-fix` 的 `setup`/`cleanup` 委托给 `briar-repo` 执行
+
+---
 
 ## Token 管理
 
@@ -28,9 +49,23 @@ fi
 
 ---
 
-## 行为一：拉取仓库（pull）
+## 行为索引
 
-**触发条件**：用户说"帮我拉 xxx"、"克隆 xxx 仓库"、"pull 一下 xxx"、"下载 xxx 代码"。
+| 行为 | 触发关键词 | 命令 |
+|------|-----------|------|
+| 拉取仓库 | "帮我拉 xxx"、"克隆 xxx" | `briar-repo.sh pull <repo>` |
+| 更新仓库 | "更新 xxx"、"pull 一下" | `briar-repo.sh update <repo>` |
+| 清理工作区 | "保持干净"、"清理 xxx" | `briar-repo.sh clean <repo>` |
+| 创建 Worktree | "建 worktree"、"开分支工作区" | `briar-repo.sh worktree add <repo> <branch>` |
+| 删除 Worktree | "删 worktree" | `briar-repo.sh worktree remove <repo> <branch>` |
+| 列出 Worktree | "看看 worktree" | `briar-repo.sh worktree list <repo>` |
+| 清理所有 Worktree | "删掉所有 worktree" | `briar-repo.sh worktree clean <repo>` |
+
+---
+
+## 一、拉取仓库（pull）
+
+**触发条件**：用户说"帮我拉 xxx"、"克隆 xxx 仓库"。
 
 ### 流程
 
@@ -57,41 +92,141 @@ fi
    git clone <ssh_url> "$HOME/projects/<repo-name>"
    ```
 
-5. **反馈结果**
-   - 克隆成功：输出本地路径和 Web 链接
-   - 本地已有：提示用户并建议 `git pull`
-   - 未找到：告知用户仓库不存在
-
 ### 脚本
 
 ```bash
 ./packages/briar-skills/briar-repo/scripts/briar-repo.sh pull <repo-name>
 ```
 
-### 示例
+---
 
-**首次克隆**：
+## 二、更新仓库（update）
+
+**触发条件**：用户说"更新 xxx 代码"、"pull 一下 xxx"。
+
+### 流程
+
 ```bash
-$ ./briar-repo.sh pull wsc-pc-trade
-📦 准备克隆 wsc-node/wsc-pc-trade
-   URL: git@gitlab.qima-inc.com:wsc-node/wsc-pc-trade.git
-   目标: $HOME/projects/wsc-pc-trade
+cd "$LOCAL_PATH"
 
-Cloning into 'wsc-pc-trade'...
-✅ 克隆完成：$HOME/projects/wsc-pc-trade
-   Web: https://gitlab.qima-inc.com/wsc-node/wsc-pc-trade
+# 1. stash 当前改动
+git stash push -m "briar-repo auto-stash $(date +%s)"
+
+# 2. fetch 所有远程
+git fetch --all
+
+# 3. 逐个 pull 有 upstream 的本地分支
+for branch in $(git branch --format='%(refname:short)'); do
+    upstream=$(git rev-parse --abbrev-ref "$branch@{upstream}" 2>/dev/null || true)
+    if [ -n "$upstream" ]; then
+        git checkout "$branch"
+        git pull origin "$branch"
+    fi
+done
+
+# 回到原来的分支
+git checkout "$CURRENT_BRANCH"
 ```
 
-**本地已有**：
+### 脚本
+
 ```bash
-$ ./briar-repo.sh pull wsc-pc-trade
-本地已有该仓库：$HOME/projects/wsc-pc-trade
-远程地址：git@gitlab.qima-inc.com:wsc-node/wsc-pc-trade.git
-如需更新请执行：cd "$HOME/projects/wsc-pc-trade" && git pull
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh update <repo-name>
 ```
 
-### 注意
+---
 
-- 默认克隆到 `~/Documents/projects/`
-- 使用 SSH 协议（`git@gitlab.qima-inc.com`）
-- 大仓库克隆可能需要较长时间，可设置超时或后台执行
+## 三、清理工作区（clean）
+
+**触发条件**：用户说"保持工作区干净"、"清理 xxx"。
+
+### 流程
+
+先删除所有 worktree，再 update：
+
+```bash
+# 1. 删除所有 worktree（先 stash 未提交改动）
+for wt in $(git worktree list --porcelain | grep '^worktree ' | tail -n +2 | cut -d' ' -f2-); do
+    cd "$wt"
+    git stash push -m "..."
+    cd "$REPO_PATH"
+    git worktree remove "$wt" || rm -rf "$wt"
+done
+git worktree prune
+
+# 2. update（stash + fetch --all + pull）
+# 同 update 行为
+```
+
+### 脚本
+
+```bash
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh clean <repo-name>
+```
+
+---
+
+## 四、Worktree 管理
+
+**触发条件**：用户说"给 xxx 建个 worktree"、"开个 xxx 分支工作区"、"删 worktree"。
+
+### Worktree 命名规则
+
+- 名称格式：`仓库名-分支名`
+- 分支名中的 `/` 替换为 `-`
+- 存放位置：仓库**同级目录**
+
+示例：
+- 仓库：`~/projects/wsc-pc-channel`
+- 分支：`feat/foo`
+- Worktree：`~/projects/wsc-pc-channel-feat-foo`
+
+### 创建 Worktree
+
+```bash
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree add <repo-name> <branch>
+```
+
+- 如果 worktree 已存在，复用并 stash 已有改动
+- 自动 fetch 远程分支
+
+### 删除指定 Worktree
+
+```bash
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree remove <repo-name> <branch>
+```
+
+- 先 stash 未提交改动
+- 再删除 worktree
+
+### 列出所有 Worktree
+
+```bash
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree list <repo-name>
+```
+
+### 清理所有 Worktree
+
+```bash
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree clean <repo-name>
+```
+
+---
+
+## 与 briar-fix 的配合
+
+`briar-fix` 的 `setup` 和 `cleanup` 委托给 `briar-repo`：
+
+```bash
+# briar-fix setup → 实际调用 briar-repo worktree add
+briar-repo.sh worktree add <repo-name> <branch>
+
+# briar-fix cleanup → 实际调用 briar-repo worktree remove
+briar-repo.sh worktree remove <repo-name> <branch>
+```
+
+`briar-fix` 保留的能力：
+- `verify`：运行 typecheck/lint
+- `diff`：展示当前修改
+- `commit`：提交修改
+- `push`：push 到远程

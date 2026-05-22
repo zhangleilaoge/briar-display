@@ -16,6 +16,8 @@ description: >
 
 **不要直接在主工作区修改代码**——可能当前工作区有未提交的改动、或者正在错误的分支上。使用 **worktree** 创建一个隔离的修复环境：
 
+> Worktree 的创建/删除由 [briar-repo](../briar-repo/SKILL.md) 管理，本 skill 只负责 worktree 内的修复操作。
+
 ```
 原工作区（feat/xxx，可能有未提交改动）
    └── 不动它
@@ -51,20 +53,14 @@ description: >
 确定目标仓库路径和分支，创建隔离的修复环境：
 
 ```bash
-# 参数：仓库路径、基础分支、worktree 名称
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh setup \
-  "$HOME/projects/<repo-name>" \
-  <branch> \
-  <worktree-name>
+# 委托给 briar-repo 创建 worktree（名称自动为 <repo-name>-<branch>）
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree add \
+  <repo-name> <branch>
 ```
 
-> worktree 名称建议：`fix-<mr_iid>` 或 `fix-<描述>`，如 `fix-932`。
+> worktree 存放位置：仓库同级目录，如 `~/projects/wsc-pc-channel-feat-foo`
 >
-> 脚本会在 `../<repo-name>-fix-932` 创建 worktree，并输出完整路径。
-
-**如果 worktree 已存在**：
-- 直接复用已有 worktree（先 `git stash` 保存已有改动，并告知用户）
-- 或清理后重建
+> 如果 worktree 已存在，briar-repo 会自动 stash 已有改动并复用。
 
 ---
 
@@ -179,14 +175,14 @@ description: >
 提交完成后，立即清理：
 
 ```bash
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh cleanup \
-  <repo_path> \
-  <worktree_path>
+# 委托给 briar-repo 删除 worktree
+./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree remove \
+  <repo-name> <branch>
 ```
 
 > 如果用户说"先不清理，我还要看看"，则推迟清理，但**必须提醒**用户后续手动清理：
 > ```bash
-> git worktree remove <worktree_path>
+> ./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree remove <repo-name> <branch>
 > ```
 
 ---
@@ -235,9 +231,9 @@ briar-mr pipeline（获取 pipeline jobs）
 
 | 阶段 | 脚本命令 |
 |------|---------|
-| 创建 worktree | `briar-fix.sh setup <repo> <branch> <name>` |
+| 创建 worktree | `briar-repo.sh worktree add <repo> <branch>` |
 | 验证修复 | `briar-fix.sh verify <worktree_path>` |
 | 展示 diff | `briar-fix.sh diff <worktree_path>` |
 | 提交 | `briar-fix.sh commit <worktree_path> "<msg>"` |
 | push | `briar-fix.sh push <worktree_path>` |
-| 清理 | `briar-fix.sh cleanup <repo> <worktree_path>` |
+| 清理 worktree | `briar-repo.sh worktree remove <repo> <branch>` |
