@@ -103,6 +103,7 @@ uv run bid_doc_comparator.py --docs a.pdf b.pdf --chunk-size 500
 | 文件 | 说明 |
 |---|---|
 | `index.html` | **交互式 HTML 报告**（用浏览器打开即可） |
+| `report_data.json` | 比对结果数据（可单独用于重新生成报告） |
 | `compare.log` | 运行日志 |
 
 ### 打开报告
@@ -255,10 +256,28 @@ A: 理论上任意数量。实测建议同时比对不超过 10 份（内存限�
 
 ---
 
-## 八、文件清单
+## 八、单独生成报告（不重新比对）
+
+比对完成后，数据会保存在 `report_data.json` 中。你可以随时单独生成或调整 HTML 报告，无需重新执行耗时的 PDF 比对：
+
+```bash
+# 从已有的 report_data.json 生成报告
+uv run generate_report.py --data ./result/report_data.json --output ./result
+```
+
+这对于以下场景很有用：
+- 调整了报告样式或交互逻辑，想快速重新生成 HTML
+- 把 `report_data.json` 发给其他人，对方可以直接生成报告
+- `generate_report.py` 不依赖 PyMuPDF / torch 等重型库，纯标准库即可运行
+
+---
+
+## 九、文件清单
 
 ```
-bid_doc_comparator.py   # 主程序 (v2.0)
+bid_doc_comparator.py   # 比对主程序 (v2.0)
+generate_report.py      # 单独生成 HTML 报告（从 JSON 数据）
+report_generator.py     # HTML 报告生成器模块
 bid_doc_comparator_v1.py # 旧版 v1.0 备份
 pyproject.toml          # uv 依赖配置
 README.md               # 本说明文档
