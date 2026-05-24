@@ -12,4 +12,7 @@ bid_compare_*/
 bid_compare_result/
 
 # Workspace
+input/
+build/
+.venv/
 workspace/

@@ -1,82 +1,55 @@
 #!/usr/bin/env python3
 """
 ============================================================
-施工方案文档比对工具 - Bid Document Comparator v1.1
+施工方案文档比对工具 - BidDocComparator v2.0
 ============================================================
-用于检测多份投标/施工方案文档中重复的图片和段落，
-辅助串标风险排查。
+从多份PDF投标/施工方案文档中提取图片和文本，进行交叉比对，
+找出相似度高的图片对和段落对，辅助串标风险排查。
 
-功能:
-  1. 从多个PDF文档中提取图片和文本
-  2. 对图片进行向量化并交叉比对，找出相似度高的图片对
-  3. 对文本段落进行TF-IDF编码并交叉比对，找出相似度高的段落对
-  4. 使用FAISS索引加速大规模向量搜索
-  5. 生成HTML报告、文本报告和JSON详细数据
-
-依赖安装:
-    pip install pymupdf pillow numpy scikit-learn faiss-cpu torch torchvision
+依赖:
+    pip install pymupdf pillow numpy torch torchvision
 
 用法:
-    # 方式1：指定PDF文件路径
     python bid_doc_comparator.py --docs a.pdf b.pdf --output ./result
-
-    # 方式2：使用 workspace 目录（推荐）
-    # 1. 把PDF文件放到 workspace/ 目录下
-    # 2. 直接运行：
-    python bid_doc_comparator.py --workspace ./workspace --output ./result
-
-    # 方式3：通配符批量比对
-    python bid_doc_comparator.py --docs *.pdf --output ./result --img-threshold 0.90
-
-    # 方式4：GPU加速
-    python bid_doc_comparator.py --docs a.pdf b.pdf --output ./result --device cuda
-
-注意:
-    - 每次运行会自动清空输出目录，避免旧产物干扰
-    - 首次运行会自动下载PyTorch模型（约45MB，仅需一次）
-
-作者: AI Assistant
-日期: 2026-05-24
-版本: 1.1
+    python bid_doc_comparator.py --docs a.pdf b.pdf c.pdf --img-threshold 0.90
 ============================================================
 """
 
 import argparse
+import base64
 import hashlib
 import io
 import json
+import math
 import os
 import re
-import shutil
 import sys
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 
-import faiss
 import fitz
 import numpy as np
 import torch
 import torch.nn as nn
 from PIL import Image
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 from torchvision import models, transforms
 
 
 # =============================================================================
-# 默认配置
+# 配置
 # =============================================================================
-DEFAULT_IMG_THRESHOLD = 0.85
-DEFAULT_TEXT_THRESHOLD = 0.80
-DEFAULT_IMG_MIN_SIZE = 32
-DEFAULT_TEXT_MIN_LEN = 20
-DEFAULT_DEVICE = "cpu"
+CHUNK_SIZE = 300       # 文本块固定字符数
+CHUNK_OVERLAP = 30     # 文本块重叠字符数
+IMG_THRESHOLD = 0.70   # 图片相似度阈值
+TEXT_THRESHOLD = 0.50  # 文本相似度阈值
+IMG_MIN_SIZE = 32      # 图片最小尺寸
+BATCH_SIZE = 32        # 图片编码批次
 
 
 # =============================================================================
-# 日志工具
+# 日志
 # =============================================================================
 class Logger:
     def __init__(self, log_file=None):
@@ -84,516 +57,899 @@ class Logger:
         if log_file:
             Path(log_file).parent.mkdir(parents=True, exist_ok=True)
             with open(log_file, 'w', encoding='utf-8') as f:
-                f.write(f"=== BidDocComparator Log {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===\n\n")
-    
-    def log(self, msg, level="INFO"):
+                f.write(f"=== {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===\n\n")
+    def info(self, msg):
         ts = datetime.now().strftime("%H:%M:%S")
-        line = f"[{ts}] [{level}] {msg}"
+        line = f"[{ts}] {msg}"
         print(line)
         if self.log_file:
             with open(self.log_file, 'a', encoding='utf-8') as f:
                 f.write(line + "\n")
-    
-    def info(self, msg): self.log(msg, "INFO")
-    def warn(self, msg): self.log(msg, "WARN")
-    def error(self, msg): self.log(msg, "ERROR")
 
 
 # =============================================================================
 # PDF内容提取
 # =============================================================================
-def split_text(text, min_len=20, chunk_size=500, overlap=50):
-    """将文本拆分为段落（生成器，避免累积大列表）"""
-    MAX_TEXT_LEN = 50000
-    if len(text) > MAX_TEXT_LEN:
-        text = text[:MAX_TEXT_LEN]
-    
-    raw = re.split(r'\n\s*\n', text)
-    for para in raw:
+def split_fixed(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
+    """固定长度拆分文本"""
+    raw_paras = re.split(r'\n{2,}', text)
+    chunks = []
+    for para in raw_paras:
         para = re.sub(r'\s+', ' ', para).strip()
-        if not para or len(para) < min_len:
+        if len(para) < 20:
             continue
-        if len(para) > chunk_size:
+        if len(para) <= chunk_size:
+            chunks.append(para)
+        else:
             start = 0
             while start < len(para):
-                end = min(start + chunk_size, len(para))
+                end = start + chunk_size
+                if end < len(para):
+                    for sep in ['。', '；', '！', '？', '. ', '; ', '! ', '? ', '，', ', ']:
+                        pos = para.rfind(sep, start + chunk_size // 2, end)
+                        if pos > 0:
+                            end = pos + len(sep)
+                            break
                 chunk = para[start:end].strip()
-                if len(chunk) >= min_len:
-                    yield chunk
+                if len(chunk) >= 20:
+                    chunks.append(chunk)
                 start = end - overlap
                 if start >= len(para):
                     break
-        else:
-            yield para
+    return chunks
 
 
-def extract_pdf_content(pdf_path, doc_idx, output_dir, logger=None):
-    """从PDF中提取图片和文本（图片存硬盘，不驻留内存）"""
-    log = logger or Logger()
-    doc_name = Path(pdf_path).stem
-    log.info(f"Extracting doc{doc_idx+1}: {doc_name}")
-    
+def extract_texts(pdf_path, doc_idx):
+    """从PDF提取文本，固定长度拆分"""
     doc = fitz.open(pdf_path)
-    img_records = []
-    text_records = []
-    seen_hashes = set()
-    
-    # 创建该文档的图片缓存目录
-    img_cache_dir = Path(output_dir) / f"doc{doc_idx}_{doc_name}" / "images"
-    img_cache_dir.mkdir(parents=True, exist_ok=True)
-    
+    chunks = []
     for pn in range(len(doc)):
-        page = doc[pn]
-        
-        # 提取图片 → 直接写入硬盘
-        for ii, img in enumerate(page.get_images(full=True)):
-            try:
-                base = doc.extract_image(img[0])
-                w, h = base["width"], base["height"]
-                if w < DEFAULT_IMG_MIN_SIZE or h < DEFAULT_IMG_MIN_SIZE:
-                    continue
-                hsh = hashlib.md5(base["image"]).hexdigest()
-                if hsh in seen_hashes:
-                    continue
-                seen_hashes.add(hsh)
-                
-                # 保存到硬盘，记录路径
-                img_path = img_cache_dir / f"p{pn+1}_i{ii+1}.png"
-                with open(img_path, 'wb') as f:
-                    f.write(base["image"])
-                
-                img_records.append({
-                    "doc": doc_idx, "page": pn + 1, "img_idx": ii + 1,
-                    "hash": hsh, "width": w, "height": h,
-                    "image_path": str(img_path)  # 硬盘路径，替代 image_bytes
-                })
-            except:
-                pass
-        
-        # 提取文本
-        for para in split_text(page.get_text()):
-            text_records.append({
-                "doc": doc_idx, "page": pn + 1, "text": para
-            })
-    
+        for chunk in split_fixed(doc[pn].get_text()):
+            chunks.append({"doc": doc_idx, "page": pn + 1, "text": chunk})
     doc.close()
-    log.info(f"  Images: {len(img_records)}, Paragraphs: {len(text_records)}")
-    return img_records, text_records
+    return chunks
 
 
-# =============================================================================
-# 图片向量化
-# =============================================================================
-class ImageEncoder:
-    def __init__(self, device='cpu'):
-        self.device = device
-        self.model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
-        self.model = nn.Sequential(*list(self.model.children())[:-1]).to(device).eval()
-        self.transform = transforms.Compose([
-            transforms.Resize((128, 128)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
-        self.feature_dim = 512
-    
-    def encode_records(self, records, batch_size=32):
-        """编码图片记录（从硬盘读取）"""
-        vectors = []
-        with torch.no_grad():
-            for i in range(0, len(records), batch_size):
-                batch_tensors = []
-                valid = []
-                for r in records[i:i+batch_size]:
-                    try:
-                        img_path = r.get("image_path")
-                        if img_path and Path(img_path).exists():
-                            img = Image.open(img_path).convert('RGB')
-                        else:
-                            # 兼容旧版内存数据
-                            img = Image.open(io.BytesIO(r["image_bytes"])).convert('RGB')
-                        batch_tensors.append(self.transform(img))
-                        valid.append(True)
-                    except:
-                        valid.append(False)
-                
-                if not batch_tensors:
-                    vectors.extend([None] * len(valid))
+def extract_images(pdf_path, doc_idx, encoder, preprocess, device):
+    """从PDF提取图片并编码"""
+    doc = fitz.open(pdf_path)
+    all_imgs = []
+    seen = set()
+    for pn in range(len(doc)):
+        for ii, img in enumerate(doc[pn].get_images(full=True)):
+            try:
+                b = doc.extract_image(img[0])
+                w, h = b["width"], b["height"]
+                if w < IMG_MIN_SIZE or h < IMG_MIN_SIZE:
                     continue
-                
-                feat = self.model(torch.stack(batch_tensors).to(self.device)).view(len(batch_tensors), -1).cpu().numpy()
-                idx = 0
-                for v in valid:
-                    if v:
-                        vectors.append(feat[idx])
-                        idx += 1
-                    else:
-                        vectors.append(None)
-        return vectors
+                hsh = hashlib.md5(b["image"]).hexdigest()
+                if hsh in seen:
+                    continue
+                seen.add(hsh)
+                pil = Image.open(io.BytesIO(b["image"])).convert('RGB')
+                t = preprocess(pil).unsqueeze(0).to(device)
+                with torch.no_grad():
+                    vec = encoder(t).view(-1).cpu().numpy()
+                buf = io.BytesIO()
+                pil.save(buf, format='JPEG', quality=48)
+                all_imgs.append({
+                    "doc": doc_idx, "page": pn + 1, "idx": ii + 1,
+                    "w": w, "h": h, "vec": vec,
+                    "b64": base64.b64encode(buf.getvalue()).decode('utf-8')
+                })
+            except Exception:
+                pass
+    doc.close()
+    return all_imgs
 
 
 # =============================================================================
-# 相似度搜索
+# 图片比对
 # =============================================================================
-def build_faiss_index(vectors):
-    """构建FAISS索引"""
-    valid = [v for v in vectors if v is not None]
-    if not valid:
-        return None, []
-    data = np.array(valid, dtype=np.float32)
-    faiss.normalize_L2(data)
-    index = faiss.IndexFlatIP(data.shape[1])
-    index.add(data)
-    return index, data
+def compare_images(all_imgs, threshold=IMG_THRESHOLD):
+    """单图级别余弦相似度比对"""
+    vecs = np.array([im["vec"] for im in all_imgs], dtype=np.float32)
+    norms = np.linalg.norm(vecs, axis=1, keepdims=True)
+    vecs = vecs / (norms + 1e-8)
 
-
-def cross_doc_search(index, data, records, top_k=20, threshold=0.85):
-    """跨文档相似度搜索"""
-    if index is None or index.ntotal == 0:
-        return []
-    
-    k = min(top_k + 1, index.ntotal)
-    D, I = index.search(data, k)
-    
-    # 建立有效记录索引映射
-    valid_records = [r for r in records if r.get("_vector") is not None]
-    
-    results = []
-    seen_pairs = set()
-    
-    for i in range(len(valid_records)):
-        doc_i = valid_records[i]["doc"]
-        for j in range(1, k):
-            idx = I[i][j]
-            if idx < 0 or idx == i:
-                continue
-            sim = float(D[i][j])
-            if sim < threshold:
-                continue
-            
-            doc_j = valid_records[idx]["doc"]
+    img_pairs = []
+    n = len(all_imgs)
+    for i in range(n):
+        doc_i = all_imgs[i]["doc"]
+        for j in range(i + 1, n):
+            doc_j = all_imgs[j]["doc"]
             if doc_i == doc_j:
                 continue
-            
-            pair = tuple(sorted([i, idx]))
-            if pair in seen_pairs:
+            sim = float(np.dot(vecs[i], vecs[j]))
+            if sim < threshold:
                 continue
-            seen_pairs.add(pair)
-            
-            results.append({
-                "similarity": round(sim, 4),
-                "doc_a": valid_records[i]["doc"], "page_a": valid_records[i]["page"],
-                "doc_b": valid_records[idx]["doc"], "page_b": valid_records[idx]["page"],
-                "hash_a": valid_records[i].get("hash", ""),
-                "hash_b": valid_records[idx].get("hash", ""),
-                "size_a": f"{valid_records[i].get('width',0)}x{valid_records[i].get('height',0)}",
-                "size_b": f"{valid_records[idx].get('width',0)}x{valid_records[idx].get('height',0)}"
+            img_pairs.append({
+                "sim": round(sim, 4),
+                "doc_a": all_imgs[i]["doc"], "page_a": all_imgs[i]["page"],
+                "doc_b": all_imgs[j]["doc"], "page_b": all_imgs[j]["page"],
+                "w_a": all_imgs[i]["w"], "h_a": all_imgs[i]["h"],
+                "w_b": all_imgs[j]["w"], "h_b": all_imgs[j]["h"],
+                "b64_a": all_imgs[i]["b64"], "b64_b": all_imgs[j]["b64"]
             })
-    
-    results.sort(key=lambda x: x["similarity"], reverse=True)
-    return results
+
+    img_pairs.sort(key=lambda x: -x["sim"])
+    return img_pairs
 
 
 # =============================================================================
-# 文本比对 (TF-IDF)
+# 文本比对
 # =============================================================================
-def compare_texts(text_records, threshold=0.80):
-    """使用TF-IDF进行文本相似度比对"""
-    if not text_records:
-        return []
-    
-    texts = [r["text"] for r in text_records]
-    vectorizer = TfidfVectorizer(analyzer='char', ngram_range=(2, 4), min_df=1)
-    tfidf_matrix = vectorizer.fit_transform(texts)
-    
-    n = len(text_records)
-    batch_size = 100
-    seen = set()
+def char_ngrams(text, n=3):
+    cleaned = re.sub(r'[^\u4e00-\u9fff0-9a-zA-Z]', '', text)
+    if len(cleaned) < 10:
+        return Counter()
+    return Counter(cleaned[i:i + n] for i in range(len(cleaned) - n + 1))
+
+
+def cosine_sim_counter(feat_a, feat_b):
+    if not feat_a or not feat_b:
+        return 0.0
+    common = set(feat_a.keys()) & set(feat_b.keys())
+    if not common:
+        return 0.0
+    dot = sum(feat_a[k] * feat_b[k] for k in common)
+    norm_a = math.sqrt(sum(v * v for v in feat_a.values()))
+    norm_b = math.sqrt(sum(v * v for v in feat_b.values()))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+
+def is_standardized_text(text):
+    """判断是否属于纯标准化/模板内容"""
+    t = text.strip()
+    if '技术标施工组织设计文件' in t and '投标项目' in t:
+        return True
+    if t.startswith('附表一') and '附表' in t and '拟投入' in t:
+        return True
+    if t.count('..') > 20:
+        return True
+    if '投标人应根据招标文件' in t and '施工组织设计' in t:
+        return True
+    if t.startswith('中铁六局集团有限公司') and len(t) < 50:
+        return True
+    return False
+
+
+def compare_texts(chunks, threshold=TEXT_THRESHOLD):
+    """文本跨文档相似度比对"""
+    features = [char_ngrams(c['text']) for c in chunks]
+    n = len(chunks)
     matches = []
-    
-    for i in range(0, n, batch_size):
-        sim_batch = cosine_similarity(tfidf_matrix[i:min(i + batch_size, n)], tfidf_matrix)
-        for bi in range(sim_batch.shape[0]):
-            idx_i = i + bi
-            doc_i = text_records[idx_i]["doc"]
-            sim_row = sim_batch[bi]
-            
-            candidates = []
-            for idx_j in range(n):
-                if idx_j == idx_i:
-                    continue
-                if doc_i == text_records[idx_j]["doc"]:
-                    continue
-                if sim_row[idx_j] >= threshold:
-                    candidates.append((idx_j, sim_row[idx_j]))
-            
-            candidates.sort(key=lambda x: x[1], reverse=True)
-            for idx_j, sim in candidates[:10]:
-                pair = tuple(sorted([idx_i, idx_j]))
-                if pair in seen:
-                    continue
-                seen.add(pair)
-                matches.append({
-                    "similarity": round(float(sim), 4),
-                    "doc_a": text_records[idx_i]["doc"], "page_a": text_records[idx_i]["page"],
-                    "doc_b": text_records[idx_j]["doc"], "page_b": text_records[idx_j]["page"],
-                    "text_a": text_records[idx_i]["text"][:200],
-                    "text_b": text_records[idx_j]["text"][:200]
-                })
-    
-    matches.sort(key=lambda x: x["similarity"], reverse=True)
+    seen = set()
+
+    for i in range(n):
+        if i % 200 == 0:
+            print(f"  text {i}/{n} ({len(matches)} matches)", end='\r', flush=True)
+        doc_i = chunks[i]['doc']
+        for j in range(i + 1, n):
+            doc_j = chunks[j]['doc']
+            if doc_i == doc_j:
+                continue
+            sim = cosine_sim_counter(features[i], features[j])
+            if sim < threshold:
+                continue
+            # 过滤标准化内容
+            if is_standardized_text(chunks[i]['text']) and is_standardized_text(chunks[j]['text']):
+                continue
+            pair = tuple(sorted([i, j]))
+            if pair in seen:
+                continue
+            seen.add(pair)
+            matches.append({
+                "sim": round(sim, 4),
+                "doc_a": doc_i, "page_a": chunks[i]['page'],
+                "doc_b": doc_j, "page_b": chunks[j]['page'],
+                "text_a": chunks[i]['text'], "text_b": chunks[j]['text']
+            })
+    print(f"\n  text done: {len(matches)} matches")
+    matches.sort(key=lambda x: -x['sim'])
     return matches
 
 
 # =============================================================================
-# 报告生成
+# 非标段落筛选
 # =============================================================================
-def generate_html_report(img_matches, text_matches, doc_names, threshold_img, threshold_text, output_dir):
-    """生成HTML报告"""
-    html_path = output_dir / "report.html"
-    
-    critical_img = len([m for m in img_matches if m["similarity"] >= 0.95])
-    high_img = len([m for m in img_matches if 0.90 <= m["similarity"] < 0.95])
-    med_img = len([m for m in img_matches if 0.85 <= m["similarity"] < 0.90])
-    
-    html = f"""<!DOCTYPE html>
+def find_special_paragraphs(chunks):
+    """低频N-gram非标内容筛选"""
+    eq_pattern = re.compile(r'[A-Z]+[-/]?\d+[A-Z\d/-]*|[A-Z]{2,}\d{2,}[A-Z\d/-]*')
+    ngram_size = 4
+    all_ngrams = Counter()
+    for c in chunks:
+        cleaned = re.sub(r'[^\u4e00-\u9fff0-9a-zA-Z]', '', c['text'])
+        all_ngrams.update(set(cleaned[i:i + ngram_size] for i in range(len(cleaned) - ngram_size + 1)))
+    rare_grams = {g for g, c in all_ngrams.items() if 1 <= c <= 3}
+
+    special = []
+    for c in chunks:
+        cleaned = re.sub(r'[^\u4e00-\u9fff0-9a-zA-Z]', '', c['text'])
+        grams = set(cleaned[i:i + ngram_size] for i in range(len(cleaned) - ngram_size + 1))
+        if not grams:
+            continue
+        score = len(grams & rare_grams) / len(grams)
+        is_toc = bool(re.search(r'第[一二三四五六七八九十]+章|目录|第\d+节|\.\.\.\.+', c['text']))
+        if score > 0.3 and not is_toc and len(c['text']) > 30:
+            models_in = list(set(m for m in eq_pattern.findall(c['text']) if len(m) >= 3))
+            special.append({
+                **c, 'score': round(score, 4), 'models': models_in,
+                'rare_grams': list(grams & rare_grams)[:10]
+            })
+    special.sort(key=lambda x: -x['score'])
+    return special
+
+
+# =============================================================================
+# HTML报告生成
+# =============================================================================
+def esc(text):
+    return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+
+
+def js_esc(text):
+    return text.replace('\\', '\\\\').replace("'", "\\'").replace('\n', ' ').replace('\r', '').replace('<', '&lt;').replace('>', '&gt;')
+
+
+def generate_html_report(img_pairs, text_matches, special_paras, chunks, doc_names, output_dir):
+    """生成完整交互式HTML报告"""
+
+    # 准备数据
+    models_sorted = sorted(set(f for c in chunks for f in re.compile(r'[A-Z]+[-/]?\d+[A-Z\d/-]*|[A-Z]{2,}\d{2,}[A-Z\d/-]*').findall(c['text']) if len(f) >= 3))
+    sp_counts = [sum(1 for p in special_paras if p['doc'] == i) for i in range(len(doc_names))]
+    eq_counts = [sum(1 for p in special_paras if p['doc'] == i and p.get('models')) for i in range(len(doc_names))]
+
+    texts_js = json.dumps([{"doc": c['doc'], "page": c['page'], "text": js_esc(c['text'])} for c in chunks], ensure_ascii=False)
+    models_js = json.dumps(models_sorted, ensure_ascii=False)
+    sp_js = json.dumps([{'doc': p['doc'], 'page': p['page'], 'text': js_esc(p['text']), 'score': p['score'], 'models': p.get('models', []), 'rare_grams': p.get('rare_grams', [])} for p in special_paras], ensure_ascii=False)
+    tm_js = json.dumps([{'sim': m['sim'], 'doc_a': m['doc_a'], 'page_a': m['page_a'], 'doc_b': m['doc_b'], 'page_b': m['page_b'], 'text_a': js_esc(m['text_a']), 'text_b': js_esc(m['text_b'])} for m in text_matches], ensure_ascii=False)
+
+    html = '''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <title>施工方案文档比对报告</title>
 <style>
-*{{margin:0;padding:0;box-sizing:border-box}}
-body{{font-family:'Microsoft YaHei',sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;padding:20px}}
-.container{{max-width:1400px;margin:0 auto}}
-h1{{text-align:center;color:#fff;font-size:2.2em;text-shadow:0 2px 10px rgba(0,0,0,0.3)}}
-.sub{{text-align:center;color:rgba(255,255,255,0.8);margin-bottom:30px}}
-.card{{background:#fff;border-radius:12px;padding:25px;margin:20px 0;box-shadow:0 4px 20px rgba(0,0,0,0.1)}}
-h2{{color:#2d3748;border-left:4px solid #667eea;padding-left:12px;margin-bottom:20px}}
-.stats{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px}}
-.stat{{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-radius:10px;padding:20px;text-align:center}}
-.num{{font-size:2.2em;font-weight:bold}}
-.label{{font-size:0.9em;opacity:0.9;margin-top:5px}}
-table{{width:100%;border-collapse:collapse;font-size:0.9em}}
-th{{background:#667eea;color:#fff;padding:12px;text-align:left;position:sticky;top:0}}
-td{{padding:10px 12px;border-bottom:1px solid #e2e8f0}}
-tr:hover{{background:#f7fafc}}
-.sim{{font-weight:bold;font-family:monospace;font-size:1.1em}}
-.c1{{color:#e53e3e}}.c2{{color:#dd6b20}}.c3{{color:#3182ce}}.c4{{color:#38a169}}
-.tag{{display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.8em;font-weight:bold}}
-.d0{{background:#ebf8ff;color:#2b6cb0}}.d1{{background:#fff5f5;color:#c53030}}.d2{{background:#f0fff4;color:#276749}}
-.preview{{max-width:400px;color:#4a5568;font-size:0.85em;background:#f7fafc;padding:8px;border-radius:6px;max-height:60px;overflow:hidden}}
-.alert{{background:#fff5f5;border:1px solid #feb2b2;border-radius:8px;padding:15px;margin:15px 0;color:#742a2a}}
-.alert h3{{color:#c53030;margin-bottom:8px}}
-footer{{text-align:center;color:rgba(255,255,255,0.6);padding:30px;font-size:0.85em}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.6}
+.container{max-width:1400px;margin:0 auto;padding:20px}
+.doc-map{background:#1e293b;border-radius:12px;padding:15px 20px;margin-bottom:15px;border:1px solid #334155;display:flex;gap:30px;flex-wrap:wrap;justify-content:center;font-size:0.88em}
+.doc-map-item{display:flex;align-items:center;gap:8px}
+.doc-map-item .name{color:#94a3b8;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav{position:sticky;top:0;z-index:100;background:#0f172aee;border-bottom:1px solid #334155;padding:12px 0;margin-bottom:15px;backdrop-filter:blur(10px)}
+.nav-inner{display:flex;gap:15px;justify-content:center;flex-wrap:wrap}
+.nav a{color:#94a3b8;text-decoration:none;padding:8px 18px;border-radius:8px;transition:all .2s;font-size:0.9em}
+.nav a:hover{color:#f8fafc;background:#1e293b}
+.nav a.active{color:#38bdf8;background:#1e293b;font-weight:600}
+.header{text-align:center;padding:30px 0;background:linear-gradient(135deg,#1e3a5f,#0f172a);border-radius:16px;margin-bottom:20px;border:1px solid #334155}
+.header h1{font-size:2.2em;color:#f8fafc;margin-bottom:8px}
+.header .sub{color:#94a3b8}
+.drawer{background:#1e293b;border-radius:16px;border:1px solid #334155;margin-bottom:20px;overflow:hidden}
+.drawer-header{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;cursor:pointer;transition:background .2s}
+.drawer-header:hover{background:#283548}
+.drawer-header h2{color:#f8fafc;font-size:1.25em;margin:0;display:flex;align-items:center;gap:10px}
+.drawer-header h2 .count{background:#38bdf8;color:#0f172a;font-size:0.6em;padding:2px 10px;border-radius:20px}
+.drawer-header .arrow{font-size:1.2em;color:#64748b;transition:transform .3s;display:inline-block}
+.drawer.open .arrow{transform:rotate(90deg)}
+.drawer-body{display:none}
+.drawer.open .drawer-body{display:block}
+.drawer-content{padding:0 24px 24px}
+.tag{display:inline-block;padding:3px 12px;border-radius:20px;font-size:0.78em;font-weight:600}
+'''
+    # 文档标签颜色
+    for i in range(len(doc_names)):
+        colors = [('dbeafe','1e40af'), ('fce7f3','be185d'), ('d1fae5','166534'), ('fef3c7','92400e'), ('e0e7ff','3730a3'), ('fce7f3','9d174d')]
+        bg, fg = colors[i % len(colors)]
+        html += f'.d{i}{{background:#{bg};color:#{fg}}} '
+    html += '''
+
+/* 图片对 */
+.img-pair{display:grid;grid-template-columns:1fr auto 1fr;gap:15px;margin-bottom:18px;padding:15px;background:#0f172a;border-radius:12px;border:1px solid #334155;align-items:center}
+.img-pair .side{text-align:center}
+.img-pair .side img{max-width:100%;max-height:280px;object-fit:contain;background:#0a0f1a;border-radius:8px;cursor:pointer;border:1px solid #334155}
+.img-pair .side img:hover{border-color:#38bdf8}
+.img-pair .meta{color:#94a3b8;font-size:0.8em;margin-top:6px}
+.img-pair .vs{text-align:center;color:#64748b;font-weight:bold}
+.img-pair .vs .sim{font-size:1.4em;display:block;margin-bottom:4px}
+.sim-c1{color:#ef4444}.sim-c2{color:#f97316}.sim-c3{color:#38bdf8}
+
+/* 文本对 + hover完整文本 */
+.text-pair{padding:16px;margin-bottom:12px;background:#0f172a;border-radius:10px;border:1px solid #334155;position:relative}
+.text-pair-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px}
+.text-pair-header .sim{font-size:1.2em;font-weight:bold;font-family:monospace}
+.text-pair-header .source{color:#94a3b8;font-size:0.85em}
+.text-pair-body{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.text-pair-body .side{background:#1e293b;padding:12px;border-radius:8px;cursor:help;position:relative}
+.text-pair-body .side .label{color:#64748b;font-size:0.78em;margin-bottom:4px}
+.text-pair-body .side .content{color:#e2e8f0;font-size:0.88em;line-height:1.6;max-height:100px;overflow:hidden}
+.text-pair-body .side .fulltext{display:none;position:absolute;left:0;top:100%;width:100%;max-height:400px;overflow-y:auto;background:#1e293b;border:2px solid #38bdf8;border-radius:8px;padding:12px;z-index:50;font-size:0.85em;line-height:1.7;color:#e2e8f0;box-shadow:0 10px 40px rgba(0,0,0,0.5)}
+.text-pair-body .side:hover .fulltext{display:block}
+
+/* 分页 */
+.pagination{display:flex;justify-content:center;align-items:center;gap:8px;padding:15px 0;flex-wrap:wrap}
+.pagination button{padding:6px 14px;background:#334155;color:#e2e8f0;border:none;border-radius:6px;cursor:pointer;font-size:0.85em}
+.pagination button:hover{background:#475569}
+.pagination button:disabled{opacity:0.4;cursor:not-allowed}
+.pagination button.active{background:#38bdf8;color:#0f172a;font-weight:600}
+.pagination .info{color:#94a3b8;font-size:0.85em}
+
+/* 筛选 */
+.filter-bar{display:flex;gap:10px;margin-bottom:15px;align-items:center;flex-wrap:wrap}
+.filter-bar select{padding:8px 14px;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:8px;font-size:0.85em}
+
+/* Tab */
+.tabs{display:flex;gap:5px;margin-bottom:15px;border-bottom:2px solid #334155}
+.tab-btn{padding:10px 20px;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:0.9em;border-bottom:3px solid transparent;transition:all .2s}
+.tab-btn:hover{color:#f8fafc}
+.tab-btn.active{color:#38bdf8;border-bottom-color:#38bdf8;font-weight:600}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* 非标段落 */
+.special-item{padding:14px;margin-bottom:10px;background:#0f172a;border-radius:10px;border-left:4px solid #22c55e}
+.special-item .meta{display:flex;gap:15px;margin-bottom:6px;font-size:0.82em;color:#94a3b8;flex-wrap:wrap}
+.special-item .meta .score{color:#22c55e;font-weight:bold}
+.special-item .text{color:#e2e8f0;font-size:0.9em;line-height:1.6}
+.special-item mark{background:#fbbf2433;color:#fbbf24;padding:1px 4px;border-radius:3px}
+
+/* 型号多选 */
+.model-filter{margin-bottom:15px}
+.model-filter-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px}
+.model-filter-header .stats-line{color:#94a3b8;font-size:0.85em}
+.model-filter-header .stats-line span{color:#22c55e;font-weight:600}
+.model-checkboxes{display:flex;flex-wrap:wrap;gap:6px;max-height:140px;overflow-y:auto;padding:10px;background:#0f172a;border-radius:8px;border:1px solid #334155}
+.model-checkboxes label{display:flex;align-items:center;gap:4px;padding:3px 8px;background:#1e293b;border-radius:5px;font-size:0.78em;cursor:pointer}
+.model-checkboxes label:hover{background:#283548}
+
+/* 搜索 */
+.search-box{width:100%;padding:14px 18px;font-size:1.05em;border:2px solid #334155;border-radius:12px;background:#0f172a;color:#f8fafc;margin-bottom:15px;outline:none}
+.search-box:focus{border-color:#38bdf8}
+.search-filters{display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap}
+.search-filters label{display:flex;align-items:center;gap:5px;cursor:pointer;padding:8px 15px;background:#334155;border-radius:8px;font-size:0.88em}
+.query-result{padding:14px;margin-bottom:10px;background:#0f172a;border-radius:10px;border-left:4px solid #38bdf8}
+.query-result .meta{display:flex;gap:15px;margin-bottom:6px;font-size:0.82em;color:#94a3b8}
+.query-result mark{background:#fbbf2433;color:#fbbf24;padding:1px 4px;border-radius:3px}
+.no-result{text-align:center;color:#64748b;padding:40px}
+
+/* 蒙层 */
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.93);display:none;justify-content:center;align-items:center;z-index:1000;cursor:zoom-out}
+.overlay.active{display:flex}
+.overlay img{max-width:93%;max-height:93%;object-fit:contain;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,0.6)}
+.overlay .close{position:absolute;top:15px;right:25px;color:#fff;font-size:2.5em;cursor:pointer;opacity:0.6;transition:opacity .2s;line-height:1}
+.overlay .close:hover{opacity:1}
+.overlay .info{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:#94a3b8;font-size:0.88em;background:rgba(0,0,0,0.5);padding:6px 16px;border-radius:20px}
+
+footer{text-align:center;color:#64748b;padding:40px 20px;font-size:0.85em}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-track{background:#0f172a}::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
 </style>
 </head>
 <body>
+
+<div class="overlay" id="overlay" onclick="closeOverlay()">
+<span class="close">&times;</span>
+<img id="overlayImg" src="" alt="">
+<div class="info" id="overlayInfo"></div>
+</div>
+
 <div class="container">
-<h1>施工方案文档比对报告</h1>
-<p class="sub">串标风险排查 | {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
 
-<div class="card">
-<h2>概览</h2>
-<div class="stats">
-<div class="stat"><div class="num">{len(doc_names)}</div><div class="label">文档数</div></div>
-<div class="stat"><div class="num">{len(img_matches)}</div><div class="label">相似图片对</div></div>
-<div class="stat"><div class="num">{len(text_matches)}</div><div class="label">相似段落对</div></div>
-</div>
-</div>
-
-<div class="card">
-<h2>图片风险</h2>
-<div class="alert">
-<h3>极高相似度(>=0.95): {critical_img} 对 | 高相似(0.90-0.95): {high_img} 对 | 中相似(0.85-0.90): {med_img} 对</h3>
-</div>
-<table><thead><tr><th>#</th><th>相似度</th><th>文档A</th><th>文档B</th><th>尺寸</th></tr></thead><tbody>
-"""
-    for i,m in enumerate(img_matches[:100],1):
-        cl = 'c1' if m["similarity"]>=0.95 else 'c2' if m["similarity"]>=0.90 else 'c3'
-        html += f"<tr><td>{i}</td><td class='sim {cl}'>{m['similarity']:.4f}</td><td><span class='tag d{m['doc_a']}'>Doc{m['doc_a']+1}</span> P{m['page_a']}</td><td><span class='tag d{m['doc_b']}'>Doc{m['doc_b']+1}</span> P{m['page_b']}</td><td>{m['size_a']} | {m['size_b']}</td></tr>\n"
-    
-    html += """</tbody></table></div>
-
-<div class="card">
-<h2>文本比对结果</h2>
-<table><thead><tr><th>#</th><th>相似度</th><th>文档A</th><th>文档B</th><th>预览</th></tr></thead><tbody>
-"""
-    for i,m in enumerate(text_matches[:100],1):
-        cl = 'c1' if m["similarity"]>=0.95 else 'c2' if m["similarity"]>=0.90 else 'c3'
-        ta = m['text_a'][:80].replace('<','&lt;').replace('>','&gt;')
-        tb = m['text_b'][:80].replace('<','&lt;').replace('>','&gt;')
-        html += f"<tr><td>{i}</td><td class='sim {cl}'>{m['similarity']:.4f}</td><td><span class='tag d{m['doc_a']}'>Doc{m['doc_a']+1}</span> P{m['page_a']}</td><td><span class='tag d{m['doc_b']}'>Doc{m['doc_b']+1}</span> P{m['page_b']}</td><td><div class='preview'>A: {ta}<br>B: {tb}</div></td></tr>\n"
-    
-    html += """</tbody></table></div>
-<footer>BidDocComparator v1.0</footer>
-</div></body></html>"""
-    
-    with open(html_path, 'w', encoding='utf-8') as f:
-        f.write(html)
-    return html_path
-
-
-def generate_text_report(img_matches, text_matches, doc_names, output_dir):
-    """生成文本报告"""
-    txt_path = output_dir / "report.txt"
-    lines = []
-    lines.append("=" * 80)
-    lines.append("施工方案文档比对报告 - 串标风险排查")
-    lines.append("=" * 80)
-    lines.append(f"时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    lines.append(f"文档: {len(doc_names)}")
+<!-- 文档名映射 -->
+<div class="doc-map">
+'''
     for i, name in enumerate(doc_names):
-        lines.append(f"  Doc{i+1}: {name}")
-    lines.append("")
-    lines.append(f"相似图片对: {len(img_matches)}")
-    lines.append(f"相似段落对: {len(text_matches)}")
-    lines.append("")
+        html += f'<div class="doc-map-item"><span class="tag d{i}">文档{i+1}</span><span class="name">{esc(name)}</span></div>\n'
+
+    html += '''
+</div>
+
+<nav class="nav"><div class="nav-inner">
+<a href="#sec1" class="active" onclick="setActive(this)">图片比对</a>
+<a href="#sec2" onclick="setActive(this)">相似文本</a>
+<a href="#sec3" onclick="setActive(this)">非标内容</a>
+<a href="#sec4" onclick="setActive(this)">关键词查询</a>
+</div></nav>
+
+<div class="header">
+<h1>施工方案文档比对报告</h1>
+<p class="sub">串标风险排查分析 | ''' + datetime.now().strftime('%Y-%m-%d') + ''' | 文本块''' + str(CHUNK_SIZE) + '''字符</p>
+</div>
+'''
+
+    # ===== 图片比对 =====
+    MAX_IMG_SHOW = 500
+    html += f'''
+<div class="drawer" id="sec1">
+<div class="drawer-header" onclick="toggleDrawer(this)">
+<h2>图片比对结果 <span class="count">{len(img_pairs)}对</span></h2>
+<span class="arrow">&#9656;</span>
+</div>
+<div class="drawer-body"><div class="drawer-content">
+<p style="color:#94a3b8;font-size:0.85em;margin-bottom:15px">仅展示相似度最高的前 {min(len(img_pairs), MAX_IMG_SHOW)} 对图片，防止报告过大。</p>
+'''
+    for i, m in enumerate(img_pairs[:MAX_IMG_SHOW]):
+        sc = 'sim-c1' if m['sim'] >= 0.95 else 'sim-c2' if m['sim'] >= 0.90 else 'sim-c3'
+        da, db = m['doc_a'] + 1, m['doc_b'] + 1
+        html += f'''
+<div class="img-pair">
+<div class="side">
+<img src="data:image/jpeg;base64,{m['b64_a']}" alt="" onclick="openOverlay(this.src,'文档{da} 第{m['page_a']}页 {m['w_a']}x{m['h_a']}')">
+<div class="meta"><span class="tag d{m['doc_a']}">文档{da}</span> 第{m['page_a']}页 {m['w_a']}x{m['h_a']}</div>
+</div>
+<div class="vs"><span class="sim {sc}">{m['sim']}</span><span>#{i+1}</span></div>
+<div class="side">
+<img src="data:image/jpeg;base64,{m['b64_b']}" alt="" onclick="openOverlay(this.src,'文档{db} 第{m['page_b']}页 {m['w_b']}x{m['h_b']}')">
+<div class="meta"><span class="tag d{m['doc_b']}">文档{db}</span> 第{m['page_b']}页 {m['w_b']}x{m['h_b']}</div>
+</div>
+</div>
+'''
+    if len(img_pairs) > MAX_IMG_SHOW:
+        html += f'<div style="text-align:center;color:#64748b;padding:15px">... 还有 {len(img_pairs)-MAX_IMG_SHOW} 对相似图片未显示 ...</div>\n'
+    html += '''</div></div></div>
+'''
+
+    # ===== 相似文本对 =====
+    html += f'''
+<div class="drawer" id="sec2">
+<div class="drawer-header" onclick="toggleDrawer(this)">
+<h2>相似文本对 <span class="count">{len(text_matches)}对</span></h2>
+<span class="arrow">&#9656;</span>
+</div>
+<div class="drawer-body"><div class="drawer-content">
+<p style="color:#94a3b8;font-size:0.85em;margin-bottom:15px">文本块固定{CHUNK_SIZE}字符拆分。已过滤标准化内容（封面、招标文件原文等）。鼠标悬停文本块可查看完整内容。</p>
+<div id="textPairsContainer"></div>
+<div class="pagination" id="textPairsPagination"></div>
+</div></div></div>
+'''
+
+    # ===== 非标内容 =====
+    eq_total = sum(1 for p in special_paras if p.get('models'))
+    high_total = sum(1 for p in special_paras if p['score'] > 0.9)
+
+    html += f'''
+<div class="drawer" id="sec3">
+<div class="drawer-header" onclick="toggleDrawer(this)">
+<h2>低频N-gram非标内容筛选 <span class="count">{len(special_paras)}段</span></h2>
+<span class="arrow">&#9656;</span>
+</div>
+<div class="drawer-body"><div class="drawer-content">
+
+<div class="filter-bar">
+<label>文档筛选:</label>
+<select id="spDocFilter" onchange="filterSpecial()">
+<option value="all">全部文档</option>
+'''
+    for i in range(len(doc_names)):
+        html += f'<option value="{i}">文档{i+1} ({sp_counts[i]})</option>\n'
+    html += f'''</select>
+</div>
+
+<div class="tabs">
+<button class="tab-btn active" onclick="switchTab(this,'sp-all')">全部({len(special_paras)})</button>
+<button class="tab-btn" onclick="switchTab(this,'sp-eq')">含设备型号({eq_total})</button>
+<button class="tab-btn" onclick="switchTab(this,'sp-high')">非标度>0.9({high_total})</button>
+</div>
+
+<div class="tab-panel active" id="sp-all">
+'''
+    for i, p in enumerate(special_paras):
+        if i >= 200:
+            html += f'<div style="text-align:center;color:#64748b;padding:15px">... 还有 {len(special_paras)-200} 条 ...</div>\n'
+            break
+        grams = ', '.join(p.get('rare_grams', [])[:3])
+        txt = esc(p['text'][:280]) + ('...' if len(p['text']) > 280 else '')
+        html += f'<div class="special-item" data-doc="{p["doc"]}"><div class="meta"><span class="tag d{p["doc"]}">文档{p["doc"]+1}</span><span>第{p["page"]}页</span><span class="score">非标度: {p["score"]}</span><span style="color:#64748b">特征: {grams}</span></div><div class="text">{txt}</div></div>\n'
+
+    html += '''</div>
+
+<div class="tab-panel" id="sp-eq">
+<div class="model-filter">
+<div class="model-filter-header">
+<div>
+<button onclick="selectAllModels(true)" style="padding:4px 12px;background:#334155;color:#e2e8f0;border:none;border-radius:6px;cursor:pointer;font-size:0.82em;margin-right:8px">全选</button>
+<button onclick="selectAllModels(false)" style="padding:4px 12px;background:#334155;color:#e2e8f0;border:none;border-radius:6px;cursor:pointer;font-size:0.82em">清空</button>
+</div>
+<div class="stats-line" id="modelStats">共 <span>''' + str(sum(eq_counts)) + '''</span> 条'''
+    for i in range(len(doc_names)):
+        html += f' | 文档{i+1}: <span>{eq_counts[i]}</span>'
+    html += '''</div>
+</div>
+<div class="model-checkboxes" id="modelChecks">
+'''
+    for model in models_sorted:
+        html += f'<label><input type="checkbox" value="{esc(model)}" checked onchange="filterByModel()"> {esc(model)}</label>\n'
+
+    html += '''</div>
+</div>
+<div id="eqResults">
+'''
+    for p in special_paras:
+        if not p.get('models'):
+            continue
+        txt = esc(p['text'][:300])
+        for m in sorted(set(p['models']), key=len, reverse=True):
+            txt = txt.replace(m, '<mark>' + m + '</mark>')
+        models_attr = json.dumps(p['models'], ensure_ascii=False)
+        html += f'<div class="special-item" data-doc="{p["doc"]}" data-models="{esc(models_attr)}"><div class="meta"><span class="tag d{p["doc"]}">文档{p["doc"]+1}</span><span>第{p["page"]}页</span><span class="score">非标度: {p["score"]}</span></div><div class="text">{txt}{"..." if len(p["text"])>300 else ""}</div></div>\n'
+
+    html += '''</div>
+</div>
+
+<div class="tab-panel" id="sp-high">
+'''
+    for p in special_paras:
+        if p['score'] <= 0.9:
+            continue
+        grams = ', '.join(p.get('rare_grams', [])[:3])
+        txt = esc(p['text'][:280]) + ('...' if len(p['text']) > 280 else '')
+        html += f'<div class="special-item" data-doc="{p["doc"]}"><div class="meta"><span class="tag d{p["doc"]}">文档{p["doc"]+1}</span><span>第{p["page"]}页</span><span class="score">非标度: {p["score"]}</span><span style="color:#64748b">特征: {grams}</span></div><div class="text">{txt}</div></div>\n'
+
+    html += '''</div>
+
+</div></div></div>
+'''
+
+    # ===== 关键词查询 =====
+    html += '''
+<div class="drawer open" id="sec4">
+<div class="drawer-header" onclick="toggleDrawer(this)">
+<h2>关键词查询 <span class="count">全文</span></h2>
+<span class="arrow">&#9656;</span>
+</div>
+<div class="drawer-body"><div class="drawer-content">
+<p style="color:#94a3b8;margin-bottom:15px;font-size:0.88em">输入关键词（设备型号、品牌名、技术参数等），在所有文档段落中实时搜索。支持多关键词空格分隔。</p>
+<div class="search-filters">
+'''
+    for i in range(len(doc_names)):
+        html += f'<label><input type="checkbox" id="qDoc{i+1}" checked> 文档{i+1}</label>\n'
+    html += '''<label><input type="checkbox" id="qHighlight" checked> 高亮匹配</label>
+</div>
+<input type="text" class="search-box" id="queryInput" placeholder="输入关键词，如: 变压器 SCBH15 美的 空调 ..." oninput="doSearch()">
+<div id="queryResults">
+<div class="no-result">输入关键词开始搜索... 试试:
+<code style="background:#334155;padding:2px 8px;border-radius:4px;cursor:pointer" onclick="quickSearch('变压器')">变压器</code>
+<code style="background:#334155;padding:2px 8px;border-radius:4px;cursor:pointer" onclick="quickSearch('SCBH15')">SCBH15</code>
+<code style="background:#334155;padding:2px 8px;border-radius:4px;cursor:pointer" onclick="quickSearch('空调')">空调</code>
+<code style="background:#334155;padding:2px 8px;border-radius:4px;cursor:pointer" onclick="quickSearch('灭火器')">灭火器</code>
+<code style="background:#334155;padding:2px 8px;border-radius:4px;cursor:pointer" onclick="quickSearch('KZJ-600')">KZJ-600</code>
+</div>
+</div>
+</div></div></div>
+
+<footer>BidDocComparator v2.0 | 施工方案文档比对工具<br>本报告仅供内部投标文档审查使用</footer>
+</div>
+
+<script>
+'''
+
+    # JS数据
+    html += f'const ALL_TEXTS = {texts_js};\n'
+    html += f'const TEXT_PAIRS = {tm_js};\n'
+    html += f'const SPECIAL_PARAS = {sp_js};\n'
+    html += f'const EQ_MODELS = {models_js};\n'
+    html += f'const DOC_COUNT = {len(doc_names)};\n'
+
+    # JS逻辑
+    html += '''
+// 蒙层
+function openOverlay(src, info) {
+    document.getElementById("overlayImg").src = src;
+    document.getElementById("overlayInfo").textContent = info;
+    document.getElementById("overlay").classList.add("active");
+    document.body.style.overflow = "hidden";
+}
+function closeOverlay() {
+    document.getElementById("overlay").classList.remove("active");
+    document.body.style.overflow = "";
+}
+document.addEventListener("keydown", function(e) { if (e.key === "Escape") closeOverlay(); });
+
+// 导航
+function setActive(el) {
+    document.querySelectorAll(".nav a").forEach(a => a.classList.remove("active"));
+    el.classList.add("active");
+}
+document.querySelectorAll(".nav a").forEach(a => {
+    a.addEventListener("click", function(e) { e.preventDefault(); const t = document.querySelector(this.getAttribute("href")); if (t) t.scrollIntoView({behavior:"smooth"}); });
+});
+
+// 抽屉
+function toggleDrawer(header) {
+    header.parentElement.classList.toggle("open");
+}
+
+// Tab
+function switchTab(btn, panelId) {
+    const card = btn.closest(".drawer-content") || btn.closest(".card");
+    card.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    card.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(panelId).classList.add("active");
+}
+
+// 相似文本对分页
+const PAIRS_PER_PAGE = 10;
+let currentPage = 1;
+
+function renderTextPairs(page) {
+    const container = document.getElementById("textPairsContainer");
+    const pagination = document.getElementById("textPairsPagination");
+    const totalPages = Math.ceil(TEXT_PAIRS.length / PAIRS_PER_PAGE);
+    currentPage = Math.max(1, Math.min(page, totalPages));
+    const start = (currentPage - 1) * PAIRS_PER_PAGE;
+    const end = start + PAIRS_PER_PAGE;
+    const pageData = TEXT_PAIRS.slice(start, end);
     
-    lines.append("=" * 80)
-    lines.append("图片比对结果 TOP 50")
-    lines.append("=" * 80)
-    for i, m in enumerate(img_matches[:50], 1):
-        lines.append(f"#{i} sim={m['similarity']:.4f} | Doc{m['doc_a']+1}P{m['page_a']}({m['size_a']}) vs Doc{m['doc_b']+1}P{m['page_b']}({m['size_b']})")
+    let html = '';
+    for (const m of pageData) {
+        const simClass = m.sim >= 0.90 ? 'sim-c1' : m.sim >= 0.80 ? 'sim-c2' : m.sim >= 0.70 ? 'sim-c3' : '';
+        const docLabels = [];
+        const docClasses = [];
+        for (let i = 0; i < DOC_COUNT; i++) { docLabels.push('文档' + (i+1)); docClasses.push('d' + i); }
+        const ta = m.text_a.length > 180 ? m.text_a.substring(0,180) + '...' : m.text_a;
+        const tb = m.text_b.length > 180 ? m.text_b.substring(0,180) + '...' : m.text_b;
+        html += '<div class="text-pair">';
+        html += '<div class="text-pair-header">';
+        html += '<span class="sim ' + simClass + '">相似度: ' + m.sim + '</span>';
+        html += '<span class="source"><span class="tag ' + docClasses[m.doc_a] + '">' + docLabels[m.doc_a] + '</span> 第' + m.page_a + '页 <span style="color:#64748b;margin:0 8px">vs</span> <span class="tag ' + docClasses[m.doc_b] + '">' + docLabels[m.doc_b] + '</span> 第' + m.page_b + '页</span>';
+        html += '</div>';
+        html += '<div class="text-pair-body">';
+        html += '<div class="side"><div class="label">' + docLabels[m.doc_a] + ' 第' + m.page_a + '页</div><div class="content">' + ta + '</div><div class="fulltext">' + m.text_a + '</div></div>';
+        html += '<div class="side"><div class="label">' + docLabels[m.doc_b] + ' 第' + m.page_b + '页</div><div class="content">' + tb + '</div><div class="fulltext">' + m.text_b + '</div></div>';
+        html += '</div></div>';
+    }
+    container.innerHTML = html;
     
-    lines.append("")
-    lines.append("=" * 80)
-    lines.append("文本比对结果 TOP 50")
-    lines.append("=" * 80)
-    for i, m in enumerate(text_matches[:50], 1):
-        lines.append(f"#{i} sim={m['similarity']:.4f} | Doc{m['doc_a']+1}P{m['page_a']} vs Doc{m['doc_b']+1}P{m['page_b']}")
-        lines.append(f"  A: {m['text_a'][:150]}")
-        lines.append(f"  B: {m['text_b'][:150]}")
-        lines.append("")
+    let pagHtml = '<button ' + (currentPage===1?'disabled':'') + ' onclick="renderTextPairs(' + (currentPage-1) + ')">上一页</button>';
+    for (let p = 1; p <= totalPages; p++) {
+        if (p === 1 || p === totalPages || (p >= currentPage-2 && p <= currentPage+2)) {
+            pagHtml += '<button class="' + (p===currentPage?'active':'') + '" onclick="renderTextPairs(' + p + ')">' + p + '</button>';
+        } else if (p === currentPage-3 || p === currentPage+3) {
+            pagHtml += '<span style="color:#64748b">...</span>';
+        }
+    }
+    pagHtml += '<button ' + (currentPage===totalPages?'disabled':'') + ' onclick="renderTextPairs(' + (currentPage+1) + ')">下一页</button>';
+    pagHtml += '<span class="info">第 ' + currentPage + '/' + totalPages + ' 页，共 ' + TEXT_PAIRS.length + ' 对</span>';
+    pagination.innerHTML = pagHtml;
+}
+
+renderTextPairs(1);
+
+// 非标筛选
+function filterSpecial() {
+    const filter = document.getElementById("spDocFilter").value;
+    document.querySelectorAll(".special-item").forEach(item => {
+        item.style.display = (filter === "all" || item.getAttribute("data-doc") === filter) ? "" : "none";
+    });
+}
+
+// 型号多选
+function selectAllModels(checked) {
+    document.querySelectorAll("#modelChecks input").forEach(cb => cb.checked = checked);
+    filterByModel();
+}
+
+function filterByModel() {
+    const checkedModels = Array.from(document.querySelectorAll("#modelChecks input:checked")).map(cb => cb.value);
+    const items = document.querySelectorAll("#eqResults .special-item");
+    let counts = new Array(DOC_COUNT).fill(0);
+    items.forEach(item => {
+        try {
+            const models = JSON.parse(item.getAttribute("data-models") || "[]");
+            const hasMatch = models.some(m => checkedModels.includes(m));
+            if (hasMatch) {
+                item.style.display = "";
+                counts[parseInt(item.getAttribute("data-doc"))]++;
+            } else {
+                item.style.display = "none";
+            }
+        } catch(e) { item.style.display = "none"; }
+    });
+    let statsHtml = '共 <span>' + counts.reduce((a,b)=>a+b,0) + '</span> 条';
+    for (let i = 0; i < DOC_COUNT; i++) statsHtml += ' | 文档' + (i+1) + ': <span>' + counts[i] + '</span>';
+    document.getElementById("modelStats").innerHTML = statsHtml;
+}
+
+// 关键词查询
+function quickSearch(keyword) {
+    document.getElementById("queryInput").value = keyword;
+    doSearch();
+}
+
+function doSearch() {
+    const query = document.getElementById("queryInput").value.trim();
+    const resultsDiv = document.getElementById("queryResults");
+    if (!query) { resultsDiv.innerHTML = '<div class="no-result">输入关键词开始搜索...</div>'; return; }
     
-    with open(txt_path, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(lines))
-    return txt_path
+    const keywords = query.split(/\\s+/).filter(k => k.length > 0);
+    const docFilters = [];
+    for (let i = 1; i <= DOC_COUNT; i++) {
+        const el = document.getElementById("qDoc" + i);
+        docFilters.push(el ? el.checked : true);
+    }
+    const doHighlight = document.getElementById("qHighlight").checked;
+    
+    const matches = [];
+    for (const item of ALL_TEXTS) {
+        if (!docFilters[item.doc]) continue;
+        const textLower = item.text.toLowerCase();
+        const kwLower = keywords.map(k => k.toLowerCase());
+        if (!kwLower.every(k => textLower.includes(k))) continue;
+        let score = 0;
+        for (const k of kwLower) { if (textLower.includes(k)) score++; }
+        matches.push(Object.assign({}, item, {score: score, keywords: kwLower}));
+    }
+    matches.sort((a, b) => b.score - a.score);
+    
+    if (matches.length === 0) { resultsDiv.innerHTML = '<div class="no-result">未找到匹配结果</div>'; return; }
+    
+    let html = '<div style="margin-bottom:15px;color:#94a3b8">找到 ' + matches.length + ' 条匹配</div>';
+    const docLabels = [];
+    const docClasses = [];
+    for (let i = 0; i < DOC_COUNT; i++) { docLabels.push('文档' + (i+1)); docClasses.push('d' + i); }
+    
+    for (const m of matches.slice(0, 100)) {
+        let displayText = m.text.length > 300 ? m.text.substring(0, 300) + '...' : m.text;
+        if (doHighlight) {
+            for (const kw of m.keywords) {
+                const regex = new RegExp("(" + kw.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&") + ")", "gi");
+                displayText = displayText.replace(regex, '<mark>$1</mark>');
+            }
+        }
+        html += '<div class="query-result"><div class="meta"><span class="tag ' + docClasses[m.doc] + '">' + docLabels[m.doc] + '</span><span>第' + m.page + '页</span><span style="color:#22c55e">匹配度: ' + m.score + '/' + keywords.length + '</span></div><div class="text">' + displayText + '</div></div>';
+    }
+    if (matches.length > 100) html += '<div class="no-result">还有 ' + (matches.length - 100) + ' 条结果未显示</div>';
+    resultsDiv.innerHTML = html;
+}
+</script>
+</body>
+</html>'''
+
+    # 写入文件
+    report_path = output_dir / "index.html"
+    with open(report_path, 'w', encoding='utf-8') as f:
+        f.write(html)
+    return report_path
 
 
 # =============================================================================
 # 主流程
 # =============================================================================
 def main():
-    parser = argparse.ArgumentParser(
-        description='施工方案文档比对工具 - 检测PDF中重复的图片和段落',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='示例: python bid_doc_comparator.py --docs a.pdf b.pdf --output ./result'
-    )
-    parser.add_argument('--docs', nargs='+', default=None, help='PDF文档路径列表（与--workspace二选一）')
+    global CHUNK_SIZE, CHUNK_OVERLAP, IMG_THRESHOLD, TEXT_THRESHOLD
+    parser = argparse.ArgumentParser(description='施工方案文档比对工具 v2.0')
+    parser.add_argument('--docs', nargs='+', default=None, help='PDF文档路径列表（默认读取 input/ 目录）')
     parser.add_argument('--output', default='./bid_compare_result', help='输出目录')
-    parser.add_argument('--workspace', default='./workspace', help='PDF文档存放目录（会自动读取该目录下所有PDF）')
-    parser.add_argument('--img-threshold', type=float, default=DEFAULT_IMG_THRESHOLD, help='图片相似度阈值')
-    parser.add_argument('--text-threshold', type=float, default=DEFAULT_TEXT_THRESHOLD, help='文本相似度阈值')
-    parser.add_argument('--device', default=DEFAULT_DEVICE, choices=['cpu', 'cuda'], help='计算设备')
-    parser.add_argument('--batch-size', type=int, default=32, help='图片编码批次大小')
-    
+    parser.add_argument('--img-threshold', type=float, default=IMG_THRESHOLD, help='图片相似度阈值')
+    parser.add_argument('--text-threshold', type=float, default=TEXT_THRESHOLD, help='文本相似度阈值')
+    parser.add_argument('--device', default='cpu', choices=['cpu', 'cuda'], help='计算设备')
+    parser.add_argument('--chunk-size', type=int, default=CHUNK_SIZE, help='文本块大小（字符）')
     args = parser.parse_args()
-    
-    # 处理 workspace 模式
+
+    # 如果没有指定文档，默认读取 input/ 目录
+    input_dir = Path("input")
     if args.docs is None:
-        ws = Path(args.workspace)
-        if not ws.exists():
-            print(f"Error: Workspace not found: {ws}")
+        if not input_dir.exists():
+            print("=" * 60)
+            print("错误：未找到 input/ 目录")
+            print("=" * 60)
+            print("请将需要比对的 PDF 文件放入当前目录下的 input/ 文件夹中：")
+            print("  mkdir input")
+            print("  cp *.pdf input/")
+            print("=" * 60)
             sys.exit(1)
-        pdf_files = sorted(ws.glob("*.pdf"))
-        if len(pdf_files) < 2:
-            print(f"Error: Workspace '{ws}' must contain at least 2 PDF files, found {len(pdf_files)}")
+
+        args.docs = sorted([str(p) for p in input_dir.glob("*.pdf")])
+        if len(args.docs) < 2:
+            print("=" * 60)
+            print("错误：input/ 目录中的 PDF 文件不足 2 个")
+            print("=" * 60)
+            print(f"当前 input/ 目录中共有 {len(args.docs)} 个 PDF 文件。")
+            print("请至少放入 2 份 PDF 文档后再运行。")
+            print("=" * 60)
             sys.exit(1)
-        args.docs = [str(p) for p in pdf_files]
-        print(f"[Workspace] Found {len(args.docs)} PDF files in {ws}")
-    
+        print(f"自动读取 input/ 目录中的 {len(args.docs)} 个 PDF 文件：")
+        for p in args.docs:
+            print(f"  - {Path(p).name}")
+        print()
+
+    # 更新配置
+    CHUNK_SIZE = args.chunk_size
+    CHUNK_OVERLAP = args.chunk_size // 10
+    IMG_THRESHOLD = args.img_threshold
+    TEXT_THRESHOLD = args.text_threshold
+
     # 验证文件
     for p in args.docs:
         if not os.path.exists(p):
-            print(f"Error: File not found: {p}")
+            print(f"Error: 文件不存在: {p}")
             sys.exit(1)
     if len(args.docs) < 2:
-        print("Error: At least 2 documents required")
+        print("Error: 至少需要2个文档")
         sys.exit(1)
-    
-    # 初始化：清空输出目录（避免旧产物干扰）
+
     out_dir = Path(args.output)
-    if out_dir.exists():
-        shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     logger = Logger(out_dir / "compare.log")
-    
+
     logger.info("=" * 60)
-    logger.info("BidDocComparator v1.1 Starting")
+    logger.info(f"BidDocComparator v2.0 | 文本块{CHUNK_SIZE}字符")
     logger.info("=" * 60)
-    logger.info(f"Documents: {len(args.docs)}")
-    logger.info(f"Img threshold: {args.img_threshold}")
-    logger.info(f"Text threshold: {args.text_threshold}")
-    logger.info(f"Device: {args.device}")
-    
+    logger.info(f"文档: {len(args.docs)}")
+    logger.info(f"图片阈值: {IMG_THRESHOLD}")
+    logger.info(f"文本阈值: {TEXT_THRESHOLD}")
+    logger.info(f"设备: {args.device}")
+
     if args.device == 'cuda' and not torch.cuda.is_available():
-        logger.warn("CUDA unavailable, fallback to CPU")
+        logger.info("CUDA不可用，回退到CPU")
         args.device = 'cpu'
-    
+
     t0 = time.time()
-    
-    # Step 1: 提取内容
-    logger.info("\n[Step 1/4] Extracting PDF content...")
-    all_img_records = []
-    all_text_records = []
+
+    # 初始化图片编码器
+    logger.info("\n[1/5] 初始化图片编码器...")
+    device = args.device
+    resnet = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+    encoder = nn.Sequential(*list(resnet.children())[:-1]).to(device).eval()
+    preprocess = transforms.Compose([
+        transforms.Resize((128, 128)), transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+
+    # 提取文本
+    logger.info(f"\n[2/5] 提取文本（块大小{CHUNK_SIZE}字符）...")
+    all_chunks = []
     doc_names = []
-    
     for idx, path in enumerate(args.docs):
-        img_recs, text_recs = extract_pdf_content(path, idx, out_dir, logger)
-        all_img_records.extend(img_recs)
-        all_text_records.extend(text_recs)
+        chunks = extract_texts(path, idx)
+        all_chunks.extend(chunks)
         doc_names.append(Path(path).name)
-    
-    logger.info(f"Total: {len(all_img_records)} images, {len(all_text_records)} paragraphs")
-    
-    # Step 2: 图片比对
-    logger.info("\n[Step 2/4] Comparing images...")
-    img_encoder = ImageEncoder(device=args.device)
-    img_vectors = img_encoder.encode_records(all_img_records, batch_size=args.batch_size)
-    
-    # 标记有效向量
-    for i, v in enumerate(img_vectors):
-        all_img_records[i]["_vector"] = v is not None
-    
-    index, data = build_faiss_index(img_vectors)
-    img_results = cross_doc_search(index, data, all_img_records, threshold=args.img_threshold)
-    logger.info(f"Image matches (>{args.img_threshold}): {len(img_results)}")
-    
-    # Step 3: 文本比对
-    logger.info("\n[Step 3/4] Comparing texts...")
-    text_results = compare_texts(all_text_records, threshold=args.text_threshold)
-    logger.info(f"Text matches (>{args.text_threshold}): {len(text_results)}")
-    
-    # Step 4: 生成报告
-    logger.info("\n[Step 4/4] Generating reports...")
-    
-    # JSON
-    with open(out_dir / "results.json", 'w', encoding='utf-8') as f:
-        json.dump({
-            "generated": datetime.now().isoformat(),
-            "documents": [{"index": i, "name": n} for i, n in enumerate(doc_names)],
-            "image_matches": img_results,
-            "text_matches": text_results
-        }, f, ensure_ascii=False, indent=2)
-    
-    # HTML
-    html_path = generate_html_report(img_results, text_results, doc_names, args.img_threshold, args.text_threshold, out_dir)
-    
-    # TXT
-    txt_path = generate_text_report(img_results, text_results, doc_names, out_dir)
-    
-    # Summary
+        logger.info(f"  doc{idx+1}: {len(chunks)} 块")
+    logger.info(f"  总计: {len(all_chunks)} 块")
+
+    # 提取图片
+    logger.info(f"\n[3/5] 提取图片...")
+    all_imgs = []
+    for idx, path in enumerate(args.docs):
+        imgs = extract_images(path, idx, encoder, preprocess, device)
+        all_imgs.extend(imgs)
+        logger.info(f"  doc{idx+1}: {len(imgs)} 张")
+    logger.info(f"  总计: {len(all_imgs)} 张")
+
+    # 图片比对
+    logger.info(f"\n[4/5] 图片比对...")
+    img_pairs = compare_images(all_imgs, IMG_THRESHOLD)
+    logger.info(f"  相似图片对: {len(img_pairs)}")
+
+    # 文本比对
+    logger.info(f"\n[5/5] 文本比对...")
+    text_pairs = compare_texts(all_chunks, TEXT_THRESHOLD)
+    logger.info(f"  相似文本对: {len(text_pairs)}")
+
+    # 非标段落
+    logger.info(f"\n[额外] 非标内容筛选...")
+    special_paras = find_special_paragraphs(all_chunks)
+    logger.info(f"  非标段落: {len(special_paras)}")
+
+    # 生成报告
+    logger.info(f"\n生成报告...")
+    report_path = generate_html_report(img_pairs, text_pairs, special_paras, all_chunks, doc_names, out_dir)
+
     elapsed = time.time() - t0
-    logger.info("\n" + "=" * 60)
-    logger.info("COMPLETED")
-    logger.info("=" * 60)
-    logger.info(f"Time: {elapsed:.1f}s")
-    logger.info(f"Image matches: {len(img_results)}")
-    logger.info(f"Text matches: {len(text_results)}")
-    logger.info(f"Output: {out_dir.absolute()}")
-    logger.info(f"  report.html - Visual HTML report")
-    logger.info(f"  report.txt  - Text report")
-    logger.info(f"  results.json - Detailed JSON data")
+    logger.info(f"\n{'=' * 60}")
+    logger.info(f"完成! 耗时: {elapsed:.1f}秒")
+    logger.info(f"  图片对: {len(img_pairs)}")
+    logger.info(f"  文本对: {len(text_pairs)}")
+    logger.info(f"  非标段: {len(special_paras)}")
+    logger.info(f"  报告: {report_path}")
+    logger.info(f"{'=' * 60}")
 
 
 if __name__ == "__main__":
+    # 强制 Windows 控制台使用 UTF-8 输出，避免中文乱码
+    if sys.platform == "win32":
+        import io
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', line_buffering=True)
     main()

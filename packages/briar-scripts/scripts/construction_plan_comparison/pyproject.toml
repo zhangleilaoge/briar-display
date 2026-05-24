@@ -1,0 +1,20 @@
+[project]
+name = "bid-doc-comparator"
+version = "2.0.0"
+description = "施工方案文档比对工具 - 串标风险排查"
+requires-python = ">=3.10,<3.11"
+dependencies = [
+    "PyMuPDF>=1.23.0",
+    "Pillow>=10.0.0",
+    "numpy>=1.24.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+]
+
+[project.scripts]
+bid-compare = "bid_doc_comparator:main"
+
+[[tool.uv.index]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
