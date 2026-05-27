@@ -1,0 +1,18 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Extracted images from PDFs (intermediate)
+images_doc1/
+images_doc2/
+images_doc3/
+
+# Comparison result outputs (generated)
+bid_compare_*/
+bid_compare_result/
+
+# Workspace
+input/
+build/
+.venv/
+workspace/
