@@ -14,8 +14,6 @@
 		"declaration": true,
 		"declarationMap": true,
 		"sourceMap": true,
-		"jsx": "react-jsx",
-		"jsxImportSource": "react",
 		"types": ["node"]
 	},
 	"include": ["src"],

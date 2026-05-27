@@ -56,6 +56,18 @@ curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
   jq -r '.changes[] | "\(.new_path): +\(.additions)/-\(.deletions)"' 2>/dev/null | head -20
 ```
 
+### 4. 自动发现关联 Jira
+
+从 MR 描述中提取 Jira ticket ID（正则匹配 `[A-Z]+-[0-9]+`），如果命中，自动递归调用 `briar-context` 抓取 Jira 内容：
+
+```bash
+JIRA_TICKET=$(echo "$DESC" | grep -oE '[A-Z]+-[0-9]+' | head -1)
+if [ -n "$JIRA_TICKET" ]; then
+    JIRA_URL="https://jira.qima-inc.com/browse/$JIRA_TICKET"
+    ./briar-context.sh "$JIRA_URL"
+fi
+```
+
 ---
 
 ## 结构化输出
@@ -70,6 +82,9 @@ curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
   src/foo.ts: +15/-3
   src/bar.ts: +42/-0
 - 关联 Jira: CSWT-191480
+  【Jira 上下文】CSWT-191480
+  - 标题: xxx
+  ...
 ```
 
 ---

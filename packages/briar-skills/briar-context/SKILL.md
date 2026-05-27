@@ -88,37 +88,50 @@ osascript -e 'tell application "Google Chrome" to return version'
 **开启方式**（如未开启）：
 > 菜单栏 → **查看 → 开发者 → 允许 Apple 事件中的 JavaScript**
 
-**获取脚本**：
+**获取脚本**（智能提取主内容区 + 轮询加载 + 自动关闭）：
 ```applescript
 tell application "Google Chrome"
     activate
     tell front window
         set newTab to make new tab at end of tabs
         set URL of newTab to "TARGET_URL"
-        delay 4
-        set pageTitle to title of newTab
-        set pageText to execute newTab javascript "document.body.innerText"
-        return "TITLE:" & pageTitle & "\n---BODY---\n" & pageText
+        -- 轮询等待页面加载完成，最多 10 秒
+        repeat 20 times
+            delay 0.5
+            set readyState to execute newTab javascript "document.readyState"
+            if readyState is "complete" then exit repeat
+        end repeat
+        -- SPA 页面（Jira 等）在 readyState complete 后仍需等待 3 秒让动态内容渲染
+        delay 3
+        set pageResult to execute newTab javascript "
+(function() {
+  var title = document.title || '';
+  var main = document.querySelector('main')
+    || document.querySelector('article')
+    || document.querySelector('[role=\"main\"]')
+    || document.querySelector('.content')
+    || document.body;
+  var text = main.innerText || '';
+  return 'TITLE:' + title + '\\n---BODY---\\n' + text;
+})()"
+        close newTab
+        return pageResult
     end tell
 end tell
 ```
 
-**获取后清理**（可选，询问用户）：
-```applescript
-tell application "Google Chrome"
-    tell front window to close active tab
-end tell
-```
+> 相比直接抓 `document.body.innerText`，优先提取 `main` / `article` / `[role=main]` 等主内容区，过滤掉导航栏、侧边栏等噪音。
 
 ---
 
 ## 注意事项
 
-1. **AppleScript 会实际打开 Chrome 标签页**，获取完成后应询问用户是否关闭
+1. **AppleScript 会实际打开 Chrome 标签页**，获取完成后**自动关闭**，无需手动清理
 2. **Cookie 安全**：通过 AppleScript 获取的 cookie 是内存中的实时值，不要持久化到日志或文件
 3. **Chrome 文件锁**：SQLite 中的 cookie 不是实时的，不能通过复制 `~/Library/Application Support/Google/Chrome/Profile 1/Cookies` 来获取登录态
 4. **降级策略**：如果 AppleScript 获取失败（Chrome 未开启支持），提示用户开启或手动复制页面内容
-5. **超时控制**：AppleScript 等待页面加载的时间根据网络状况调整（通常 3-5 秒）
+5. **SPA 等待**：单页应用（Jira、GitLab 等）在 `document.readyState === 'complete'` 后仍需固定等待 **3 秒**，让 JavaScript 动态渲染主内容区，否则可能返回空或残缺内容
+6. **超时控制**：AppleScript 轮询 `document.readyState`，加载完成后固定等待 3 秒再提取，最长等待 10 秒
 
 ---
 

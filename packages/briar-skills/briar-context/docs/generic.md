@@ -10,20 +10,25 @@
 
 ## 获取流程
 
-### 1. 先尝试 HTTP 直接请求
+### 1. 先尝试 HTTP 直接请求（单次请求）
 
 ```bash
 URL="https://example.com/some-page"
 
-CURL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L "$URL" 2>/dev/null || echo "000")
-CURL_BODY=$(curl -s -L "$URL" 2>/dev/null | head -5)
+TMP_BODY=$(mktemp)
+CURL_STATUS=$(curl -s -o "$TMP_BODY" -w "%{http_code}" -L "$URL" 2>/dev/null || echo "000")
+CURL_BODY=$(head -20 "$TMP_BODY")
 
 if [ "$CURL_STATUS" = "200" ] && ! echo "$CURL_BODY" | grep -qi "登录\|login\|sign in"; then
     echo "Public page, fetched via curl."
-    curl -s -L "$URL" 2>/dev/null
+    cat "$TMP_BODY"
+    rm -f "$TMP_BODY"
     exit 0
 fi
+rm -f "$TMP_BODY"
 ```
+
+> 合并为一次请求：body 写入临时文件，状态码通过 `-w` 获取，避免重复 curl。
 
 ### 2. curl 失败或遇到登录页 → 降级到 AppleScript + Chrome
 
@@ -41,10 +46,27 @@ tell application "Google Chrome"
     tell front window
         set newTab to make new tab at end of tabs
         set URL of newTab to "$URL"
-        delay 4
-        set pageTitle to title of newTab
-        set pageText to execute newTab javascript "document.body.innerText"
-        return "TITLE:" & pageTitle & "\n---BODY---\n" & pageText
+        -- 轮询等待页面加载完成，最多 10 秒
+        repeat 20 times
+            delay 0.5
+            set readyState to execute newTab javascript "document.readyState"
+            if readyState is "complete" then exit repeat
+        end repeat
+        -- SPA 页面在 readyState complete 后仍需等待 3 秒让动态内容渲染
+        delay 3
+        set pageResult to execute newTab javascript "
+(function() {
+  var title = document.title || '';
+  var main = document.querySelector('main')
+    || document.querySelector('article')
+    || document.querySelector('[role=\"main\"]')
+    || document.querySelector('.content')
+    || document.body;
+  var text = main.innerText || '';
+  return 'TITLE:' + title + '\\n---BODY---\\n' + text;
+})()"
+        close newTab
+        return pageResult
     end tell
 end tell
 APPLEEOF
@@ -52,6 +74,8 @@ APPLEEOF
 
 echo "$RESULT"
 ```
+
+> 智能提取：优先抓取 `main` / `article` / `[role=main]` / `.content`，避免把导航栏、侧边栏等噪音一起带进来。
 
 ---
 
@@ -70,4 +94,6 @@ echo "$RESULT"
 
 1. **Chrome 文件锁**：SQLite 中的 cookie 不是实时的，不能通过复制 `~/Library/Application Support/Google/Chrome/Profile 1/Cookies` 来获取登录态
 2. **AppleScript 获取失败**时，提示用户开启 Chrome → View → Developer → Allow JavaScript from Apple Events，或手动复制页面内容
-3. **超时控制**：AppleScript 等待页面加载的时间根据网络状况调整（通常 3-5 秒）
+3. **SPA 等待**：单页应用在 `document.readyState === 'complete'` 后仍需固定等待 **3 秒**，让 JavaScript 动态渲染主内容区，否则可能返回空或残缺内容
+4. **超时控制**：AppleScript 轮询 `document.readyState`，加载完成后固定等待 3 秒再提取，最长等待 10 秒
+4. **自动关闭标签页**：获取完成后自动关闭新开的 Chrome 标签
