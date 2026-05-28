@@ -14,7 +14,6 @@
 | `briar-fix` | 基于 Git worktree 的安全代码修复 |
 | `briar-mr` | GitLab MR 全能工具（创建、评论、review、pipeline） |
 | `briar-repo` | 从 GitLab 搜索并克隆仓库到本地 |
-| `briar-readme-ai` | AI 项目认知协议初始化（管理 `readme.ai.md`） |
 
 ---
 
@@ -72,6 +71,21 @@ briar-repo.sh pull wsc-pc-channel "$HOME/work"
 ---
 
 ## 开发约束
+
+### 优先复用 superpowers
+
+新增 skill 前，先检查 superpowers 是否已有同类能力，避免重复造轮子：
+
+| superpowers skill | 已覆盖的场景 |
+|-------------------|-------------|
+| `using-git-worktrees` | worktree 创建、管理、隔离工作区 |
+| `systematic-debugging` | 调试方法论、故障排查流程 |
+| `test-driven-development` | TDD 流程、红绿重构循环 |
+| `writing-plans` | 实现计划编写、架构设计 |
+| `verification-before-completion` | 完成前验证、检查清单 |
+| `receiving-code-review` / `requesting-code-review` | 代码审查接收/请求流程 |
+
+> 若 superpowers 已覆盖，本仓库的 skill 只保留**具体工具调用**（如 GitLab API 脚本、AppleScript 抓取），不再重复编写工作流指导。
 
 ### 禁止硬编码项目路径
 

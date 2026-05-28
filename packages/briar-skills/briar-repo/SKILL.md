@@ -172,49 +172,26 @@ git worktree prune
 
 ## 四、Worktree 管理
 
+> 通用 worktree 使用方法已由 `using-git-worktrees` 覆盖。本节仅保留 briar 项目的**命名约定**和**快捷命令**。
+
 **触发条件**：用户说"给 xxx 建个 worktree"、"开个 xxx 分支工作区"、"删 worktree"。
 
-### Worktree 命名规则
+### 命名规则
 
-- 名称格式：`仓库名-分支名`
-- 分支名中的 `/` 替换为 `-`
-- 存放位置：仓库**同级目录**（由脚本自动计算）
+| 项目 | 约定 |
+|------|------|
+| 名称格式 | `仓库名-分支名`（`/` 替换为 `-`） |
+| 存放位置 | 仓库**同级目录** |
 
-示例：
-- 仓库：`~/projects/wsc-pc-channel`
-- 分支：`feat/foo`
-- Worktree：`~/projects/wsc-pc-channel-feat-foo`
+示例：仓库 `~/projects/wsc-pc-channel` + 分支 `feat/foo` → Worktree `~/projects/wsc-pc-channel-feat-foo`
 
-> ⚠️ **注意**：如果直接手动执行 `git worktree add`，存放位置由调用者决定（如 `.worktrees/xxx`），不受上述规则约束。
-
-### 创建 Worktree
+### 快捷命令
 
 ```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree add <repo-name> <branch> [base_dir]
-```
-
-- 如果 worktree 已存在，复用并 stash 已有改动
-- 自动 fetch 远程分支
-
-### 删除指定 Worktree
-
-```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree remove <repo-name> <branch> [base_dir]
-```
-
-- 先 stash 未提交改动
-- 再删除 worktree
-
-### 列出所有 Worktree
-
-```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree list <repo-name> [base_dir]
-```
-
-### 清理所有 Worktree
-
-```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree clean <repo-name> [base_dir]
+briar-repo.sh worktree add    <repo> <branch> [base_dir]  # 创建（存在则复用+stash）
+briar-repo.sh worktree remove <repo> <branch> [base_dir]  # 删除（先 stash）
+briar-repo.sh worktree list   <repo> [base_dir]           # 列出
+briar-repo.sh worktree clean  <repo> [base_dir]           # 清理全部
 ```
 
 ---
@@ -239,9 +216,7 @@ git worktree prune
 
 ### 2. 手动 `git worktree add` 与脚本行为不一致
 
-手动执行 `git worktree add .worktrees/test-20260522 test/20260522` 会把 worktree 放在仓库**子目录**下，而脚本 `briar-repo.sh worktree add` 会放在仓库**同级目录**下。
-
-清理工作区时，如果 worktree 是手动创建的，脚本可能找不到（因为脚本按同级目录规则计算路径）。此时应直接使用 `git worktree list` 查看实际路径，再手动删除或直接用 `git worktree remove <path>`。
+手动执行 `git worktree add .worktrees/test-20260522 test/20260522` 会把 worktree 放在仓库**子目录**下，而 briar 约定放在**同级目录**。清理工作区时脚本可能找不到手动创建的 worktree，此时直接用 `git worktree list` 查看实际路径后删除。
 
 ---
 
