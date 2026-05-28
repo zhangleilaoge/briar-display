@@ -44,13 +44,13 @@ if [ "$ACTION" = "worktree" ]; then
 	REPO_NAME="${3}"
 	if [ "$SUBCMD" = "add" ] || [ "$SUBCMD" = "remove" ]; then
 		BRANCH="${4}"
-		BASE_DIR="${5:-$HOME/projects}"
+		BASE_DIR="${5:-${BRIAR_REPO_BASE_DIR:-/Users/zhanglei/Documents/projects}}"
 	else
-		BASE_DIR="${4:-$HOME/projects}"
+		BASE_DIR="${4:-${BRIAR_REPO_BASE_DIR:-/Users/zhanglei/Documents/projects}}"
 	fi
 else
 	REPO_NAME="${2}"
-	BASE_DIR="${3:-$HOME/projects}"
+	BASE_DIR="${3:-${BRIAR_REPO_BASE_DIR:-/Users/zhanglei/Documents/projects}}"
 	DOMAIN="${4:-gitlab.qima-inc.com}"
 fi
 

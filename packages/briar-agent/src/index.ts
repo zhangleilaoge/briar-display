@@ -1,15 +1,36 @@
-// Export main client
-export { KimiCode } from './client/index.js'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { AuthStorage, ModelRegistry, createAgentSession } from '@earendil-works/pi-coding-agent'
+import { config } from 'dotenv'
 
-// Export session classes
-export { Session } from './client/sessions.js'
+const __dirname = dirname(fileURLToPath(import.meta.url))
+config({ path: join(__dirname, '../../.env') })
 
-// Re-export types from claude-code-sdk
-export * from 'claude-code-sdk/dist/types/index.js'
+// 将 BRIAR_API_KEY 映射为 pi 需要的 KIMI_API_KEY
+if (process.env.BRIAR_API_KEY && !process.env.KIMI_API_KEY) {
+	process.env.KIMI_API_KEY = process.env.BRIAR_API_KEY
+}
 
-// Export Kimi-specific implementations
-export { KimiApiExecutor } from './implementations/api.js'
-export { KimiCliExecutor } from './implementations/cli.js'
+export { createAgentSession } from '@earendil-works/pi-coding-agent'
+export type { CreateAgentSessionResult } from '@earendil-works/pi-coding-agent'
 
-// Default export
-export { KimiCode as default } from './client/index.js'
+export async function runAgent(prompt: string) {
+	const authStorage = AuthStorage.create()
+	const modelRegistry = ModelRegistry.create(authStorage)
+	const model = modelRegistry.find('kimi-coding', 'kimi-for-coding')
+	if (!model) {
+		throw new Error('Model kimi-for-coding not found')
+	}
+	const { session } = await createAgentSession({ model })
+	try {
+		session.subscribe((event) => {
+			if (event.type === 'message_update' && event.assistantMessageEvent.type === 'text_delta') {
+				process.stdout.write(event.assistantMessageEvent.delta)
+			}
+		})
+		await session.prompt(prompt)
+		console.log()
+	} finally {
+		session.dispose()
+	}
+}

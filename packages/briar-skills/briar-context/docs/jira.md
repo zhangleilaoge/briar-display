@@ -33,17 +33,34 @@ if [ ! -d "/Applications/Google Chrome.app" ]; then
     exit 1
 fi
 
-# 2. 用 AppleScript 打开页面并获取内容
+# 2. 用 AppleScript 打开页面并获取内容（智能提取主内容区）
 RESULT=$(osascript <<APPLEEOF
 tell application "Google Chrome"
     activate
     tell front window
         set newTab to make new tab at end of tabs
         set URL of newTab to "$URL"
-        delay 4
-        set pageTitle to title of newTab
-        set pageText to execute newTab javascript "document.body.innerText"
-        return "TITLE:" & pageTitle & "\n---BODY---\n" & pageText
+        -- 轮询等待页面加载，最多 10 秒
+        repeat 20 times
+            delay 0.5
+            set readyState to execute newTab javascript "document.readyState"
+            if readyState is "complete" then exit repeat
+        end repeat
+        -- Jira 为 SPA，readyState complete 后仍需等待 3 秒让动态内容渲染
+        delay 3
+        set pageResult to execute newTab javascript "
+(function() {
+  var title = document.title || '';
+  var main = document.querySelector('[data-testid*=\"issue-body\"]')
+    || document.querySelector('#issue-content')
+    || document.querySelector('.issue-view')
+    || document.querySelector('[role=\"main\"]')
+    || document.body;
+  var text = main.innerText || '';
+  return 'TITLE:' + title + '\\n---BODY---\\n' + text;
+})()"
+        close newTab
+        return pageResult
     end tell
 end tell
 APPLEEOF
@@ -57,13 +74,6 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "$RESULT"
-```
-
-**获取后清理**（可选，询问用户）：
-```applescript
-tell application "Google Chrome"
-    tell front window to close active tab
-end tell
 ```
 
 ---
@@ -89,6 +99,7 @@ end tell
 
 ## 注意事项
 
-1. **AppleScript 会实际打开 Chrome 标签页**，获取完成后应询问用户是否关闭
+1. **获取后自动关闭 Chrome 标签页**，无需手动清理
 2. **Cookie 安全**：通过 AppleScript 获取的 cookie 是内存中的实时值，不要持久化到日志或文件
-3. **超时控制**：AppleScript 等待页面加载的时间根据网络状况调整（通常 3-5 秒）
+3. **SPA 等待**：Jira 为单页应用，`document.readyState === 'complete'` 后仍需固定等待 **3 秒**，让 JavaScript 动态渲染 Issue 主体内容，否则可能返回空内容
+4. **超时控制**：AppleScript 轮询 `document.readyState`，页面加载完成后固定等待 3 秒再提取，最长等待 10 秒
