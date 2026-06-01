@@ -50,17 +50,11 @@ description: >
 
 ### Step 1: 创建 Worktree
 
-确定目标仓库路径和分支，创建隔离的修复环境：
+使用 `using-git-worktrees` 创建隔离修复环境，或调用：
 
 ```bash
-# 委托给 briar-repo 创建 worktree（名称自动为 <repo-name>-<branch>）
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree add \
-  <repo-name> <branch>
+briar-repo.sh worktree add <repo-name> <branch>
 ```
-
-> worktree 存放位置：仓库同级目录，如 `~/projects/wsc-pc-channel-feat-foo`
->
-> 如果 worktree 已存在，briar-repo 会自动 stash 已有改动并复用。
 
 ---
 
@@ -175,15 +169,10 @@ description: >
 提交完成后，立即清理：
 
 ```bash
-# 委托给 briar-repo 删除 worktree
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree remove \
-  <repo-name> <branch>
+briar-repo.sh worktree remove <repo-name> <branch>
 ```
 
-> 如果用户说"先不清理，我还要看看"，则推迟清理，但**必须提醒**用户后续手动清理：
-> ```bash
-> ./packages/briar-skills/briar-repo/scripts/briar-repo.sh worktree remove <repo-name> <branch>
-> ```
+> 如果用户说"先不清理，我还要看看"，则推迟清理，但**必须提醒**用户后续手动清理。
 
 ---
 
@@ -197,13 +186,13 @@ briar-mr fetch（获取 comments）
 逐条分析合理性
   ↓
 需要修复的 → 调用 briar-fix
-  │   1. setup worktree（基于 MR source_branch）
+  │   1. setup worktree（via using-git-worktrees / briar-repo）
   │   2. 读取 comments + diff 上下文
   │   3. 修复代码
   │   4. verify
   │   5. 展示 diff，等用户确认
   │   6. commit + push
-  │   7. cleanup
+  │   7. cleanup（via using-git-worktrees / briar-repo）
   ↓
 输出修复总结表格
 ```
@@ -216,13 +205,13 @@ briar-mr pipeline（获取 pipeline jobs）
 发现 lint/test/build 失败
   ↓
 调用 briar-fix
-  │   1. setup worktree（基于 pipeline 对应分支）
+  │   1. setup worktree（via using-git-worktrees / briar-repo）
   │   2. 读取失败日志，定位问题
   │   3. 修复代码
   │   4. verify（重点验证失败的 job）
   │   5. 展示 diff，等用户确认
   │   6. commit + push
-  │   7. cleanup
+  │   7. cleanup（via using-git-worktrees / briar-repo）
 ```
 
 ---
