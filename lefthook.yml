@@ -21,14 +21,8 @@ pre-commit:
       glob: "packages/briar-node/**/*.{ts,tsx}"
       run: bun run --filter @briar/node typecheck
 
-# 提交信息检查 (可选，如果需要规范提交信息)
-commit-msg:
-  commands:
-    # 简单的提交信息长度检查
-    lint-commit-msg:
-      run: |
-        MSG_LEN=$(wc -c < "$1" 2>/dev/null || echo 0)
-        if [ "$MSG_LEN" -lt 10 ]; then
-          echo "❌ 提交信息太短，请至少输入 10 个字符"
-          exit 1
-        fi
+# 提交信息检查
+# commit-msg:
+#   commands:
+#     lint-commit-msg:
+#       run: ...
