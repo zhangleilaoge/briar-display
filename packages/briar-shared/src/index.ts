@@ -5,6 +5,7 @@
 
 // 导出类型
 export type * from './types'
+export type * from './wiki-types'
 
 // 导出工具函数
 export * from './utils'

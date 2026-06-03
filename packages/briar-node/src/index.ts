@@ -25,8 +25,24 @@ applyConfiguredMiddlewares(app, globalMiddlewares, '/*')
 // API 路由
 app.route('/api', apiRoutes)
 
-// 静态资源和前端页面
+// 静态资源
 app.use('/*', serveStatic({ root: DIST_PATH }))
+
+// Wiki SPA fallback: /briar-display/wiki/* 动态路由都返回 wiki/index.html
+app.get('/briar-display/wiki/*', async (c) => {
+	const fs = await import('fs')
+	const wikiIndexPath = path.join(DIST_PATH, 'briar-display/wiki/index.html')
+	if (fs.existsSync(wikiIndexPath)) {
+		const html = fs.readFileSync(wikiIndexPath, 'utf-8')
+		return c.html(html)
+	}
+	// fallback to root
+	const rootIndexPath = path.join(DIST_PATH, 'index.html')
+	const html = fs.readFileSync(rootIndexPath, 'utf-8')
+	return c.html(html)
+})
+
+// 其他页面 fallback
 app.get('/*', serveStatic({ path: './index.html', root: DIST_PATH }))
 
 const startServer = async () => {

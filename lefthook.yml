@@ -27,7 +27,8 @@ commit-msg:
     # 简单的提交信息长度检查
     lint-commit-msg:
       run: |
-        if [ $(cat {1} | wc -c) -lt 10 ]; then
+        MSG_LEN=$(wc -c < "$1" 2>/dev/null || echo 0)
+        if [ "$MSG_LEN" -lt 10 ]; then
           echo "❌ 提交信息太短，请至少输入 10 个字符"
           exit 1
         fi

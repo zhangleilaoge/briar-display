@@ -119,14 +119,55 @@ app.route('/api', apiRoutes)
 - `POST /api/auth/register`
 - `POST /api/auth/send-reset-code`
 - `POST /api/auth/reset-password`
-- `GET /api/wiki`
-- `GET /api/wiki/slug/:slug`
-- `GET /api/wiki/:id`
-- `GET /api/wiki/user/my`（需认证）
-- `POST /api/wiki`（需认证）
-- `PUT /api/wiki/:id`（需认证）
-- `DELETE /api/wiki/:id`（需认证）
-- `POST /api/wiki/:id/view`
+
+**Wiki API**（分层架构：dal → service → controller → route）：
+- Pages:
+  - `GET /api/wiki/pages` — 列表（?namespace, ?status, ?limit, ?offset）
+  - `GET /api/wiki/pages/search` — 全文搜索（?q, ?limit, ?offset）
+  - `GET /api/wiki/pages/:namespace/:slug` — 获取页面（自动跟踪重定向）
+  - `GET /api/wiki/pages/:slug/redirects` — 获取重定向列表
+  - `POST /api/wiki/pages`（需认证）— 创建页面
+  - `PUT /api/wiki/pages/:slug`（需认证）— 更新页面
+  - `DELETE /api/wiki/pages/:slug`（需认证）— 软删除页面
+- Revisions:
+  - `GET /api/wiki/pages/:slug/revisions` — 版本列表
+  - `GET /api/wiki/pages/:slug/revisions/:revId` — 获取版本
+  - `GET /api/wiki/pages/:slug/diff` — 版本差异（?from, ?to）
+  - `POST /api/wiki/pages/:slug/revisions/:revId/revert`（需认证）— 回退版本
+- Categories:
+  - `GET /api/wiki/categories` — 列表
+  - `GET /api/wiki/categories/tree` — 分类树
+  - `GET /api/wiki/categories/:slug` — 分类详情（含页面列表）
+  - `POST /api/wiki/categories`（需认证）
+  - `PUT /api/wiki/categories/:slug`（需认证）
+  - `DELETE /api/wiki/categories/:slug`（需认证）
+  - `POST /api/wiki/categories/:slug/pages`（需认证）— 添加页面到分类
+  - `DELETE /api/wiki/categories/:slug/pages/:pageId`（需认证）— 移除分类关联
+- Discussions:
+  - `GET /api/wiki/pages/:slug/discussions` — 讨论列表
+  - `GET /api/wiki/pages/:slug/discussions/:topicId` — 获取讨论主题
+  - `GET /api/wiki/pages/:slug/discussions/:topicId/replies` — 获取回复
+  - `POST /api/wiki/pages/:slug/discussions`（需认证）— 创建讨论主题
+  - `POST /api/wiki/pages/:slug/discussions/:topicId/replies`（需认证）— 创建回复
+  - `PUT /api/wiki/pages/:slug/discussions/:topicId/resolve`（需认证）— 标记已解决
+- Templates:
+  - `GET /api/wiki/templates` — 列表
+  - `GET /api/wiki/templates/:slug` — 获取模板
+  - `POST /api/wiki/templates`（需认证）
+  - `PUT /api/wiki/templates/:slug`（需认证）
+  - `DELETE /api/wiki/templates/:slug`（需认证）
+- Watchlist:
+  - `GET /api/wiki/watchlist`（需认证）— 用户关注列表
+  - `POST /api/wiki/watchlist/:slug`（需认证）— 关注页面
+  - `DELETE /api/wiki/watchlist/:slug`（需认证）— 取消关注
+  - `GET /api/wiki/watchlist/:slug/status`（需认证）— 检查是否关注
+- Special Pages:
+  - `GET /api/wiki/special/recent-changes` — 最近更改
+  - `GET /api/wiki/special/statistics` — 统计数据
+  - `GET /api/wiki/special/all-pages` — 所有页面
+  - `GET /api/wiki/special/orphaned-pages` — 孤立页面
+  - `GET /api/wiki/special/wanted-pages` — 缺失页面
+  - `GET /api/wiki/special/user-contributions/:userId` — 用户贡献
 
 ### Nginx 代理规则（关键）
 
@@ -193,7 +234,14 @@ const getApiBaseUrl = () => {
 `make db-setup` 执行 `packages/briar-node/src/db/setup.ts`，会读取 `packages/briar-node/src/db/schema.sql`。schema 包含：
 - `users` 表
 - `verification_codes` 表
-- `wiki` 表
+- `wiki_pages` 表（含 FULLTEXT 索引 ngram 分词）
+- `wiki_revisions` 表
+- `wiki_categories` 表（支持层级）
+- `wiki_page_categories` 表（页面-分类关联）
+- `wiki_discussions` 表
+- `wiki_discussion_replies` 表
+- `wiki_watchlist` 表
+- `wiki_templates` 表
 
 数据库名固定为 `briar_display`。
 

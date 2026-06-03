@@ -23,10 +23,15 @@ export const RouteConfig = {
 		'/api/readme-ai',
 		'/api/readme-ai/init',
 		'/api/readme-ai/rewrite',
+		'/api/wiki/pages',
+		'/api/wiki/pages/search',
+		'/api/wiki/categories',
+		'/api/wiki/categories/tree',
+		'/api/wiki/templates',
 	],
 
 	/** API 不需要认证的路径前缀 */
-	API_PUBLIC_PREFIXES: [],
+	API_PUBLIC_PREFIXES: ['/api/wiki/special', '/api/wiki/pages/'],
 
 	/** 资源文件前缀 */
 	ASSET_PREFIXES: ['/_astro'],
