@@ -8,10 +8,6 @@ import Highlight from '@tiptap/extension-highlight'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
-import { Table } from '@tiptap/extension-table'
-import TableCell from '@tiptap/extension-table-cell'
-import TableHeader from '@tiptap/extension-table-header'
-import TableRow from '@tiptap/extension-table-row'
 import Underline from '@tiptap/extension-underline'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -27,16 +23,11 @@ import {
 	List,
 	ListOrdered,
 	Loader2,
-	Minus,
 	Quote,
 	Redo,
-	Strikethrough,
-	TableIcon,
-	Trash2,
-	Underline as UnderlineIcon,
 	Undo,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 
 interface WikiEditPageProps {
@@ -66,8 +57,8 @@ function ToolbarButton({
 			disabled={disabled}
 			title={label}
 			className={cn(
-				'inline-flex h-8 w-8 items-center justify-center rounded transition-colors',
-				isActive ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted',
+				'inline-flex h-8 w-8 items-center justify-center rounded-sm transition-colors',
+				isActive ? 'bg-wiki-link text-white' : 'text-wiki-text hover:bg-wiki-bg-tertiary',
 				disabled && 'cursor-not-allowed opacity-50',
 			)}
 		>
@@ -77,7 +68,7 @@ function ToolbarButton({
 }
 
 function ToolbarSeparator() {
-	return <div className="mx-1 h-6 w-px bg-border" />
+	return <div className="mx-1 h-6 w-px bg-wiki-border-light" />
 }
 
 export default function WikiEditPage({ slug }: WikiEditPageProps) {
@@ -91,7 +82,6 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [existingPage, setExistingPage] = useState<WikiPage | null>(null)
-	const previewRef = useRef<HTMLDivElement>(null)
 
 	// TipTap editor
 	const editor = useEditor({
@@ -103,17 +93,11 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 			Highlight.configure({ multicolor: false }),
 			Link.configure({
 				openOnClick: false,
-				HTMLAttributes: { class: 'text-blue-600 hover:underline cursor-pointer' },
+				HTMLAttributes: { class: 'text-wiki-link hover:underline cursor-pointer' },
 			}),
 			Image.configure({
-				HTMLAttributes: { class: 'max-w-full h-auto rounded' },
+				HTMLAttributes: { class: 'max-w-full h-auto rounded-sm' },
 			}),
-			Table.configure({
-				resizable: true,
-			}),
-			TableRow,
-			TableCell,
-			TableHeader,
 			Placeholder.configure({
 				placeholder: '开始编写文章内容...',
 			}),
@@ -121,7 +105,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		content: '',
 		editorProps: {
 			attributes: {
-				class: 'prose prose-sm max-w-none focus:outline-none min-h-[400px] p-4',
+				class: 'prose prose-wiki max-w-none focus:outline-none min-h-[400px] p-4',
 			},
 		},
 	})
@@ -151,17 +135,56 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		}
 	}, [slug, isNew, editor])
 
-	// Sync source content when switching to source mode
+	/**
+	 * Get markdown from TipTap editor.
+	 * Uses editor.storage.markdown.getMarkdown() if available,
+	 * otherwise falls back to innerHTML extraction.
+	 */
+	const getEditorMarkdown = useCallback((): string => {
+		if (!editor) return ''
+		// @ts-expect-error markdown extension storage may not be typed
+		if (editor.storage?.markdown?.getMarkdown) {
+			// @ts-expect-error markdown extension storage may not be typed
+			return editor.storage.markdown.getMarkdown()
+		}
+		// Fallback: get HTML and strip tags for a basic text representation
+		const html = editor.getHTML()
+		// Simple HTML to markdown-like conversion fallback
+		return html
+			.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n')
+			.replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n')
+			.replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n')
+			.replace(/<h4[^>]*>(.*?)<\/h4>/gi, '#### $1\n')
+			.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+			.replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
+			.replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+			.replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
+			.replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
+			.replace(/<blockquote[^>]*>(.*?)<\/blockquote>/gi, '> $1\n')
+			.replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
+			.replace(/<br\s*\/?>/gi, '\n')
+			.replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+			.replace(/<[^>]+>/g, '')
+			.replace(/&nbsp;/g, ' ')
+			.replace(/&amp;/g, '&')
+			.replace(/&lt;/g, '<')
+			.replace(/&gt;/g, '>')
+			.replace(/\n{3,}/g, '\n\n')
+			.trim()
+	}, [editor])
+
+	// Sync content when switching modes
 	const handleModeChange = useCallback(
 		(newMode: EditMode) => {
 			if (newMode === 'source' && editor) {
-				setSourceContent(editor.getText() ? editor.getHTML() : '')
+				const md = getEditorMarkdown()
+				setSourceContent(md)
 			} else if (newMode === 'visual' && editor) {
 				editor.commands.setContent(sourceContent)
 			}
 			setMode(newMode)
 		},
-		[editor, sourceContent],
+		[editor, sourceContent, getEditorMarkdown],
 	)
 
 	// Save handler
@@ -174,7 +197,8 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		setSaving(true)
 		setError(null)
 
-		const content = mode === 'visual' && editor ? editor.getHTML() : sourceContent
+		const content =
+			mode === 'visual' && editor ? getEditorMarkdown() || editor.getHTML() : sourceContent
 
 		try {
 			if (isNew) {
@@ -207,7 +231,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		} finally {
 			setSaving(false)
 		}
-	}, [title, mode, editor, sourceContent, editSummary, minorEdit, isNew, slug])
+	}, [title, mode, editor, sourceContent, editSummary, minorEdit, isNew, slug, getEditorMarkdown])
 
 	// Cancel handler
 	const handleCancel = useCallback(() => {
@@ -236,18 +260,13 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		}
 	}, [editor])
 
-	const insertTable = useCallback(() => {
-		if (!editor) return
-		editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
-	}, [editor])
-
 	if (loading) {
 		return (
 			<div className="space-y-4">
-				<WikiTabs slug={slug} activeTab="edit" />
+				<WikiTabs slug={slug} active="edit" />
 				<div className="flex items-center justify-center py-20">
-					<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-					<span className="ml-2 text-muted-foreground">加载中...</span>
+					<Loader2 className="h-8 w-8 animate-spin text-wiki-text-muted" />
+					<span className="ml-2 text-wiki-text-muted">加载中...</span>
 				</div>
 			</div>
 		)
@@ -255,21 +274,21 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 
 	return (
 		<div className="space-y-4">
-			<WikiTabs slug={slug} activeTab="edit" />
+			<WikiTabs slug={slug} active="edit" />
 
-			<h1 className="border-b border-border pb-3 font-serif text-xl font-normal text-foreground">
+			<h1 className="border-b border-wiki-border-light pb-2 text-[1.5em] font-normal text-wiki-text">
 				{isNew ? '新建文章' : `编辑: ${existingPage?.title || slug}`}
 			</h1>
 
 			{error && (
-				<div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+				<div className="rounded-sm border border-wiki-highlight bg-wiki-highlight px-4 py-3 text-[13px] text-wiki-link-red">
 					{error}
 				</div>
 			)}
 
 			{/* Title input */}
 			<div>
-				<label htmlFor="wiki-title" className="mb-1 block text-sm font-medium text-foreground">
+				<label htmlFor="wiki-title" className="mb-1 block text-[13px] font-medium text-wiki-text">
 					标题
 				</label>
 				<input
@@ -278,7 +297,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 					value={title}
 					onChange={(e) => setTitle(e.target.value)}
 					placeholder="输入文章标题"
-					className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+					className="w-full rounded-sm border border-wiki-border bg-wiki-bg px-3 py-2 text-[14px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none focus:ring-1 focus:ring-wiki-link"
 				/>
 			</div>
 
@@ -288,33 +307,33 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 					type="button"
 					onClick={() => handleModeChange('visual')}
 					className={cn(
-						'rounded-md px-3 py-1.5 text-sm transition-colors',
+						'rounded-sm px-3 py-1.5 text-[13px] transition-colors',
 						mode === 'visual'
-							? 'bg-primary text-primary-foreground'
-							: 'border border-border text-foreground hover:bg-muted',
+							? 'bg-wiki-link text-white'
+							: 'border border-wiki-border-light text-wiki-text hover:bg-wiki-bg-secondary',
 					)}
 				>
-					可视化编辑
+					可视化
 				</button>
 				<button
 					type="button"
 					onClick={() => handleModeChange('source')}
 					className={cn(
-						'rounded-md px-3 py-1.5 text-sm transition-colors',
+						'rounded-sm px-3 py-1.5 text-[13px] transition-colors',
 						mode === 'source'
-							? 'bg-primary text-primary-foreground'
-							: 'border border-border text-foreground hover:bg-muted',
+							? 'bg-wiki-link text-white'
+							: 'border border-wiki-border-light text-wiki-text hover:bg-wiki-bg-secondary',
 					)}
 				>
-					源码编辑
+					源码
 				</button>
 			</div>
 
 			{/* Visual editor mode */}
 			{mode === 'visual' && editor && (
-				<div className="overflow-hidden rounded-md border border-border">
+				<div className="overflow-hidden rounded-sm border border-wiki-border-light">
 					{/* Toolbar */}
-					<div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-gray-50 px-2 py-1.5">
+					<div className="flex flex-wrap items-center gap-0.5 border-b border-wiki-border-light bg-wiki-bg-secondary px-2 py-1.5">
 						<ToolbarButton
 							icon={Bold}
 							label="加粗"
@@ -326,18 +345,6 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 							label="斜体"
 							isActive={editor.isActive('italic')}
 							onClick={() => editor.chain().focus().toggleItalic().run()}
-						/>
-						<ToolbarButton
-							icon={UnderlineIcon}
-							label="下划线"
-							isActive={editor.isActive('underline')}
-							onClick={() => editor.chain().focus().toggleUnderline().run()}
-						/>
-						<ToolbarButton
-							icon={Strikethrough}
-							label="删除线"
-							isActive={editor.isActive('strike')}
-							onClick={() => editor.chain().focus().toggleStrike().run()}
 						/>
 
 						<ToolbarSeparator />
@@ -378,12 +385,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 
 						<ToolbarSeparator />
 
-						<ToolbarButton
-							icon={Quote}
-							label="引用"
-							isActive={editor.isActive('blockquote')}
-							onClick={() => editor.chain().focus().toggleBlockquote().run()}
-						/>
+						<ToolbarButton icon={Link2} label="插入链接" onClick={addLink} />
 						<ToolbarButton
 							icon={Code}
 							label="代码块"
@@ -391,25 +393,12 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 							onClick={() => editor.chain().focus().toggleCodeBlock().run()}
 						/>
 						<ToolbarButton
-							icon={Minus}
-							label="高亮"
-							isActive={editor.isActive('highlight')}
-							onClick={() => editor.chain().focus().toggleHighlight().run()}
+							icon={Quote}
+							label="引用"
+							isActive={editor.isActive('blockquote')}
+							onClick={() => editor.chain().focus().toggleBlockquote().run()}
 						/>
-
-						<ToolbarSeparator />
-
-						<ToolbarButton icon={Link2} label="插入链接" onClick={addLink} />
 						<ToolbarButton icon={ImageIcon} label="插入图片" onClick={addImage} />
-						<ToolbarButton icon={TableIcon} label="插入表格" onClick={insertTable} />
-
-						<ToolbarSeparator />
-
-						<ToolbarButton
-							icon={Minus}
-							label="分割线"
-							onClick={() => editor.chain().focus().setHorizontalRule().run()}
-						/>
 
 						<div className="flex-1" />
 
@@ -425,16 +414,6 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 							disabled={!editor.can().redo()}
 							onClick={() => editor.chain().focus().redo().run()}
 						/>
-						{editor.isActive('table') && (
-							<>
-								<ToolbarSeparator />
-								<ToolbarButton
-									icon={Trash2}
-									label="删除表格"
-									onClick={() => editor.chain().focus().deleteTable().run()}
-								/>
-							</>
-						)}
 					</div>
 
 					{/* Editor content */}
@@ -447,28 +426,25 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 				<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 					{/* Textarea */}
 					<div>
-						<label className="mb-1 block text-sm font-medium text-foreground">源码</label>
+						<label className="mb-1 block text-[13px] font-medium text-wiki-text">源码</label>
 						<textarea
 							value={sourceContent}
 							onChange={(e) => setSourceContent(e.target.value)}
 							placeholder="输入 Markdown 源码..."
-							className="h-[500px] w-full resize-y rounded-md border border-border bg-white px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+							className="h-[500px] w-full resize-y rounded-sm border border-wiki-border bg-wiki-bg px-3 py-2 font-mono text-[13px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none focus:ring-1 focus:ring-wiki-link"
 						/>
 					</div>
 
 					{/* Preview */}
 					<div>
-						<label className="mb-1 block text-sm font-medium text-foreground">预览</label>
-						<div
-							ref={previewRef}
-							className="h-[500px] overflow-y-auto rounded-md border border-border bg-gray-50 p-4"
-						>
+						<label className="mb-1 block text-[13px] font-medium text-wiki-text">预览</label>
+						<div className="h-[500px] overflow-y-auto rounded-sm border border-wiki-border-light bg-wiki-bg-secondary p-4">
 							{sourceContent ? (
-								<div className="prose prose-sm max-w-none">
+								<div className="prose prose-wiki max-w-none">
 									<ReactMarkdown>{sourceContent}</ReactMarkdown>
 								</div>
 							) : (
-								<p className="text-sm italic text-muted-foreground">预览区域</p>
+								<p className="text-[13px] italic text-wiki-text-muted">预览区域</p>
 							)}
 						</div>
 					</div>
@@ -476,9 +452,12 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 			)}
 
 			{/* Edit summary & controls */}
-			<div className="space-y-3 rounded-md border border-border bg-gray-50 p-4">
+			<div className="space-y-3 rounded-sm border border-wiki-border-light bg-wiki-bg-secondary p-4">
 				<div>
-					<label htmlFor="edit-summary" className="mb-1 block text-sm font-medium text-foreground">
+					<label
+						htmlFor="edit-summary"
+						className="mb-1 block text-[13px] font-medium text-wiki-text"
+					>
 						编辑摘要
 					</label>
 					<input
@@ -487,28 +466,28 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 						value={editSummary}
 						onChange={(e) => setEditSummary(e.target.value)}
 						placeholder="简要描述你的更改（可选）"
-						className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+						className="w-full rounded-sm border border-wiki-border bg-wiki-bg px-3 py-2 text-[13px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none focus:ring-1 focus:ring-wiki-link"
 					/>
 				</div>
-				<label className="flex items-center gap-2 text-sm text-foreground">
+				<label className="flex items-center gap-2 text-[13px] text-wiki-text">
 					<input
 						type="checkbox"
 						checked={minorEdit}
 						onChange={(e) => setMinorEdit(e.target.checked)}
-						className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+						className="h-4 w-4 rounded-sm border-wiki-border text-wiki-link focus:ring-wiki-link"
 					/>
 					小编辑
 				</label>
 			</div>
 
 			{/* Action buttons */}
-			<div className="flex items-center gap-3 border-t border-border pt-4">
+			<div className="flex items-center gap-3 border-t border-wiki-border-light pt-4">
 				<button
 					type="button"
 					onClick={handleSave}
 					disabled={saving}
 					className={cn(
-						'inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90',
+						'inline-flex items-center gap-2 rounded-sm bg-wiki-link px-5 py-2 text-[13px] font-medium text-white transition-colors hover:bg-wiki-link-hover',
 						saving && 'cursor-not-allowed opacity-70',
 					)}
 				>
@@ -519,7 +498,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 					type="button"
 					onClick={handleCancel}
 					disabled={saving}
-					className="rounded-md border border-border px-5 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+					className="rounded-sm border border-wiki-border-light px-5 py-2 text-[13px] text-wiki-text transition-colors hover:bg-wiki-bg-secondary"
 				>
 					取消
 				</button>

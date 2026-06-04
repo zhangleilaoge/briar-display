@@ -4,7 +4,7 @@ import { wikiApi } from '@/api/wiki'
 import WikiPagination from '@/components/wiki/common/WikiPagination'
 import { cn } from '@/lib/utils'
 import type { WikiSearchResult } from '@briar/shared'
-import { FileText, FolderOpen, Hash, Loader2, Search, SearchX } from 'lucide-react'
+import { Hash, Loader2, Search, SearchX } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 const NAMESPACE_LABELS: Record<string, string> = {
@@ -44,7 +44,7 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
 			{parts.map((part, i) => {
 				const isMatch = keywords.some((k) => part.toLowerCase() === k.toLowerCase())
 				return isMatch ? (
-					<mark key={i} className="rounded bg-yellow-200 px-0.5 text-foreground">
+					<mark key={i} className="rounded-sm bg-wiki-highlight px-0.5 text-wiki-text">
 						{part}
 					</mark>
 				) : (
@@ -104,12 +104,12 @@ export default function WikiSearchResults() {
 		(e: React.FormEvent) => {
 			e.preventDefault()
 			if (query.trim()) {
-				// Update URL
 				window.history.pushState(
 					{},
 					'',
 					`/briar-display/wiki/search?q=${encodeURIComponent(query.trim())}`,
 				)
+				window.dispatchEvent(new PopStateEvent('popstate'))
 				performSearch(query, 0)
 			}
 		},
@@ -126,26 +126,26 @@ export default function WikiSearchResults() {
 
 	return (
 		<div className="space-y-5">
-			<h1 className="border-b border-border pb-3 font-serif text-xl font-normal text-foreground">
+			<h1 className="border-b border-wiki-border-light pb-2 text-[1.5em] font-normal text-wiki-text">
 				搜索
 			</h1>
 
 			{/* Search form */}
 			<form onSubmit={handleSearch} className="flex gap-2">
 				<div className="relative flex-1">
-					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-wiki-text-muted" />
 					<input
 						type="text"
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 						placeholder="搜索文章标题和内容..."
-						className="w-full rounded-md border border-border bg-white py-2 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+						className="w-full rounded-sm border border-wiki-border bg-wiki-bg py-2 pl-10 pr-4 text-[14px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none focus:ring-1 focus:ring-wiki-link"
 					/>
 				</div>
 				<button
 					type="submit"
 					disabled={loading}
-					className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-70"
+					className="inline-flex items-center gap-1.5 rounded-sm bg-wiki-link px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-wiki-link-hover disabled:opacity-70"
 				>
 					{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : '搜索'}
 				</button>
@@ -153,7 +153,7 @@ export default function WikiSearchResults() {
 
 			{/* Error */}
 			{error && (
-				<div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+				<div className="rounded-sm border border-wiki-highlight bg-wiki-highlight px-4 py-3 text-[13px] text-wiki-link-red">
 					{error}
 				</div>
 			)}
@@ -161,8 +161,8 @@ export default function WikiSearchResults() {
 			{/* Loading */}
 			{loading && (
 				<div className="flex items-center justify-center py-12">
-					<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-					<span className="ml-2 text-sm text-muted-foreground">搜索中...</span>
+					<Loader2 className="h-6 w-6 animate-spin text-wiki-text-muted" />
+					<span className="ml-2 text-[13px] text-wiki-text-muted">搜索中...</span>
 				</div>
 			)}
 
@@ -171,21 +171,21 @@ export default function WikiSearchResults() {
 				searched &&
 				(results.length > 0 ? (
 					<>
-						<p className="text-sm text-muted-foreground">
-							共找到 <span className="font-medium text-foreground">{total}</span> 条结果
+						<p className="text-[13px] text-wiki-text-secondary">
+							共找到 <span className="font-medium text-wiki-text">{total}</span> 条结果
 						</p>
 
-						<ul className="divide-y divide-border rounded-md border border-border bg-white">
+						<ul className="divide-y divide-wiki-border-light rounded-sm border border-wiki-border-light bg-wiki-bg">
 							{results.map((result) => (
 								<li key={result.id}>
 									<a
 										href={`/briar-display/wiki/${result.slug}`}
-										className="block px-5 py-4 transition-colors hover:bg-gray-50"
+										className="block px-5 py-4 transition-colors hover:bg-wiki-bg-secondary"
 									>
 										<div className="flex items-start justify-between gap-3">
 											<div className="min-w-0 flex-1">
 												<div className="flex items-center gap-2">
-													<h3 className="truncate text-base font-medium text-blue-600 hover:text-blue-800">
+													<h3 className="truncate text-[15px] font-medium text-wiki-link hover:underline">
 														<HighlightedText text={result.title} query={query} />
 													</h3>
 													<span
@@ -199,22 +199,24 @@ export default function WikiSearchResults() {
 												</div>
 
 												{result.summary && (
-													<p className="mt-1 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+													<p className="mt-1 line-clamp-2 text-[13px] leading-[1.6] text-wiki-text-secondary">
 														<HighlightedText text={result.summary} query={query} />
 													</p>
 												)}
 
 												{result.highlight && (
 													<p
-														className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground/80"
+														className="mt-1.5 line-clamp-2 text-[12px] leading-[1.6] text-wiki-text-muted"
 														// biome-ignore lint/security/noDangerouslySetInnerHtml: highlight from server
-														dangerouslySetInnerHTML={{ __html: result.highlight }}
+														dangerouslySetInnerHTML={{
+															__html: result.highlight,
+														}}
 													/>
 												)}
 											</div>
 
 											<div className="shrink-0 text-right">
-												<div className="flex items-center gap-1 text-xs text-muted-foreground">
+												<div className="flex items-center gap-1 text-[12px] text-wiki-text-muted">
 													<Hash className="h-3 w-3" />
 													<span>{result.relevance.toFixed(1)}</span>
 												</div>
@@ -234,20 +236,20 @@ export default function WikiSearchResults() {
 					</>
 				) : (
 					<div className="flex flex-col items-center justify-center py-16 text-center">
-						<SearchX className="mb-4 h-12 w-12 text-muted-foreground/50" />
-						<h3 className="mb-1 text-base font-medium text-foreground">未找到结果</h3>
-						<p className="text-sm text-muted-foreground">
+						<SearchX className="mb-4 h-12 w-12 text-wiki-text-muted/50" />
+						<h3 className="mb-1 text-[15px] font-medium text-wiki-text">未找到结果</h3>
+						<p className="text-[13px] text-wiki-text-secondary">
 							没有找到与「{query}」相关的文章，请尝试其他关键词。
 						</p>
 					</div>
 				))}
 
-			{/* Initial state - no search performed yet */}
+			{/* Initial state */}
 			{!loading && !searched && !error && (
 				<div className="flex flex-col items-center justify-center py-16 text-center">
-					<Search className="mb-4 h-12 w-12 text-muted-foreground/30" />
-					<h3 className="mb-1 text-base font-medium text-foreground">搜索 Wiki</h3>
-					<p className="text-sm text-muted-foreground">输入关键词搜索文章标题和内容。</p>
+					<Search className="mb-4 h-12 w-12 text-wiki-text-muted/30" />
+					<h3 className="mb-1 text-[15px] font-medium text-wiki-text">搜索 Wiki</h3>
+					<p className="text-[13px] text-wiki-text-secondary">输入关键词搜索文章标题和内容。</p>
 				</div>
 			)}
 		</div>

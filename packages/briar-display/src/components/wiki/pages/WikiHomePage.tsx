@@ -18,31 +18,30 @@ import {
 	FolderTree,
 	Loader2,
 	Search,
-	Star,
+	Shuffle,
 	TrendingUp,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
-function formatDate(date: string | Date): string {
+/** Calculate relative time from now */
+function relativeTime(date: string | Date): string {
+	const now = Date.now()
 	const d = typeof date === 'string' ? new Date(date) : date
-	return d.toLocaleString('zh-CN', {
-		month: 'short',
-		day: 'numeric',
-		hour: '2-digit',
-		minute: '2-digit',
-	})
-}
-
-function formatSizeChange(before: number, after: number): string {
-	const diff = after - before
-	if (diff > 0) return `+${diff}`
-	return `${diff}`
+	const diffMs = now - d.getTime()
+	const diffSec = Math.floor(diffMs / 1000)
+	if (diffSec < 60) return '刚刚'
+	const diffMin = Math.floor(diffSec / 60)
+	if (diffMin < 60) return `${diffMin}分钟前`
+	const diffHour = Math.floor(diffMin / 60)
+	if (diffHour < 24) return `${diffHour}小时前`
+	const diffDay = Math.floor(diffHour / 24)
+	return `${diffDay}天前`
 }
 
 export default function WikiHomePage() {
 	const [stats, setStats] = useState<WikiStatistics | null>(null)
 	const [recentChanges, setRecentChanges] = useState<WikiRecentChange[]>([])
-	const [featuredArticle, setFeaturedArticle] = useState<WikiPageSummary | null>(null)
+	const [hotArticles, setHotArticles] = useState<WikiPageSummary[]>([])
 	const [categories, setCategories] = useState<WikiCategoryTreeNode[]>([])
 	const [searchQuery, setSearchQuery] = useState('')
 	const [loading, setLoading] = useState(true)
@@ -51,17 +50,18 @@ export default function WikiHomePage() {
 		let cancelled = false
 
 		Promise.all([
-			wikiApi.statistics(),
+			wikiApi.list({ limit: 20, status: 'published' }),
 			wikiApi.recentChanges(10),
-			wikiApi.list({ limit: 1, status: 'published' }),
+			wikiApi.statistics(),
 			wikiApi.getCategoryTree(),
-		]).then(([statsRes, recentRes, listRes, catRes]) => {
+		]).then(([listRes, recentRes, statsRes, catRes]) => {
 			if (cancelled) return
-			if (statsRes.success && statsRes.data) setStats(statsRes.data)
-			if (recentRes.success && recentRes.data) setRecentChanges(recentRes.data.items)
-			if (listRes.success && listRes.data && listRes.data.items.length > 0) {
-				setFeaturedArticle(listRes.data.items[0])
+			if (listRes.success && listRes.data) {
+				const sorted = [...listRes.data.items].sort((a, b) => b.viewCount - a.viewCount)
+				setHotArticles(sorted.slice(0, 5))
 			}
+			if (recentRes.success && recentRes.data) setRecentChanges(recentRes.data.items)
+			if (statsRes.success && statsRes.data) setStats(statsRes.data)
 			if (catRes.success && catRes.data) setCategories(catRes.data)
 			setLoading(false)
 		})
@@ -89,260 +89,217 @@ export default function WikiHomePage() {
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center py-20">
-				<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-				<span className="ml-2 text-muted-foreground">加载中...</span>
+				<Loader2 className="h-8 w-8 animate-spin text-wiki-text-muted" />
+				<span className="ml-2 text-wiki-text-muted">加载中...</span>
 			</div>
 		)
 	}
 
 	return (
 		<div className="space-y-6">
-			{/* Search bar - Wikipedia style */}
+			{/* Large centered search bar */}
 			<div className="flex justify-center">
 				<form onSubmit={handleSearch} className="relative w-full max-w-2xl">
-					<Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+					<Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-wiki-text-muted" />
 					<input
 						type="text"
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
-						placeholder="搜索 Briar Wiki..."
-						className="w-full rounded-lg border border-border bg-white py-3 pl-12 pr-4 text-base shadow-sm transition-shadow focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+						placeholder="搜索 Briar Wiki"
+						className="w-full rounded-sm border border-wiki-border bg-wiki-bg py-3 pl-12 pr-4 text-base text-wiki-text shadow-sm transition-shadow focus:border-wiki-link focus:outline-none focus:ring-2 focus:ring-wiki-link/20"
 					/>
 				</form>
 			</div>
 
 			{/* Two-column layout */}
 			<div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-				{/* Left column (65%) */}
+				{/* Left column */}
 				<div className="space-y-6 lg:col-span-8">
-					{/* Featured article */}
-					{featuredArticle && (
-						<section className="rounded-md border border-border bg-white p-5">
-							<div className="mb-3 flex items-center gap-2">
-								<Star className="h-4 w-4 text-amber-500" />
-								<h2 className="text-base font-semibold text-foreground">推荐阅读</h2>
+					{/* Hot articles */}
+					{hotArticles.length > 0 && (
+						<section className="rounded-sm border border-wiki-border-light bg-wiki-bg">
+							<div className="flex items-center gap-2 border-b border-wiki-border-light px-4 py-2.5">
+								<TrendingUp className="h-4 w-4 text-wiki-text-secondary" />
+								<h2 className="text-[14px] font-semibold text-wiki-text">热门文章</h2>
 							</div>
-							<div>
-								<a
-									href={`/briar-display/wiki/${featuredArticle.slug}`}
-									className="text-lg font-medium text-blue-600 hover:text-blue-800 hover:underline"
-								>
-									{featuredArticle.title}
-								</a>
-								{featuredArticle.summary && (
-									<p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-										{featuredArticle.summary}
-									</p>
-								)}
-								<div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-									<span className="flex items-center gap-1">
-										<Eye className="h-3.5 w-3.5" />
-										{featuredArticle.viewCount.toLocaleString()} 浏览
-									</span>
-									<span className="flex items-center gap-1">
-										<Clock className="h-3.5 w-3.5" />
-										{formatDate(featuredArticle.updatedAt)}
-									</span>
-								</div>
-							</div>
+							<ul className="divide-y divide-wiki-border-light">
+								{hotArticles.map((article) => (
+									<li key={article.id}>
+										<a
+											href={`/briar-display/wiki/${article.slug}`}
+											className="block px-4 py-3 transition-colors hover:bg-wiki-bg-secondary"
+										>
+											<h3 className="text-[14px] font-medium text-wiki-link hover:underline">
+												{article.title}
+											</h3>
+											{article.summary && (
+												<p className="mt-1 line-clamp-2 text-[13px] leading-[1.6] text-wiki-text-secondary">
+													{article.summary}
+												</p>
+											)}
+											<div className="mt-1.5 flex items-center gap-3 text-[12px] text-wiki-text-muted">
+												<span className="flex items-center gap-1">
+													<Eye className="h-3.5 w-3.5" />
+													{article.viewCount.toLocaleString()}
+												</span>
+												<span className="flex items-center gap-1">
+													<Clock className="h-3.5 w-3.5" />
+													{relativeTime(article.updatedAt)}
+												</span>
+											</div>
+										</a>
+									</li>
+								))}
+							</ul>
 						</section>
 					)}
 
 					{/* Recent edits */}
-					<section className="rounded-md border border-border bg-white">
-						<div className="flex items-center justify-between border-b border-border px-5 py-3">
+					<section className="rounded-sm border border-wiki-border-light bg-wiki-bg">
+						<div className="flex items-center justify-between border-b border-wiki-border-light px-4 py-2.5">
 							<div className="flex items-center gap-2">
-								<TrendingUp className="h-4 w-4 text-muted-foreground" />
-								<h2 className="text-base font-semibold text-foreground">最近更改</h2>
+								<FileEdit className="h-4 w-4 text-wiki-text-secondary" />
+								<h2 className="text-[14px] font-semibold text-wiki-text">最近编辑</h2>
 							</div>
 							<a
 								href="/briar-display/wiki/special/recent-changes"
-								className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+								className="text-[12px] text-wiki-link hover:underline"
 							>
 								查看全部 →
 							</a>
 						</div>
 						{recentChanges.length > 0 ? (
-							<ul className="divide-y divide-border">
+							<ul className="divide-y divide-wiki-border-light">
 								{recentChanges.map((change) => (
-									<li key={`${change.pageId}-${change.revisionNumber}`}>
-										<a
-											href={`/briar-display/wiki/${change.pageSlug}`}
-											className="flex items-start justify-between gap-3 px-5 py-3 transition-colors hover:bg-gray-50"
-										>
-											<div className="min-w-0 flex-1">
-												<div className="flex items-center gap-2">
-													<span className="truncate font-medium text-blue-600">
-														{change.pageTitle}
-													</span>
-													{change.minorEdit && (
-														<span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700">
-															小
-														</span>
-													)}
-												</div>
-												{change.summary && (
-													<p className="mt-0.5 truncate text-xs text-muted-foreground">
-														{change.summary}
-													</p>
-												)}
-												<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-													<span>{change.editorName || '匿名'}</span>
-													<span>·</span>
-													<span
-														className={cn(
-															'font-mono',
-															change.sizeAfter - change.sizeBefore > 0
-																? 'text-green-600'
-																: change.sizeAfter - change.sizeBefore < 0
-																	? 'text-red-600'
-																	: '',
-														)}
-													>
-														{formatSizeChange(change.sizeBefore, change.sizeAfter)} 字节
-													</span>
-												</div>
-											</div>
-											<span className="shrink-0 text-xs text-muted-foreground">
-												{formatDate(change.createdAt)}
+									<li
+										key={`${change.pageId}-${change.revisionNumber}`}
+										className="flex items-center justify-between gap-3 px-4 py-2 text-[13px] transition-colors hover:bg-wiki-bg-secondary"
+									>
+										<div className="min-w-0 flex-1">
+											<span className="text-wiki-text-secondary">
+												{relativeTime(change.createdAt)}
 											</span>
-										</a>
+											<span className="mx-1.5 text-wiki-text-muted">·</span>
+											<span className="font-medium text-wiki-text-secondary">
+												{change.editorName || '匿名'}
+											</span>
+											<span className="mx-1.5 text-wiki-text-muted">编辑</span>
+											<a
+												href={`/briar-display/wiki/${change.pageSlug}`}
+												className="font-medium text-wiki-link hover:underline"
+											>
+												{change.pageTitle}
+											</a>
+											{change.minorEdit && (
+												<span className="ml-1.5 rounded bg-wiki-highlight px-1 py-0.5 text-[10px] text-wiki-link-red">
+													小
+												</span>
+											)}
+										</div>
 									</li>
 								))}
 							</ul>
 						) : (
-							<div className="px-5 py-8 text-center text-sm text-muted-foreground">
+							<div className="px-4 py-8 text-center text-[13px] text-wiki-text-muted">
 								暂无最近更改
 							</div>
 						)}
 					</section>
 				</div>
 
-				{/* Right column (35%) */}
+				{/* Right column */}
 				<div className="space-y-5 lg:col-span-4">
-					{/* Wiki stats box */}
+					{/* Wiki data */}
 					{stats && (
-						<section className="rounded-md border border-border bg-white p-4">
+						<section className="rounded-sm border border-wiki-border-light bg-wiki-bg p-4">
 							<div className="mb-3 flex items-center gap-2">
-								<BarChart3 className="h-4 w-4 text-muted-foreground" />
-								<h3 className="text-sm font-semibold text-foreground">Wiki 统计</h3>
+								<BarChart3 className="h-4 w-4 text-wiki-text-secondary" />
+								<h3 className="text-[14px] font-semibold text-wiki-text">Wiki 数据</h3>
 							</div>
-							<dl className="space-y-2">
-								<div className="flex items-center justify-between">
-									<dt className="text-xs text-muted-foreground">文章数</dt>
-									<dd className="text-sm font-medium text-foreground">
+							<dl className="space-y-1.5 text-[13px]">
+								<div className="flex justify-between">
+									<dt className="text-wiki-text-secondary">文章</dt>
+									<dd className="font-medium text-wiki-text">
 										{stats.totalArticles.toLocaleString()}
 									</dd>
 								</div>
-								<div className="flex items-center justify-between">
-									<dt className="text-xs text-muted-foreground">编辑次数</dt>
-									<dd className="text-sm font-medium text-foreground">
+								<div className="flex justify-between">
+									<dt className="text-wiki-text-secondary">编辑</dt>
+									<dd className="font-medium text-wiki-text">
 										{stats.totalRevisions.toLocaleString()}
 									</dd>
 								</div>
-								<div className="flex items-center justify-between">
-									<dt className="text-xs text-muted-foreground">分类数</dt>
-									<dd className="text-sm font-medium text-foreground">
+								<div className="flex justify-between">
+									<dt className="text-wiki-text-secondary">分类</dt>
+									<dd className="font-medium text-wiki-text">
 										{stats.totalCategories.toLocaleString()}
 									</dd>
 								</div>
-								<div className="flex items-center justify-between">
-									<dt className="text-xs text-muted-foreground">模板数</dt>
-									<dd className="text-sm font-medium text-foreground">
-										{stats.totalTemplates.toLocaleString()}
-									</dd>
-								</div>
-								<div className="flex items-center justify-between">
-									<dt className="text-xs text-muted-foreground">24h 编辑</dt>
-									<dd className="text-sm font-medium text-foreground">
-										{stats.recentEdits24h.toLocaleString()}
+								<div className="flex justify-between">
+									<dt className="text-wiki-text-secondary">用户</dt>
+									<dd className="font-medium text-wiki-text">
+										{stats.totalUsers.toLocaleString()}
 									</dd>
 								</div>
 							</dl>
 						</section>
 					)}
 
-					{/* Category navigation */}
+					{/* Category tree */}
 					{categories.length > 0 && (
-						<section className="rounded-md border border-border bg-white p-4">
+						<section className="rounded-sm border border-wiki-border-light bg-wiki-bg p-4">
 							<div className="mb-3 flex items-center gap-2">
-								<FolderTree className="h-4 w-4 text-muted-foreground" />
-								<h3 className="text-sm font-semibold text-foreground">分类导航</h3>
+								<FolderTree className="h-4 w-4 text-wiki-text-secondary" />
+								<h3 className="text-[14px] font-semibold text-wiki-text">分类导航</h3>
 							</div>
 							<ul className="space-y-1">
 								{categories.map((cat) => (
 									<li key={cat.id}>
 										<a
 											href={`/briar-display/wiki/category/${cat.slug}`}
-											className="flex items-center justify-between rounded px-2 py-1.5 text-sm transition-colors hover:bg-muted"
+											className="flex items-center justify-between rounded-sm px-2 py-1.5 text-[13px] transition-colors hover:bg-wiki-bg-secondary"
 										>
-											<span className="text-blue-600 hover:text-blue-800">{cat.name}</span>
-											<span className="text-xs text-muted-foreground">{cat.pageCount}</span>
+											<span className="text-wiki-link hover:underline">{cat.name}</span>
+											<span className="text-[12px] text-wiki-text-muted">({cat.pageCount})</span>
 										</a>
-										{cat.children.length > 0 && (
-											<ul className="ml-4 space-y-0.5">
-												{cat.children.map((child) => (
-													<li key={child.id}>
-														<a
-															href={`/briar-display/wiki/category/${child.slug}`}
-															className="flex items-center justify-between rounded px-2 py-1 text-xs transition-colors hover:bg-muted"
-														>
-															<span className="text-blue-600 hover:text-blue-800">
-																{child.name}
-															</span>
-															<span className="text-muted-foreground">{child.pageCount}</span>
-														</a>
-													</li>
-												))}
-											</ul>
-										)}
 									</li>
 								))}
 							</ul>
 						</section>
 					)}
 
-					{/* Quick links */}
-					<section className="rounded-md border border-border bg-white p-4">
-						<h3 className="mb-3 text-sm font-semibold text-foreground">快速链接</h3>
-						<ul className="space-y-1">
-							<li>
-								<a
-									href="/briar-display/wiki/special/all-pages"
-									className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-blue-600 transition-colors hover:bg-muted hover:text-blue-800"
-								>
-									<FileText className="h-4 w-4" />
-									所有页面
-								</a>
-							</li>
-							<li>
-								<a
-									href="/briar-display/wiki/category/"
-									className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-blue-600 transition-colors hover:bg-muted hover:text-blue-800"
-								>
-									<FolderTree className="h-4 w-4" />
-									分类
-								</a>
-							</li>
-							<li>
-								<a
-									href="/briar-display/wiki/special/recent-changes"
-									className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-blue-600 transition-colors hover:bg-muted hover:text-blue-800"
-								>
-									<FileEdit className="h-4 w-4" />
-									最近更改
-								</a>
-							</li>
-							<li>
-								<a
-									href="/briar-display/wiki/new"
-									className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-blue-600 transition-colors hover:bg-muted hover:text-blue-800"
-								>
-									<FilePlus className="h-4 w-4" />
-									新建文章
-								</a>
-							</li>
-						</ul>
+					{/* Quick actions */}
+					<section className="rounded-sm border border-wiki-border-light bg-wiki-bg p-4">
+						<h3 className="mb-3 text-[14px] font-semibold text-wiki-text">⚡ 快速操作</h3>
+						<div className="flex flex-col gap-2">
+							<a
+								href="/briar-display/wiki/new"
+								className="inline-flex items-center gap-2 rounded-sm border border-wiki-border-light px-3 py-2 text-[13px] text-wiki-link transition-colors hover:bg-wiki-bg-secondary hover:text-wiki-link-hover"
+							>
+								<FilePlus className="h-4 w-4" />📄 新建文章
+							</a>
+							<button
+								type="button"
+								onClick={() => {
+									if (hotArticles.length > 0) {
+										const random = hotArticles[Math.floor(Math.random() * hotArticles.length)]
+										window.location.href = `/briar-display/wiki/${random.slug}`
+									} else {
+										window.location.href = '/briar-display/wiki/'
+									}
+								}}
+								className="inline-flex items-center gap-2 rounded-sm border border-wiki-border-light px-3 py-2 text-[13px] text-wiki-link transition-colors hover:bg-wiki-bg-secondary hover:text-wiki-link-hover"
+							>
+								<Shuffle className="h-4 w-4" />🔀 随机页面
+							</button>
+							<a
+								href="/briar-display/wiki/special/all-pages"
+								className="inline-flex items-center gap-2 rounded-sm border border-wiki-border-light px-3 py-2 text-[13px] text-wiki-link transition-colors hover:bg-wiki-bg-secondary hover:text-wiki-link-hover"
+							>
+								<FileText className="h-4 w-4" />
+								所有页面
+							</a>
+						</div>
 					</section>
 				</div>
 			</div>

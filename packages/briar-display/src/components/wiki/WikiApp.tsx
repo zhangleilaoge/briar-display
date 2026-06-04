@@ -1,8 +1,9 @@
 'use client'
 
-import { type ReactNode, useEffect, useState } from 'react'
-import WikiLayout from './layout/WikiLayout'
-import WikiTabs from './layout/WikiTabs'
+import NotFound from '@/components/wiki/common/NotFound'
+import RouteLoader from '@/components/wiki/common/RouteLoader'
+import WikiLayout from '@/components/wiki/layout/WikiLayout'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import WikiAllPages from './pages/WikiAllPages'
 import WikiArticlePage from './pages/WikiArticlePage'
 import WikiCategoryIndex from './pages/WikiCategoryIndex'
@@ -28,7 +29,7 @@ interface RouteMatch {
 	showSidebar?: boolean
 }
 
-function matchRoute(pathname: string): RouteMatch {
+function matchRoute(pathname: string): RouteMatch | null {
 	const path = pathname.replace(/\/+$/, '') || WIKI_BASE
 	const relative = path.replace(WIKI_BASE, '') || '/'
 
@@ -93,6 +94,10 @@ function matchRoute(pathname: string): RouteMatch {
 	if (relative === '/special/watchlist') {
 		return { page: <WikiWatchlist />, title: '关注列表 - Briar Wiki' }
 	}
+	// /wiki/special/user-contributions (no userId param in path)
+	if (relative === '/special/user-contributions') {
+		return { page: <WikiWatchlist />, title: '我的贡献 - Briar Wiki' }
+	}
 
 	// /wiki/:slug → Article view
 	// /wiki/:slug/edit → Edit
@@ -130,54 +135,110 @@ function matchRoute(pathname: string): RouteMatch {
 		}
 	}
 
-	// Fallback: home
-	return { page: <WikiHomePage />, title: 'Briar Wiki' }
+	// No match
+	return null
 }
+
+// ---- Navigation hook (exported for child components) ----
+
+let _setCurrentPath: ((path: string) => void) | null = null
+
+export function useWikiNav() {
+	const navigate = useCallback((href: string) => {
+		if (href === window.location.pathname) return
+		window.history.pushState({}, '', href)
+		window.scrollTo(0, 0)
+		_setCurrentPath?.(href)
+	}, [])
+
+	return { navigate }
+}
+
+// ---- Main component ----
 
 export default function WikiApp() {
 	const [currentPath, setCurrentPath] = useState(
 		typeof window !== 'undefined' ? window.location.pathname : WIKI_BASE,
 	)
+	const [loading, setLoading] = useState(false)
+	const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+	// Register the setter so useWikiNav can trigger path changes
+	_setCurrentPath = setCurrentPath
+
+	// Simulate loading bar on route change
+	const triggerLoading = useCallback(() => {
+		setLoading(true)
+		if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current)
+		loadingTimerRef.current = setTimeout(() => setLoading(false), 300)
+	}, [])
 
 	useEffect(() => {
-		const handleNavigation = () => {
+		const handlePopState = () => {
+			triggerLoading()
 			setCurrentPath(window.location.pathname)
 		}
 
-		window.addEventListener('popstate', handleNavigation)
-
 		// Intercept wiki link clicks for SPA navigation
 		const handleClick = (e: MouseEvent) => {
+			// Don't intercept if modifier key is held
+			if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+
 			const target = (e.target as HTMLElement).closest('a')
 			if (!target) return
 
 			const href = target.getAttribute('href')
-			if (!href || !href.startsWith(WIKI_BASE)) return
+			if (!href) return
+
+			// Only intercept wiki links
+			if (!href.startsWith(WIKI_BASE) && !href.startsWith('/briar-display/wiki')) return
+
+			// Don't intercept same-page anchor links
+			if (href.startsWith('#')) return
 			if (href === currentPath) return
 
 			e.preventDefault()
+			triggerLoading()
 			window.history.pushState({}, '', href)
 			setCurrentPath(href)
 			window.scrollTo(0, 0)
 		}
 
+		window.addEventListener('popstate', handlePopState)
 		document.addEventListener('click', handleClick)
 
 		return () => {
-			window.removeEventListener('popstate', handleNavigation)
+			window.removeEventListener('popstate', handlePopState)
 			document.removeEventListener('click', handleClick)
+			if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current)
+		}
+	}, [currentPath, triggerLoading])
+
+	// Update document title in useEffect (not render)
+	useEffect(() => {
+		const route = matchRoute(currentPath)
+		if (route) {
+			document.title = route.title
+		} else {
+			document.title = '页面不存在 - Briar Wiki'
 		}
 	}, [currentPath])
 
 	const route = matchRoute(currentPath)
 
-	// Update document title
-	if (typeof document !== 'undefined') {
-		document.title = route.title
+	// 404
+	if (!route) {
+		return (
+			<WikiLayout showSidebar={false}>
+				<RouteLoader loading={loading} />
+				<NotFound />
+			</WikiLayout>
+		)
 	}
 
 	return (
-		<WikiLayout showSidebar={route.showSidebar !== false} title="">
+		<WikiLayout showSidebar={route.showSidebar !== false}>
+			<RouteLoader loading={loading} />
 			{route.page}
 		</WikiLayout>
 	)

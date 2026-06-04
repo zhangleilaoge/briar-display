@@ -385,7 +385,7 @@ export default function WikiTalkPage({ slug }: WikiTalkPageProps) {
 
 	return (
 		<div className="space-y-4">
-			<WikiTabs slug={slug} activeTab="talk" />
+			<WikiTabs slug={slug} active="talk" />
 
 			<div className="flex items-center justify-between">
 				<h2 className="flex items-center gap-2 font-serif text-xl font-normal text-foreground">

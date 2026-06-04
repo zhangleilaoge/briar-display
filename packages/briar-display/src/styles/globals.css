@@ -35,14 +35,28 @@
 		--radius: 0.5rem;
 
 		--chart-1: 12 76% 61%;
-
 		--chart-2: 173 58% 39%;
-
 		--chart-3: 197 37% 24%;
-
 		--chart-4: 43 74% 66%;
-
 		--chart-5: 27 87% 67%;
+
+		/* Vector 2022 — Wikipedia skin design tokens */
+		--wiki-bg: #ffffff;
+		--wiki-bg-secondary: #f8f9fa;
+		--wiki-bg-tertiary: #eaecf0;
+		--wiki-border: #a2a9b1;
+		--wiki-border-light: #c8ccd1;
+		--wiki-link: #3366cc;
+		--wiki-link-hover: #447ff5;
+		--wiki-link-visited: #0645ad;
+		--wiki-link-red: #ba0000;
+		--wiki-text: #202122;
+		--wiki-text-secondary: #54595d;
+		--wiki-text-muted: #72777d;
+		--wiki-tab-active: #3366cc;
+		--wiki-highlight: #fee7e6;
+		--wiki-topbar-bg: #ffffff;
+		--wiki-sidebar-bg: #f8f9fa;
 	}
 
 	* {
@@ -51,7 +65,77 @@
 
 	body {
 		@apply bg-background text-foreground;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Liberation Sans", sans-serif;
 	}
+
+	/* Wiki-specific global styles */
+	.wiki-link {
+		color: var(--wiki-link);
+		text-decoration: none;
+	}
+	.wiki-link:hover {
+		color: var(--wiki-link-hover);
+		text-decoration: underline;
+	}
+
+	.wiki-redlink {
+		color: var(--wiki-link-red);
+		border-bottom: 1px dashed var(--wiki-link-red);
+		text-decoration: none;
+	}
+	.wiki-redlink:hover {
+		text-decoration: underline;
+	}
+
+	/* Prose wiki overrides for article content */
+	.prose-wiki {
+		--tw-prose-body: var(--wiki-text);
+		--tw-prose-headings: var(--wiki-text);
+		--tw-prose-links: var(--wiki-link);
+		--tw-prose-bold: var(--wiki-text);
+		--tw-prose-counters: var(--wiki-text-secondary);
+		--tw-prose-bullets: var(--wiki-border);
+		--tw-prose-hr: var(--wiki-border-light);
+		--tw-prose-quotes: var(--wiki-text-secondary);
+		--tw-prose-code: var(--wiki-text);
+		font-size: 0.875em;
+		line-height: 1.6;
+	}
+	.prose-wiki h1 {
+		font-size: 1.8em;
+		line-height: 1.3;
+	}
+	.prose-wiki h2 {
+		font-size: 1.5em;
+		border-bottom: 1px solid var(--wiki-border-light);
+		padding-bottom: 0.25em;
+	}
+	.prose-wiki h3 {
+		font-size: 1.2em;
+	}
+	.prose-wiki a {
+		color: var(--wiki-link);
+	}
+	.prose-wiki a:hover {
+		color: var(--wiki-link-hover);
+	}
+
+	/* Route loader animation */
+	@keyframes wiki-route-slide {
+		0% {
+			transform: translateX(-100%);
+		}
+		50% {
+			transform: translateX(0%);
+		}
+		100% {
+			transform: translateX(100%);
+		}
+	}
+	.wiki-route-bar {
+		animation: wiki-route-slide 0.8s ease-in-out infinite;
+	}
+
 	.dark {
 		--background: 0 0% 3.9%;
 		--foreground: 0 0% 98%;
