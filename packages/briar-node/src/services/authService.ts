@@ -69,12 +69,12 @@ export const authService = {
 	async login(email: string, password: string) {
 		const record = await userDal.findByEmail(email)
 		if (!record) {
-			throw new Error('INVALID_CREDENTIALS')
+			throw new Error('USER_NOT_FOUND')
 		}
 
 		const match = await bcrypt.compare(password, record.passwordHash)
 		if (!match) {
-			throw new Error('INVALID_CREDENTIALS')
+			throw new Error('INVALID_PASSWORD')
 		}
 
 		const token = authService.createToken(record)

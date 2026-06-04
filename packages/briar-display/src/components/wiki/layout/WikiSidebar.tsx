@@ -78,7 +78,7 @@ const sections: SidebarSection[] = [
 			},
 			{
 				label: '模板',
-				href: '/briar-display/wiki/special/all-pages',
+				href: '/briar-display/wiki/special/templates',
 				icon: <LayoutList className="h-3.5 w-3.5" />,
 			},
 			{

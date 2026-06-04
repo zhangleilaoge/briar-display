@@ -10,11 +10,26 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import axios from 'axios'
+import { Eye, EyeOff } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
+
+const getLoginErrorMessage = (err: unknown) => {
+	if (axios.isAxiosError<{ message?: string }>(err)) {
+		if (err.response?.data?.message) {
+			return err.response.data.message
+		}
+		if (!err.response) {
+			return '无法连接服务器，请检查网络或稍后再试'
+		}
+	}
+	return err instanceof Error ? err.message : '登录失败'
+}
 
 export default function LoginPage() {
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
+	const [showPassword, setShowPassword] = useState(false)
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -32,7 +47,7 @@ export default function LoginPage() {
 			}
 			setError(result.message || '登录失败')
 		} catch (err) {
-			setError(err instanceof Error ? err.message : '登录失败')
+			setError(getLoginErrorMessage(err))
 		} finally {
 			setLoading(false)
 		}
@@ -86,14 +101,25 @@ export default function LoginPage() {
 								</div>
 								<div className="space-y-2">
 									<Label htmlFor="password">密码</Label>
-									<Input
-										id="password"
-										type="password"
-										placeholder="请输入密码"
-										value={password}
-										onChange={(event) => setPassword(event.target.value)}
-										required
-									/>
+									<div className="relative">
+										<Input
+											id="password"
+											type={showPassword ? 'text' : 'password'}
+											placeholder="请输入密码"
+											value={password}
+											onChange={(event) => setPassword(event.target.value)}
+											className="pr-12"
+											required
+										/>
+										<button
+											type="button"
+											className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+											onClick={() => setShowPassword((visible) => !visible)}
+											aria-label={showPassword ? '隐藏密码' : '显示密码'}
+										>
+											{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+										</button>
+									</div>
 								</div>
 								<div className="flex items-center justify-between text-sm">
 									<label className="flex items-center gap-2 text-muted-foreground">

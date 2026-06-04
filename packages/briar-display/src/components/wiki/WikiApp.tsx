@@ -18,6 +18,7 @@ import WikiSearchResults from './pages/WikiSearchResults'
 import WikiStatistics from './pages/WikiStatistics'
 import WikiTalkPage from './pages/WikiTalkPage'
 import WikiTemplatePage from './pages/WikiTemplatePage'
+import WikiTemplatesList from './pages/WikiTemplatesList'
 import WikiWantedPages from './pages/WikiWantedPages'
 import WikiWatchlist from './pages/WikiWatchlist'
 
@@ -43,7 +44,6 @@ function matchRoute(pathname: string): RouteMatch | null {
 		return {
 			page: <WikiNewPage />,
 			title: '新建文章 - Briar Wiki',
-			showSidebar: false,
 		}
 	}
 
@@ -91,6 +91,9 @@ function matchRoute(pathname: string): RouteMatch | null {
 	if (relative === '/special/wanted-pages') {
 		return { page: <WikiWantedPages />, title: '期望页面 - Briar Wiki' }
 	}
+	if (relative === '/special/templates') {
+		return { page: <WikiTemplatesList />, title: '模板 - Briar Wiki' }
+	}
 	if (relative === '/special/watchlist') {
 		return { page: <WikiWatchlist />, title: '关注列表 - Briar Wiki' }
 	}
@@ -111,8 +114,6 @@ function matchRoute(pathname: string): RouteMatch | null {
 		if (action === 'edit') {
 			return {
 				page: <WikiEditPage slug={slug} />,
-				title: `编辑: ${slug} - Briar Wiki`,
-				showSidebar: false,
 			}
 		}
 		if (action === 'history') {
@@ -210,7 +211,6 @@ export default function WikiApp() {
 		return () => {
 			window.removeEventListener('popstate', handlePopState)
 			document.removeEventListener('click', handleClick)
-			if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current)
 		}
 	}, [currentPath, triggerLoading])
 

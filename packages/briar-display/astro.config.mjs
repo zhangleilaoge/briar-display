@@ -25,5 +25,23 @@ export default defineConfig({
 				'@': fileURLToPath(new URL('./src', import.meta.url)),
 			},
 		},
+		plugins: [
+			{
+				name: 'wiki-spa-fallback',
+				configureServer(server) {
+					server.middlewares.use((req, res, next) => {
+						const url = req.url?.split('?')[0] || ''
+						if (
+							url.startsWith('/briar-display/wiki/') &&
+							url !== '/briar-display/wiki/' &&
+							!url.includes('.')
+						) {
+							req.url = '/briar-display/wiki/'
+						}
+						next()
+					})
+				},
+			},
+		],
 	},
 })

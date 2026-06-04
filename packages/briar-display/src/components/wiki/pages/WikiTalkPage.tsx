@@ -1,6 +1,7 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiPagination from '@/components/wiki/common/WikiPagination'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
@@ -385,6 +386,9 @@ export default function WikiTalkPage({ slug }: WikiTalkPageProps) {
 
 	return (
 		<div className="space-y-4">
+			<WikiBreadcrumbs
+				items={[{ label: slug, href: `/briar-display/wiki/${slug}` }, { label: '讨论' }]}
+			/>
 			<WikiTabs slug={slug} active="talk" />
 
 			<div className="flex items-center justify-between">

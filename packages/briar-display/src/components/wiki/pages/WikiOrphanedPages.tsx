@@ -102,7 +102,7 @@ export default function WikiOrphanedPages() {
 									<td className="hidden whitespace-nowrap px-4 py-2 text-right text-muted-foreground md:table-cell">
 										<span className="inline-flex items-center gap-1">
 											<Eye className="h-3 w-3" />
-											{page.viewCount.toLocaleString()}
+											{(page.viewCount ?? 0).toLocaleString()}
 										</span>
 									</td>
 								</tr>

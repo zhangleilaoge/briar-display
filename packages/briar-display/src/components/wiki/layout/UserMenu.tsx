@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { ChevronDown, History, LogOut, Star, User } from 'lucide-react'
+import { ChevronDown, History, LogOut, Plus, Star, User } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface UserInfo {
@@ -30,11 +30,13 @@ function getToken(): string | null {
 export default function UserMenu() {
 	const [open, setOpen] = useState(false)
 	const [user, setUser] = useState<UserInfo | null>(null)
+	const [token, setToken] = useState<string | null>(null)
 	const menuRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
-		const token = getToken()
-		if (token) {
+		const t = getToken()
+		setToken(t)
+		if (t) {
 			setUser(getUser())
 		}
 	}, [])
@@ -58,7 +60,6 @@ export default function UserMenu() {
 	}, [open])
 
 	// Not logged in
-	const token = typeof window !== 'undefined' ? getToken() : null
 	if (!token) {
 		return (
 			<a
@@ -100,6 +101,14 @@ export default function UserMenu() {
 						<p className="text-[13px] font-medium text-wiki-text">{user?.name || '用户'}</p>
 					</div>
 
+					<a
+						href="/briar-display/wiki/new"
+						className="flex items-center gap-2 px-3 py-2 text-[13px] text-wiki-text-secondary transition-colors hover:bg-wiki-bg-tertiary hover:text-wiki-text"
+						onClick={() => setOpen(false)}
+					>
+						<Plus className="h-3.5 w-3.5" />
+						新建文章
+					</a>
 					<a
 						href="/briar-display/wiki/special/user-contributions"
 						className="flex items-center gap-2 px-3 py-2 text-[13px] text-wiki-text-secondary transition-colors hover:bg-wiki-bg-tertiary hover:text-wiki-text"

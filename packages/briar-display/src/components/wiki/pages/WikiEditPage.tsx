@@ -1,6 +1,7 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
 import type { WikiPage } from '@briar/shared'
@@ -263,6 +264,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 	if (loading) {
 		return (
 			<div className="space-y-4">
+				<WikiBreadcrumbs items={[{ label: isNew ? '新建文章' : '编辑文章' }]} />
 				<WikiTabs slug={slug} active="edit" />
 				<div className="flex items-center justify-center py-20">
 					<Loader2 className="h-8 w-8 animate-spin text-wiki-text-muted" />
@@ -274,6 +276,12 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 
 	return (
 		<div className="space-y-4">
+			<WikiBreadcrumbs
+				items={[
+					{ label: existingPage?.title || slug, href: `/briar-display/wiki/${slug}` },
+					{ label: isNew ? '新建' : '编辑' },
+				]}
+			/>
 			<WikiTabs slug={slug} active="edit" />
 
 			<h1 className="border-b border-wiki-border-light pb-2 text-[1.5em] font-normal text-wiki-text">

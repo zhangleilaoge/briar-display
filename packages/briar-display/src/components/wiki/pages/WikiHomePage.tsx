@@ -17,11 +17,10 @@ import {
 	FileText,
 	FolderTree,
 	Loader2,
-	Search,
 	Shuffle,
 	TrendingUp,
 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 /** Calculate relative time from now */
 function relativeTime(date: string | Date): string {
@@ -43,7 +42,6 @@ export default function WikiHomePage() {
 	const [recentChanges, setRecentChanges] = useState<WikiRecentChange[]>([])
 	const [hotArticles, setHotArticles] = useState<WikiPageSummary[]>([])
 	const [categories, setCategories] = useState<WikiCategoryTreeNode[]>([])
-	const [searchQuery, setSearchQuery] = useState('')
 	const [loading, setLoading] = useState(true)
 
 	useEffect(() => {
@@ -71,21 +69,6 @@ export default function WikiHomePage() {
 		}
 	}, [])
 
-	const handleSearch = useCallback(
-		(e: React.FormEvent) => {
-			e.preventDefault()
-			if (searchQuery.trim()) {
-				window.history.pushState(
-					{},
-					'',
-					`/briar-display/wiki/search?q=${encodeURIComponent(searchQuery.trim())}`,
-				)
-				window.dispatchEvent(new PopStateEvent('popstate'))
-			}
-		},
-		[searchQuery],
-	)
-
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center py-20">
@@ -97,20 +80,6 @@ export default function WikiHomePage() {
 
 	return (
 		<div className="space-y-6">
-			{/* Large centered search bar */}
-			<div className="flex justify-center">
-				<form onSubmit={handleSearch} className="relative w-full max-w-2xl">
-					<Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-wiki-text-muted" />
-					<input
-						type="text"
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						placeholder="搜索 Briar Wiki"
-						className="w-full rounded-sm border border-wiki-border bg-wiki-bg py-3 pl-12 pr-4 text-base text-wiki-text shadow-sm transition-shadow focus:border-wiki-link focus:outline-none focus:ring-2 focus:ring-wiki-link/20"
-					/>
-				</form>
-			</div>
-
 			{/* Two-column layout */}
 			<div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
 				{/* Left column */}

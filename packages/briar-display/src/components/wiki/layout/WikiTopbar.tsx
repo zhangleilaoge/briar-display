@@ -3,7 +3,7 @@
 import SearchDropdown from '@/components/wiki/common/SearchDropdown'
 import UserMenu from '@/components/wiki/layout/UserMenu'
 import { cn } from '@/lib/utils'
-import { Menu, Plus } from 'lucide-react'
+import { Menu } from 'lucide-react'
 
 interface WikiTopbarProps {
 	onMenuToggle?: () => void
@@ -14,7 +14,7 @@ export default function WikiTopbar({ onMenuToggle, className }: WikiTopbarProps)
 	return (
 		<header
 			className={cn(
-				'sticky top-0 z-50 flex h-[50px] items-center border-b border-wiki-border bg-wiki-topbar-bg px-4 shadow-sm',
+				'sticky top-0 z-50 grid h-[50px] grid-cols-[1fr_auto_1fr] items-center border-b border-wiki-border bg-wiki-topbar-bg px-4 shadow-sm',
 				className,
 			)}
 		>
@@ -37,19 +37,12 @@ export default function WikiTopbar({ onMenuToggle, className }: WikiTopbarProps)
 			</div>
 
 			{/* Center: search */}
-			<div className="mx-auto hidden max-w-md flex-1 px-6 md:block">
+			<div className="hidden px-6 md:block">
 				<SearchDropdown />
 			</div>
 
-			{/* Right: new article + user menu */}
-			<div className="flex items-center gap-2">
-				<a
-					href="/briar-display/wiki/new"
-					className="inline-flex items-center gap-1.5 rounded bg-[#3366cc] px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-[#2a4b8d]"
-				>
-					<Plus className="h-3.5 w-3.5" />
-					<span className="hidden sm:inline">新建文章</span>
-				</a>
+			{/* Right: user menu */}
+			<div className="flex items-center justify-end gap-2">
 				<UserMenu />
 			</div>
 		</header>

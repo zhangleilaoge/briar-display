@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Eye, EyeOff } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 
 type Step = 'email' | 'reset'
@@ -20,6 +21,8 @@ export default function ForgotPasswordPage() {
 	const [code, setCode] = useState('')
 	const [newPassword, setNewPassword] = useState('')
 	const [confirmPassword, setConfirmPassword] = useState('')
+	const [showNewPassword, setShowNewPassword] = useState(false)
+	const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [success, setSuccess] = useState<string | null>(null)
@@ -200,25 +203,55 @@ export default function ForgotPasswordPage() {
 									</div>
 									<div className="space-y-2">
 										<Label htmlFor="newPassword">新密码</Label>
-										<Input
-											id="newPassword"
-											type="password"
-											placeholder="请输入新密码（至少6个字符）"
-											value={newPassword}
-											onChange={(event) => setNewPassword(event.target.value)}
-											required
-										/>
+										<div className="relative">
+											<Input
+												id="newPassword"
+												type={showNewPassword ? 'text' : 'password'}
+												placeholder="请输入新密码（至少6个字符）"
+												value={newPassword}
+												onChange={(event) => setNewPassword(event.target.value)}
+												className="pr-12"
+												required
+											/>
+											<button
+												type="button"
+												className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+												onClick={() => setShowNewPassword((visible) => !visible)}
+												aria-label={showNewPassword ? '隐藏密码' : '显示密码'}
+											>
+												{showNewPassword ? (
+													<EyeOff className="h-4 w-4" />
+												) : (
+													<Eye className="h-4 w-4" />
+												)}
+											</button>
+										</div>
 									</div>
 									<div className="space-y-2">
 										<Label htmlFor="confirmPassword">确认密码</Label>
-										<Input
-											id="confirmPassword"
-											type="password"
-											placeholder="请再次输入密码"
-											value={confirmPassword}
-											onChange={(event) => setConfirmPassword(event.target.value)}
-											required
-										/>
+										<div className="relative">
+											<Input
+												id="confirmPassword"
+												type={showConfirmPassword ? 'text' : 'password'}
+												placeholder="请再次输入密码"
+												value={confirmPassword}
+												onChange={(event) => setConfirmPassword(event.target.value)}
+												className="pr-12"
+												required
+											/>
+											<button
+												type="button"
+												className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+												onClick={() => setShowConfirmPassword((visible) => !visible)}
+												aria-label={showConfirmPassword ? '隐藏密码' : '显示密码'}
+											>
+												{showConfirmPassword ? (
+													<EyeOff className="h-4 w-4" />
+												) : (
+													<Eye className="h-4 w-4" />
+												)}
+											</button>
+										</div>
 									</div>
 									{error && (
 										<p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">

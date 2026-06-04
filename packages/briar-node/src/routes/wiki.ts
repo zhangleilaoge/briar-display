@@ -14,23 +14,39 @@ const wikiRoutes = new Hono()
 // Public
 wikiRoutes.get('/pages', (c) => pageController.list(c))
 wikiRoutes.get('/pages/search', (c) => pageController.search(c))
-wikiRoutes.get('/pages/:namespace/:slug', (c) => pageController.getBySlug(c))
+
+// Revisions / discussions must come before /:namespace/:slug to avoid shadowing
+wikiRoutes.get('/pages/:slug/revisions', (c) => revisionController.list(c))
+wikiRoutes.get('/pages/:slug/revisions/:revId', (c) => revisionController.getById(c))
+wikiRoutes.get('/pages/:slug/diff', (c) => revisionController.getDiff(c))
+wikiRoutes.get('/pages/:slug/discussions', (c) => discussionController.listTopics(c))
+wikiRoutes.get('/pages/:slug/discussions/:topicId', (c) => discussionController.getTopic(c))
+wikiRoutes.get('/pages/:slug/discussions/:topicId/replies', (c) =>
+	discussionController.getReplies(c),
+)
 wikiRoutes.get('/pages/:slug/redirects', (c) => pageController.getRedirects(c))
+
+wikiRoutes.get('/pages/:namespace/:slug', (c) => pageController.getBySlug(c))
 
 // Protected
 wikiRoutes.post('/pages', authMiddleware, (c) => pageController.create(c))
 wikiRoutes.put('/pages/:slug', authMiddleware, (c) => pageController.update(c))
 wikiRoutes.delete('/pages/:slug', authMiddleware, (c) => pageController.delete(c))
 
-// ==================== Revisions ====================
-// Public
-wikiRoutes.get('/pages/:slug/revisions', (c) => revisionController.list(c))
-wikiRoutes.get('/pages/:slug/revisions/:revId', (c) => revisionController.getById(c))
-wikiRoutes.get('/pages/:slug/diff', (c) => revisionController.getDiff(c))
-
-// Protected
+// Protected revisions
 wikiRoutes.post('/pages/:slug/revisions/:revId/revert', authMiddleware, (c) =>
 	revisionController.revert(c),
+)
+
+// Protected discussions
+wikiRoutes.post('/pages/:slug/discussions', authMiddleware, (c) =>
+	discussionController.createTopic(c),
+)
+wikiRoutes.post('/pages/:slug/discussions/:topicId/replies', authMiddleware, (c) =>
+	discussionController.createReply(c),
+)
+wikiRoutes.put('/pages/:slug/discussions/:topicId/resolve', authMiddleware, (c) =>
+	discussionController.markResolved(c),
 )
 
 // ==================== Categories ====================
@@ -46,25 +62,6 @@ wikiRoutes.delete('/categories/:slug', authMiddleware, (c) => categoryController
 wikiRoutes.post('/categories/:slug/pages', authMiddleware, (c) => categoryController.addPage(c))
 wikiRoutes.delete('/categories/:slug/pages/:pageId', authMiddleware, (c) =>
 	categoryController.removePage(c),
-)
-
-// ==================== Discussions ====================
-// Public
-wikiRoutes.get('/pages/:slug/discussions', (c) => discussionController.listTopics(c))
-wikiRoutes.get('/pages/:slug/discussions/:topicId', (c) => discussionController.getTopic(c))
-wikiRoutes.get('/pages/:slug/discussions/:topicId/replies', (c) =>
-	discussionController.getReplies(c),
-)
-
-// Protected
-wikiRoutes.post('/pages/:slug/discussions', authMiddleware, (c) =>
-	discussionController.createTopic(c),
-)
-wikiRoutes.post('/pages/:slug/discussions/:topicId/replies', authMiddleware, (c) =>
-	discussionController.createReply(c),
-)
-wikiRoutes.put('/pages/:slug/discussions/:topicId/resolve', authMiddleware, (c) =>
-	discussionController.markResolved(c),
 )
 
 // ==================== Templates ====================

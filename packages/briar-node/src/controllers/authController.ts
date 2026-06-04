@@ -52,7 +52,7 @@ export const authController = {
 			return c.json<ApiResponse>(
 				{
 					success: false,
-					message: 'Missing required fields',
+					message: !email ? '请输入邮箱' : '请输入密码',
 					code: HTTP_STATUS.BAD_REQUEST,
 				},
 				HTTP_STATUS.BAD_REQUEST,
@@ -67,10 +67,14 @@ export const authController = {
 				code: HTTP_STATUS.OK,
 			})
 		} catch (error) {
-			const message =
-				error instanceof Error && error.message === 'INVALID_CREDENTIALS'
-					? 'Invalid credentials'
-					: 'Login failed'
+			let message = '登录失败，请稍后再试'
+			if (error instanceof Error) {
+				if (error.message === 'USER_NOT_FOUND') {
+					message = '该邮箱尚未注册'
+				} else if (error.message === 'INVALID_PASSWORD') {
+					message = '密码错误，请重新输入'
+				}
+			}
 			return c.json<ApiResponse>(
 				{
 					success: false,

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Eye, EyeOff } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 
 export default function RegisterPage() {
@@ -17,6 +18,7 @@ export default function RegisterPage() {
 	const [lastName, setLastName] = useState('')
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
+	const [showPassword, setShowPassword] = useState(false)
 	const [invite, setInvite] = useState('')
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
@@ -91,14 +93,29 @@ export default function RegisterPage() {
 								<div className="grid gap-4 sm:grid-cols-2">
 									<div className="space-y-2">
 										<Label htmlFor="password">设置密码</Label>
-										<Input
-											id="password"
-											type="password"
-											placeholder="至少 8 位"
-											value={password}
-											onChange={(event) => setPassword(event.target.value)}
-											required
-										/>
+										<div className="relative">
+											<Input
+												id="password"
+												type={showPassword ? 'text' : 'password'}
+												placeholder="至少 8 位"
+												value={password}
+												onChange={(event) => setPassword(event.target.value)}
+												className="pr-12"
+												required
+											/>
+											<button
+												type="button"
+												className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+												onClick={() => setShowPassword((visible) => !visible)}
+												aria-label={showPassword ? '隐藏密码' : '显示密码'}
+											>
+												{showPassword ? (
+													<EyeOff className="h-4 w-4" />
+												) : (
+													<Eye className="h-4 w-4" />
+												)}
+											</button>
+										</div>
 									</div>
 									<div className="space-y-2">
 										<Label htmlFor="invite">邀请码</Label>

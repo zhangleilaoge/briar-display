@@ -45,8 +45,8 @@ export default function WikiLayout({ children, showSidebar = true }: WikiLayoutP
 				)}
 
 				{/* Main content */}
-				<main className={cn('min-w-0 flex-1')}>
-					<div className="max-w-[960px] bg-wiki-bg p-6">{children}</div>
+				<main className={cn('min-w-0 flex-1 bg-wiki-bg p-6')}>
+					<div className="mx-auto max-w-[1200px]">{children}</div>
 				</main>
 			</div>
 		</div>
