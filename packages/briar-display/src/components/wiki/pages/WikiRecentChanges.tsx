@@ -150,14 +150,6 @@ export default function WikiRecentChanges() {
 												</span>
 											)}
 											<WikiLink slug={change.pageSlug} title={change.pageTitle} />
-											{change.minorEdit && (
-												<span
-													className="rounded bg-blue-100 px-1 py-0.5 font-bold text-blue-700 text-xs"
-													title="小编辑"
-												>
-													m
-												</span>
-											)}
 										</div>
 									</td>
 									<td className="whitespace-nowrap px-3 py-2 text-muted-foreground">

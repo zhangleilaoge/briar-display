@@ -2,6 +2,7 @@ import type { Context, MiddlewareHandler } from 'hono'
 import { isApiPublicPath, isAssetPath, isPublicPath } from '../config/routes'
 import { authMiddleware } from './authMiddleware'
 import { corsMiddleware, errorHandler, loggerMiddleware, pageAuthMiddleware } from './index'
+import { traceIdMiddleware } from './traceId'
 
 export type MiddlewareMatch = (c: Context) => boolean
 export type MiddlewareIgnore = (c: Context) => boolean
@@ -19,6 +20,10 @@ const shouldIgnorePageAuth = (c: Context): boolean => {
 }
 
 export const globalMiddlewares: MiddlewareConfig[] = [
+	{
+		middleware: traceIdMiddleware(),
+		priority: 0,
+	},
 	{
 		middleware: errorHandler(),
 		priority: 1,

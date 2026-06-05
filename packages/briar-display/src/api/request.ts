@@ -1,6 +1,11 @@
 import { API_BASE_PATH, API_TIMEOUT, NODE_PORT } from '@briar/shared'
 import axios from 'axios'
 
+/** 最近一次请求的 trace-id，可用于调试 */
+let lastTraceId: string | null = null
+
+export const getLastTraceId = () => lastTraceId
+
 const getApiBaseUrl = () => {
 	if (typeof window === 'undefined') {
 		return `http://localhost:${NODE_PORT}${API_BASE_PATH}`
@@ -28,3 +33,17 @@ apiClient.interceptors.request.use((config) => {
 	}
 	return config
 })
+
+apiClient.interceptors.response.use((response) => {
+	const traceId = response.headers?.['x-trace-id']
+	if (traceId) {
+		lastTraceId = traceId
+	}
+	return response
+})
+
+/** 根据 traceId 查询服务端请求日志 */
+export const queryLogsByTraceId = async (traceId: string) => {
+	const response = await apiClient.get(`/logs/trace/${traceId}`)
+	return response.data
+}

@@ -38,6 +38,7 @@ export const RouteConfig = {
 		'/api/wiki/categories/',
 		'/api/wiki/tags/',
 		'/api/wiki/templates/',
+		'/api/logs',
 	],
 
 	/** 资源文件前缀 */

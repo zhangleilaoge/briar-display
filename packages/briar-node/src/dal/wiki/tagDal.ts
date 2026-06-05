@@ -153,8 +153,8 @@ export const tagDal = {
 			updatedAt: Date
 		}[]
 	> {
-		const limit = options?.limit ?? 50
-		const offset = options?.offset ?? 0
+		const limit = Math.floor(options?.limit ?? 50)
+		const offset = Math.floor(options?.offset ?? 0)
 
 		const rows = await query<{
 			id: string
@@ -169,8 +169,8 @@ export const tagDal = {
 			INNER JOIN wiki_page_tags pt ON p.id = pt.page_id
 			WHERE pt.tag_id = ? AND p.status = 'published'
 			ORDER BY p.updated_at DESC
-			LIMIT ? OFFSET ?`,
-			[tagId, limit, offset],
+			LIMIT ${limit} OFFSET ${offset}`,
+			[tagId],
 		)
 
 		return rows.map((row) => ({

@@ -265,11 +265,6 @@ export default function WikiHistoryPage({ slug }: WikiHistoryPageProps) {
 									</td>
 									<td className="px-3 py-2.5">
 										<span className="font-mono text-wiki-link">v{rev.revisionNumber}</span>
-										{rev.minorEdit && (
-											<span className="ml-1.5 rounded bg-wiki-highlight px-1 py-0.5 text-[10px] text-wiki-link-red">
-												小
-											</span>
-										)}
 									</td>
 									<td className="px-3 py-2.5 text-wiki-text">{rev.editorId}</td>
 									<td className="px-3 py-2.5 text-wiki-text-secondary">
