@@ -1,6 +1,7 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import TagInput from '@/components/wiki/common/TagInput'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
@@ -194,7 +195,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 	const [error, setError] = useState<string | null>(null)
 	const [existingPage, setExistingPage] = useState<WikiPage | null>(null)
 	const [visibility, setVisibility] = useState<WikiPageVisibility>('public')
-	const [tagInput, setTagInput] = useState('')
+	const [tags, setTags] = useState<string[]>([])
 	const [categoryIds, setCategoryIds] = useState<string[]>([])
 	const [lastReadAt, setLastReadAt] = useState<string>('')
 
@@ -245,7 +246,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 
 				// Set tags
 				if (page.tags && page.tags.length > 0) {
-					setTagInput(page.tags.map((t: any) => t.name).join(', '))
+					setTags(page.tags.map((t: any) => t.name))
 				}
 
 				// Set categories
@@ -311,14 +312,6 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		[editor, sourceContent, getEditorMarkdown],
 	)
 
-	// Parse tag input into array
-	const getTagNames = useCallback((): string[] => {
-		return tagInput
-			.split(/[,，]/)
-			.map((t) => t.trim())
-			.filter((t) => t.length > 0)
-	}, [tagInput])
-
 	// Save handler
 	const handleSave = useCallback(async () => {
 		if (!title.trim()) {
@@ -338,7 +331,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 					title: title.trim(),
 					content,
 					visibility,
-					tagNames: getTagNames(),
+					tagNames: tags,
 					categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
 				})
 				if (res.success && res.data) {
@@ -352,7 +345,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 					title: title.trim(),
 					content,
 					visibility,
-					tagNames: getTagNames(),
+					tagNames: tags,
 					categoryIds,
 					editSummary: editSummary.trim() || undefined,
 					minorEdit,
@@ -391,10 +384,9 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		slug,
 		getEditorMarkdown,
 		visibility,
-		tagInput,
+		tags,
 		categoryIds,
 		lastReadAt,
-		getTagNames,
 	])
 
 	// Cancel handler
@@ -514,23 +506,15 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 
 			{/* Tags */}
 			<div>
-				<label htmlFor="wiki-tags" className="mb-1 block text-[13px] font-medium text-wiki-text">
+				<label className="mb-1 block text-[13px] font-medium text-wiki-text">
 					<Tag className="mr-1 inline-block h-3.5 w-3.5" />
 					标签
 				</label>
-				<input
-					id="wiki-tags"
-					type="text"
-					value={tagInput}
-					onChange={(e) => setTagInput(e.target.value)}
-					placeholder="输入标签，用逗号分隔，如：技术, 教程, 笔记"
-					className="w-full rounded-sm border border-wiki-border bg-wiki-bg px-3 py-2 text-[14px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none focus:ring-1 focus:ring-wiki-link"
-				/>
+				<TagInput value={tags} onChange={setTags} />
 				<p className="mt-1 text-[11px] text-wiki-text-muted">
-					用逗号分隔多个标签，不存在的标签会自动创建
+					回车或逗号添加标签，输入时显示已有标签建议
 				</p>
 			</div>
-
 			{/* Categories */}
 			<div>
 				<label className="mb-1 block text-[13px] font-medium text-wiki-text">分类</label>
