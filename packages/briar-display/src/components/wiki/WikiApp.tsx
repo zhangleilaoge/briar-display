@@ -22,6 +22,7 @@ import WikiTagsIndex from './pages/WikiTagsIndex'
 import WikiTalkPage from './pages/WikiTalkPage'
 import WikiTemplatePage from './pages/WikiTemplatePage'
 import WikiTemplatesList from './pages/WikiTemplatesList'
+import WikiUserContributions from './pages/WikiUserContributions'
 import WikiWantedPages from './pages/WikiWantedPages'
 import WikiWatchlist from './pages/WikiWatchlist'
 
@@ -117,7 +118,7 @@ function matchRoute(pathname: string): RouteMatch | null {
 	}
 	// /wiki/special/user-contributions (no userId param in path)
 	if (relative === '/special/user-contributions') {
-		return { page: <WikiWatchlist />, title: '我的贡献 - Briar Wiki' }
+		return { page: <WikiUserContributions />, title: '我的贡献 - Briar Wiki' }
 	}
 
 	// /wiki/:slug → Article view
