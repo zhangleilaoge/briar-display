@@ -153,14 +153,7 @@ export const categoryDal = {
 
 	async getPageCategories(pageId: string): Promise<WikiCategoryRecord[]> {
 		const rows = await query<WikiCategoryRow>(
-			`SELECT c.${SELECT_FIELDS.replace(/id/g, 'c.id')
-				.replace(/name/g, 'c.name')
-				.replace(/slug/g, 'c.slug')
-				.replace(/description/g, 'c.description')
-				.replace(/parent_id/g, 'c.parent_id')
-				.replace(/page_count/g, 'c.page_count')
-				.replace(/created_at/g, 'c.created_at')
-				.replace(/updated_at/g, 'c.updated_at')}
+			`SELECT c.id, c.name, c.slug, c.description, c.parent_id, c.page_count, c.created_at, c.updated_at
 			FROM wiki_categories c
 			INNER JOIN wiki_page_categories pc ON c.id = pc.category_id
 			WHERE pc.page_id = ?
