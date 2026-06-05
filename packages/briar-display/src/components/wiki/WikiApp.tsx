@@ -133,6 +133,7 @@ function matchRoute(pathname: string): RouteMatch | null {
 		if (action === 'edit') {
 			return {
 				page: <WikiEditPage slug={slug} />,
+				title: `编辑: ${slug} - Briar Wiki`,
 			}
 		}
 		if (action === 'history') {
