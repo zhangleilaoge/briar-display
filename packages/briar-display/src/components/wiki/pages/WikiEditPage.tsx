@@ -1,6 +1,8 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import TagInput from '@/components/wiki/common/TagInput'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
@@ -38,10 +40,12 @@ import {
 	Redo,
 	Tag,
 	Undo,
+	Upload,
 	X,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { Markdown } from 'tiptap-markdown'
 
 interface WikiEditPageProps {
 	slug: string
@@ -279,12 +283,27 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 	const [categoryIds, setCategoryIds] = useState<string[]>([])
 	const [lastReadAt, setLastReadAt] = useState<string>('')
 
+	// Image upload state
+	const [showImageMenu, setShowImageMenu] = useState(false)
+	const [imageUrl, setImageUrl] = useState('')
+
+	/** 读取本地图片文件转为 base64 并插入编辑器 */
+	const handleImageFile = useCallback((file: File, view: import('prosemirror-view').EditorView) => {
+		const reader = new FileReader()
+		reader.onload = () => {
+			if (typeof reader.result === 'string') {
+				const { state, dispatch } = view
+				const node = state.schema.nodes.image.create({ src: reader.result })
+				dispatch(state.tr.replaceSelectionWith(node))
+			}
+		}
+		reader.readAsDataURL(file)
+	}, [])
+
 	// TipTap editor
 	const editor = useEditor({
 		extensions: [
-			StarterKit.configure({
-				codeBlock: false,
-			}),
+			StarterKit,
 			Underline,
 			Highlight.configure({ multicolor: false }),
 			Link.configure({
@@ -293,15 +312,46 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 			}),
 			Image.configure({
 				HTMLAttributes: { class: 'max-w-full h-auto rounded-sm' },
+				allowBase64: true,
 			}),
 			Placeholder.configure({
 				placeholder: '开始编写文章内容...',
+			}),
+			Markdown.configure({
+				html: true,
+				transformPastedText: true,
+				transformCopiedText: true,
 			}),
 		],
 		content: '',
 		editorProps: {
 			attributes: {
 				class: 'prose prose-wiki max-w-none focus:outline-none min-h-[400px] p-4',
+			},
+			handlePaste: (view, event) => {
+				const items = event.clipboardData?.items
+				if (!items) return false
+				for (const item of items) {
+					if (item.type.startsWith('image/')) {
+						event.preventDefault()
+						const file = item.getAsFile()
+						if (file) handleImageFile(file, view)
+						return true
+					}
+				}
+				return false
+			},
+			handleDrop: (view, event) => {
+				const files = event.dataTransfer?.files
+				if (!files?.length) return false
+				for (const file of Array.from(files)) {
+					if (file.type.startsWith('image/')) {
+						event.preventDefault()
+						handleImageFile(file, view)
+						return true
+					}
+				}
+				return false
 			},
 		},
 	})
@@ -344,38 +394,11 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		}
 	}, [slug, isNew, editor])
 
-	/**
-	 * Get markdown from TipTap editor.
-	 */
+	/** 从 TipTap 编辑器获取 Markdown 内容 */
 	const getEditorMarkdown = useCallback((): string => {
 		if (!editor) return ''
-		// @ts-expect-error markdown extension storage may not be typed
-		if (editor.storage?.markdown?.getMarkdown) {
-			// @ts-expect-error markdown extension storage may not be typed
-			return editor.storage.markdown.getMarkdown()
-		}
-		const html = editor.getHTML()
-		return html
-			.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n')
-			.replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n')
-			.replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n')
-			.replace(/<h4[^>]*>(.*?)<\/h4>/gi, '#### $1\n')
-			.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
-			.replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
-			.replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
-			.replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
-			.replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
-			.replace(/<blockquote[^>]*>(.*?)<\/blockquote>/gi, '> $1\n')
-			.replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
-			.replace(/<br\s*\/?>/gi, '\n')
-			.replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
-			.replace(/<[^>]+>/g, '')
-			.replace(/&nbsp;/g, ' ')
-			.replace(/&amp;/g, '&')
-			.replace(/&lt;/g, '<')
-			.replace(/&gt;/g, '>')
-			.replace(/\n{3,}/g, '\n\n')
-			.trim()
+		// @ts-expect-error tiptap-markdown storage type
+		return editor.storage.markdown.getMarkdown()
 	}, [editor])
 
 	// Sync content when switching modes
@@ -486,13 +509,30 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		}
 	}, [editor])
 
-	const addImage = useCallback(() => {
-		if (!editor) return
-		const url = window.prompt('输入图片 URL:')
-		if (url) {
-			editor.chain().focus().setImage({ src: url }).run()
-		}
-	}, [editor])
+	const addImageFromUrl = useCallback(() => {
+		if (!editor || !imageUrl.trim()) return
+		editor.chain().focus().setImage({ src: imageUrl.trim() }).run()
+		setImageUrl('')
+		setShowImageMenu(false)
+	}, [editor, imageUrl])
+
+	const handleFileSelect = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const file = e.target.files?.[0]
+			if (file && editor) {
+				const reader = new FileReader()
+				reader.onload = () => {
+					if (typeof reader.result === 'string') {
+						editor.chain().focus().setImage({ src: reader.result }).run()
+					}
+				}
+				reader.readAsDataURL(file)
+			}
+			e.target.value = ''
+			setShowImageMenu(false)
+		},
+		[editor],
+	)
 
 	// Mention page (wiki link)
 	const [showMention, setShowMention] = useState(false)
@@ -789,7 +829,57 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 							isActive={editor.isActive('blockquote')}
 							onClick={() => editor.chain().focus().toggleBlockquote().run()}
 						/>
-						<ToolbarButton icon={ImageIcon} label="插入图片" onClick={addImage} />
+						<Popover open={showImageMenu} onOpenChange={setShowImageMenu}>
+							<PopoverTrigger asChild>
+								<div>
+									<ToolbarButton
+										icon={ImageIcon}
+										label="插入图片"
+										onClick={() => setShowImageMenu(true)}
+									/>
+								</div>
+							</PopoverTrigger>
+							<PopoverContent className="w-72" align="start" sideOffset={4}>
+								<div className="space-y-3">
+									<p className="font-medium text-sm">插入图片</p>
+									<div className="space-y-2">
+										<label>
+											<Button variant="outline" size="sm" className="w-full cursor-pointer" asChild>
+												<span>
+													<Upload className="mr-2 h-4 w-4" />
+													选择本地文件
+												</span>
+											</Button>
+											<input
+												type="file"
+												accept="image/*"
+												onChange={handleFileSelect}
+												className="hidden"
+											/>
+										</label>
+										<div className="text-center text-[12px] text-muted-foreground">
+											或输入图片 URL
+										</div>
+										<div className="flex gap-1.5">
+											<input
+												type="text"
+												value={imageUrl}
+												onChange={(e) => setImageUrl(e.target.value)}
+												onKeyDown={(e) => e.key === 'Enter' && addImageFromUrl()}
+												placeholder="https://..."
+												className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+											/>
+											<Button size="sm" onClick={addImageFromUrl} disabled={!imageUrl.trim()}>
+												确定
+											</Button>
+										</div>
+									</div>
+									<p className="text-[11px] text-muted-foreground">
+										也可直接粘贴或拖拽图片到编辑器
+									</p>
+								</div>
+							</PopoverContent>
+						</Popover>
 
 						<div className="flex-1" />
 
