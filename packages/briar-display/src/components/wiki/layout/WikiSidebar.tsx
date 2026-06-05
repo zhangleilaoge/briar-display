@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils'
 import {
 	BarChart3,
+	Eye,
 	FileText,
 	History,
 	Home,
@@ -60,7 +61,7 @@ const sections: SidebarSection[] = [
 			{
 				label: '关注列表',
 				href: '/briar-display/wiki/special/watchlist',
-				icon: <Star className="h-3.5 w-3.5" />,
+				icon: <Eye className="h-3.5 w-3.5" />,
 			},
 			{
 				label: '我的收藏',
