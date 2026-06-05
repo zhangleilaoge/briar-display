@@ -103,11 +103,13 @@ const main = async () => {
 
 	console.log(`Uploading ${files.length} files from ${distDir} ...`)
 
-	for (const filePath of files) {
+	const uploadTasks = files.map((filePath) => {
 		const relativePath = path.relative(distDir, filePath).replace(/\\/g, '/')
 		const key = `${prefix}/${relativePath}`
-		await uploadFile(filePath, key)
-	}
+		return uploadFile(filePath, key)
+	})
+
+	await Promise.all(uploadTasks)
 
 	console.log('CDN upload complete.')
 }
