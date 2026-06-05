@@ -1,6 +1,7 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import TagInput from '@/components/wiki/common/TagInput'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import { cn } from '@/lib/utils'
 import type { WikiCategoryTreeNode, WikiPageVisibility } from '@briar/shared'
@@ -288,7 +289,7 @@ export default function WikiNewPage() {
 	const [categoryIds, setCategoryIds] = useState<string[]>([])
 	const [visibility, setVisibility] = useState<WikiPageVisibility>('public')
 	const [editSummary, setEditSummary] = useState('')
-	const [tagInput, setTagInput] = useState('')
+	const [tags, setTags] = useState<string[]>([])
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -310,10 +311,7 @@ export default function WikiNewPage() {
 		setSaving(true)
 		setError(null)
 
-		const tagNames = tagInput
-			.split(/[,，]/)
-			.map((t) => t.trim())
-			.filter((t) => t.length > 0)
+		const tagNames = tags
 
 		const payload = {
 			title: title.trim(),
@@ -480,15 +478,7 @@ export default function WikiNewPage() {
 					<Tag className="mr-1 inline-block h-3.5 w-3.5" />
 					标签
 				</label>
-				<input
-					id="wiki-tags"
-					type="text"
-					value={tagInput}
-					onChange={(e) => setTagInput(e.target.value)}
-					placeholder="输入标签，用逗号分隔，如：技术, 教程, 笔记"
-					className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-				/>
-				<p className="text-muted-foreground text-xs">用逗号分隔多个标签，不存在的标签会自动创建</p>
+				<TagInput value={tags} onChange={setTags} />
 			</div>
 
 			{/* Categories */}

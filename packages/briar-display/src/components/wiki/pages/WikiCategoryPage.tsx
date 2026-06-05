@@ -3,17 +3,23 @@
 import { wikiApi } from '@/api/wiki'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiLink from '@/components/wiki/common/WikiLink'
-import WikiPagination from '@/components/wiki/common/WikiPagination'
 import { cn } from '@/lib/utils'
 import type { WikiCategory, WikiCategoryTreeNode, WikiPageSummary } from '@briar/shared'
-import { Calendar, FileText, FolderOpen, FolderTree, Loader2 } from 'lucide-react'
+import {
+	Calendar,
+	FileText,
+	FolderOpen,
+	FolderTree,
+	Loader2,
+	Pencil,
+	Trash2,
+	X,
+} from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 interface WikiCategoryPageProps {
 	slug: string
 }
-
-const PAGE_SIZE = 20
 
 function formatDate(date: Date | string) {
 	const d = typeof date === 'string' ? new Date(date) : date
@@ -28,10 +34,12 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 	const [category, setCategory] = useState<WikiCategory | null>(null)
 	const [subcategories, setSubcategories] = useState<WikiCategoryTreeNode[]>([])
 	const [pages, setPages] = useState<WikiPageSummary[]>([])
-	const [total, setTotal] = useState(0)
-	const [offset, setOffset] = useState(0)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
+	const [editing, setEditing] = useState(false)
+	const [editName, setEditName] = useState('')
+	const [editDescription, setEditDescription] = useState('')
+	const [saving, setSaving] = useState(false)
 
 	const loadData = useCallback(async () => {
 		setLoading(true)
@@ -40,15 +48,12 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 		const res = await wikiApi.getCategory(slug)
 		if (res.success && res.data) {
 			setCategory(res.data)
-			// The category API may return pages and subcategories
-			// depending on the backend implementation
 			const data = res.data as WikiCategory & {
 				pages?: WikiPageSummary[]
 				subcategories?: WikiCategoryTreeNode[]
 			}
 			setPages(data.pages ?? [])
 			setSubcategories(data.subcategories ?? [])
-			setTotal(data.pages?.length ?? 0)
 		} else {
 			setError(res.message || '加载分类失败')
 		}
@@ -58,6 +63,39 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 	useEffect(() => {
 		loadData()
 	}, [loadData])
+
+	const startEdit = () => {
+		if (!category) return
+		setEditName(category.name)
+		setEditDescription(category.description || '')
+		setEditing(true)
+	}
+
+	const handleSave = async () => {
+		if (!editName.trim()) return
+		setSaving(true)
+		const res = await wikiApi.updateCategory(slug, {
+			name: editName.trim(),
+			description: editDescription.trim() || undefined,
+		})
+		setSaving(false)
+		if (res.success) {
+			setEditing(false)
+			loadData()
+		} else {
+			alert(res.message || '更新失败')
+		}
+	}
+
+	const handleDelete = async () => {
+		if (!category || !confirm(`确定删除分类「${category.name}」？`)) return
+		const res = await wikiApi.deleteCategory(slug)
+		if (res.success) {
+			window.location.href = '/briar-display/wiki/category'
+		} else {
+			alert(res.message || '删除失败')
+		}
+	}
 
 	if (loading) {
 		return (
@@ -86,23 +124,89 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 			/>
 
 			<div>
-				<h2 className="flex items-center gap-2 font-serif text-xl font-normal text-foreground">
-					<FolderTree className="h-5 w-5" />
-					{category.name}
-				</h2>
-				{category.description && (
-					<p className="mt-1 text-muted-foreground text-sm">{category.description}</p>
-				)}
-				<div className="mt-2 flex items-center gap-3 text-muted-foreground text-xs">
-					<span className="inline-flex items-center gap-1">
-						<FileText className="h-3 w-3" />
-						{category.pageCount} 篇文章
-					</span>
-					<span className="inline-flex items-center gap-1">
-						<Calendar className="h-3 w-3" />
-						创建于 {formatDate(category.createdAt)}
-					</span>
+				<div className="flex items-center justify-between">
+					<h2 className="flex items-center gap-2 font-serif text-xl font-normal text-foreground">
+						<FolderTree className="h-5 w-5" />
+						{category.name}
+					</h2>
+					<div className="flex items-center gap-1">
+						<button
+							type="button"
+							onClick={startEdit}
+							className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground"
+						>
+							<Pencil className="h-3.5 w-3.5" />
+							编辑
+						</button>
+						<button
+							type="button"
+							onClick={handleDelete}
+							className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-red-100 hover:text-red-600"
+						>
+							<Trash2 className="h-3.5 w-3.5" />
+							删除
+						</button>
+					</div>
 				</div>
+
+				{editing ? (
+					<div className="mt-3 rounded-md border border-border bg-white p-4">
+						<div className="space-y-3">
+							<div>
+								<label className="mb-1 block text-muted-foreground text-xs">名称</label>
+								<input
+									type="text"
+									value={editName}
+									onChange={(e) => setEditName(e.target.value)}
+									className="w-full rounded border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+								/>
+							</div>
+							<div>
+								<label className="mb-1 block text-muted-foreground text-xs">描述</label>
+								<input
+									type="text"
+									value={editDescription}
+									onChange={(e) => setEditDescription(e.target.value)}
+									className="w-full rounded border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+									placeholder="可选描述"
+								/>
+							</div>
+							<div className="flex items-center gap-2">
+								<button
+									type="button"
+									onClick={handleSave}
+									disabled={saving || !editName.trim()}
+									className="rounded bg-primary px-4 py-1.5 text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-50"
+								>
+									{saving ? '保存中...' : '保存'}
+								</button>
+								<button
+									type="button"
+									onClick={() => setEditing(false)}
+									className="rounded px-4 py-1.5 text-muted-foreground text-sm hover:bg-muted"
+								>
+									取消
+								</button>
+							</div>
+						</div>
+					</div>
+				) : (
+					<>
+						{category.description && (
+							<p className="mt-1 text-muted-foreground text-sm">{category.description}</p>
+						)}
+						<div className="mt-2 flex items-center gap-3 text-muted-foreground text-xs">
+							<span className="inline-flex items-center gap-1">
+								<FileText className="h-3 w-3" />
+								{category.pageCount} 篇文章
+							</span>
+							<span className="inline-flex items-center gap-1">
+								<Calendar className="h-3 w-3" />
+								创建于 {formatDate(category.createdAt)}
+							</span>
+						</div>
+					</>
+				)}
 			</div>
 
 			{/* Subcategories */}
@@ -179,8 +283,6 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 					</div>
 				)}
 			</div>
-
-			<WikiPagination total={total} limit={PAGE_SIZE} offset={offset} onPageChange={setOffset} />
 		</div>
 	)
 }

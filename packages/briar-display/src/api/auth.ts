@@ -22,7 +22,7 @@ export interface ResetPasswordPayload {
 	newPassword: string
 }
 
-export const setAuthToken = (token: string) => {
+export const setAuthToken = (token: string, user?: AuthSession['user']) => {
 	if (typeof window === 'undefined') {
 		return
 	}
@@ -30,6 +30,10 @@ export const setAuthToken = (token: string) => {
 	window.localStorage.setItem('briar_token', token)
 	document.cookie = `briar_token=${token}; Path=/; Max-Age=604800; SameSite=Lax`
 	apiClient.defaults.headers.common.Authorization = `Bearer ${token}`
+
+	if (user) {
+		window.localStorage.setItem('briar_user', JSON.stringify(user))
+	}
 }
 
 export const clearAuthToken = () => {
@@ -38,6 +42,7 @@ export const clearAuthToken = () => {
 	}
 
 	window.localStorage.removeItem('briar_token')
+	window.localStorage.removeItem('briar_user')
 	document.cookie = 'briar_token=; Path=/; Max-Age=0'
 	apiClient.defaults.headers.common.Authorization = undefined
 }

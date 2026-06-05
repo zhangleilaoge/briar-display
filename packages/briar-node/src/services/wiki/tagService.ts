@@ -28,6 +28,15 @@ export const tagService = {
 		}
 	},
 
+	async getPagesByTagSlug(slug: string, options?: { limit?: number; offset?: number }) {
+		const tag = await tagDal.findBySlug(slug)
+		if (!tag) {
+			throw new Error('TAG_NOT_FOUND')
+		}
+		const pages = await tagDal.listPagesByTagId(tag.id, options)
+		return { tag, pages }
+	},
+
 	async getOrCreateTags(tagNames: string[]): Promise<{ id: string; name: string }[]> {
 		const result: { id: string; name: string }[] = []
 

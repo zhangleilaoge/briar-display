@@ -139,4 +139,47 @@ export const tagDal = {
 			id,
 		])
 	},
+
+	async listPagesByTagId(
+		tagId: string,
+		options?: { limit?: number; offset?: number },
+	): Promise<
+		{
+			id: string
+			title: string
+			slug: string
+			namespace: string
+			summary: string | null
+			updatedAt: Date
+		}[]
+	> {
+		const limit = options?.limit ?? 50
+		const offset = options?.offset ?? 0
+
+		const rows = await query<{
+			id: string
+			title: string
+			slug: string
+			namespace: string
+			summary: string | null
+			updated_at: Date
+		}>(
+			`SELECT p.id, p.title, p.slug, p.namespace, p.summary, p.updated_at
+			FROM wiki_pages p
+			INNER JOIN wiki_page_tags pt ON p.id = pt.page_id
+			WHERE pt.tag_id = ? AND p.status = 'published'
+			ORDER BY p.updated_at DESC
+			LIMIT ? OFFSET ?`,
+			[tagId, limit, offset],
+		)
+
+		return rows.map((row) => ({
+			id: row.id,
+			title: row.title,
+			slug: row.slug,
+			namespace: row.namespace,
+			summary: row.summary,
+			updatedAt: row.updated_at,
+		}))
+	},
 }

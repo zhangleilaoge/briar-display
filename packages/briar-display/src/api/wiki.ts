@@ -289,6 +289,37 @@ export const wikiApi = {
 		}
 	},
 
+	async getTagPages(slug: string, options?: { limit?: number; offset?: number }) {
+		try {
+			const response = await apiClient.get<
+				ApiResponse<{
+					tag: WikiTag
+					pages: {
+						id: string
+						title: string
+						slug: string
+						namespace: string
+						summary: string | null
+						updatedAt: string
+					}[]
+				}>
+			>(`/wiki/tags/${slug}/pages`, { params: options })
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<{
+				tag: WikiTag
+				pages: {
+					id: string
+					title: string
+					slug: string
+					namespace: string
+					summary: string | null
+					updatedAt: string
+				}[]
+			}>
+		}
+	},
+
 	// ===================== Stars =====================
 
 	async getStars(limit?: number, offset?: number) {
