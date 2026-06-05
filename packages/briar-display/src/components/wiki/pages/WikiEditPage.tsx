@@ -47,6 +47,14 @@ interface WikiEditPageProps {
 	slug: string
 }
 
+/** 将 [[slug|display]] 语法转为 markdown 链接 */
+function renderMentions(content: string): string {
+	return content.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_match, slug, display) => {
+		const label = display || slug
+		return `[${label}](/briar-display/wiki/${slug})`
+	})
+}
+
 type EditMode = 'visual' | 'source'
 
 /** Toolbar button component */
@@ -824,7 +832,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 						<div className="h-[500px] overflow-y-auto rounded-sm border border-wiki-border-light bg-wiki-bg-secondary p-4">
 							{sourceContent ? (
 								<div className="prose prose-wiki max-w-none">
-									<ReactMarkdown>{sourceContent}</ReactMarkdown>
+									<ReactMarkdown>{renderMentions(sourceContent)}</ReactMarkdown>
 								</div>
 							) : (
 								<p className="text-[13px] italic text-wiki-text-muted">预览区域</p>
