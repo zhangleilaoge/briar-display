@@ -46,4 +46,4 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
-            "cd /home/ubuntu/Documents/briar-display && git pull && bun install && bun run --filter @briar/node build && pm2 restart ecosystem.config.cjs"
+            "export PATH=\"\$HOME/.bun/bin:\$PATH\" && cd /home/ubuntu/Documents/briar-display && git pull && bun install && bun run --filter @briar/node build && pm2 restart ecosystem.config.cjs"
