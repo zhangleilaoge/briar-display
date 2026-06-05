@@ -1,0 +1,38 @@
+#!/usr/bin/expect -f
+set timeout 300
+set password "Zlws892221"
+set home "/home/ubuntu"
+set deploy_dir "$home/Documents/briar-display"
+
+spawn ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@122.51.158.41 "export PATH=\"/home/ubuntu/.bun/bin:\$PATH\" && export NVM_DIR=\"/home/ubuntu/.nvm\" && \\[ -s \"\$NVM_DIR/nvm.sh\" \\] && \\. \"\$NVM_DIR/nvm.sh\" && nvm use && cd $deploy_dir && \
+  echo '=== Git Pull ===' && \
+  unset http_proxy && unset https_proxy && unset HTTP_PROXY && unset HTTPS_PROXY && \
+  git pull origin master 2>&1 && \
+  echo '=== MySQL Migrate ===' && \
+  mysql -u zhanglei -p'@zym892221' -h 127.0.0.1 briar_display < packages/briar-node/src/db/migrate.sql 2>&1 && \
+  echo '=== Install Deps ===' && \
+  bun install 2>&1 && \
+  echo '=== Build Shared ===' && \
+  bun run --filter @briar/shared build 2>&1 && \
+  echo '=== Build Display ===' && \
+  bun run --filter @briar/display build 2>&1 && \
+  echo '=== Build Node ===' && \
+  bun run --filter @briar/node build 2>&1 && \
+  echo '=== Restart PM2 ===' && \
+  pm2 restart ecosystem.config.cjs 2>&1 && \
+  echo '=== Done ===' && \
+  pm2 logs --lines 20 --timestamp"
+
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    timeout {
+        puts "\n=== TIMEOUT ==="
+        exit 1
+    }
+    eof
+}
+catch wait result
+exit [lindex $result 3]
