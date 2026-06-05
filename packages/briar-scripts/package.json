@@ -3,6 +3,14 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"zip": "bash ./scripts/clone-and-zip.sh"
+		"zip": "bash ./scripts/clone-and-zip.sh",
+		"upload:image": "tsx ./scripts/upload-image.ts"
+	},
+	"dependencies": {
+		"cos-nodejs-sdk-v5": "^2.11.10",
+		"dotenv": "^16.4.5"
+	},
+	"devDependencies": {
+		"tsx": "^4.19.0"
 	}
 }
