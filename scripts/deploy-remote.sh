@@ -25,9 +25,6 @@ bun install
 echo '=== Build Shared ==='
 bun run --filter @briar/shared build
 
-echo '=== Build Display ==='
-bun run --filter @briar/display build
-
 echo '=== Build Node ==='
 bun run --filter @briar/node build
 
