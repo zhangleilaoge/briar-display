@@ -36,6 +36,7 @@ if (!region || !secretId || !secretKey || !bucket) {
 const cos = new COS({
 	SecretId: secretId,
 	SecretKey: secretKey,
+	Timeout: 30000,
 })
 
 const listFiles = (dir: string): string[] => {
@@ -56,13 +57,14 @@ const listFiles = (dir: string): string[] => {
 
 const uploadFile = (filePath: string, key: string, retries = 3) =>
 	new Promise<void>((resolve, reject) => {
+		const fileBuffer = fs.readFileSync(filePath)
 		cos.putObject(
 			{
 				Bucket: bucket,
 				Region: region,
 				Key: key,
 				StorageClass: 'STANDARD',
-				Body: fs.createReadStream(filePath),
+				Body: fileBuffer,
 			},
 			(err, data) => {
 				if (err) {
@@ -81,11 +83,15 @@ const uploadFile = (filePath: string, key: string, retries = 3) =>
 
 				if (data?.statusCode === 200) {
 					console.log(`Uploaded: ${key}`)
+					resolve()
+				} else {
+					reject(new Error(`Upload ${key} failed with status: ${data?.statusCode}`))
 				}
-				resolve()
 			},
 		)
 	})
+
+const CONCURRENCY = 5
 
 const main = async () => {
 	const distDir = path.join(repoRoot, 'packages/briar-display/dist')
@@ -101,15 +107,26 @@ const main = async () => {
 		return
 	}
 
-	console.log(`Uploading ${files.length} files from ${distDir} ...`)
+	console.log(`Uploading ${files.length} files from ${distDir} (concurrency: ${CONCURRENCY}) ...`)
 
-	const uploadTasks = files.map((filePath) => {
+	const tasks = files.map((filePath) => {
 		const relativePath = path.relative(distDir, filePath).replace(/\\/g, '/')
 		const key = `${prefix}/${relativePath}`
-		return uploadFile(filePath, key)
+		return () => uploadFile(filePath, key)
 	})
 
-	await Promise.all(uploadTasks)
+	// Run uploads with limited concurrency
+	const results: Promise<void>[] = []
+	let index = 0
+	const runNext = (): Promise<void> => {
+		if (index >= tasks.length) return Promise.resolve()
+		const task = tasks[index++]
+		return task().then(() => runNext())
+	}
+	for (let i = 0; i < Math.min(CONCURRENCY, tasks.length); i++) {
+		results.push(runNext())
+	}
+	await Promise.all(results)
 
 	console.log('CDN upload complete.')
 }
