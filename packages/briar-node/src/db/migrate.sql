@@ -1,12 +1,12 @@
 -- Wiki 数据库迁移脚本
 -- 执行方式: mysql -u <user> -p<pass> -h <host> briar_display < migrate.sql
 
--- 1. 新增 visibility 字段到 wiki_pages
-ALTER TABLE wiki_pages ADD COLUMN IF NOT EXISTS visibility ENUM('public','private','link_only') DEFAULT 'public' AFTER status;
+-- 1. 新增 visibility 字段到 wiki_pages（如已存在请忽略此错误）
+-- ALTER TABLE wiki_pages ADD COLUMN visibility ENUM('public','private','link_only') DEFAULT 'public' AFTER status;
 
--- 2. 新增 parent_id 字段到 wiki_pages（子页面）
-ALTER TABLE wiki_pages ADD COLUMN IF NOT EXISTS parent_id VARCHAR(36) AFTER last_editor_id;
-ALTER TABLE wiki_pages ADD CONSTRAINT fk_wiki_pages_parent FOREIGN KEY (parent_id) REFERENCES wiki_pages(id) ON DELETE SET NULL;
+-- 2. 新增 parent_id 字段到 wiki_pages（子页面，如已存在请忽略此错误）
+-- ALTER TABLE wiki_pages ADD COLUMN parent_id VARCHAR(36) AFTER last_editor_id;
+-- ALTER TABLE wiki_pages ADD CONSTRAINT fk_wiki_pages_parent FOREIGN KEY (parent_id) REFERENCES wiki_pages(id) ON DELETE SET NULL;
 
 -- 3. 标签表
 CREATE TABLE IF NOT EXISTS wiki_tags (
