@@ -281,12 +281,22 @@ bun run --filter @briar/shared build
 
 ## 部署检查清单
 
-修改以下文件后，**必须**执行对应的部署步骤：
+### 自动部署（推荐）
+
+前端构建和部署已接入 GitHub Actions：
+
+1. `git push` 到 `master`/`main` 触发 GitHub Actions
+2. Actions 构建前端 → 上传 CDN → `rsync` dist 到服务器 → SSH 构建 node 后端 → PM2 重启
+3. **服务器上无需手动构建前端**，`deploy.sh` 默认只构建 node 后端
+
+如需服务器上完整构建（首次部署或特殊情况），使用 `./scripts/deploy.sh --full-build`。
+
+### 手动部署
 
 | 修改内容 | 必须执行 |
 | :--- | :--- |
-| `packages/briar-node/src/**/*.ts` | `bun run --filter @briar/node build` + `pm2 restart briar-node` |
-| `packages/briar-display/src/**/*.tsx` 等 | `bun run --filter @briar/display build` + `pm2 restart briar-node` |
+| `packages/briar-node/src/**/*.ts` | `./scripts/deploy.sh`（默认只构建 node + 重启） |
+| `packages/briar-display/src/**/*.tsx` 等 | 提交代码，由 GitHub Actions 自动同步 dist（不要手动在服务器构建 display，会覆盖 Actions 同步的 dist） |
 | `default.conf` | `./scripts/deploy-nginx.sh` |
 | `.env` | `pm2 restart briar-node`（让 PM2 重新加载 env_file） |
-| `packages/briar-shared/src/**/*.ts` | 先 build shared，再 build display + node，最后 restart |
+| `packages/briar-shared/src/**/*.ts` | `./scripts/deploy.sh --full-build`（需完整构建） |

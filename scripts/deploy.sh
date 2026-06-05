@@ -1,7 +1,11 @@
 #!/bin/bash
 
 # Briar 项目部署脚本
-# 使用方式: ./scripts/deploy.sh [--skip-install] [--skip-build]
+# 使用方式: ./scripts/deploy.sh [--skip-install] [--skip-build] [--full-build]
+#
+# 注意：前端 dist 由 GitHub Actions 构建并通过 rsync 同步到服务器，
+# 默认不再在服务器上构建前端，避免覆盖 GitHub Actions 同步过来的 dist。
+# 如需完整构建（首次部署或特殊情况），使用 --full-build。
 
 set -e
 
@@ -20,6 +24,7 @@ MAX_BACKUPS=5
 # 参数解析
 SKIP_INSTALL=false
 SKIP_BUILD=false
+FULL_BUILD=false
 
 # 确保 nginx 服务已启动
 if ! systemctl is-active --quiet nginx; then
@@ -38,6 +43,10 @@ for arg in "$@"; do
       ;;
     --skip-build)
       SKIP_BUILD=true
+      shift
+      ;;
+    --full-build)
+      FULL_BUILD=true
       shift
       ;;
   esac
@@ -136,16 +145,25 @@ main() {
   # 创建备份
   create_backup
   
-  # 构建前端和后端
+  # 构建后端（前端 dist 由 GitHub Actions 同步，默认不在服务器构建）
   if [ "$SKIP_BUILD" = false ]; then
-    log_info "构建项目（shared → display → node）..."
-    
-    if ! (bun run --filter @briar/shared build && \
-      bun run --filter @briar/display build && \
-      bun run --filter @briar/node build); then
-      log_error "构建失败，正在恢复备份..."
-      restore_backup
-      exit 1
+    if [ "$FULL_BUILD" = true ]; then
+      log_info "完整构建（shared → display → node）..."
+      if ! (bun run --filter @briar/shared build && \
+        bun run --filter @briar/display build && \
+        bun run --filter @briar/node build); then
+        log_error "构建失败，正在恢复备份..."
+        restore_backup
+        exit 1
+      fi
+    else
+      log_info "构建后端（node）..."
+      log_warn "前端 dist 由 GitHub Actions 同步，如需服务器构建请使用 --full-build"
+      if ! bun run --filter @briar/node build; then
+        log_error "构建失败，正在恢复备份..."
+        restore_backup
+        exit 1
+      fi
     fi
   else
     log_warn "跳过构建"
