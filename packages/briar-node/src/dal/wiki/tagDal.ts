@@ -92,12 +92,7 @@ export const tagDal = {
 
 	async listByPageId(pageId: string): Promise<WikiTagRecord[]> {
 		const rows = await query<WikiTagRow>(
-			`SELECT t.${SELECT_FIELDS.replace(/id/g, 't.id')
-				.replace(/name/g, 't.name')
-				.replace(/slug/g, 't.slug')
-				.replace(/color/g, 't.color')
-				.replace(/page_count/g, 't.page_count')
-				.replace(/created_at/g, 't.created_at')}
+			`SELECT t.id, t.name, t.slug, t.color, t.page_count, t.created_at
 			FROM wiki_tags t
 			INNER JOIN wiki_page_tags pt ON t.id = pt.tag_id
 			WHERE pt.page_id = ?
