@@ -71,6 +71,30 @@ export const tagController = {
 		}
 	},
 
+	async getPages(c: Context) {
+		try {
+			const slug = c.req.param('slug')
+
+			if (!slug) {
+				return c.json<ApiResponse>(
+					{ success: false, message: 'Missing slug', code: HTTP_STATUS.BAD_REQUEST },
+					HTTP_STATUS.BAD_REQUEST,
+				)
+			}
+
+			const limit = Math.max(1, Math.floor(Number(c.req.query('limit')) || 50))
+			const offset = Math.max(0, Math.floor(Number(c.req.query('offset')) || 0))
+
+			const result = await tagService.getPagesByTagSlug(slug, { limit, offset })
+			return c.json<ApiResponse>({ success: true, data: result })
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Failed to get tag pages'
+			const statusCode =
+				message === 'TAG_NOT_FOUND' ? HTTP_STATUS.NOT_FOUND : HTTP_STATUS.INTERNAL_SERVER_ERROR
+			return c.json<ApiResponse>({ success: false, message, code: statusCode }, statusCode)
+		}
+	},
+
 	async delete(c: Context) {
 		try {
 			const id = c.req.param('id')

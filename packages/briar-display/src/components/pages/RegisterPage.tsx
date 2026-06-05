@@ -36,7 +36,7 @@ export default function RegisterPage() {
 				password,
 			})
 			if (result.success && result.data) {
-				setAuthToken(result.data.token)
+				setAuthToken(result.data.token, result.data.user)
 				window.location.href = 'business'
 				return
 			}

@@ -93,6 +93,7 @@ wikiRoutes.delete('/categories/:slug/pages/:pageId', authMiddleware, (c) =>
 // Public
 wikiRoutes.get('/tags', (c) => tagController.list(c))
 wikiRoutes.get('/tags/:slug', (c) => tagController.getBySlug(c))
+wikiRoutes.get('/tags/:slug/pages', (c) => tagController.getPages(c))
 
 // Protected
 wikiRoutes.post('/tags', authMiddleware, (c) => tagController.create(c))

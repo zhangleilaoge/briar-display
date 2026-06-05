@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
 				newPassword,
 			})
 			if (result.success && result.data) {
-				setAuthToken(result.data.token)
+				setAuthToken(result.data.token, result.data.user)
 				setSuccess('密码重置成功，正在跳转...')
 				setTimeout(() => {
 					window.location.href = 'business'
