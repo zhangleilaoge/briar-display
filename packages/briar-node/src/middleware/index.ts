@@ -2,6 +2,7 @@ import type { MiddlewareHandler } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { cors } from 'hono/cors'
 import { isApiPublicPath } from '../config/routes'
+import { logDal } from '../dal/logDal'
 import { authMiddleware } from './authMiddleware'
 import { errorHandler } from './errorHandler'
 
@@ -13,6 +14,7 @@ const formatLog = (
 	path: string,
 	status: number,
 	time: string,
+	traceId?: string,
 	params?: any,
 	response?: any,
 ) => {
@@ -29,6 +31,9 @@ const formatLog = (
 	const bold = '\x1b[1m'
 
 	let log = `${dim}-->${reset} ${bold}${method}${reset} ${path} ${statusColor}${status}${reset} ${time}`
+	if (traceId) {
+		log += ` ${dim}[${traceId.slice(0, 8)}]${reset}`
+	}
 
 	// 添加请求参数
 	if (params && Object.keys(params).length > 0) {
@@ -54,15 +59,17 @@ export const loggerMiddleware = (): MiddlewareHandler => {
 		const method = c.req.method
 		const path = c.req.path
 		const isApiRequest = path.startsWith('/api')
+		const traceId = c.get('traceId') as string | undefined
 
-		let params: any = {}
+		let params: Record<string, unknown> = {}
 		let responseData: any
+		let errorMessage: string | undefined
 
 		// 只有 API 请求才收集详细参数
 		if (isApiRequest) {
 			// 收集请求参数
 			const queryParams = c.req.query()
-			let bodyParams: any = {}
+			let bodyParams: Record<string, unknown> = {}
 
 			// 如果是 POST/PUT/PATCH 请求，尝试获取 body
 			if (['POST', 'PUT', 'PATCH'].includes(method)) {
@@ -72,7 +79,7 @@ export const loggerMiddleware = (): MiddlewareHandler => {
 					const contentType = c.req.header('content-type')
 
 					if (contentType?.includes('application/json')) {
-						bodyParams = await clonedReq.json()
+						bodyParams = (await clonedReq.json()) as Record<string, unknown>
 					} else if (contentType?.includes('application/x-www-form-urlencoded')) {
 						const formData = await clonedReq.formData()
 						bodyParams = Object.fromEntries(formData)
@@ -88,10 +95,16 @@ export const loggerMiddleware = (): MiddlewareHandler => {
 			}
 		}
 
-		await next()
+		try {
+			await next()
+		} catch (err) {
+			errorMessage = err instanceof Error ? err.message : String(err)
+			throw err
+		}
 
 		const end = Date.now()
-		const time = `${end - start}ms`
+		const duration = end - start
+		const time = `${duration}ms`
 		const status = c.res.status
 
 		// 只有 API 请求才获取响应数据
@@ -102,6 +115,10 @@ export const loggerMiddleware = (): MiddlewareHandler => {
 
 				if (contentType?.includes('application/json')) {
 					responseData = await clonedRes.json()
+					// 从响应中提取错误信息
+					if (status >= 400 && responseData?.message) {
+						errorMessage = responseData.message
+					}
 				} else if (contentType?.includes('text')) {
 					const text = await clonedRes.text()
 					responseData = text.length > 200 ? `${text.slice(0, 200)}...` : text
@@ -117,10 +134,32 @@ export const loggerMiddleware = (): MiddlewareHandler => {
 				path,
 				status,
 				time,
+				traceId,
 				isApiRequest ? params : undefined,
 				isApiRequest ? responseData : undefined,
 			),
 		)
+
+		// API 请求写入数据库（异步，不阻塞响应）
+		if (isApiRequest && traceId) {
+			const user = c.get('user') as { id: string } | undefined
+			logDal
+				.create({
+					traceId,
+					method,
+					path,
+					status,
+					duration,
+					ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || undefined,
+					userAgent: c.req.header('user-agent') || undefined,
+					userId: user?.id,
+					requestParams: Object.keys(params).length > 0 ? params : undefined,
+					errorMessage,
+				})
+				.catch((err) => {
+					console.error('Failed to write request log:', err)
+				})
+		}
 	}
 }
 

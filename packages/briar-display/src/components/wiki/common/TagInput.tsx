@@ -1,7 +1,6 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
-import { Button } from '@/components/ui/button'
 import {
 	Command,
 	CommandEmpty,
@@ -11,9 +10,10 @@ import {
 	CommandList,
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 import type { WikiTag } from '@briar/shared'
 import { Check, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface TagInputProps {
 	value: string[]
@@ -21,14 +21,11 @@ interface TagInputProps {
 	placeholder?: string
 }
 
-export default function TagInput({
-	value,
-	onChange,
-	placeholder = '搜索或输入标签…',
-}: TagInputProps) {
+export default function TagInput({ value, onChange, placeholder = '添加标签…' }: TagInputProps) {
 	const [open, setOpen] = useState(false)
 	const [allTags, setAllTags] = useState<WikiTag[]>([])
 	const [inputValue, setInputValue] = useState('')
+	const containerRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
 		wikiApi.getTags().then((res) => {
@@ -80,89 +77,100 @@ export default function TagInput({
 		!value.includes(inputValue.trim())
 
 	return (
-		<div className="space-y-2">
-			{/* Selected tags */}
-			{value.length > 0 && (
-				<div className="flex flex-wrap gap-1.5">
-					{value.map((tag) => (
-						<span
-							key={tag}
-							className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-primary text-xs"
-						>
-							{tag}
-							<button
-								type="button"
-								onClick={() => removeTag(tag)}
-								className="rounded-full p-0.5 transition-colors hover:bg-primary/20"
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger asChild>
+				<div
+					ref={containerRef}
+					className={cn(
+						'flex min-h-[40px] w-full cursor-text flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm transition-colors',
+						'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+						open && 'ring-2 ring-ring ring-offset-2',
+					)}
+					onClick={() => setOpen(true)}
+				>
+					{value.map((tag) => {
+						const tagData = allTags.find((t) => t.name === tag)
+						return (
+							<span
+								key={tag}
+								className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-secondary-foreground text-xs"
 							>
-								<X className="h-3 w-3" />
-							</button>
-						</span>
-					))}
-				</div>
-			)}
-
-			{/* Tag selector popover */}
-			<Popover open={open} onOpenChange={setOpen}>
-				<PopoverTrigger asChild>
-					<Button
-						variant="outline"
-						// biome-ignore lint/a11y/useSemanticElements: shadcn combobox pattern
-						role="combobox"
-						aria-expanded={open}
-						className="w-full justify-start font-normal text-muted-foreground"
-					>
-						{placeholder}
-					</Button>
-				</PopoverTrigger>
-				<PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-					<Command>
-						<CommandInput
-							placeholder="搜索标签…"
-							value={inputValue}
-							onValueChange={setInputValue}
-							onKeyDown={handleKeyDown}
-						/>
-						<CommandList>
-							<CommandEmpty>
-								{inputValue.trim() ? '输入名称后按回车创建新标签' : '暂无标签'}
-							</CommandEmpty>
-							<CommandGroup>
-								{showCreateOption && (
-									<CommandItem
-										value={`__create_${inputValue}`}
-										onSelect={() => {
-											onChange([...value, inputValue.trim()])
-											setInputValue('')
-											setOpen(false)
-										}}
-									>
-										创建标签「{inputValue.trim()}」
-									</CommandItem>
+								{tagData && (
+									<span
+										className="inline-block h-2 w-2 rounded-full"
+										style={{ backgroundColor: tagData.color }}
+									/>
 								)}
-								{filteredTags.map((tag) => {
-									const isSelected = value.includes(tag.name)
-									return (
-										<CommandItem key={tag.id} value={tag.name} onSelect={() => toggleTag(tag.name)}>
-											<span
-												className={`mr-2 inline-block h-2.5 w-2.5 rounded-full ${isSelected ? '' : 'opacity-60'}`}
-												style={{ backgroundColor: tag.color }}
-											/>
-											{tag.name}
-											{tag.pageCount > 0 && (
-												<span className="ml-auto text-muted-foreground text-xs">
-													{tag.pageCount}
-												</span>
+								{tag}
+								<button
+									type="button"
+									onClick={(e) => {
+										e.stopPropagation()
+										removeTag(tag)
+									}}
+									className="rounded-sm p-0.5 transition-colors hover:bg-secondary/80"
+								>
+									<X className="h-3 w-3" />
+								</button>
+							</span>
+						)
+					})}
+					<span className="min-w-[60px] flex-1 text-muted-foreground">
+						{value.length === 0 && placeholder}
+					</span>
+				</div>
+			</PopoverTrigger>
+			<PopoverContent
+				className="w-[--radix-popover-trigger-width] p-0"
+				align="start"
+				onOpenAutoFocus={(e) => e.preventDefault()}
+			>
+				<Command>
+					<CommandInput
+						placeholder="搜索或新建标签…"
+						value={inputValue}
+						onValueChange={setInputValue}
+						onKeyDown={handleKeyDown}
+						autoFocus
+					/>
+					<CommandList>
+						<CommandEmpty>{inputValue.trim() ? '按回车创建新标签' : '暂无标签'}</CommandEmpty>
+						<CommandGroup>
+							{showCreateOption && (
+								<CommandItem
+									value={`__create_${inputValue}`}
+									onSelect={() => {
+										onChange([...value, inputValue.trim()])
+										setInputValue('')
+										setOpen(false)
+									}}
+								>
+									创建标签「{inputValue.trim()}」
+								</CommandItem>
+							)}
+							{filteredTags.map((tag) => {
+								const isSelected = value.includes(tag.name)
+								return (
+									<CommandItem key={tag.id} value={tag.name} onSelect={() => toggleTag(tag.name)}>
+										<span
+											className={cn(
+												'mr-2 inline-block h-2.5 w-2.5 rounded-full',
+												isSelected ? '' : 'opacity-60',
 											)}
-											{isSelected && <Check className="ml-1 h-4 w-4 text-primary" />}
-										</CommandItem>
-									)
-								})}
-							</CommandGroup>
-						</CommandList>
-					</Command>
-				</PopoverContent>
-			</Popover>
-		</div>
+											style={{ backgroundColor: tag.color }}
+										/>
+										{tag.name}
+										{tag.pageCount > 0 && (
+											<span className="ml-auto text-muted-foreground text-xs">{tag.pageCount}</span>
+										)}
+										{isSelected && <Check className="ml-1 h-4 w-4 text-primary" />}
+									</CommandItem>
+								)
+							})}
+						</CommandGroup>
+					</CommandList>
+				</Command>
+			</PopoverContent>
+		</Popover>
 	)
 }

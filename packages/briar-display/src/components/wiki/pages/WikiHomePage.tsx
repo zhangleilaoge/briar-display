@@ -159,11 +159,6 @@ export default function WikiHomePage() {
 											>
 												{change.pageTitle}
 											</a>
-											{change.minorEdit && (
-												<span className="ml-1.5 rounded bg-wiki-highlight px-1 py-0.5 text-[10px] text-wiki-link-red">
-													小
-												</span>
-											)}
 										</div>
 									</li>
 								))}

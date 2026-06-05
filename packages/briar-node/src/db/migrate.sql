@@ -95,3 +95,24 @@ CREATE TABLE IF NOT EXISTS wiki_change_requests (
   FOREIGN KEY (requester_id) REFERENCES users(id),
   FOREIGN KEY (reviewer_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Wiki 变更请求表';
+
+-- 9. 请求日志表
+CREATE TABLE IF NOT EXISTS request_logs (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  trace_id VARCHAR(36) NOT NULL COMMENT '请求追踪 ID',
+  method VARCHAR(10) NOT NULL COMMENT 'HTTP 方法',
+  path VARCHAR(500) NOT NULL COMMENT '请求路径',
+  status INT NOT NULL COMMENT '响应状态码',
+  duration INT NOT NULL COMMENT '请求耗时（ms）',
+  ip VARCHAR(45) COMMENT '客户端 IP',
+  user_agent VARCHAR(500) COMMENT 'User-Agent',
+  user_id VARCHAR(36) COMMENT '用户 ID（已登录时）',
+  request_params JSON COMMENT '请求参数（query + body）',
+  error_message TEXT COMMENT '错误信息（仅错误请求）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  INDEX idx_trace_id (trace_id),
+  INDEX idx_created_at (created_at),
+  INDEX idx_status (status),
+  INDEX idx_duration (duration),
+  INDEX idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='请求日志表';

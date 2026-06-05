@@ -189,7 +189,6 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 	const [title, setTitle] = useState('')
 	const [sourceContent, setSourceContent] = useState('')
 	const [editSummary, setEditSummary] = useState('')
-	const [minorEdit, setMinorEdit] = useState(false)
 	const [loading, setLoading] = useState(!isNew)
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
@@ -348,7 +347,6 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 					tagNames: tags,
 					categoryIds,
 					editSummary: editSummary.trim() || undefined,
-					minorEdit,
 				}
 
 				// Optimistic locking
@@ -357,8 +355,8 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 				}
 
 				const res = await wikiApi.updatePage(slug, payload)
-				if (res.success) {
-					window.history.pushState({}, '', `/briar-display/wiki/${slug}`)
+				if (res.success && res.data) {
+					window.history.pushState({}, '', `/briar-display/wiki/${res.data.slug}`)
 					window.dispatchEvent(new PopStateEvent('popstate'))
 				} else {
 					setError(res.message || '保存失败')
@@ -379,7 +377,6 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		editor,
 		sourceContent,
 		editSummary,
-		minorEdit,
 		isNew,
 		slug,
 		getEditorMarkdown,
@@ -689,15 +686,6 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 						className="w-full rounded-sm border border-wiki-border bg-wiki-bg px-3 py-2 text-[13px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none focus:ring-1 focus:ring-wiki-link"
 					/>
 				</div>
-				<label className="flex items-center gap-2 text-[13px] text-wiki-text">
-					<input
-						type="checkbox"
-						checked={minorEdit}
-						onChange={(e) => setMinorEdit(e.target.checked)}
-						className="h-4 w-4 rounded-sm border-wiki-border text-wiki-link focus:ring-wiki-link"
-					/>
-					小编辑
-				</label>
 			</div>
 
 			{/* Action buttons */}
