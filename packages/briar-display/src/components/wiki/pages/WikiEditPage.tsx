@@ -5,7 +5,12 @@ import TagInput from '@/components/wiki/common/TagInput'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
-import type { WikiCategoryTreeNode, WikiPage, WikiPageVisibility } from '@briar/shared'
+import type {
+	WikiCategoryTreeNode,
+	WikiPage,
+	WikiPageVisibility,
+	WikiSearchResult,
+} from '@briar/shared'
 import Highlight from '@tiptap/extension-highlight'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
@@ -18,6 +23,7 @@ import {
 	ChevronDown,
 	ChevronRight,
 	Code,
+	FileText,
 	Heading2,
 	Heading3,
 	Heading4,
@@ -27,10 +33,12 @@ import {
 	List,
 	ListOrdered,
 	Loader2,
+	Plus,
 	Quote,
 	Redo,
 	Tag,
 	Undo,
+	X,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -86,6 +94,9 @@ function CategorySelector({
 	const [tree, setTree] = useState<WikiCategoryTreeNode[]>([])
 	const [expanded, setExpanded] = useState<Set<string>>(new Set())
 	const [loading, setLoading] = useState(true)
+	const [showCreate, setShowCreate] = useState(false)
+	const [newCatName, setNewCatName] = useState('')
+	const [creating, setCreating] = useState(false)
 
 	useEffect(() => {
 		const fetchTree = async () => {
@@ -113,6 +124,26 @@ function CategorySelector({
 			onChange(selected.filter((s) => s !== id))
 		} else {
 			onChange([...selected, id])
+		}
+	}
+
+	const handleCreateCategory = async () => {
+		if (!newCatName.trim()) return
+		setCreating(true)
+		const res = await wikiApi.createCategory({ name: newCatName.trim() })
+		setCreating(false)
+		if (res.success && res.data) {
+			setNewCatName('')
+			setShowCreate(false)
+			// 刷新分类树并自动选中新分类
+			const treeRes = await wikiApi.getCategoryTree()
+			if (treeRes.success && treeRes.data) {
+				setTree(treeRes.data)
+				setExpanded(new Set(treeRes.data.map((c) => c.id)))
+			}
+			onChange([...selected, res.data.id])
+		} else {
+			alert(res.message || '创建分类失败')
 		}
 	}
 
@@ -172,13 +203,55 @@ function CategorySelector({
 		)
 	}
 
-	if (tree.length === 0) {
-		return <p className="py-2 text-[13px] text-wiki-text-muted">暂无分类</p>
-	}
-
 	return (
-		<div className="max-h-[200px] overflow-y-auto rounded-sm border border-wiki-border-light">
-			<div className="p-1">{tree.map((node) => renderNode(node))}</div>
+		<div className="space-y-2">
+			{tree.length > 0 ? (
+				<div className="max-h-[200px] overflow-y-auto rounded-sm border border-wiki-border-light">
+					<div className="p-1">{tree.map((node) => renderNode(node))}</div>
+				</div>
+			) : (
+				<p className="py-2 text-[13px] text-wiki-text-muted">暂无分类</p>
+			)}
+
+			{showCreate ? (
+				<div className="flex items-center gap-2">
+					<input
+						type="text"
+						value={newCatName}
+						onChange={(e) => setNewCatName(e.target.value)}
+						onKeyDown={(e) => e.key === 'Enter' && handleCreateCategory()}
+						placeholder="新分类名称"
+						className="flex-1 rounded-sm border border-wiki-border bg-wiki-bg px-2 py-1 text-[13px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none"
+					/>
+					<button
+						type="button"
+						onClick={handleCreateCategory}
+						disabled={creating || !newCatName.trim()}
+						className="rounded-sm bg-wiki-link px-2 py-1 text-[12px] text-white hover:bg-wiki-link-hover disabled:opacity-50"
+					>
+						{creating ? '...' : '创建'}
+					</button>
+					<button
+						type="button"
+						onClick={() => {
+							setShowCreate(false)
+							setNewCatName('')
+						}}
+						className="rounded-sm px-2 py-1 text-[12px] text-wiki-text-muted hover:bg-wiki-bg-tertiary"
+					>
+						取消
+					</button>
+				</div>
+			) : (
+				<button
+					type="button"
+					onClick={() => setShowCreate(true)}
+					className="inline-flex items-center gap-1 text-[12px] text-wiki-link hover:underline"
+				>
+					<Plus className="h-3 w-3" />
+					新建分类
+				</button>
+			)}
 		</div>
 	)
 }
@@ -413,6 +486,36 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		}
 	}, [editor])
 
+	// Mention page (wiki link)
+	const [showMention, setShowMention] = useState(false)
+	const [mentionQuery, setMentionQuery] = useState('')
+	const [mentionResults, setMentionResults] = useState<WikiSearchResult[]>([])
+	const [mentionLoading, setMentionLoading] = useState(false)
+
+	const searchPages = useCallback(async (q: string) => {
+		if (!q.trim()) {
+			setMentionResults([])
+			return
+		}
+		setMentionLoading(true)
+		const res = await wikiApi.search(q, 8)
+		if (res.success && res.data) {
+			setMentionResults(res.data.items)
+		}
+		setMentionLoading(false)
+	}, [])
+
+	const insertWikiLink = useCallback(
+		(pageTitle: string) => {
+			if (!editor) return
+			editor.chain().focus().insertContent(`[[${pageTitle}]]`).run()
+			setShowMention(false)
+			setMentionQuery('')
+			setMentionResults([])
+		},
+		[editor],
+	)
+
 	if (loading) {
 		return (
 			<div className="space-y-4">
@@ -603,6 +706,69 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 						<ToolbarSeparator />
 
 						<ToolbarButton icon={Link2} label="插入链接" onClick={addLink} />
+						<div className="relative">
+							<ToolbarButton
+								icon={FileText}
+								label="提及文档"
+								onClick={() => setShowMention(!showMention)}
+							/>
+							{showMention && (
+								<div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-md border border-wiki-border-light bg-wiki-bg shadow-lg">
+									<div className="p-2">
+										<div className="flex items-center gap-1">
+											<input
+												type="text"
+												value={mentionQuery}
+												onChange={(e) => {
+													setMentionQuery(e.target.value)
+													searchPages(e.target.value)
+												}}
+												placeholder="搜索页面标题..."
+												className="flex-1 rounded-sm border border-wiki-border bg-wiki-bg px-2 py-1 text-[13px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none"
+											/>
+											<button
+												type="button"
+												onClick={() => {
+													setShowMention(false)
+													setMentionQuery('')
+												}}
+												className="rounded-sm p-1 text-wiki-text-muted hover:bg-wiki-bg-tertiary"
+											>
+												<X className="h-3.5 w-3.5" />
+											</button>
+										</div>
+									</div>
+									<div className="max-h-[200px] overflow-y-auto border-t border-wiki-border-light">
+										{mentionLoading ? (
+											<div className="flex items-center gap-2 px-3 py-2 text-[12px] text-wiki-text-muted">
+												<Loader2 className="h-3 w-3 animate-spin" />
+												搜索中...
+											</div>
+										) : mentionResults.length > 0 ? (
+											mentionResults.map((page) => (
+												<button
+													key={page.id}
+													type="button"
+													onClick={() => insertWikiLink(page.title)}
+													className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] transition-colors hover:bg-wiki-bg-tertiary"
+												>
+													<FileText className="h-3.5 w-3.5 flex-shrink-0 text-wiki-text-muted" />
+													<span className="truncate text-wiki-link">{page.title}</span>
+												</button>
+											))
+										) : mentionQuery.trim() ? (
+											<div className="px-3 py-2 text-[12px] text-wiki-text-muted">
+												未找到匹配页面
+											</div>
+										) : (
+											<div className="px-3 py-2 text-[12px] text-wiki-text-muted">
+												输入关键词搜索页面
+											</div>
+										)}
+									</div>
+								</div>
+							)}
+						</div>
 						<ToolbarButton
 							icon={Code}
 							label="代码块"
