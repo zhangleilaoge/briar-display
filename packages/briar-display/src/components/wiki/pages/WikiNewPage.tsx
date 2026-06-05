@@ -3,7 +3,7 @@
 import { wikiApi } from '@/api/wiki'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import { cn } from '@/lib/utils'
-import type { WikiCategoryTreeNode } from '@briar/shared'
+import type { WikiCategoryTreeNode, WikiPageVisibility } from '@briar/shared'
 import {
 	ChevronDown,
 	ChevronRight,
@@ -14,6 +14,7 @@ import {
 	Plus,
 	Redo,
 	Save,
+	Tag,
 	Type,
 	Undo,
 	X,
@@ -285,7 +286,9 @@ export default function WikiNewPage() {
 	const [content, setContent] = useState('')
 	const [editMode, setEditMode] = useState<EditMode>('visual')
 	const [categoryIds, setCategoryIds] = useState<string[]>([])
+	const [visibility, setVisibility] = useState<WikiPageVisibility>('public')
 	const [editSummary, setEditSummary] = useState('')
+	const [tagInput, setTagInput] = useState('')
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -307,10 +310,17 @@ export default function WikiNewPage() {
 		setSaving(true)
 		setError(null)
 
+		const tagNames = tagInput
+			.split(/[,，]/)
+			.map((t) => t.trim())
+			.filter((t) => t.length > 0)
+
 		const payload = {
 			title: title.trim(),
 			content,
+			visibility,
 			...(categoryIds.length > 0 && { categoryIds }),
+			...(tagNames.length > 0 && { tagNames }),
 		}
 
 		const res = await wikiApi.createPage(payload)
@@ -321,7 +331,7 @@ export default function WikiNewPage() {
 			setError(res.message || '创建失败，请重试')
 			setSaving(false)
 		}
-	}, [title, content, categoryIds])
+	}, [title, content, categoryIds, visibility])
 
 	return (
 		<div className="space-y-4">
@@ -361,6 +371,46 @@ export default function WikiNewPage() {
 					placeholder="输入文章标题..."
 					className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
 				/>
+			</div>
+
+			{/* Visibility */}
+			<div className="space-y-1.5">
+				<label className="font-medium text-sm">可见性</label>
+				<div className="flex flex-wrap gap-3">
+					<label className="flex items-center gap-1.5 text-sm text-foreground">
+						<input
+							type="radio"
+							name="visibility"
+							value="public"
+							checked={visibility === 'public'}
+							onChange={() => setVisibility('public')}
+							className="h-4 w-4 border-input text-primary focus:ring-primary"
+						/>
+						公开
+					</label>
+					<label className="flex items-center gap-1.5 text-sm text-foreground">
+						<input
+							type="radio"
+							name="visibility"
+							value="private"
+							checked={visibility === 'private'}
+							onChange={() => setVisibility('private')}
+							className="h-4 w-4 border-input text-primary focus:ring-primary"
+						/>
+						私密（仅自己可见）
+					</label>
+					<label className="flex items-center gap-1.5 text-sm text-foreground">
+						<input
+							type="radio"
+							name="visibility"
+							value="link_only"
+							checked={visibility === 'link_only'}
+							onChange={() => setVisibility('link_only')}
+							className="h-4 w-4 border-input text-primary focus:ring-primary"
+						/>
+						仅链接
+					</label>
+				</div>
 			</div>
 
 			{/* Edit mode toggle */}
@@ -422,6 +472,23 @@ export default function WikiNewPage() {
 						)}
 					</div>
 				)}
+			</div>
+
+			{/* Tags */}
+			<div className="space-y-1.5">
+				<label htmlFor="wiki-tags" className="font-medium text-sm">
+					<Tag className="mr-1 inline-block h-3.5 w-3.5" />
+					标签
+				</label>
+				<input
+					id="wiki-tags"
+					type="text"
+					value={tagInput}
+					onChange={(e) => setTagInput(e.target.value)}
+					placeholder="输入标签，用逗号分隔，如：技术, 教程, 笔记"
+					className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+				/>
+				<p className="text-muted-foreground text-xs">用逗号分隔多个标签，不存在的标签会自动创建</p>
 			</div>
 
 			{/* Categories */}

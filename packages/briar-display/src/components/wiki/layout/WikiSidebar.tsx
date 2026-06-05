@@ -9,6 +9,7 @@ import {
 	LayoutList,
 	Link2,
 	Star,
+	Tag,
 	TrendingUp,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -45,6 +46,11 @@ const sections: SidebarSection[] = [
 				href: '/briar-display/wiki/category/',
 				icon: <LayoutList className="h-3.5 w-3.5" />,
 			},
+			{
+				label: '标签',
+				href: '/briar-display/wiki/special/tags',
+				icon: <Tag className="h-3.5 w-3.5" />,
+			},
 		],
 	},
 	{
@@ -55,6 +61,11 @@ const sections: SidebarSection[] = [
 				label: '关注列表',
 				href: '/briar-display/wiki/special/watchlist',
 				icon: <Star className="h-3.5 w-3.5" />,
+			},
+			{
+				label: '我的收藏',
+				href: '/briar-display/wiki/special/stars',
+				icon: <Star className="h-3.5 w-3.5 fill-wiki-link" />,
 			},
 			{
 				label: '我的贡献',

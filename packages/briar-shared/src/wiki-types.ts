@@ -9,6 +9,9 @@ export type WikiNamespace = 'main' | 'talk' | 'user' | 'template' | 'category'
 /** 文章状态 */
 export type WikiPageStatus = 'draft' | 'published' | 'protected' | 'deleted'
 
+/** 页面可见性 */
+export type WikiPageVisibility = 'public' | 'private' | 'link_only'
+
 /** Wiki 页面（完整模型） */
 export interface WikiPage {
 	id: string
@@ -19,8 +22,10 @@ export interface WikiPage {
 	summary: string | null
 	namespace: WikiNamespace
 	status: WikiPageStatus
+	visibility: WikiPageVisibility
 	authorId: string
 	lastEditorId: string | null
+	parentId: string | null
 	viewCount: number
 	isRedirect: boolean
 	redirectTarget: string | null
@@ -31,6 +36,8 @@ export interface WikiPage {
 /** 页面列表项（不含完整内容） */
 export type WikiPageSummary = Omit<WikiPage, 'content' | 'renderedHtml'> & {
 	categories?: Pick<WikiCategory, 'id' | 'name' | 'slug'>[]
+	tags?: Pick<WikiTag, 'id' | 'name' | 'slug' | 'color'>[]
+	starred?: boolean
 }
 
 /** 版本记录 */
@@ -68,6 +75,71 @@ export interface WikiCategoryTreeNode extends WikiCategory {
 export interface WikiPageCategory {
 	pageId: string
 	categoryId: string
+}
+
+/** 标签 */
+export interface WikiTag {
+	id: string
+	name: string
+	slug: string
+	color: string
+	pageCount: number
+	createdAt: Date
+}
+
+/** 页面-标签关联 */
+export interface WikiPageTag {
+	pageId: string
+	tagId: string
+	createdAt: Date
+}
+
+/** 收藏 */
+export interface WikiStar {
+	userId: string
+	pageId: string
+	createdAt: Date
+}
+
+/** 反向链接 */
+export interface WikiBacklink {
+	id: string
+	sourcePageId: string
+	targetPageId: string
+	sourceSlug: string
+	targetSlug: string
+	createdAt: Date
+}
+
+/** 内联评论 */
+export interface WikiInlineComment {
+	id: string
+	pageId: string
+	anchor: string
+	content: string
+	authorId: string
+	resolved: boolean
+	createdAt: Date
+	updatedAt: Date
+}
+
+/** 变更请求状态 */
+export type WikiChangeRequestStatus = 'pending' | 'approved' | 'rejected' | 'merged'
+
+/** 变更请求 */
+export interface WikiChangeRequest {
+	id: string
+	pageId: string
+	title: string | null
+	content: string | null
+	summary: string | null
+	status: WikiChangeRequestStatus
+	requesterId: string
+	reviewerId: string | null
+	reviewComment: string | null
+	createdAt: Date
+	updatedAt: Date
+	reviewedAt: Date | null
 }
 
 /** 讨论主题 */
@@ -119,7 +191,10 @@ export interface CreateWikiPagePayload {
 	content: string
 	namespace?: WikiNamespace
 	status?: WikiPageStatus
+	visibility?: WikiPageVisibility
 	categoryIds?: string[]
+	tagNames?: string[]
+	parentId?: string | null
 }
 
 /** 更新文章 */
@@ -127,7 +202,10 @@ export interface UpdateWikiPagePayload {
 	title?: string
 	content?: string
 	status?: WikiPageStatus
+	visibility?: WikiPageVisibility
 	categoryIds?: string[]
+	tagNames?: string[]
+	parentId?: string | null
 	editSummary?: string
 	minorEdit?: boolean
 }
@@ -144,6 +222,31 @@ export interface UpdateWikiCategoryPayload {
 	name?: string
 	description?: string
 	parentId?: string | null
+}
+
+/** 创建标签 */
+export interface CreateWikiTagPayload {
+	name: string
+	color?: string
+}
+
+/** 创建内联评论 */
+export interface CreateWikiInlineCommentPayload {
+	anchor: string
+	content: string
+}
+
+/** 创建变更请求 */
+export interface CreateWikiChangeRequestPayload {
+	title?: string
+	content?: string
+	summary?: string
+}
+
+/** 审核变更请求 */
+export interface ReviewWikiChangeRequestPayload {
+	status: 'approved' | 'rejected'
+	comment?: string
 }
 
 /** 创建讨论主题 */

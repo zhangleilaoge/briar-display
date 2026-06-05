@@ -5,17 +5,19 @@ import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiFooter from '@/components/wiki/layout/WikiFooter'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
-import type { WikiCategory, WikiPage } from '@briar/shared'
+import type { WikiBacklink, WikiCategory, WikiPage, WikiPageSummary, WikiTag } from '@briar/shared'
 import {
 	AlertTriangle,
 	ChevronDown,
 	ChevronRight,
 	Eye,
+	FileText,
 	FolderOpen,
 	Loader2,
 	Pencil,
 	RefreshCw,
 	Star,
+	Tag,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -24,9 +26,11 @@ interface WikiArticlePageProps {
 	slug: string
 }
 
-/** Extended page type with optional categories from API */
-interface WikiPageWithCategories extends WikiPage {
+interface WikiPageDetails extends WikiPage {
 	categories?: Pick<WikiCategory, 'id' | 'name' | 'slug'>[]
+	tags?: Pick<WikiTag, 'id' | 'name' | 'slug' | 'color'>[]
+	backlinks?: WikiBacklink[]
+	subpages?: WikiPageSummary[]
 }
 
 interface TocItem {
@@ -105,21 +109,31 @@ function formatDate(date: string | Date): string {
 	})
 }
 
+/** Parse [[slug|display]] mentions into markdown links */
+function renderMentions(content: string): string {
+	return content.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_match, slug, display) => {
+		const label = display || slug
+		return `[${label}](/briar-display/wiki/${slug})`
+	})
+}
+
 export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
-	const [page, setPage] = useState<WikiPageWithCategories | null>(null)
+	const [page, setPage] = useState<WikiPageDetails | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const [tocOpen, setTocOpen] = useState(true)
 	const [watching, setWatching] = useState(false)
 	const [watchLoading, setWatchLoading] = useState(false)
+	const [starred, setStarred] = useState(false)
+	const [starLoading, setStarLoading] = useState(false)
 
 	const fetchArticle = useCallback(async () => {
 		setLoading(true)
 		setError(null)
 		try {
-			const res = await wikiApi.getBySlug(slug)
+			const res = await wikiApi.getPageDetails(slug)
 			if (res.success && res.data) {
-				setPage(res.data as WikiPageWithCategories)
+				setPage(res.data as WikiPageDetails)
 			} else {
 				setError(res.message || '文章未找到')
 			}
@@ -148,6 +162,20 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 		}
 	}, [slug, page])
 
+	// Check star status
+	useEffect(() => {
+		if (!page) return
+		let cancelled = false
+		wikiApi.isStarred(slug).then((res) => {
+			if (!cancelled && res.success && res.data) {
+				setStarred(res.data.starred)
+			}
+		})
+		return () => {
+			cancelled = true
+		}
+	}, [slug, page])
+
 	const handleToggleWatch = useCallback(async () => {
 		setWatchLoading(true)
 		try {
@@ -164,6 +192,23 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 			setWatchLoading(false)
 		}
 	}, [slug, watching])
+
+	const handleToggleStar = useCallback(async () => {
+		setStarLoading(true)
+		try {
+			if (starred) {
+				await wikiApi.removeStar(slug)
+				setStarred(false)
+			} else {
+				await wikiApi.addStar(slug)
+				setStarred(true)
+			}
+		} catch {
+			// silently fail
+		} finally {
+			setStarLoading(false)
+		}
+	}, [slug, starred])
 
 	// Extract TOC from markdown content
 	const toc = useMemo(() => {
@@ -214,7 +259,13 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 		return result.join('\n')
 	}, [page?.content, infoboxContent])
 
-	// Custom renderers for ReactMarkdown to add IDs to headings
+	// Render mentions in content
+	const renderedContent = useMemo(() => {
+		if (!mainContent) return ''
+		return renderMentions(mainContent)
+	}, [mainContent])
+
+	// Custom renderers for ReactMarkdown
 	const markdownComponents = useMemo(
 		() => ({
 			h2: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => {
@@ -263,7 +314,7 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 				)
 			},
 			a: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
-				if (href?.startsWith('/') || href?.startsWith('#')) {
+				if (href?.startsWith('/')) {
 					return (
 						<a href={href} className="wiki-link" {...props}>
 							{children}
@@ -352,23 +403,39 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 
 	return (
 		<div className="space-y-4">
-			{/* Breadcrumbs + Watch */}
+			{/* Breadcrumbs + Watch + Star */}
 			<div className="flex items-center justify-between">
 				<WikiBreadcrumbs items={[{ label: page.title }]} />
-				<button
-					type="button"
-					onClick={handleToggleWatch}
-					disabled={watchLoading}
-					className={cn(
-						'inline-flex items-center gap-1.5 rounded-sm border px-3 py-1.5 text-[12px] transition-colors',
-						watching
-							? 'border-wiki-link bg-wiki-link/10 text-wiki-link'
-							: 'border-wiki-border-light text-wiki-text-secondary hover:border-wiki-link hover:text-wiki-link',
-					)}
-				>
-					<Star className={cn('h-3.5 w-3.5', watching && 'fill-wiki-link')} />
-					{watching ? '已关注' : '关注'}
-				</button>
+				<div className="flex items-center gap-2">
+					<button
+						type="button"
+						onClick={handleToggleStar}
+						disabled={starLoading}
+						className={cn(
+							'inline-flex items-center gap-1.5 rounded-sm border px-3 py-1.5 text-[12px] transition-colors',
+							starred
+								? 'border-wiki-link bg-wiki-link/10 text-wiki-link'
+								: 'border-wiki-border-light text-wiki-text-secondary hover:border-wiki-link hover:text-wiki-link',
+						)}
+					>
+						<Star className={cn('h-3.5 w-3.5', starred && 'fill-wiki-link')} />
+						{starred ? '已收藏' : '收藏'}
+					</button>
+					<button
+						type="button"
+						onClick={handleToggleWatch}
+						disabled={watchLoading}
+						className={cn(
+							'inline-flex items-center gap-1.5 rounded-sm border px-3 py-1.5 text-[12px] transition-colors',
+							watching
+								? 'border-wiki-link bg-wiki-link/10 text-wiki-link'
+								: 'border-wiki-border-light text-wiki-text-secondary hover:border-wiki-link hover:text-wiki-link',
+						)}
+					>
+						<Eye className={cn('h-3.5 w-3.5', watching && 'fill-wiki-link')} />
+						{watching ? '已关注' : '关注'}
+					</button>
+				</div>
 			</div>
 
 			{/* Tabs */}
@@ -377,6 +444,16 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 			{/* Article title */}
 			<h1 className="border-b border-wiki-border-light pb-2 text-[1.8em] font-normal leading-[1.3] text-wiki-text">
 				{page.title}
+				{page.visibility === 'private' && (
+					<span className="ml-2 inline-flex items-center gap-1 rounded-sm bg-wiki-highlight px-2 py-0.5 text-[13px] text-wiki-text-muted">
+						🔒 私密
+					</span>
+				)}
+				{page.visibility === 'link_only' && (
+					<span className="ml-2 inline-flex items-center gap-1 rounded-sm bg-wiki-highlight px-2 py-0.5 text-[13px] text-wiki-text-muted">
+						🔗 仅链接
+					</span>
+				)}
 			</h1>
 
 			{/* Main content area with optional TOC and Infobox */}
@@ -445,10 +522,28 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 
 					{/* Article content */}
 					<article className="prose prose-wiki max-w-none">
-						<ReactMarkdown components={markdownComponents}>{mainContent}</ReactMarkdown>
+						<ReactMarkdown components={markdownComponents}>{renderedContent}</ReactMarkdown>
 					</article>
 				</div>
 			</div>
+
+			{/* Tags */}
+			{page.tags && page.tags.length > 0 && (
+				<div className="flex flex-wrap items-center gap-2 border-t border-wiki-border-light pt-4">
+					<Tag className="h-4 w-4 text-wiki-text-muted" />
+					<span className="text-[12px] text-wiki-text-muted">标签：</span>
+					{page.tags.map((tag) => (
+						<a
+							key={tag.id}
+							href={`/briar-display/wiki/tag/${tag.slug}`}
+							className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[12px] text-white transition-colors hover:opacity-80"
+							style={{ backgroundColor: tag.color }}
+						>
+							{tag.name}
+						</a>
+					))}
+				</div>
+			)}
 
 			{/* Categories */}
 			{page.categories && page.categories.length > 0 && (
@@ -464,6 +559,51 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 							{cat.name}
 						</a>
 					))}
+				</div>
+			)}
+
+			{/* Subpages */}
+			{page.subpages && page.subpages.length > 0 && (
+				<div className="border-t border-wiki-border-light pt-4">
+					<h3 className="mb-2 flex items-center gap-1.5 text-[13px] font-medium text-wiki-text">
+						<FileText className="h-4 w-4 text-wiki-text-muted" />
+						子页面
+					</h3>
+					<ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+						{page.subpages.map((sp) => (
+							<li key={sp.id}>
+								<a
+									href={`/briar-display/wiki/${sp.slug}`}
+									className="inline-flex items-center gap-1.5 text-[13px] text-wiki-link hover:underline"
+								>
+									<FileText className="h-3.5 w-3.5" />
+									{sp.title}
+								</a>
+							</li>
+						))}
+					</ul>
+				</div>
+			)}
+
+			{/* Backlinks */}
+			{page.backlinks && page.backlinks.length > 0 && (
+				<div className="border-t border-wiki-border-light pt-4">
+					<h3 className="mb-2 flex items-center gap-1.5 text-[13px] font-medium text-wiki-text">
+						<RefreshCw className="h-4 w-4 text-wiki-text-muted" />
+						被引用
+					</h3>
+					<ul className="flex flex-wrap gap-x-4 gap-y-1">
+						{page.backlinks.map((bl) => (
+							<li key={bl.id}>
+								<a
+									href={`/briar-display/wiki/${bl.sourceSlug}`}
+									className="text-[13px] text-wiki-link hover:underline"
+								>
+									{bl.sourceSlug}
+								</a>
+							</li>
+						))}
+					</ul>
 				</div>
 			)}
 

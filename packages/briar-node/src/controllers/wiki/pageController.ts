@@ -1,7 +1,10 @@
 import type { ApiResponse, WikiNamespace, WikiPageStatus } from '@briar/shared'
 import { HTTP_STATUS } from '@briar/shared'
 import type { Context } from 'hono'
+import { backlinkDal } from '../../dal/wiki/backlinkDal'
+import { categoryDal } from '../../dal/wiki/categoryDal'
 import { pageDal } from '../../dal/wiki/pageDal'
+import { tagDal } from '../../dal/wiki/tagDal'
 import { pageService } from '../../services/wiki/pageService'
 
 export const pageController = {
@@ -11,8 +14,9 @@ export const pageController = {
 			const offset = Math.floor(Number(c.req.query('offset')) || 0)
 			const namespace = c.req.query('namespace') as WikiNamespace | undefined
 			const status = c.req.query('status') as WikiPageStatus | undefined
+			const user = c.get('user')
 
-			const result = await pageDal.list({ limit, offset, namespace, status })
+			const result = await pageService.list({ limit, offset, namespace, status, userId: user?.id })
 
 			return c.json<ApiResponse>({
 				success: true,
@@ -52,8 +56,9 @@ export const pageController = {
 
 			const limit = Math.floor(Number(c.req.query('limit')) || 20)
 			const offset = Math.floor(Number(c.req.query('offset')) || 0)
+			const user = c.get('user')
 
-			const result = await pageService.search(query, limit, offset)
+			const result = await pageService.search(query, limit, offset, user?.id)
 
 			return c.json<ApiResponse>({
 				success: true,
@@ -97,6 +102,17 @@ export const pageController = {
 				)
 			}
 
+			// Check visibility: private pages only accessible by author
+			if (page.visibility === 'private') {
+				const user = c.get('user')
+				if (!user || user.id !== page.authorId) {
+					return c.json<ApiResponse>(
+						{ success: false, message: 'Page not found', code: HTTP_STATUS.NOT_FOUND },
+						HTTP_STATUS.NOT_FOUND,
+					)
+				}
+			}
+
 			// Increment view count
 			await pageDal.incrementViewCount(page.id)
 
@@ -108,6 +124,70 @@ export const pageController = {
 			console.error('Error getting page:', error)
 			return c.json<ApiResponse>(
 				{ success: false, message: 'Failed to get page', code: HTTP_STATUS.INTERNAL_SERVER_ERROR },
+				HTTP_STATUS.INTERNAL_SERVER_ERROR,
+			)
+		}
+	},
+
+	async getDetails(c: Context) {
+		try {
+			const namespace = c.req.param('namespace') || 'main'
+			const slug = c.req.param('slug')
+
+			if (!slug) {
+				return c.json<ApiResponse>(
+					{ success: false, message: 'Missing slug', code: HTTP_STATUS.BAD_REQUEST },
+					HTTP_STATUS.BAD_REQUEST,
+				)
+			}
+
+			const page = await pageService.getBySlug(namespace, slug)
+			if (!page) {
+				return c.json<ApiResponse>(
+					{ success: false, message: 'Page not found', code: HTTP_STATUS.NOT_FOUND },
+					HTTP_STATUS.NOT_FOUND,
+				)
+			}
+
+			// Check visibility
+			if (page.visibility === 'private') {
+				const user = c.get('user')
+				if (!user || user.id !== page.authorId) {
+					return c.json<ApiResponse>(
+						{ success: false, message: 'Page not found', code: HTTP_STATUS.NOT_FOUND },
+						HTTP_STATUS.NOT_FOUND,
+					)
+				}
+			}
+
+			// Fetch related data
+			const [categories, tags, backlinks, subpages] = await Promise.all([
+				categoryDal.getPageCategories(page.id),
+				tagDal.listByPageId(page.id),
+				backlinkDal.findByTargetPage(page.id),
+				pageDal.list({ limit: 100, offset: 0, namespace: page.namespace }),
+			])
+
+			const childPages = subpages.items.filter((p) => p.parentId === page.id)
+
+			return c.json<ApiResponse>({
+				success: true,
+				data: {
+					...page,
+					categories,
+					tags,
+					backlinks,
+					subpages: childPages,
+				},
+			})
+		} catch (error) {
+			console.error('Error getting page details:', error)
+			return c.json<ApiResponse>(
+				{
+					success: false,
+					message: 'Failed to get page details',
+					code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+				},
 				HTTP_STATUS.INTERNAL_SERVER_ERROR,
 			)
 		}
@@ -159,6 +239,21 @@ export const pageController = {
 					{ success: false, message: 'Missing slug', code: HTTP_STATUS.BAD_REQUEST },
 					HTTP_STATUS.BAD_REQUEST,
 				)
+			}
+
+			// Optimistic locking: check if page was modified since client last read
+			if (body.lastReadAt) {
+				const page = await pageDal.findBySlug('main', slug)
+				if (page && new Date(page.updatedAt).getTime() > new Date(body.lastReadAt).getTime()) {
+					return c.json<ApiResponse>(
+						{
+							success: false,
+							message: '编辑冲突：此页面在你编辑期间已被修改，请刷新后重试',
+							code: HTTP_STATUS.CONFLICT,
+						},
+						HTTP_STATUS.CONFLICT,
+					)
+				}
 			}
 
 			const page = await pageService.update(slug, body, user.id)
@@ -232,6 +327,74 @@ export const pageController = {
 				{
 					success: false,
 					message: 'Failed to get redirects',
+					code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+				},
+				HTTP_STATUS.INTERNAL_SERVER_ERROR,
+			)
+		}
+	},
+
+	async getBacklinks(c: Context) {
+		try {
+			const slug = c.req.param('slug')
+
+			if (!slug) {
+				return c.json<ApiResponse>(
+					{ success: false, message: 'Missing slug', code: HTTP_STATUS.BAD_REQUEST },
+					HTTP_STATUS.BAD_REQUEST,
+				)
+			}
+
+			const page = await pageDal.findBySlug('main', slug)
+			if (!page) {
+				return c.json<ApiResponse>(
+					{ success: false, message: 'Page not found', code: HTTP_STATUS.NOT_FOUND },
+					HTTP_STATUS.NOT_FOUND,
+				)
+			}
+
+			const backlinks = await backlinkDal.findByTargetPage(page.id)
+			return c.json<ApiResponse>({ success: true, data: backlinks })
+		} catch (error) {
+			console.error('Error getting backlinks:', error)
+			return c.json<ApiResponse>(
+				{
+					success: false,
+					message: 'Failed to get backlinks',
+					code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+				},
+				HTTP_STATUS.INTERNAL_SERVER_ERROR,
+			)
+		}
+	},
+
+	async getSubpages(c: Context) {
+		try {
+			const slug = c.req.param('slug')
+
+			if (!slug) {
+				return c.json<ApiResponse>(
+					{ success: false, message: 'Missing slug', code: HTTP_STATUS.BAD_REQUEST },
+					HTTP_STATUS.BAD_REQUEST,
+				)
+			}
+
+			const page = await pageDal.findBySlug('main', slug)
+			if (!page) {
+				return c.json<ApiResponse>(
+					{ success: false, message: 'Page not found', code: HTTP_STATUS.NOT_FOUND },
+					HTTP_STATUS.NOT_FOUND,
+				)
+			}
+
+			const subpages = await pageService.getSubpages(page.id)
+			return c.json<ApiResponse>({ success: true, data: subpages })
+		} catch (error) {
+			console.error('Error getting subpages:', error)
+			return c.json<ApiResponse>(
+				{
+					success: false,
+					message: 'Failed to get subpages',
 					code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
 				},
 				HTTP_STATUS.INTERNAL_SERVER_ERROR,

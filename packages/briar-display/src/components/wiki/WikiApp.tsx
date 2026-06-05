@@ -15,7 +15,10 @@ import WikiNewPage from './pages/WikiNewPage'
 import WikiOrphanedPages from './pages/WikiOrphanedPages'
 import WikiRecentChanges from './pages/WikiRecentChanges'
 import WikiSearchResults from './pages/WikiSearchResults'
+import WikiStarsList from './pages/WikiStarsList'
 import WikiStatistics from './pages/WikiStatistics'
+import WikiTagPage from './pages/WikiTagPage'
+import WikiTagsIndex from './pages/WikiTagsIndex'
 import WikiTalkPage from './pages/WikiTalkPage'
 import WikiTemplatePage from './pages/WikiTemplatePage'
 import WikiTemplatesList from './pages/WikiTemplatesList'
@@ -66,6 +69,15 @@ function matchRoute(pathname: string): RouteMatch | null {
 		}
 	}
 
+	// /wiki/tag/:slug → Tag detail
+	const tagMatch = relative.match(/^\/tag\/(.+)$/)
+	if (tagMatch) {
+		return {
+			page: <WikiTagPage slug={tagMatch[1]} />,
+			title: '标签 - Briar Wiki',
+		}
+	}
+
 	// /wiki/template/:slug → Template detail
 	const templateMatch = relative.match(/^\/template\/(.+)$/)
 	if (templateMatch) {
@@ -96,6 +108,12 @@ function matchRoute(pathname: string): RouteMatch | null {
 	}
 	if (relative === '/special/watchlist') {
 		return { page: <WikiWatchlist />, title: '关注列表 - Briar Wiki' }
+	}
+	if (relative === '/special/stars') {
+		return { page: <WikiStarsList />, title: '我的收藏 - Briar Wiki' }
+	}
+	if (relative === '/special/tags') {
+		return { page: <WikiTagsIndex />, title: '标签 - Briar Wiki' }
 	}
 	// /wiki/special/user-contributions (no userId param in path)
 	if (relative === '/special/user-contributions') {

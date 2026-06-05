@@ -1,5 +1,5 @@
 import { generateId } from '@briar/shared'
-import type { WikiNamespace, WikiPageStatus } from '@briar/shared'
+import type { WikiNamespace, WikiPageStatus, WikiPageVisibility } from '@briar/shared'
 import { execute, query, queryOne } from '../../lib/db'
 
 export interface WikiPageRecord {
@@ -11,8 +11,10 @@ export interface WikiPageRecord {
 	summary: string | null
 	namespace: WikiNamespace
 	status: WikiPageStatus
+	visibility: WikiPageVisibility
 	authorId: string
 	lastEditorId: string | null
+	parentId: string | null
 	viewCount: number
 	isRedirect: boolean
 	redirectTarget: string | null
@@ -29,8 +31,10 @@ interface WikiPageRow {
 	summary: string | null
 	namespace: WikiNamespace
 	status: WikiPageStatus
+	visibility: WikiPageVisibility
 	author_id: string
 	last_editor_id: string | null
+	parent_id: string | null
 	view_count: number
 	is_redirect: number
 	redirect_target: string | null
@@ -47,8 +51,10 @@ const mapRowToRecord = (row: WikiPageRow): WikiPageRecord => ({
 	summary: row.summary,
 	namespace: row.namespace,
 	status: row.status,
+	visibility: row.visibility,
 	authorId: row.author_id,
 	lastEditorId: row.last_editor_id,
+	parentId: row.parent_id,
 	viewCount: row.view_count,
 	isRedirect: !!row.is_redirect,
 	redirectTarget: row.redirect_target,
@@ -57,10 +63,10 @@ const mapRowToRecord = (row: WikiPageRow): WikiPageRecord => ({
 })
 
 const SELECT_FIELDS =
-	'id, title, slug, content, rendered_html, summary, namespace, status, author_id, last_editor_id, view_count, is_redirect, redirect_target, created_at, updated_at'
+	'id, title, slug, content, rendered_html, summary, namespace, status, visibility, author_id, last_editor_id, parent_id, view_count, is_redirect, redirect_target, created_at, updated_at'
 
 const SELECT_SUMMARY_FIELDS =
-	'id, title, slug, summary, namespace, status, author_id, last_editor_id, view_count, is_redirect, redirect_target, created_at, updated_at'
+	'id, title, slug, summary, namespace, status, visibility, author_id, last_editor_id, view_count, is_redirect, redirect_target, created_at, updated_at'
 
 export const pageDal = {
 	async list(params: {
@@ -68,6 +74,7 @@ export const pageDal = {
 		offset: number
 		namespace?: WikiNamespace
 		status?: WikiPageStatus
+		userId?: string
 	}): Promise<{ items: WikiPageRecord[]; total: number }> {
 		const conditions: string[] = []
 		const values: any[] = []
@@ -79,6 +86,12 @@ export const pageDal = {
 		if (params.status) {
 			conditions.push('status = ?')
 			values.push(params.status)
+		}
+		if (params.userId) {
+			conditions.push("(visibility != 'private' OR author_id = ?)")
+			values.push(params.userId)
+		} else {
+			conditions.push("visibility != 'private'")
 		}
 
 		const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -117,25 +130,50 @@ export const pageDal = {
 		queryStr: string,
 		limit = 20,
 		offset = 0,
+		userId?: string,
 	): Promise<{ items: WikiPageRecord[]; total: number }> {
 		const matchExpr = 'MATCH(title, content) AGAINST(? IN BOOLEAN MODE)'
+		const visibilityCondition = userId
+			? "(visibility != 'private' OR author_id = ?)"
+			: "visibility != 'private'"
 
+		// Try FULLTEXT search first
 		const countRow = await queryOne<{ cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM wiki_pages WHERE status != 'deleted' AND ${matchExpr}`,
-			[queryStr],
+			`SELECT COUNT(*) as cnt FROM wiki_pages WHERE status != 'deleted' AND ${visibilityCondition} AND ${matchExpr}`,
+			userId ? [userId, queryStr] : [queryStr],
 		)
-		const total = countRow?.cnt || 0
+		const fulltextTotal = countRow?.cnt || 0
 
-		const items = await query<WikiPageRow>(
-			`SELECT ${SELECT_SUMMARY_FIELDS}, ${matchExpr} as relevance
+		if (fulltextTotal > 0) {
+			const items = await query<WikiPageRow>(
+				`SELECT ${SELECT_SUMMARY_FIELDS}, ${matchExpr} as relevance
+				FROM wiki_pages
+				WHERE status != 'deleted' AND ${visibilityCondition} AND ${matchExpr}
+				ORDER BY relevance DESC
+				LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
+				userId ? [userId, queryStr, queryStr] : [queryStr, queryStr],
+			)
+			return { items: items.map(mapRowToRecord), total: fulltextTotal }
+		}
+
+		// Fallback to LIKE for short queries / single chars that FULLTEXT misses
+		const likePattern = `%${queryStr}%`
+		const likeCountRow = await queryOne<{ cnt: number }>(
+			`SELECT COUNT(*) as cnt FROM wiki_pages WHERE status != 'deleted' AND ${visibilityCondition} AND (title LIKE ? OR content LIKE ?)`,
+			userId ? [userId, likePattern, likePattern] : [likePattern, likePattern],
+		)
+		const likeTotal = likeCountRow?.cnt || 0
+
+		const likeItems = await query<WikiPageRow>(
+			`SELECT ${SELECT_SUMMARY_FIELDS}
 			FROM wiki_pages
-			WHERE status != 'deleted' AND ${matchExpr}
-			ORDER BY relevance DESC
+			WHERE status != 'deleted' AND ${visibilityCondition} AND (title LIKE ? OR content LIKE ?)
+			ORDER BY updated_at DESC
 			LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
-			[queryStr, queryStr],
+			userId ? [userId, likePattern, likePattern] : [likePattern, likePattern],
 		)
 
-		return { items: items.map(mapRowToRecord), total }
+		return { items: likeItems.map(mapRowToRecord), total: likeTotal }
 	},
 
 	async create(
@@ -143,8 +181,8 @@ export const pageDal = {
 	): Promise<WikiPageRecord> {
 		const id = generateId()
 		await execute(
-			`INSERT INTO wiki_pages (id, title, slug, content, rendered_html, summary, namespace, status, author_id, last_editor_id, is_redirect, redirect_target)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO wiki_pages (id, title, slug, content, rendered_html, summary, namespace, status, visibility, author_id, last_editor_id, parent_id, is_redirect, redirect_target)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			[
 				id,
 				data.title,
@@ -154,8 +192,10 @@ export const pageDal = {
 				data.summary,
 				data.namespace,
 				data.status,
+				data.visibility,
 				data.authorId,
 				data.lastEditorId,
+				data.parentId,
 				data.isRedirect,
 				data.redirectTarget,
 			],
@@ -205,9 +245,17 @@ export const pageDal = {
 			updates.push('status = ?')
 			values.push(data.status)
 		}
+		if (data.visibility !== undefined) {
+			updates.push('visibility = ?')
+			values.push(data.visibility)
+		}
 		if (data.lastEditorId !== undefined) {
 			updates.push('last_editor_id = ?')
 			values.push(data.lastEditorId)
+		}
+		if (data.parentId !== undefined) {
+			updates.push('parent_id = ?')
+			values.push(data.parentId)
 		}
 		if (data.isRedirect !== undefined) {
 			updates.push('is_redirect = ?')

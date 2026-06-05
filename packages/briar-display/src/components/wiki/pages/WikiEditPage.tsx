@@ -4,7 +4,7 @@ import { wikiApi } from '@/api/wiki'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
-import type { WikiPage } from '@briar/shared'
+import type { WikiCategoryTreeNode, WikiPage, WikiPageVisibility } from '@briar/shared'
 import Highlight from '@tiptap/extension-highlight'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
@@ -14,6 +14,8 @@ import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import {
 	Bold,
+	ChevronDown,
+	ChevronRight,
 	Code,
 	Heading2,
 	Heading3,
@@ -26,6 +28,7 @@ import {
 	Loader2,
 	Quote,
 	Redo,
+	Tag,
 	Undo,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -72,6 +75,113 @@ function ToolbarSeparator() {
 	return <div className="mx-1 h-6 w-px bg-wiki-border-light" />
 }
 
+function CategorySelector({
+	selected,
+	onChange,
+}: {
+	selected: string[]
+	onChange: (ids: string[]) => void
+}) {
+	const [tree, setTree] = useState<WikiCategoryTreeNode[]>([])
+	const [expanded, setExpanded] = useState<Set<string>>(new Set())
+	const [loading, setLoading] = useState(true)
+
+	useEffect(() => {
+		const fetchTree = async () => {
+			const res = await wikiApi.getCategoryTree()
+			if (res.success && res.data) {
+				setTree(res.data)
+				setExpanded(new Set(res.data.map((c) => c.id)))
+			}
+			setLoading(false)
+		}
+		fetchTree()
+	}, [])
+
+	const toggleExpand = (id: string) => {
+		setExpanded((prev) => {
+			const next = new Set(prev)
+			if (next.has(id)) next.delete(id)
+			else next.add(id)
+			return next
+		})
+	}
+
+	const toggleSelect = (id: string) => {
+		if (selected.includes(id)) {
+			onChange(selected.filter((s) => s !== id))
+		} else {
+			onChange([...selected, id])
+		}
+	}
+
+	const renderNode = (node: WikiCategoryTreeNode, depth = 0) => {
+		const hasChildren = node.children.length > 0
+		const isExpanded = expanded.has(node.id)
+		const isSelected = selected.includes(node.id)
+
+		return (
+			<div key={node.id}>
+				<div
+					className={cn(
+						'flex items-center gap-1 rounded-sm px-2 py-1 text-[13px] transition-colors hover:bg-wiki-bg-tertiary',
+						isSelected && 'bg-wiki-link/10',
+					)}
+					style={{ paddingLeft: `${depth * 20 + 8}px` }}
+				>
+					{hasChildren ? (
+						<button
+							type="button"
+							onClick={() => toggleExpand(node.id)}
+							className="flex-shrink-0 p-0.5"
+						>
+							{isExpanded ? (
+								<ChevronDown className="h-3.5 w-3.5" />
+							) : (
+								<ChevronRight className="h-3.5 w-3.5" />
+							)}
+						</button>
+					) : (
+						<span className="w-5" />
+					)}
+					<label className="flex flex-1 cursor-pointer items-center gap-2">
+						<input
+							type="checkbox"
+							checked={isSelected}
+							onChange={() => toggleSelect(node.id)}
+							className="h-3.5 w-3.5 rounded-sm border-wiki-border"
+						/>
+						<span>{node.name}</span>
+						{node.pageCount > 0 && <span className="text-wiki-text-muted">({node.pageCount})</span>}
+					</label>
+				</div>
+				{hasChildren && isExpanded && (
+					<div>{node.children.map((child) => renderNode(child, depth + 1))}</div>
+				)}
+			</div>
+		)
+	}
+
+	if (loading) {
+		return (
+			<div className="flex items-center gap-2 py-2 text-[13px] text-wiki-text-muted">
+				<Loader2 className="h-4 w-4 animate-spin" />
+				加载分类...
+			</div>
+		)
+	}
+
+	if (tree.length === 0) {
+		return <p className="py-2 text-[13px] text-wiki-text-muted">暂无分类</p>
+	}
+
+	return (
+		<div className="max-h-[200px] overflow-y-auto rounded-sm border border-wiki-border-light">
+			<div className="p-1">{tree.map((node) => renderNode(node))}</div>
+		</div>
+	)
+}
+
 export default function WikiEditPage({ slug }: WikiEditPageProps) {
 	const isNew = slug === 'new' || slug === ''
 	const [mode, setMode] = useState<EditMode>('visual')
@@ -83,6 +193,10 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [existingPage, setExistingPage] = useState<WikiPage | null>(null)
+	const [visibility, setVisibility] = useState<WikiPageVisibility>('public')
+	const [tagInput, setTagInput] = useState('')
+	const [categoryIds, setCategoryIds] = useState<string[]>([])
+	const [lastReadAt, setLastReadAt] = useState<string>('')
 
 	// TipTap editor
 	const editor = useEditor({
@@ -118,13 +232,26 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		let cancelled = false
 		setLoading(true)
 
-		wikiApi.getBySlug(slug).then((res) => {
+		wikiApi.getPageDetails(slug).then((res) => {
 			if (cancelled) return
 			if (res.success && res.data) {
-				setExistingPage(res.data)
-				setTitle(res.data.title)
-				setSourceContent(res.data.content)
-				editor.commands.setContent(res.data.content)
+				const page = res.data
+				setExistingPage(page)
+				setTitle(page.title)
+				setSourceContent(page.content)
+				setVisibility(page.visibility || 'public')
+				setLastReadAt(page.updatedAt)
+				editor.commands.setContent(page.content)
+
+				// Set tags
+				if (page.tags && page.tags.length > 0) {
+					setTagInput(page.tags.map((t: any) => t.name).join(', '))
+				}
+
+				// Set categories
+				if (page.categories && page.categories.length > 0) {
+					setCategoryIds(page.categories.map((c: any) => c.id))
+				}
 			} else {
 				setError(res.message || '加载文章失败')
 			}
@@ -138,8 +265,6 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 
 	/**
 	 * Get markdown from TipTap editor.
-	 * Uses editor.storage.markdown.getMarkdown() if available,
-	 * otherwise falls back to innerHTML extraction.
 	 */
 	const getEditorMarkdown = useCallback((): string => {
 		if (!editor) return ''
@@ -148,9 +273,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 			// @ts-expect-error markdown extension storage may not be typed
 			return editor.storage.markdown.getMarkdown()
 		}
-		// Fallback: get HTML and strip tags for a basic text representation
 		const html = editor.getHTML()
-		// Simple HTML to markdown-like conversion fallback
 		return html
 			.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n')
 			.replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n')
@@ -188,6 +311,14 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		[editor, sourceContent, getEditorMarkdown],
 	)
 
+	// Parse tag input into array
+	const getTagNames = useCallback((): string[] => {
+		return tagInput
+			.split(/[,，]/)
+			.map((t) => t.trim())
+			.filter((t) => t.length > 0)
+	}, [tagInput])
+
 	// Save handler
 	const handleSave = useCallback(async () => {
 		if (!title.trim()) {
@@ -206,6 +337,9 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 				const res = await wikiApi.createPage({
 					title: title.trim(),
 					content,
+					visibility,
+					tagNames: getTagNames(),
+					categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
 				})
 				if (res.success && res.data) {
 					window.history.pushState({}, '', `/briar-display/wiki/${res.data.slug}`)
@@ -214,12 +348,22 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 					setError(res.message || '创建失败')
 				}
 			} else {
-				const res = await wikiApi.updatePage(slug, {
+				const payload: any = {
 					title: title.trim(),
 					content,
+					visibility,
+					tagNames: getTagNames(),
+					categoryIds,
 					editSummary: editSummary.trim() || undefined,
 					minorEdit,
-				})
+				}
+
+				// Optimistic locking
+				if (lastReadAt) {
+					payload.lastReadAt = lastReadAt
+				}
+
+				const res = await wikiApi.updatePage(slug, payload)
 				if (res.success) {
 					window.history.pushState({}, '', `/briar-display/wiki/${slug}`)
 					window.dispatchEvent(new PopStateEvent('popstate'))
@@ -227,12 +371,31 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 					setError(res.message || '保存失败')
 				}
 			}
-		} catch {
-			setError('保存时发生错误')
+		} catch (err: any) {
+			if (err?.response?.status === 409) {
+				setError('编辑冲突：此页面在你编辑期间已被修改，请刷新后重试')
+			} else {
+				setError('保存时发生错误')
+			}
 		} finally {
 			setSaving(false)
 		}
-	}, [title, mode, editor, sourceContent, editSummary, minorEdit, isNew, slug, getEditorMarkdown])
+	}, [
+		title,
+		mode,
+		editor,
+		sourceContent,
+		editSummary,
+		minorEdit,
+		isNew,
+		slug,
+		getEditorMarkdown,
+		visibility,
+		tagInput,
+		categoryIds,
+		lastReadAt,
+		getTagNames,
+	])
 
 	// Cancel handler
 	const handleCancel = useCallback(() => {
@@ -309,13 +472,78 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 				/>
 			</div>
 
+			{/* Visibility */}
+			<div>
+				<label className="mb-1 block text-[13px] font-medium text-wiki-text">可见性</label>
+				<div className="flex gap-3">
+					<label className="flex items-center gap-1.5 text-[13px] text-wiki-text">
+						<input
+							type="radio"
+							name="visibility"
+							value="public"
+							checked={visibility === 'public'}
+							onChange={() => setVisibility('public')}
+							className="h-4 w-4 border-wiki-border text-wiki-link focus:ring-wiki-link"
+						/>
+						公开
+					</label>
+					<label className="flex items-center gap-1.5 text-[13px] text-wiki-text">
+						<input
+							type="radio"
+							name="visibility"
+							value="private"
+							checked={visibility === 'private'}
+							onChange={() => setVisibility('private')}
+							className="h-4 w-4 border-wiki-border text-wiki-link focus:ring-wiki-link"
+						/>
+						私密（仅自己可见）
+					</label>
+					<label className="flex items-center gap-1.5 text-[13px] text-wiki-text">
+						<input
+							type="radio"
+							name="visibility"
+							value="link_only"
+							checked={visibility === 'link_only'}
+							onChange={() => setVisibility('link_only')}
+							className="h-4 w-4 border-wiki-border text-wiki-link focus:ring-wiki-link"
+						/>
+						仅链接
+					</label>
+				</div>
+			</div>
+
+			{/* Tags */}
+			<div>
+				<label htmlFor="wiki-tags" className="mb-1 block text-[13px] font-medium text-wiki-text">
+					<Tag className="mr-1 inline-block h-3.5 w-3.5" />
+					标签
+				</label>
+				<input
+					id="wiki-tags"
+					type="text"
+					value={tagInput}
+					onChange={(e) => setTagInput(e.target.value)}
+					placeholder="输入标签，用逗号分隔，如：技术, 教程, 笔记"
+					className="w-full rounded-sm border border-wiki-border bg-wiki-bg px-3 py-2 text-[14px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none focus:ring-1 focus:ring-wiki-link"
+				/>
+				<p className="mt-1 text-[11px] text-wiki-text-muted">
+					用逗号分隔多个标签，不存在的标签会自动创建
+				</p>
+			</div>
+
+			{/* Categories */}
+			<div>
+				<label className="mb-1 block text-[13px] font-medium text-wiki-text">分类</label>
+				<CategorySelector selected={categoryIds} onChange={setCategoryIds} />
+			</div>
+
 			{/* Mode toggle */}
 			<div className="flex items-center gap-2">
 				<button
 					type="button"
 					onClick={() => handleModeChange('visual')}
 					className={cn(
-						'rounded-sm px-3 py-1.5 text-[13px] transition-colors',
+						'reounded-sm px-3 py-1.5 text-[13px] transition-colors',
 						mode === 'visual'
 							? 'bg-wiki-link text-white'
 							: 'border border-wiki-border-light text-wiki-text hover:bg-wiki-bg-secondary',
@@ -327,7 +555,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 					type="button"
 					onClick={() => handleModeChange('source')}
 					className={cn(
-						'rounded-sm px-3 py-1.5 text-[13px] transition-colors',
+						'reounded-sm px-3 py-1.5 text-[13px] transition-colors',
 						mode === 'source'
 							? 'bg-wiki-link text-white'
 							: 'border border-wiki-border-light text-wiki-text hover:bg-wiki-bg-secondary',

@@ -2,25 +2,34 @@ import { apiClient } from '@/api/request'
 import type {
 	ApiResponse,
 	CreateWikiCategoryPayload,
+	CreateWikiChangeRequestPayload,
 	CreateWikiDiscussionPayload,
+	CreateWikiInlineCommentPayload,
 	CreateWikiPagePayload,
 	CreateWikiReplyPayload,
+	CreateWikiTagPayload,
 	CreateWikiTemplatePayload,
+	ReviewWikiChangeRequestPayload,
 	UpdateWikiCategoryPayload,
 	UpdateWikiPagePayload,
 	UpdateWikiTemplatePayload,
+	WikiBacklink,
 	WikiCategory,
 	WikiCategoryTreeNode,
+	WikiChangeRequest,
 	WikiDiffResult,
 	WikiDiscussion,
 	WikiDiscussionReply,
+	WikiInlineComment,
 	WikiPage,
 	WikiPageSummary,
 	WikiPaginatedResponse,
 	WikiRecentChange,
 	WikiRevision,
 	WikiSearchResult,
+	WikiStar,
 	WikiStatistics,
+	WikiTag,
 	WikiTemplate,
 	WikiUserContribution,
 	WikiWatchlistItem,
@@ -78,7 +87,32 @@ export const wikiApi = {
 		}
 	},
 
-	async updatePage(slug: string, payload: UpdateWikiPagePayload) {
+	async getPageDetails(slug: string, namespace = 'main') {
+		try {
+			const response = await apiClient.get<
+				ApiResponse<
+					WikiPage & {
+						categories: WikiCategory[]
+						tags: WikiTag[]
+						backlinks: WikiBacklink[]
+						subpages: WikiPageSummary[]
+					}
+				>
+			>(`/wiki/pages/${namespace}/${slug}/details`)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<
+				WikiPage & {
+					categories: WikiCategory[]
+					tags: WikiTag[]
+					backlinks: WikiBacklink[]
+					subpages: WikiPageSummary[]
+				}
+			>
+		}
+	},
+
+	async updatePage(slug: string, payload: UpdateWikiPagePayload & { lastReadAt?: string }) {
 		try {
 			const response = await apiClient.put<ApiResponse<WikiPage>>(`/wiki/pages/${slug}`, payload)
 			return response.data
@@ -93,6 +127,28 @@ export const wikiApi = {
 			return response.data
 		} catch (error) {
 			return handleError(error)
+		}
+	},
+
+	async getBacklinks(slug: string) {
+		try {
+			const response = await apiClient.get<ApiResponse<WikiBacklink[]>>(
+				`/wiki/pages/${slug}/backlinks`,
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiBacklink[]>
+		}
+	},
+
+	async getSubpages(slug: string) {
+		try {
+			const response = await apiClient.get<ApiResponse<WikiPageSummary[]>>(
+				`/wiki/pages/${slug}/subpages`,
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiPageSummary[]>
 		}
 	},
 
@@ -195,6 +251,91 @@ export const wikiApi = {
 		}
 	},
 
+	// ===================== Tags =====================
+
+	async getTags() {
+		try {
+			const response = await apiClient.get<ApiResponse<WikiTag[]>>('/wiki/tags')
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiTag[]>
+		}
+	},
+
+	async getTag(slug: string) {
+		try {
+			const response = await apiClient.get<ApiResponse<WikiTag>>(`/wiki/tags/${slug}`)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiTag>
+		}
+	},
+
+	async createTag(payload: CreateWikiTagPayload) {
+		try {
+			const response = await apiClient.post<ApiResponse<WikiTag>>('/wiki/tags', payload)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiTag>
+		}
+	},
+
+	async deleteTag(id: string) {
+		try {
+			const response = await apiClient.delete<ApiResponse>(`/wiki/tags/${id}`)
+			return response.data
+		} catch (error) {
+			return handleError(error)
+		}
+	},
+
+	// ===================== Stars =====================
+
+	async getStars(limit?: number, offset?: number) {
+		try {
+			const response = await apiClient.get<ApiResponse<WikiPaginatedResponse<WikiPageSummary>>>(
+				'/wiki/stars',
+				{ params: { limit, offset } },
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiPaginatedResponse<WikiPageSummary>>
+		}
+	},
+
+	async addStar(slug: string) {
+		try {
+			const response = await apiClient.post<ApiResponse<{ starred: boolean }>>(
+				`/wiki/stars/${slug}`,
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<{ starred: boolean }>
+		}
+	},
+
+	async removeStar(slug: string) {
+		try {
+			const response = await apiClient.delete<ApiResponse<{ starred: boolean }>>(
+				`/wiki/stars/${slug}`,
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<{ starred: boolean }>
+		}
+	},
+
+	async isStarred(slug: string) {
+		try {
+			const response = await apiClient.get<ApiResponse<{ starred: boolean }>>(
+				`/wiki/stars/${slug}/status`,
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<{ starred: boolean }>
+		}
+	},
+
 	// ===================== Discussions =====================
 
 	async getTopics(slug: string, limit?: number, offset?: number) {
@@ -249,6 +390,125 @@ export const wikiApi = {
 			const response = await apiClient.put<ApiResponse>(
 				`/wiki/pages/${slug}/discussions/${topicId}/resolve`,
 			)
+			return response.data
+		} catch (error) {
+			return handleError(error)
+		}
+	},
+
+	// ===================== Inline Comments =====================
+
+	async getInlineComments(slug: string) {
+		try {
+			const response = await apiClient.get<ApiResponse<WikiInlineComment[]>>(
+				`/wiki/pages/${slug}/comments`,
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiInlineComment[]>
+		}
+	},
+
+	async getInlineCommentsByAnchor(slug: string, anchor: string) {
+		try {
+			const response = await apiClient.get<ApiResponse<WikiInlineComment[]>>(
+				`/wiki/pages/${slug}/comments/${anchor}`,
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiInlineComment[]>
+		}
+	},
+
+	async createInlineComment(slug: string, payload: CreateWikiInlineCommentPayload) {
+		try {
+			const response = await apiClient.post<ApiResponse<WikiInlineComment>>(
+				`/wiki/pages/${slug}/comments`,
+				payload,
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiInlineComment>
+		}
+	},
+
+	async updateInlineComment(
+		slug: string,
+		id: string,
+		payload: { content?: string; resolved?: boolean },
+	) {
+		try {
+			const response = await apiClient.put<ApiResponse<WikiInlineComment>>(
+				`/wiki/pages/${slug}/comments/${id}`,
+				payload,
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiInlineComment>
+		}
+	},
+
+	async deleteInlineComment(slug: string, id: string) {
+		try {
+			const response = await apiClient.delete<ApiResponse>(`/wiki/pages/${slug}/comments/${id}`)
+			return response.data
+		} catch (error) {
+			return handleError(error)
+		}
+	},
+
+	// ===================== Change Requests =====================
+
+	async getChangeRequests(slug: string, status?: string) {
+		try {
+			const response = await apiClient.get<ApiResponse<WikiChangeRequest[]>>(
+				`/wiki/pages/${slug}/change-requests`,
+				{ params: { status } },
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiChangeRequest[]>
+		}
+	},
+
+	async getMyChangeRequests() {
+		try {
+			const response = await apiClient.get<ApiResponse<WikiChangeRequest[]>>(
+				'/wiki/change-requests/my',
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiChangeRequest[]>
+		}
+	},
+
+	async createChangeRequest(slug: string, payload: CreateWikiChangeRequestPayload) {
+		try {
+			const response = await apiClient.post<ApiResponse<WikiChangeRequest>>(
+				`/wiki/pages/${slug}/change-requests`,
+				payload,
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiChangeRequest>
+		}
+	},
+
+	async reviewChangeRequest(id: string, payload: ReviewWikiChangeRequestPayload) {
+		try {
+			const response = await apiClient.put<ApiResponse<WikiChangeRequest>>(
+				`/wiki/change-requests/${id}/review`,
+				payload,
+			)
+			return response.data
+		} catch (error) {
+			return handleError(error) as ApiResponse<WikiChangeRequest>
+		}
+	},
+
+	async deleteChangeRequest(id: string) {
+		try {
+			const response = await apiClient.delete<ApiResponse>(`/wiki/change-requests/${id}`)
 			return response.data
 		} catch (error) {
 			return handleError(error)

@@ -1,7 +1,16 @@
 import type { CreateWikiPagePayload, UpdateWikiPagePayload } from '@briar/shared'
+import { backlinkDal } from '../../dal/wiki/backlinkDal'
 import { categoryDal } from '../../dal/wiki/categoryDal'
 import { pageDal } from '../../dal/wiki/pageDal'
 import { revisionDal } from '../../dal/wiki/revisionDal'
+import { tagDal } from '../../dal/wiki/tagDal'
+import {
+	extractMentions,
+	extractTransclusions,
+	resolveTransclusions,
+	updateBacklinks,
+} from './backlinkService'
+import { tagService } from './tagService'
 
 export const pageService = {
 	/**
@@ -68,11 +77,31 @@ export const pageService = {
 	},
 
 	/**
+	 * List wiki pages
+	 */
+	async list(params: {
+		namespace?: string
+		status?: string
+		limit?: number
+		offset?: number
+		userId?: string
+	}) {
+		return pageDal.list({
+			limit: params.limit || 20,
+			offset: params.offset || 0,
+			namespace: params.namespace as any,
+			status: params.status as any,
+			userId: params.userId,
+		})
+	},
+
+	/**
 	 * Create a new wiki page
 	 */
 	async create(payload: CreateWikiPagePayload, authorId: string) {
 		const namespace = payload.namespace || 'main'
 		const status = payload.status || 'published'
+		const visibility = payload.visibility || 'public'
 		const slug = await pageService.ensureUniqueSlug(payload.title, namespace)
 		const summary = pageService.generateSummary(payload.content)
 		const renderedHtml = pageService.renderHtml(payload.content)
@@ -85,10 +114,12 @@ export const pageService = {
 			summary,
 			namespace,
 			status,
+			visibility,
 			authorId,
 			lastEditorId: null,
 			isRedirect: false,
 			redirectTarget: null,
+			parentId: payload.parentId || null,
 		})
 
 		// Create initial revision
@@ -110,6 +141,21 @@ export const pageService = {
 				await categoryDal.incrementPageCount(catId)
 			}
 		}
+
+		// Assign tags if provided
+		if (payload.tagNames && payload.tagNames.length > 0) {
+			const tags = await tagService.getOrCreateTags(payload.tagNames)
+			await tagDal.setPageTags(
+				page.id,
+				tags.map((t) => t.id),
+			)
+			for (const tag of tags) {
+				await tagDal.incrementPageCount(tag.id)
+			}
+		}
+
+		// Update backlinks (mentions in content)
+		await updateBacklinks(page.id, payload.content)
 
 		return page
 	},
@@ -144,6 +190,12 @@ export const pageService = {
 		if (payload.status !== undefined) {
 			updates.status = payload.status
 		}
+		if (payload.visibility !== undefined) {
+			updates.visibility = payload.visibility
+		}
+		if (payload.parentId !== undefined) {
+			updates.parentId = payload.parentId
+		}
 
 		// Create revision if content changed
 		if (payload.content !== undefined) {
@@ -177,7 +229,35 @@ export const pageService = {
 			}
 		}
 
-		return pageDal.update(page.id, updates)
+		// Update tags if provided
+		if (payload.tagNames !== undefined) {
+			const oldTags = await tagDal.listByPageId(page.id)
+			const newTags = await tagService.getOrCreateTags(payload.tagNames)
+			const newTagIds = newTags.map((t) => t.id)
+
+			await tagDal.setPageTags(page.id, newTagIds)
+
+			// Update counts
+			for (const tag of oldTags) {
+				if (!newTagIds.includes(tag.id)) {
+					await tagDal.decrementPageCount(tag.id)
+				}
+			}
+			for (const tag of newTags) {
+				if (!oldTags.find((t) => t.id === tag.id)) {
+					await tagDal.incrementPageCount(tag.id)
+				}
+			}
+		}
+
+		const updatedPage = await pageDal.update(page.id, updates)
+
+		// Update backlinks after content change
+		if (payload.content !== undefined && updatedPage) {
+			await updateBacklinks(page.id, payload.content)
+		}
+
+		return updatedPage
 	},
 
 	/**
@@ -217,12 +297,55 @@ export const pageService = {
 	},
 
 	/**
+	 * Get page with full details (categories, tags, backlinks)
+	 */
+	async getPageDetails(namespace: string, slug: string) {
+		const page = await pageService.getBySlug(namespace, slug)
+		if (!page) {
+			return null
+		}
+
+		const [categories, tags, backlinks, subpages] = await Promise.all([
+			categoryDal.getPageCategories(page.id),
+			tagDal.listByPageId(page.id),
+			backlinkDal.findByTargetPage(page.id),
+			pageDal.list({
+				limit: 100,
+				offset: 0,
+				namespace: page.namespace,
+			}),
+		])
+
+		// Filter subpages (pages with this page as parent)
+		const childPages = subpages.items.filter((p) => p.parentId === page.id)
+
+		return {
+			...page,
+			categories,
+			tags,
+			backlinks,
+			subpages: childPages,
+		}
+	},
+
+	/**
 	 * Search pages
 	 */
-	async search(queryStr: string, limit = 20, offset = 0) {
+	async search(queryStr: string, limit = 20, offset = 0, userId?: string) {
 		if (!queryStr || !queryStr.trim()) {
 			return { items: [], total: 0 }
 		}
-		return pageDal.search(queryStr.trim(), limit, offset)
+		return pageDal.search(queryStr.trim(), limit, offset, userId)
+	},
+
+	/**
+	 * Get subpages of a page
+	 */
+	async getSubpages(parentId: string) {
+		const result = await pageDal.list({
+			limit: 100,
+			offset: 0,
+		})
+		return result.items.filter((p) => p.parentId === parentId)
 	},
 }

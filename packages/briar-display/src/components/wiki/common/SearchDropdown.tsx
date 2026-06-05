@@ -41,13 +41,13 @@ export default function SearchDropdown({ onSelect, className }: SearchDropdownPr
 						namespace: item.namespace,
 					})),
 				)
-				setOpen(true)
 			} else {
 				setResults([])
-				setOpen(false)
 			}
+			setOpen(true)
 		} catch {
 			setResults([])
+			setOpen(true)
 		} finally {
 			setLoading(false)
 		}
@@ -123,23 +123,27 @@ export default function SearchDropdown({ onSelect, className }: SearchDropdownPr
 				)}
 			</div>
 
-			{open && results.length > 0 && (
+			{open && query.trim() && (
 				<div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-md border border-wiki-border-light bg-wiki-bg shadow-lg">
-					{results.map((item) => (
-						<button
-							key={`${item.namespace || 'main'}:${item.slug}`}
-							type="button"
-							onClick={() => handleSelectResult(item.slug)}
-							className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] transition-colors hover:bg-wiki-bg-tertiary"
-						>
-							<span className="truncate text-wiki-link">{item.title}</span>
-							{item.namespace && item.namespace !== 'main' && (
-								<span className="ml-2 flex-shrink-0 rounded bg-wiki-bg-tertiary px-1.5 py-0.5 text-[10px] text-wiki-text-muted">
-									{item.namespace}
-								</span>
-							)}
-						</button>
-					))}
+					{results.length > 0 ? (
+						results.map((item) => (
+							<button
+								key={`${item.namespace || 'main'}:${item.slug}`}
+								type="button"
+								onClick={() => handleSelectResult(item.slug)}
+								className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] transition-colors hover:bg-wiki-bg-tertiary"
+							>
+								<span className="truncate text-wiki-link">{item.title}</span>
+								{item.namespace && item.namespace !== 'main' && (
+									<span className="ml-2 flex-shrink-0 rounded bg-wiki-bg-tertiary px-1.5 py-0.5 text-[10px] text-wiki-text-muted">
+										{item.namespace}
+									</span>
+								)}
+							</button>
+						))
+					) : (
+						<div className="px-3 py-2 text-[13px] text-wiki-text-muted">无搜索结果</div>
+					)}
 				</div>
 			)}
 		</div>
