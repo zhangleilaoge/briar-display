@@ -31,6 +31,7 @@
 		"@tiptap/extension-table-header": "^3",
 		"@tiptap/extension-table-row": "^3",
 		"@tiptap/extension-underline": "^3",
+		"tiptap-markdown": "^0.8.10",
 		"@types/react": "^19.2.8",
 		"@types/react-dom": "^19.2.3",
 		"astro": "^5.16.11",
