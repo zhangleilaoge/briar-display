@@ -432,7 +432,7 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 								: 'border-wiki-border-light text-wiki-text-secondary hover:border-wiki-link hover:text-wiki-link',
 						)}
 					>
-						<Eye className={cn('h-3.5 w-3.5', watching && 'fill-wiki-link')} />
+						<Eye className="h-3.5 w-3.5" />
 						{watching ? '已关注' : '关注'}
 					</button>
 				</div>
