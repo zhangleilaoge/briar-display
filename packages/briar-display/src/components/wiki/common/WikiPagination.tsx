@@ -18,25 +18,8 @@ export default function WikiPagination({
 	onPageChange,
 	className,
 }: WikiPaginationProps) {
-	const totalPages = Math.ceil(total / limit)
+	const totalPages = Math.max(1, Math.ceil(total / limit))
 	const currentPage = Math.floor(offset / limit) + 1
-
-	if (total === 0) {
-		return null
-	}
-
-	if (totalPages <= 1) {
-		return (
-			<div
-				className={cn(
-					'flex items-center justify-center pt-4 text-sm text-muted-foreground',
-					className,
-				)}
-			>
-				共 {total} 条记录
-			</div>
-		)
-	}
 
 	const handlePageChange = (page: number) => {
 		const newOffset = (page - 1) * limit
@@ -85,6 +68,10 @@ export default function WikiPagination({
 					</button>
 					{start > 2 && <span className="px-1 text-muted-foreground">...</span>}
 				</>
+			)}
+
+			{total === 0 && (
+				<span className="px-3 py-1.5 text-sm text-muted-foreground">共 0 条记录</span>
 			)}
 
 			{pages.map((page) => (
