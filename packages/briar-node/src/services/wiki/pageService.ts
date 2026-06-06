@@ -270,6 +270,10 @@ export const pageService = {
 			throw new Error('FORBIDDEN')
 		}
 
+		// Clean up backlinks before soft-deleting
+		await backlinkDal.deleteBySourcePage(page.id)
+		await backlinkDal.deleteByTargetPage(page.id)
+
 		return pageDal.delete(page.id)
 	},
 

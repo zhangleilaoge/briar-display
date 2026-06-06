@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ToolbarButton, ToolbarSeparator } from '@/components/wiki/editor/EditorToolbar'
+import { WikiLink } from '@/components/wiki/editor/extensions/wikiLink'
 import type { WikiSearchResult } from '@briar/shared'
 import Highlight from '@tiptap/extension-highlight'
 import Image from '@tiptap/extension-image'
@@ -83,6 +84,7 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 				openOnClick: false,
 				HTMLAttributes: { class: 'text-wiki-link hover:underline cursor-pointer' },
 			}),
+			WikiLink,
 			Image.configure({
 				HTMLAttributes: { class: 'max-w-full h-auto rounded-sm' },
 				allowBase64: true,

@@ -46,6 +46,10 @@ export const backlinkDal = {
 		await execute('DELETE FROM wiki_backlinks WHERE source_page_id = ?', [sourcePageId])
 	},
 
+	async deleteByTargetPage(targetPageId: string): Promise<void> {
+		await execute('DELETE FROM wiki_backlinks WHERE target_page_id = ?', [targetPageId])
+	},
+
 	async findByTargetPage(
 		targetPageId: string,
 		limit = 50,
