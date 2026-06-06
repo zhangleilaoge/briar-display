@@ -171,7 +171,7 @@ export const specialDal = {
 		limit = 50,
 		offset = 0,
 	): Promise<{ items: WikiPageListItem[]; total: number }> {
-		// Pages not referenced by any other page's content via [[slug]]
+		// Pages not referenced by any other page's content via [[slug]] or \[\[slug\]\]
 		const countRow = await queryOne<{ cnt: number }>(
 			`SELECT COUNT(*) as cnt FROM wiki_pages p
 			WHERE p.status != 'deleted'
@@ -179,7 +179,10 @@ export const specialDal = {
 				SELECT 1 FROM wiki_pages ref
 				WHERE ref.status != 'deleted'
 				AND ref.id != p.id
-				AND ref.content LIKE CONCAT('%[[', p.slug, ']]%')
+				AND (
+					LOWER(ref.content) LIKE CONCAT('%[[', LOWER(p.slug), ']]%')
+					OR LOWER(ref.content) LIKE CONCAT('%\\\\[\\\\[', LOWER(p.slug), '\\\\]\\\\]%')
+				)
 			)`,
 		)
 		const total = countRow?.cnt || 0
@@ -192,7 +195,10 @@ export const specialDal = {
 				SELECT 1 FROM wiki_pages ref
 				WHERE ref.status != 'deleted'
 				AND ref.id != p.id
-				AND ref.content LIKE CONCAT('%[[', p.slug, ']]%')
+				AND (
+					LOWER(ref.content) LIKE CONCAT('%[[', LOWER(p.slug), ']]%')
+					OR LOWER(ref.content) LIKE CONCAT('%\\\\[\\\\[', LOWER(p.slug), '\\\\]\\\\]%')
+				)
 			)
 			ORDER BY p.title ASC
 			LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
@@ -211,7 +217,7 @@ export const specialDal = {
 			`SELECT content FROM wiki_pages WHERE status != 'deleted' AND content LIKE '%[[%'`,
 		)
 
-		const mentionRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g
+		const mentionRegex = /\\?\[\\?\[([^\]|]+)(?:\|([^\]]+))?\\?\]\\?\]/g
 		const slugCounts = new Map<string, number>()
 
 		for (const row of rows) {

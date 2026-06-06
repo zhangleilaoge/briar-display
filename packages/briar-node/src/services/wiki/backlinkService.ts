@@ -7,7 +7,7 @@ import { pageDal } from '../../dal/wiki/pageDal'
  */
 export function extractMentions(content: string): { slug: string; display: string }[] {
 	const mentions: { slug: string; display: string }[] = []
-	const regex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g
+	const regex = /\\?\[\\?\[([^\]|]+)(?:\|([^\]]+))?\\?\]\\?\]/g
 
 	for (let match = regex.exec(content); match !== null; match = regex.exec(content)) {
 		const slug = match[1].trim().toLowerCase()

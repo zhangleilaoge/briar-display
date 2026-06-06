@@ -97,12 +97,15 @@ function formatDate(date: string | Date): string {
 	})
 }
 
-/** Parse [[slug|display]] mentions into markdown links */
+/** Parse [[slug|display]] or \[\[slug|display\]\] mentions into markdown links */
 function renderMentions(content: string): string {
-	return content.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_match, slug, display) => {
-		const label = display || slug
-		return `[${label}](/briar-display/wiki/${slug})`
-	})
+	return content.replace(
+		/\\?\[\\?\[([^\]|]+)(?:\|([^\]]+))?\\?\]\\?\]/g,
+		(_match, slug, display) => {
+			const label = display || slug
+			return `[${label}](/briar-display/wiki/${slug})`
+		},
+	)
 }
 
 export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
