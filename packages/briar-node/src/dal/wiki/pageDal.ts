@@ -129,11 +129,13 @@ export const pageDal = {
 	},
 
 	async findBySlug(namespace: WikiNamespace, slug: string): Promise<WikiPageRecord | null> {
-		const row = await queryOne<WikiPageRow>(
-			`SELECT ${SELECT_FIELDS} FROM wiki_pages WHERE namespace = ? AND slug = ?`,
-			[namespace, slug],
+		// Try decoded slug first, then encoded slug for backward compatibility
+		const encodedSlug = encodeURIComponent(slug)
+		const rows = await query<WikiPageRow>(
+			`SELECT ${SELECT_FIELDS} FROM wiki_pages WHERE namespace = ? AND slug IN (?, ?) LIMIT 1`,
+			[namespace, slug, encodedSlug],
 		)
-		return row ? mapRowToRecord(row) : null
+		return rows.length > 0 ? mapRowToRecord(rows[0]) : null
 	},
 
 	async findById(id: string): Promise<WikiPageRecord | null> {
