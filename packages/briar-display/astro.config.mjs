@@ -57,6 +57,22 @@ export default defineConfig({
 				'@': fileURLToPath(new URL('./src', import.meta.url)),
 			},
 		},
+		build: {
+			rollupOptions: {
+				output: {
+					manualChunks(id) {
+						if (id.includes('node_modules')) {
+							if (id.includes('react-dom')) return 'react-vendor'
+							if (id.includes('react/') && !id.includes('react-dom')) return 'react-vendor'
+							if (id.includes('react-markdown')) return 'markdown-vendor'
+						}
+						// wiki 页面和编辑器组件拆分
+						if (id.includes('/components/wiki/pages/')) return 'wiki-pages'
+						if (id.includes('/components/wiki/editor/')) return 'wiki-pages'
+					},
+				},
+			},
+		},
 		plugins: [
 			{
 				name: 'wiki-spa-fallback',
