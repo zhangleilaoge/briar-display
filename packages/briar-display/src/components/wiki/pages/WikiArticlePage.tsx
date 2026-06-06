@@ -10,6 +10,7 @@ import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiFooter from '@/components/wiki/layout/WikiFooter'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
+import remarkWikiLink from '@/remark/remark-wiki-link'
 import { PERMISSIONS } from '@briar/shared'
 import type { WikiBacklink, WikiCategory, WikiPage, WikiPageSummary, WikiTag } from '@briar/shared'
 import { AlertTriangle, Eye, FolderOpen, Loader2, Pencil, Star, Tag } from 'lucide-react'
@@ -95,17 +96,6 @@ function formatDate(date: string | Date): string {
 		month: 'long',
 		day: 'numeric',
 	})
-}
-
-/** Parse [[slug|display]] or \[\[slug|display\]\] mentions into markdown links */
-function renderMentions(content: string): string {
-	return content.replace(
-		/\\?\[\\?\[([^\]|]+)(?:\|([^\]]+))?\\?\]\\?\]/g,
-		(_match, slug, display) => {
-			const label = display || slug
-			return `[${label}](/briar-display/wiki/${slug})`
-		},
-	)
 }
 
 export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
@@ -248,12 +238,6 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 
 		return result.join('\n')
 	}, [page?.content, infoboxContent])
-
-	// Render mentions in content
-	const renderedContent = useMemo(() => {
-		if (!mainContent) return ''
-		return renderMentions(mainContent)
-	}, [mainContent])
 
 	// Custom renderers for ReactMarkdown
 	const markdownComponents = useMemo(
@@ -465,7 +449,9 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 
 					{/* Article content */}
 					<article className="prose prose-wiki max-w-none">
-						<ReactMarkdown components={markdownComponents}>{renderedContent}</ReactMarkdown>
+						<ReactMarkdown remarkPlugins={[remarkWikiLink]} components={markdownComponents}>
+							{mainContent}
+						</ReactMarkdown>
 					</article>
 				</div>
 			</div>
@@ -511,7 +497,7 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 			{/* Footer */}
 			<WikiFooter
 				lastEdited={page.updatedAt}
-				lastEditor={page.lastEditorId || undefined}
+				lastEditor={page.lastEditorName || undefined}
 				viewCount={page.viewCount}
 				slug={slug}
 			/>

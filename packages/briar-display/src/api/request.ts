@@ -7,6 +7,13 @@ let lastTraceId: string | null = null
 export const getLastTraceId = () => lastTraceId
 
 const getApiBaseUrl = () => {
+	// 允许通过环境变量强制指定 API 地址（本地调远程时用）
+	const envUrl =
+		typeof import.meta.env !== 'undefined' ? import.meta.env.PUBLIC_API_BASE_URL : undefined
+	if (envUrl) {
+		return envUrl
+	}
+
 	if (typeof window === 'undefined') {
 		return `http://localhost:${NODE_PORT}${API_BASE_PATH}`
 	}
