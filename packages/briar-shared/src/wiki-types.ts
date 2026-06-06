@@ -343,6 +343,12 @@ export interface WikiUserContribution {
 	createdAt: Date
 }
 
+/** 期望页面项 */
+export interface WikiWantedPage {
+	slug: string
+	referenceCount: number
+}
+
 /** 分页参数（Wiki 专用） */
 export interface WikiPaginationParams {
 	limit?: number

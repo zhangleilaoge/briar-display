@@ -205,38 +205,45 @@ export const specialDal = {
 		limit = 50,
 		offset = 0,
 	): Promise<{ items: { slug: string; referenceCount: number }[]; total: number }> {
-		// Find slugs referenced in content but don't exist
-		// This is complex in pure SQL, so we use a subquery approach
-		// We extract [[slug]] patterns and check which ones don't have corresponding pages
+		// Use application-layer regex extraction (same as backlinkService) instead of
+		// fragile SQL SUBSTRING_INDEX tricks which mis-parse content like '122[[12Aa]]'.
 		const rows = await query<any>(
-			`SELECT referenced_slug, COUNT(*) as ref_count
-			FROM (
-				SELECT SUBSTRING_INDEX(SUBSTRING_INDEX(content, '[[', n.n), ']]', 1) as referenced_slug
-				FROM wiki_pages
-				JOIN (
-					SELECT 1 as n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5
-					UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10
-				) n ON n.n <= 1 + LENGTH(content) - LENGTH(REPLACE(content, '[[', ''))
-				WHERE status != 'deleted' AND content LIKE '%[[%'
-			) refs
-			WHERE referenced_slug != ''
-			AND NOT EXISTS (
-				SELECT 1 FROM wiki_pages p WHERE p.slug = referenced_slug AND p.status != 'deleted'
-			)
-			GROUP BY referenced_slug
-			ORDER BY ref_count DESC
-			LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
+			`SELECT content FROM wiki_pages WHERE status != 'deleted' AND content LIKE '%[[%'`,
 		)
 
-		const total = rows.length // Approximate; full count would be expensive
+		const mentionRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g
+		const slugCounts = new Map<string, number>()
 
-		return {
-			items: rows.map((row: any) => ({
-				slug: row.referenced_slug,
-				referenceCount: row.ref_count,
-			})),
-			total,
+		for (const row of rows) {
+			const content = row.content as string
+			for (const match of content.matchAll(mentionRegex)) {
+				const slug = match[1].trim()
+				slugCounts.set(slug, (slugCounts.get(slug) || 0) + 1)
+			}
 		}
+
+		if (slugCounts.size === 0) {
+			return { items: [], total: 0 }
+		}
+
+		// Batch-query which slugs already exist
+		const allSlugs = Array.from(slugCounts.keys())
+		const placeholders = allSlugs.map(() => '?').join(',')
+		const existingRows = await query<any>(
+			`SELECT slug FROM wiki_pages WHERE slug IN (${placeholders}) AND status != 'deleted'`,
+			allSlugs,
+		)
+		const existingSlugs = new Set(existingRows.map((r: any) => r.slug))
+
+		const wanted = Array.from(slugCounts.entries())
+			.filter(([slug]) => !existingSlugs.has(slug))
+			.map(([slug, referenceCount]) => ({ slug, referenceCount }))
+			.sort((a, b) => b.referenceCount - a.referenceCount)
+
+		const total = wanted.length
+		const items = wanted.slice(offset, offset + limit)
+
+		return { items, total }
 	},
 
 	async userContributions(

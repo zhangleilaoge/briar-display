@@ -32,6 +32,7 @@ import type {
 	WikiTag,
 	WikiTemplate,
 	WikiUserContribution,
+	WikiWantedPage,
 	WikiWatchlistItem,
 } from '@briar/shared'
 
@@ -691,13 +692,13 @@ export const wikiApi = {
 
 	async wantedPages(limit?: number, offset?: number) {
 		try {
-			const response = await apiClient.get<ApiResponse<WikiPaginatedResponse<WikiPageSummary>>>(
+			const response = await apiClient.get<ApiResponse<WikiPaginatedResponse<WikiWantedPage>>>(
 				'/wiki/special/wanted-pages',
 				{ params: { limit, offset } },
 			)
 			return response.data
 		} catch (error) {
-			return handleError(error) as ApiResponse<WikiPaginatedResponse<WikiPageSummary>>
+			return handleError(error) as ApiResponse<WikiPaginatedResponse<WikiWantedPage>>
 		}
 	},
 
