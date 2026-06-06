@@ -262,10 +262,10 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 											)}
 										</td>
 										<td className="hidden px-4 py-2 text-muted-foreground sm:table-cell">
-											{formatDate(page.updatedAt)}
+											{page.updatedAt ? formatDate(page.updatedAt) : '—'}
 										</td>
 										<td className="hidden px-4 py-2 text-right text-muted-foreground md:table-cell">
-											{page.viewCount.toLocaleString()}
+											{(page.viewCount ?? 0).toLocaleString()}
 										</td>
 									</tr>
 								))}
