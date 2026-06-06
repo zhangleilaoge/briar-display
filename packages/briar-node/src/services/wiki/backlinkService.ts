@@ -10,8 +10,8 @@ export function extractMentions(content: string): { slug: string; display: strin
 	const regex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g
 
 	for (let match = regex.exec(content); match !== null; match = regex.exec(content)) {
-		const slug = match[1].trim()
-		const display = match[2] ? match[2].trim() : slug
+		const slug = match[1].trim().toLowerCase()
+		const display = match[2] ? match[2].trim() : match[1].trim()
 		mentions.push({ slug, display })
 	}
 
