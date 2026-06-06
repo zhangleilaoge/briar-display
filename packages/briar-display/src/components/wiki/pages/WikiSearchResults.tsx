@@ -1,6 +1,8 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import WikiPagination from '@/components/wiki/common/WikiPagination'
 import { cn } from '@/lib/utils'
 import type { WikiSearchResult } from '@briar/shared'
@@ -134,21 +136,16 @@ export default function WikiSearchResults() {
 			<form onSubmit={handleSearch} className="flex gap-2">
 				<div className="relative flex-1">
 					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-wiki-text-muted" />
-					<input
-						type="text"
+					<Input
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 						placeholder="搜索文章标题和内容..."
-						className="w-full rounded-sm border border-wiki-border bg-wiki-bg py-2 pl-10 pr-4 text-[14px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none focus:ring-1 focus:ring-wiki-link"
+						className="pl-10"
 					/>
 				</div>
-				<button
-					type="submit"
-					disabled={loading}
-					className="inline-flex items-center gap-1.5 rounded-sm bg-wiki-link px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-wiki-link-hover disabled:opacity-70"
-				>
+				<Button type="submit" disabled={loading}>
 					{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : '搜索'}
-				</button>
+				</Button>
 			</form>
 
 			{/* Error */}

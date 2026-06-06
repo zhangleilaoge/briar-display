@@ -1,6 +1,8 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import { cn } from '@/lib/utils'
 import type { WikiCategory, WikiCategoryTreeNode } from '@briar/shared'
@@ -93,35 +95,29 @@ function CategoryTreeNode({
 
 				{editing ? (
 					<div className="flex flex-1 items-center gap-2">
-						<input
-							type="text"
+						<Input
 							value={editing.name}
 							onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-							className="rounded border border-border bg-background px-2 py-0.5 text-sm focus:border-primary focus:outline-none"
 							placeholder="分类名称"
+							className="h-7"
 						/>
-						<input
-							type="text"
+						<Input
 							value={editing.description}
 							onChange={(e) => setEditing({ ...editing, description: e.target.value })}
-							className="rounded border border-border bg-background px-2 py-0.5 text-sm focus:border-primary focus:outline-none"
 							placeholder="描述（可选）"
+							className="h-7"
 						/>
-						<button
+						<Button
 							type="button"
+							size="sm"
 							onClick={handleUpdate}
 							disabled={saving || !editing.name.trim()}
-							className="rounded bg-primary px-2 py-0.5 text-primary-foreground text-xs hover:bg-primary/90 disabled:opacity-50"
 						>
 							{saving ? '保存中...' : '保存'}
-						</button>
-						<button
-							type="button"
-							onClick={() => setEditing(null)}
-							className="rounded p-0.5 text-muted-foreground hover:bg-muted-foreground/10"
-						>
+						</Button>
+						<Button type="button" variant="ghost" size="sm" onClick={() => setEditing(null)}>
 							<X className="h-3.5 w-3.5" />
-						</button>
+						</Button>
 					</div>
 				) : (
 					<>
@@ -138,8 +134,10 @@ function CategoryTreeNode({
 							)}
 						</a>
 						<div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-							<button
+							<Button
 								type="button"
+								variant="ghost"
+								size="sm"
 								onClick={() =>
 									setEditing({
 										slug: node.slug,
@@ -147,19 +145,20 @@ function CategoryTreeNode({
 										description: node.description || '',
 									})
 								}
-								className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted-foreground/10 hover:text-foreground"
 								title="编辑"
 							>
 								<Pencil className="h-3.5 w-3.5" />
-							</button>
-							<button
+							</Button>
+							<Button
 								type="button"
+								variant="ghost"
+								size="sm"
 								onClick={handleDelete}
-								className="rounded p-1 text-muted-foreground transition-colors hover:bg-red-100 hover:text-red-600"
+								className="text-wiki-link-red hover:bg-wiki-highlight"
 								title="删除"
 							>
 								<Trash2 className="h-3.5 w-3.5" />
-							</button>
+							</Button>
 						</div>
 					</>
 				)}
@@ -251,14 +250,15 @@ export default function WikiCategoryIndex() {
 					<FolderTree className="h-5 w-5" />
 					分类浏览
 				</h2>
-				<button
+				<Button
 					type="button"
+					variant="outline"
+					size="sm"
 					onClick={() => setShowCreate(!showCreate)}
-					className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-sm transition-colors hover:bg-primary/90"
 				>
 					{showCreate ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
 					{showCreate ? '取消' : '新建分类'}
-				</button>
+				</Button>
 			</div>
 
 			{showCreate && (
@@ -267,21 +267,17 @@ export default function WikiCategoryIndex() {
 					<div className="space-y-3">
 						<div>
 							<label className="mb-1 block text-muted-foreground text-xs">名称 *</label>
-							<input
-								type="text"
+							<Input
 								value={newName}
 								onChange={(e) => setNewName(e.target.value)}
-								className="w-full rounded border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
 								placeholder="分类名称"
 							/>
 						</div>
 						<div>
 							<label className="mb-1 block text-muted-foreground text-xs">描述</label>
-							<input
-								type="text"
+							<Input
 								value={newDescription}
 								onChange={(e) => setNewDescription(e.target.value)}
-								className="w-full rounded border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
 								placeholder="可选描述"
 							/>
 						</div>
@@ -302,14 +298,14 @@ export default function WikiCategoryIndex() {
 								</select>
 							</div>
 						)}
-						<button
+						<Button
 							type="button"
+							size="sm"
 							onClick={handleCreate}
 							disabled={creating || !newName.trim()}
-							className="rounded bg-primary px-4 py-1.5 text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-50"
 						>
 							{creating ? '创建中...' : '创建'}
-						</button>
+						</Button>
 					</div>
 				</div>
 			)}

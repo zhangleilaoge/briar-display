@@ -82,9 +82,9 @@ export default function TagInput({ value, onChange, placeholder = '添加标签�
 				<div
 					ref={containerRef}
 					className={cn(
-						'flex min-h-[40px] w-full cursor-text flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm transition-colors',
-						'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
-						open && 'ring-2 ring-ring ring-offset-2',
+						'flex min-h-[32px] w-full cursor-text flex-wrap items-center gap-1.5 rounded-sm border border-wiki-border bg-wiki-bg px-2.5 py-1 text-[13px] text-wiki-text transition-colors',
+						'focus-within:border-wiki-link',
+						open && 'border-wiki-link',
 					)}
 					onClick={() => setOpen(true)}
 				>

@@ -1,6 +1,7 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type {
 	WikiCategoryTreeNode,
@@ -242,8 +243,10 @@ export default function WikiHomePage() {
 							>
 								<FilePlus className="h-4 w-4" />📄 新建文章
 							</a>
-							<button
+							<Button
 								type="button"
+								variant="outline"
+								size="sm"
 								onClick={() => {
 									if (hotArticles.length > 0) {
 										const random = hotArticles[Math.floor(Math.random() * hotArticles.length)]
@@ -252,10 +255,10 @@ export default function WikiHomePage() {
 										window.location.href = '/briar-display/wiki/'
 									}
 								}}
-								className="inline-flex items-center gap-2 rounded-sm border border-wiki-border-light px-3 py-2 text-[13px] text-wiki-link transition-colors hover:bg-wiki-bg-secondary hover:text-wiki-link-hover"
+								className="justify-start"
 							>
 								<Shuffle className="h-4 w-4" />🔀 随机页面
-							</button>
+							</Button>
 							<a
 								href="/briar-display/wiki/special/all-pages"
 								className="inline-flex items-center gap-2 rounded-sm border border-wiki-border-light px-3 py-2 text-[13px] text-wiki-link transition-colors hover:bg-wiki-bg-secondary hover:text-wiki-link-hover"

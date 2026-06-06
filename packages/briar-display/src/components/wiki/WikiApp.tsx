@@ -11,7 +11,7 @@ import WikiCategoryPage from './pages/WikiCategoryPage'
 import WikiEditPage from './pages/WikiEditPage'
 import WikiHistoryPage from './pages/WikiHistoryPage'
 import WikiHomePage from './pages/WikiHomePage'
-import WikiNewPage from './pages/WikiNewPage'
+
 import WikiOrphanedPages from './pages/WikiOrphanedPages'
 import WikiRecentChanges from './pages/WikiRecentChanges'
 import WikiSearchResults from './pages/WikiSearchResults'
@@ -46,7 +46,7 @@ function matchRoute(pathname: string): RouteMatch | null {
 	// /wiki/new → New article
 	if (relative === '/new') {
 		return {
-			page: <WikiNewPage />,
+			page: <WikiEditPage slug="new" />,
 			title: '新建文章 - Briar Wiki',
 		}
 	}

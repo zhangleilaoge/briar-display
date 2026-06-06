@@ -1,5 +1,6 @@
 'use client'
 
+import { Button } from '@/components/ui/button'
 import SearchDropdown from '@/components/wiki/common/SearchDropdown'
 import UserMenu from '@/components/wiki/layout/UserMenu'
 import { cn } from '@/lib/utils'
@@ -14,20 +15,22 @@ export default function WikiTopbar({ onMenuToggle, className }: WikiTopbarProps)
 	return (
 		<header
 			className={cn(
-				'sticky top-0 z-50 grid h-[50px] grid-cols-[1fr_auto_1fr] items-center border-b border-wiki-border bg-wiki-topbar-bg px-4 shadow-sm',
+				'sticky top-0 z-50 flex h-[50px] items-center justify-between border-b border-wiki-border bg-wiki-topbar-bg px-4 shadow-sm',
 				className,
 			)}
 		>
 			{/* Left: hamburger + logo */}
 			<div className="flex items-center gap-3">
-				<button
+				<Button
 					type="button"
+					variant="ghost"
+					size="icon"
 					onClick={onMenuToggle}
-					className="inline-flex h-8 w-8 items-center justify-center rounded text-wiki-text-secondary transition-colors hover:bg-wiki-bg-tertiary hover:text-wiki-text lg:hidden"
+					className="lg:hidden"
 					aria-label="切换侧栏"
 				>
 					<Menu className="h-5 w-5" />
-				</button>
+				</Button>
 				<a
 					href="/briar-display/wiki/"
 					className="flex items-center gap-2 text-wiki-text no-underline"
@@ -37,7 +40,7 @@ export default function WikiTopbar({ onMenuToggle, className }: WikiTopbarProps)
 			</div>
 
 			{/* Center: search */}
-			<div className="hidden px-6 md:block">
+			<div className="mx-4 hidden flex-1 md:block">
 				<SearchDropdown />
 			</div>
 

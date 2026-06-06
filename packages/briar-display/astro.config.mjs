@@ -17,7 +17,39 @@ console.log('CDN Base:', assetsPrefix)
 
 // https://astro.build/config
 export default defineConfig({
-	integrations: [react(), vue(), tailwind()],
+	integrations: [
+		react({
+			babel: {
+				plugins: [
+					() => ({
+						visitor: {
+							JSXOpeningElement(path, state) {
+								const file = (state.filename || '')
+									.replace(/.*[/\\]src[/\\]/, 'src/')
+									.replace(/\\/g, '/')
+								if (!file.startsWith('src/')) return
+								const line = path.node.loc?.start.line || 0
+								path.node.attributes.push(
+									Object.assign({}, path.node.attributes[0], {
+										type: 'JSXAttribute',
+										name: { type: 'JSXIdentifier', name: 'data-file' },
+										value: { type: 'StringLiteral', value: file },
+									}),
+									Object.assign({}, path.node.attributes[0], {
+										type: 'JSXAttribute',
+										name: { type: 'JSXIdentifier', name: 'data-line' },
+										value: { type: 'StringLiteral', value: String(line) },
+									}),
+								)
+							},
+						},
+					}),
+				],
+			},
+		}),
+		vue(),
+		tailwind(),
+	],
 	build: assetsPrefix ? { assetsPrefix } : undefined,
 	vite: {
 		resolve: {

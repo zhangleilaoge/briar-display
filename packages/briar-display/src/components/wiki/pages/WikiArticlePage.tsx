@@ -1,6 +1,7 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import { Button } from '@/components/ui/button'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiFooter from '@/components/wiki/layout/WikiFooter'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
@@ -407,34 +408,28 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 			<div className="flex items-center justify-between">
 				<WikiBreadcrumbs items={[{ label: page.title }]} />
 				<div className="flex items-center gap-2">
-					<button
+					<Button
 						type="button"
+						variant="outline"
+						size="sm"
 						onClick={handleToggleStar}
 						disabled={starLoading}
-						className={cn(
-							'inline-flex items-center gap-1.5 rounded-sm border px-3 py-1.5 text-[12px] transition-colors',
-							starred
-								? 'border-wiki-link bg-wiki-link/10 text-wiki-link'
-								: 'border-wiki-border-light text-wiki-text-secondary hover:border-wiki-link hover:text-wiki-link',
-						)}
+						className={cn(starred && 'border-wiki-link bg-wiki-link/10 text-wiki-link')}
 					>
 						<Star className={cn('h-3.5 w-3.5', starred && 'fill-wiki-link')} />
 						{starred ? '已收藏' : '收藏'}
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
+						variant="outline"
+						size="sm"
 						onClick={handleToggleWatch}
 						disabled={watchLoading}
-						className={cn(
-							'inline-flex items-center gap-1.5 rounded-sm border px-3 py-1.5 text-[12px] transition-colors',
-							watching
-								? 'border-wiki-link bg-wiki-link/10 text-wiki-link'
-								: 'border-wiki-border-light text-wiki-text-secondary hover:border-wiki-link hover:text-wiki-link',
-						)}
+						className={cn(watching && 'border-wiki-link bg-wiki-link/10 text-wiki-link')}
 					>
 						<Eye className="h-3.5 w-3.5" />
 						{watching ? '已关注' : '关注'}
-					</button>
+					</Button>
 				</div>
 			</div>
 
