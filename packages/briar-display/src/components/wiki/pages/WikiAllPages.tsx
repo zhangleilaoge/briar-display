@@ -1,17 +1,15 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import { Input } from '@/components/ui/input'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiLink from '@/components/wiki/common/WikiLink'
 import WikiPagination from '@/components/wiki/common/WikiPagination'
-import { cn } from '@/lib/utils'
 import type { WikiPageSummary } from '@briar/shared'
-import { FileText, Loader2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { FileText, Loader2, Search, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 
 const PAGE_SIZE = 100
-
-const LETTERS = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '其他']
 
 function formatDate(date: Date | string) {
 	const d = typeof date === 'string' ? new Date(date) : date
@@ -22,58 +20,34 @@ function formatDate(date: Date | string) {
 	})
 }
 
-function getFirstChar(title: string): string {
-	if (!title) return '其他'
-	const first = title.charAt(0).toUpperCase()
-	if (first >= 'A' && first <= 'Z') return first
-	if (first >= 'a' && first <= 'z') return first.toUpperCase()
-	if (first >= '0' && first <= '9') return '其他'
-	return '其他'
-}
-
 export default function WikiAllPages() {
 	const [pages, setPages] = useState<WikiPageSummary[]>([])
 	const [total, setTotal] = useState(0)
 	const [offset, setOffset] = useState(0)
 	const [loading, setLoading] = useState(true)
-	const [activeLetter, setActiveLetter] = useState<string | null>(null)
+	const [query, setQuery] = useState('')
 
 	const loadPages = useCallback(async () => {
 		setLoading(true)
-		const res = await wikiApi.allPages(PAGE_SIZE, offset)
-		if (res.success && res.data) {
-			setPages(res.data.items)
-			setTotal(res.data.total)
+		if (query.trim()) {
+			const res = await wikiApi.search(query.trim(), PAGE_SIZE, offset)
+			if (res.success && res.data) {
+				setPages(res.data.items)
+				setTotal(res.data.total)
+			}
+		} else {
+			const res = await wikiApi.allPages(PAGE_SIZE, offset)
+			if (res.success && res.data) {
+				setPages(res.data.items)
+				setTotal(res.data.total)
+			}
 		}
 		setLoading(false)
-	}, [offset])
+	}, [offset, query])
 
 	useEffect(() => {
 		loadPages()
 	}, [loadPages])
-
-	// Build letter index from current pages
-	const availableLetters = useMemo(() => {
-		const letters = new Set<string>()
-		for (const page of pages) {
-			letters.add(getFirstChar(page.title))
-		}
-		return letters
-	}, [pages])
-
-	// Filter by active letter
-	const filteredPages = useMemo(() => {
-		if (!activeLetter) return pages
-		return pages.filter((p) => getFirstChar(p.title) === activeLetter)
-	}, [pages, activeLetter])
-
-	const handleLetterClick = (letter: string) => {
-		if (activeLetter === letter) {
-			setActiveLetter(null)
-		} else {
-			setActiveLetter(letter)
-		}
-	}
 
 	return (
 		<div className="space-y-4">
@@ -86,30 +60,38 @@ export default function WikiAllPages() {
 
 			<p className="text-muted-foreground text-sm">共 {total.toLocaleString()} 个页面</p>
 
-			{/* Letter index */}
-			<div className="flex flex-wrap gap-1 rounded-md border border-border bg-muted/30 p-2">
-				{LETTERS.map((letter) => {
-					const isAvailable = availableLetters.has(letter)
-					const isActive = activeLetter === letter
-					return (
-						<button
-							type="button"
-							key={letter}
-							onClick={() => isAvailable && handleLetterClick(letter)}
-							disabled={!isAvailable}
-							className={cn(
-								'h-7 min-w-[28px] rounded px-1.5 font-mono text-xs transition-colors',
-								isActive
-									? 'bg-primary text-primary-foreground'
-									: isAvailable
-										? 'text-foreground hover:bg-muted'
-										: 'cursor-not-allowed text-muted-foreground/30',
-							)}
-						>
-							{letter}
-						</button>
-					)
-				})}
+			{/* Search */}
+			<div className="flex items-center gap-2">
+				<div className="relative flex-1">
+					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-wiki-text-muted" />
+					<Input
+						value={query}
+						onChange={(e) => {
+							setQuery(e.target.value)
+							setOffset(0)
+						}}
+						placeholder="搜索页面标题..."
+						className="pl-9"
+						onKeyDown={(e) => {
+							if (e.key === 'Enter') {
+								loadPages()
+							}
+						}}
+					/>
+				</div>
+				{query && (
+					<button
+						type="button"
+						onClick={() => {
+							setQuery('')
+							setOffset(0)
+						}}
+						className="inline-flex h-8 items-center gap-1 rounded-sm border border-wiki-border-light px-3 text-[13px] text-wiki-text transition-colors hover:bg-wiki-bg-secondary"
+					>
+						<X className="h-3.5 w-3.5" />
+						清除
+					</button>
+				)}
 			</div>
 
 			{loading ? (
@@ -118,12 +100,10 @@ export default function WikiAllPages() {
 						<div key={i} className="h-10 animate-pulse rounded bg-muted" />
 					))}
 				</div>
-			) : filteredPages.length === 0 ? (
+			) : pages.length === 0 ? (
 				<div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
 					<FileText className="h-10 w-10 opacity-30" />
-					<p className="text-sm">
-						{activeLetter ? `没有以 "${activeLetter}" 开头的页面` : '暂无页面'}
-					</p>
+					<p className="text-sm">{query.trim() ? '未找到匹配的页面' : '暂无页面'}</p>
 				</div>
 			) : (
 				<div className="rounded-md border border-border">
@@ -140,7 +120,7 @@ export default function WikiAllPages() {
 							</tr>
 						</thead>
 						<tbody className="divide-y divide-border/50">
-							{filteredPages.map((page) => (
+							{pages.map((page) => (
 								<tr key={page.id} className="transition-colors hover:bg-muted/30">
 									<td className="px-4 py-2">
 										<WikiLink slug={page.slug} title={page.title} />
@@ -162,15 +142,7 @@ export default function WikiAllPages() {
 				</div>
 			)}
 
-			<WikiPagination
-				total={total}
-				limit={PAGE_SIZE}
-				offset={offset}
-				onPageChange={(newOffset) => {
-					setOffset(newOffset)
-					setActiveLetter(null)
-				}}
-			/>
+			<WikiPagination total={total} limit={PAGE_SIZE} offset={offset} onPageChange={setOffset} />
 		</div>
 	)
 }
