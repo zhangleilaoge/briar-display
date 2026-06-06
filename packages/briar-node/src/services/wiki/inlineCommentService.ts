@@ -16,22 +16,22 @@ export const inlineCommentService = {
 		})
 	},
 
-	async listByPage(pageSlug: string) {
+	async listByPage(pageSlug: string, limit = 50, offset = 0) {
 		const page = await pageDal.findBySlug('main', pageSlug)
 		if (!page) {
 			throw new Error('PAGE_NOT_FOUND')
 		}
 
-		return inlineCommentDal.listByPage(page.id)
+		return inlineCommentDal.listByPage(page.id, limit, offset)
 	},
 
-	async listByAnchor(pageSlug: string, anchor: string) {
+	async listByAnchor(pageSlug: string, anchor: string, limit = 50, offset = 0) {
 		const page = await pageDal.findBySlug('main', pageSlug)
 		if (!page) {
 			throw new Error('PAGE_NOT_FOUND')
 		}
 
-		return inlineCommentDal.listByAnchor(page.id, anchor)
+		return inlineCommentDal.listByAnchor(page.id, anchor, limit, offset)
 	},
 
 	async update(id: string, payload: { content?: string; resolved?: boolean }, userId: string) {

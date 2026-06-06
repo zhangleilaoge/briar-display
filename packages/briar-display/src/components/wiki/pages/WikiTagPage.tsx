@@ -3,9 +3,12 @@
 import { wikiApi } from '@/api/wiki'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiLink from '@/components/wiki/common/WikiLink'
+import WikiPagination from '@/components/wiki/common/WikiPagination'
 import type { WikiTag } from '@briar/shared'
 import { Calendar, Loader2, Pencil, Tag, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+
+const PAGE_SIZE = 20
 
 interface WikiTagPageProps {
 	slug: string
@@ -36,16 +39,19 @@ function formatDate(dateStr: string) {
 export default function WikiTagPage({ slug }: WikiTagPageProps) {
 	const [tag, setTag] = useState<WikiTag | null>(null)
 	const [pages, setPages] = useState<TagPage[]>([])
+	const [total, setTotal] = useState(0)
+	const [offset, setOffset] = useState(0)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
 	const fetchData = useCallback(async () => {
 		setLoading(true)
 		try {
-			const res = await wikiApi.getTagPages(slug)
+			const res = await wikiApi.getTagPages(slug, { limit: PAGE_SIZE, offset })
 			if (res.success && res.data) {
 				setTag(res.data.tag)
 				setPages(res.data.pages)
+				setTotal(res.data.total)
 			} else {
 				setError(res.message || '标签未找到')
 			}
@@ -54,7 +60,7 @@ export default function WikiTagPage({ slug }: WikiTagPageProps) {
 		} finally {
 			setLoading(false)
 		}
-	}, [slug])
+	}, [slug, offset])
 
 	useEffect(() => {
 		fetchData()
@@ -176,6 +182,7 @@ export default function WikiTagPage({ slug }: WikiTagPageProps) {
 						</table>
 					</div>
 				)}
+				<WikiPagination total={total} limit={PAGE_SIZE} offset={offset} onPageChange={setOffset} />
 			</div>
 		</div>
 	)

@@ -30,7 +30,7 @@ export default function TagInput({ value, onChange, placeholder = '添加标签�
 	useEffect(() => {
 		wikiApi.getTags().then((res) => {
 			if (res.success && res.data) {
-				setAllTags(res.data)
+				setAllTags(res.data.items)
 			}
 		})
 	}, [])

@@ -341,11 +341,7 @@ export const pageService = {
 	/**
 	 * Get subpages of a page
 	 */
-	async getSubpages(parentId: string) {
-		const result = await pageDal.list({
-			limit: 100,
-			offset: 0,
-		})
-		return result.items.filter((p) => p.parentId === parentId)
+	async getSubpages(parentId: string, limit = 20, offset = 0) {
+		return pageDal.listSubpages(parentId, limit, offset)
 	},
 }

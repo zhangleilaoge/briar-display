@@ -83,11 +83,14 @@ export const tagDal = {
 		return row ? mapRowToRecord(row) : null
 	},
 
-	async list(): Promise<WikiTagRecord[]> {
+	async list(limit = 50, offset = 0): Promise<{ items: WikiTagRecord[]; total: number }> {
+		const countRow = await queryOne<{ cnt: number }>('SELECT COUNT(*) as cnt FROM wiki_tags')
+		const total = countRow?.cnt || 0
+
 		const rows = await query<WikiTagRow>(
-			`SELECT ${SELECT_FIELDS} FROM wiki_tags ORDER BY page_count DESC, name ASC`,
+			`SELECT ${SELECT_FIELDS} FROM wiki_tags ORDER BY page_count DESC, name ASC LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
 		)
-		return rows.map(mapRowToRecord)
+		return { items: rows.map(mapRowToRecord), total }
 	},
 
 	async listByPageId(pageId: string): Promise<WikiTagRecord[]> {
@@ -143,8 +146,8 @@ export const tagDal = {
 	async listPagesByTagId(
 		tagId: string,
 		options?: { limit?: number; offset?: number },
-	): Promise<
-		{
+	): Promise<{
+		items: {
 			id: string
 			title: string
 			slug: string
@@ -152,9 +155,18 @@ export const tagDal = {
 			summary: string | null
 			updatedAt: Date
 		}[]
-	> {
+		total: number
+	}> {
 		const limit = Math.floor(options?.limit ?? 50)
 		const offset = Math.floor(options?.offset ?? 0)
+
+		const countRow = await queryOne<{ cnt: number }>(
+			`SELECT COUNT(*) as cnt FROM wiki_pages p
+			INNER JOIN wiki_page_tags pt ON p.id = pt.page_id
+			WHERE pt.tag_id = ? AND p.status = 'published'`,
+			[tagId],
+		)
+		const total = countRow?.cnt || 0
 
 		const rows = await query<{
 			id: string
@@ -173,13 +185,16 @@ export const tagDal = {
 			[tagId],
 		)
 
-		return rows.map((row) => ({
-			id: row.id,
-			title: row.title,
-			slug: row.slug,
-			namespace: row.namespace,
-			summary: row.summary,
-			updatedAt: row.updated_at,
-		}))
+		return {
+			items: rows.map((row) => ({
+				id: row.id,
+				title: row.title,
+				slug: row.slug,
+				namespace: row.namespace,
+				summary: row.summary,
+				updatedAt: row.updated_at,
+			})),
+			total,
+		}
 	},
 }

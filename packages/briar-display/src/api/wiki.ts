@@ -213,12 +213,24 @@ export const wikiApi = {
 		}
 	},
 
-	async getCategory(slug: string) {
+	async getCategory(slug: string, limit?: number, offset?: number) {
 		try {
-			const response = await apiClient.get<ApiResponse<WikiCategory>>(`/wiki/categories/${slug}`)
+			const response = await apiClient.get<
+				ApiResponse<
+					WikiCategory & {
+						pages: WikiPaginatedResponse<WikiPageSummary>
+						subcategories: WikiCategoryTreeNode[]
+					}
+				>
+			>(`/wiki/categories/${slug}`, { params: { limit, offset } })
 			return response.data
 		} catch (error) {
-			return handleError(error) as ApiResponse<WikiCategory>
+			return handleError(error) as ApiResponse<
+				WikiCategory & {
+					pages: WikiPaginatedResponse<WikiPageSummary>
+					subcategories: WikiCategoryTreeNode[]
+				}
+			>
 		}
 	},
 
@@ -303,6 +315,7 @@ export const wikiApi = {
 						summary: string | null
 						updatedAt: string
 					}[]
+					total: number
 				}>
 			>(`/wiki/tags/${slug}/pages`, { params: options })
 			return response.data
@@ -317,6 +330,7 @@ export const wikiApi = {
 					summary: string | null
 					updatedAt: string
 				}[]
+				total: number
 			}>
 		}
 	},

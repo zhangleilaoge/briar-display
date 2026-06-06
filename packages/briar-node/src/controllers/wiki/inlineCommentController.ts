@@ -7,6 +7,8 @@ export const inlineCommentController = {
 	async list(c: Context) {
 		try {
 			const slug = c.req.param('slug')
+			const limit = Math.floor(Number(c.req.query('limit')) || 50)
+			const offset = Math.floor(Number(c.req.query('offset')) || 0)
 
 			if (!slug) {
 				return c.json<ApiResponse>(
@@ -15,8 +17,16 @@ export const inlineCommentController = {
 				)
 			}
 
-			const comments = await inlineCommentService.listByPage(slug)
-			return c.json<ApiResponse>({ success: true, data: comments })
+			const result = await inlineCommentService.listByPage(slug, limit, offset)
+			return c.json<ApiResponse>({
+				success: true,
+				data: {
+					items: result.items,
+					total: result.total,
+					limit,
+					offset,
+				},
+			})
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to list inline comments'
 			const statusCode =
@@ -29,6 +39,8 @@ export const inlineCommentController = {
 		try {
 			const slug = c.req.param('slug')
 			const anchor = c.req.param('anchor')
+			const limit = Math.floor(Number(c.req.query('limit')) || 50)
+			const offset = Math.floor(Number(c.req.query('offset')) || 0)
 
 			if (!slug || !anchor) {
 				return c.json<ApiResponse>(
@@ -37,8 +49,16 @@ export const inlineCommentController = {
 				)
 			}
 
-			const comments = await inlineCommentService.listByAnchor(slug, anchor)
-			return c.json<ApiResponse>({ success: true, data: comments })
+			const result = await inlineCommentService.listByAnchor(slug, anchor, limit, offset)
+			return c.json<ApiResponse>({
+				success: true,
+				data: {
+					items: result.items,
+					total: result.total,
+					limit,
+					offset,
+				},
+			})
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to list inline comments'
 			const statusCode =

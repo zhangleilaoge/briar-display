@@ -4,7 +4,6 @@ import type {
 	WikiCategoryTreeNode,
 } from '@briar/shared'
 import { categoryDal } from '../../dal/wiki/categoryDal'
-import { pageDal } from '../../dal/wiki/pageDal'
 
 export const categoryService = {
 	/**
@@ -102,28 +101,11 @@ export const categoryService = {
 			throw new Error('CATEGORY_NOT_FOUND')
 		}
 
-		// Get pages in this category
-		const allPages = await pageDal.list({
-			limit: 1000,
-			offset: 0,
-			status: 'published' as any,
-		})
-
-		// Filter pages that belong to this category
-		const categoryPages = []
-		for (const page of allPages.items) {
-			const pageCategories = await categoryDal.getPageCategories(page.id)
-			if (pageCategories.some((c) => c.id === category.id)) {
-				categoryPages.push(page)
-			}
-		}
-
-		const total = categoryPages.length
-		const items = categoryPages.slice(offset, offset + limit)
+		const pages = await categoryDal.getCategoryPages(category.id, limit, offset)
 
 		return {
 			category,
-			pages: { items, total },
+			pages,
 		}
 	},
 }

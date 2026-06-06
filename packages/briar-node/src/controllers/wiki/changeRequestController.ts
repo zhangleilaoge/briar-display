@@ -8,6 +8,8 @@ export const changeRequestController = {
 		try {
 			const slug = c.req.param('slug')
 			const status = c.req.query('status') as any
+			const limit = Math.floor(Number(c.req.query('limit')) || 20)
+			const offset = Math.floor(Number(c.req.query('offset')) || 0)
 
 			if (!slug) {
 				return c.json<ApiResponse>(
@@ -16,8 +18,16 @@ export const changeRequestController = {
 				)
 			}
 
-			const requests = await changeRequestService.listByPage(slug, status)
-			return c.json<ApiResponse>({ success: true, data: requests })
+			const result = await changeRequestService.listByPage(slug, status, limit, offset)
+			return c.json<ApiResponse>({
+				success: true,
+				data: {
+					items: result.items,
+					total: result.total,
+					limit,
+					offset,
+				},
+			})
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to list change requests'
 			const statusCode =
@@ -29,8 +39,18 @@ export const changeRequestController = {
 	async listByRequester(c: Context) {
 		try {
 			const user = c.get('user')
-			const requests = await changeRequestService.listByRequester(user.id)
-			return c.json<ApiResponse>({ success: true, data: requests })
+			const limit = Math.floor(Number(c.req.query('limit')) || 20)
+			const offset = Math.floor(Number(c.req.query('offset')) || 0)
+			const result = await changeRequestService.listByRequester(user.id, limit, offset)
+			return c.json<ApiResponse>({
+				success: true,
+				data: {
+					items: result.items,
+					total: result.total,
+					limit,
+					offset,
+				},
+			})
 		} catch (error) {
 			console.error('Error listing change requests:', error)
 			return c.json<ApiResponse>(

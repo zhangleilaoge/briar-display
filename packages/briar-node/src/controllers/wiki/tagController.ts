@@ -6,8 +6,18 @@ import { tagService } from '../../services/wiki/tagService'
 export const tagController = {
 	async list(c: Context) {
 		try {
-			const tags = await tagService.list()
-			return c.json<ApiResponse>({ success: true, data: tags })
+			const limit = Math.floor(Number(c.req.query('limit')) || 50)
+			const offset = Math.floor(Number(c.req.query('offset')) || 0)
+			const result = await tagService.list(limit, offset)
+			return c.json<ApiResponse>({
+				success: true,
+				data: {
+					items: result.items,
+					total: result.total,
+					limit,
+					offset,
+				},
+			})
 		} catch (error) {
 			console.error('Error listing tags:', error)
 			return c.json<ApiResponse>(

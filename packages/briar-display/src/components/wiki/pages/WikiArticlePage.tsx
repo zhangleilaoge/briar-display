@@ -2,24 +2,15 @@
 
 import { wikiApi } from '@/api/wiki'
 import { Button } from '@/components/ui/button'
+import ArticleBacklinks from '@/components/wiki/article/ArticleBacklinks'
+import ArticleSubpages from '@/components/wiki/article/ArticleSubpages'
+import ArticleToc, { type TocItem } from '@/components/wiki/article/ArticleToc'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiFooter from '@/components/wiki/layout/WikiFooter'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
 import type { WikiBacklink, WikiCategory, WikiPage, WikiPageSummary, WikiTag } from '@briar/shared'
-import {
-	AlertTriangle,
-	ChevronDown,
-	ChevronRight,
-	Eye,
-	FileText,
-	FolderOpen,
-	Loader2,
-	Pencil,
-	RefreshCw,
-	Star,
-	Tag,
-} from 'lucide-react'
+import { AlertTriangle, Eye, FolderOpen, Loader2, Pencil, Star, Tag } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 
@@ -32,12 +23,6 @@ interface WikiPageDetails extends WikiPage {
 	tags?: Pick<WikiTag, 'id' | 'name' | 'slug' | 'color'>[]
 	backlinks?: WikiBacklink[]
 	subpages?: WikiPageSummary[]
-}
-
-interface TocItem {
-	id: string
-	text: string
-	level: number
 }
 
 /** Slugify heading text into an ID */
@@ -122,7 +107,6 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 	const [page, setPage] = useState<WikiPageDetails | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
-	const [tocOpen, setTocOpen] = useState(true)
 	const [watching, setWatching] = useState(false)
 	const [watchLoading, setWatchLoading] = useState(false)
 	const [starred, setStarred] = useState(false)
@@ -453,56 +437,7 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 
 			{/* Main content area with optional TOC and Infobox */}
 			<div className="flex gap-6">
-				{/* Table of Contents */}
-				{toc.length > 0 && (
-					<div className="w-[200px] shrink-0">
-						<div className="sticky top-4 rounded-sm border border-wiki-border-light bg-wiki-bg-secondary p-4">
-							<button
-								type="button"
-								onClick={() => setTocOpen(!tocOpen)}
-								className="flex w-full items-center gap-2 text-left text-[13px] font-semibold text-wiki-text"
-							>
-								{tocOpen ? (
-									<ChevronDown className="h-3.5 w-3.5" />
-								) : (
-									<ChevronRight className="h-3.5 w-3.5" />
-								)}
-								目录
-							</button>
-							{tocOpen && (
-								<nav className="mt-2">
-									<ul className="space-y-0.5">
-										{toc.map((item) => (
-											<li
-												key={item.id}
-												className={cn(
-													'text-[12px] leading-[1.6]',
-													item.level === 2 && 'pl-0',
-													item.level === 3 && 'pl-3',
-													item.level === 4 && 'pl-6',
-												)}
-											>
-												<a
-													href={`#${item.id}`}
-													className="text-wiki-link hover:underline"
-													onClick={(e) => {
-														e.preventDefault()
-														const el = document.getElementById(item.id)
-														if (el) {
-															el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-														}
-													}}
-												>
-													{item.text}
-												</a>
-											</li>
-										))}
-									</ul>
-								</nav>
-							)}
-						</div>
-					</div>
-				)}
+				<ArticleToc toc={toc} />
 
 				{/* Article body */}
 				<div className="min-w-0 flex-1">
@@ -557,51 +492,9 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 				</div>
 			)}
 
-			{/* Subpages */}
-			{page.subpages && page.subpages.length > 0 && (
-				<div className="border-t border-wiki-border-light pt-4">
-					<h3 className="mb-2 flex items-center gap-1.5 text-[13px] font-medium text-wiki-text">
-						<FileText className="h-4 w-4 text-wiki-text-muted" />
-						子页面
-					</h3>
-					<ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-						{page.subpages.map((sp) => (
-							<li key={sp.id}>
-								<a
-									href={`/briar-display/wiki/${sp.slug}`}
-									className="inline-flex items-center gap-1.5 text-[13px] text-wiki-link hover:underline"
-								>
-									<FileText className="h-3.5 w-3.5" />
-									{sp.title}
-								</a>
-							</li>
-						))}
-					</ul>
-				</div>
-			)}
+			<ArticleSubpages subpages={page.subpages} />
 
-			{/* Backlinks */}
-			{page.backlinks && page.backlinks.length > 0 && (
-				<div className="border-t border-wiki-border-light pt-4">
-					<h3 className="mb-2 flex items-center gap-1.5 text-[13px] font-medium text-wiki-text">
-						<RefreshCw className="h-4 w-4 text-wiki-text-muted" />
-						被引用
-					</h3>
-					<ul className="flex flex-wrap gap-x-4 gap-y-1">
-						{page.backlinks.map((bl) => (
-							<li key={bl.id}>
-								<a
-									href={`/briar-display/wiki/${bl.sourceSlug}`}
-									className="text-[13px] text-wiki-link hover:underline"
-								>
-									{bl.sourceSlug}
-								</a>
-							</li>
-						))}
-					</ul>
-				</div>
-			)}
-
+			<ArticleBacklinks backlinks={page.backlinks} />
 			{/* Footer */}
 			<WikiFooter
 				lastEdited={page.updatedAt}

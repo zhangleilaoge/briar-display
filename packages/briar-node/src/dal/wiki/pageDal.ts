@@ -110,6 +110,24 @@ export const pageDal = {
 		return { items: items.map(mapRowToRecord), total }
 	},
 
+	async listSubpages(
+		parentId: string,
+		limit = 20,
+		offset = 0,
+	): Promise<{ items: WikiPageRecord[]; total: number }> {
+		const countRow = await queryOne<{ cnt: number }>(
+			"SELECT COUNT(*) as cnt FROM wiki_pages WHERE parent_id = ? AND status != 'deleted'",
+			[parentId],
+		)
+		const total = countRow?.cnt || 0
+
+		const rows = await query<WikiPageRow>(
+			`SELECT ${SELECT_SUMMARY_FIELDS} FROM wiki_pages WHERE parent_id = ? AND status != 'deleted' ORDER BY updated_at DESC LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
+			[parentId],
+		)
+		return { items: rows.map(mapRowToRecord), total }
+	},
+
 	async findBySlug(namespace: WikiNamespace, slug: string): Promise<WikiPageRecord | null> {
 		const row = await queryOne<WikiPageRow>(
 			`SELECT ${SELECT_FIELDS} FROM wiki_pages WHERE namespace = ? AND slug = ?`,

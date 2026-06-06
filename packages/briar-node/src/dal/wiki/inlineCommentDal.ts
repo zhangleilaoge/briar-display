@@ -64,20 +64,41 @@ export const inlineCommentDal = {
 		return row ? mapRowToRecord(row) : null
 	},
 
-	async listByPage(pageId: string): Promise<WikiInlineCommentRecord[]> {
-		const rows = await query<WikiInlineCommentRow>(
-			`SELECT ${SELECT_FIELDS} FROM wiki_inline_comments WHERE page_id = ? ORDER BY created_at DESC`,
+	async listByPage(
+		pageId: string,
+		limit = 50,
+		offset = 0,
+	): Promise<{ items: WikiInlineCommentRecord[]; total: number }> {
+		const countRow = await queryOne<{ cnt: number }>(
+			'SELECT COUNT(*) as cnt FROM wiki_inline_comments WHERE page_id = ?',
 			[pageId],
 		)
-		return rows.map(mapRowToRecord)
+		const total = countRow?.cnt || 0
+
+		const rows = await query<WikiInlineCommentRow>(
+			`SELECT ${SELECT_FIELDS} FROM wiki_inline_comments WHERE page_id = ? ORDER BY created_at DESC LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
+			[pageId],
+		)
+		return { items: rows.map(mapRowToRecord), total }
 	},
 
-	async listByAnchor(pageId: string, anchor: string): Promise<WikiInlineCommentRecord[]> {
-		const rows = await query<WikiInlineCommentRow>(
-			`SELECT ${SELECT_FIELDS} FROM wiki_inline_comments WHERE page_id = ? AND anchor = ? ORDER BY created_at ASC`,
+	async listByAnchor(
+		pageId: string,
+		anchor: string,
+		limit = 50,
+		offset = 0,
+	): Promise<{ items: WikiInlineCommentRecord[]; total: number }> {
+		const countRow = await queryOne<{ cnt: number }>(
+			'SELECT COUNT(*) as cnt FROM wiki_inline_comments WHERE page_id = ? AND anchor = ?',
 			[pageId, anchor],
 		)
-		return rows.map(mapRowToRecord)
+		const total = countRow?.cnt || 0
+
+		const rows = await query<WikiInlineCommentRow>(
+			`SELECT ${SELECT_FIELDS} FROM wiki_inline_comments WHERE page_id = ? AND anchor = ? ORDER BY created_at ASC LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
+			[pageId, anchor],
+		)
+		return { items: rows.map(mapRowToRecord), total }
 	},
 
 	async update(

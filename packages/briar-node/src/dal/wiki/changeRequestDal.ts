@@ -89,27 +89,46 @@ export const changeRequestDal = {
 	async listByPage(
 		pageId: string,
 		status?: WikiChangeRequestStatus,
-	): Promise<WikiChangeRequestRecord[]> {
+		limit = 20,
+		offset = 0,
+	): Promise<{ items: WikiChangeRequestRecord[]; total: number }> {
+		let countSql = 'SELECT COUNT(*) as cnt FROM wiki_change_requests WHERE page_id = ?'
 		let sql = `SELECT ${SELECT_FIELDS} FROM wiki_change_requests WHERE page_id = ?`
 		const values: any[] = [pageId]
+		const countValues: any[] = [pageId]
 
 		if (status) {
 			sql += ' AND status = ?'
+			countSql += ' AND status = ?'
 			values.push(status)
+			countValues.push(status)
 		}
 
-		sql += ' ORDER BY created_at DESC'
+		const countRow = await queryOne<{ cnt: number }>(countSql, countValues)
+		const total = countRow?.cnt || 0
+
+		sql += ` ORDER BY created_at DESC LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`
 
 		const rows = await query<WikiChangeRequestRow>(sql, values)
-		return rows.map(mapRowToRecord)
+		return { items: rows.map(mapRowToRecord), total }
 	},
 
-	async listByRequester(requesterId: string): Promise<WikiChangeRequestRecord[]> {
-		const rows = await query<WikiChangeRequestRow>(
-			`SELECT ${SELECT_FIELDS} FROM wiki_change_requests WHERE requester_id = ? ORDER BY created_at DESC`,
+	async listByRequester(
+		requesterId: string,
+		limit = 20,
+		offset = 0,
+	): Promise<{ items: WikiChangeRequestRecord[]; total: number }> {
+		const countRow = await queryOne<{ cnt: number }>(
+			'SELECT COUNT(*) as cnt FROM wiki_change_requests WHERE requester_id = ?',
 			[requesterId],
 		)
-		return rows.map(mapRowToRecord)
+		const total = countRow?.cnt || 0
+
+		const rows = await query<WikiChangeRequestRow>(
+			`SELECT ${SELECT_FIELDS} FROM wiki_change_requests WHERE requester_id = ? ORDER BY created_at DESC LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
+			[requesterId],
+		)
+		return { items: rows.map(mapRowToRecord), total }
 	},
 
 	async listPendingForReviewer(pageId?: string): Promise<WikiChangeRequestRecord[]> {
