@@ -111,9 +111,6 @@ export default function WikiAllPages() {
 						<thead>
 							<tr className="border-b border-border bg-muted/50">
 								<th className="px-4 py-2 text-left font-medium text-muted-foreground">页面标题</th>
-								<th className="hidden px-4 py-2 text-left font-medium text-muted-foreground sm:table-cell">
-									命名空间
-								</th>
 								<th className="hidden px-4 py-2 text-right font-medium text-muted-foreground md:table-cell">
 									最后编辑
 								</th>
@@ -124,13 +121,6 @@ export default function WikiAllPages() {
 								<tr key={page.id} className="transition-colors hover:bg-muted/30">
 									<td className="px-4 py-2">
 										<WikiLink slug={page.slug} title={page.title} />
-									</td>
-									<td className="hidden px-4 py-2 sm:table-cell">
-										{page.namespace !== 'main' && (
-											<span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground text-xs">
-												{page.namespace}
-											</span>
-										)}
 									</td>
 									<td className="hidden px-4 py-2 text-right text-muted-foreground md:table-cell">
 										{formatDate(page.updatedAt)}
