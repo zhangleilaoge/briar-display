@@ -241,7 +241,8 @@ export default function WikiHomePage() {
 								href="/briar-display/wiki/new"
 								className="inline-flex items-center gap-2 rounded-sm border border-wiki-border-light px-3 py-2 text-[13px] text-wiki-link transition-colors hover:bg-wiki-bg-secondary hover:text-wiki-link-hover"
 							>
-								<FilePlus className="h-4 w-4" />📄 新建文章
+								<FilePlus className="h-4 w-4" />
+								新建文章
 							</a>
 							<Button
 								type="button"
@@ -257,7 +258,8 @@ export default function WikiHomePage() {
 								}}
 								className="justify-start"
 							>
-								<Shuffle className="h-4 w-4" />🔀 随机页面
+								<Shuffle className="h-4 w-4" />
+								随机页面
 							</Button>
 							<a
 								href="/briar-display/wiki/special/all-pages"
