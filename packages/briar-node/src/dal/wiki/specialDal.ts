@@ -217,7 +217,7 @@ export const specialDal = {
 		for (const row of rows) {
 			const content = row.content as string
 			for (const match of content.matchAll(mentionRegex)) {
-				const slug = match[1].trim()
+				const slug = match[1].trim().toLowerCase()
 				slugCounts.set(slug, (slugCounts.get(slug) || 0) + 1)
 			}
 		}
