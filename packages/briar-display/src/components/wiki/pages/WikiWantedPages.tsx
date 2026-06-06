@@ -4,14 +4,14 @@ import { wikiApi } from '@/api/wiki'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiPagination from '@/components/wiki/common/WikiPagination'
 import { cn } from '@/lib/utils'
-import type { WikiPageSummary } from '@briar/shared'
+import type { WikiWantedPage } from '@briar/shared'
 import { ExternalLink, FileQuestion, Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 const PAGE_SIZE = 50
 
 export default function WikiWantedPages() {
-	const [pages, setPages] = useState<WikiPageSummary[]>([])
+	const [pages, setPages] = useState<WikiWantedPage[]>([])
 	const [total, setTotal] = useState(0)
 	const [offset, setOffset] = useState(0)
 	const [loading, setLoading] = useState(true)
@@ -79,22 +79,22 @@ export default function WikiWantedPages() {
 						</thead>
 						<tbody className="divide-y divide-border/50">
 							{pages.map((page) => (
-								<tr key={page.id} className="transition-colors hover:bg-muted/30">
+								<tr key={page.slug} className="transition-colors hover:bg-muted/30">
 									<td className="px-4 py-2">
 										<a
-											href={`/briar-display/wiki/new?title=${encodeURIComponent(page.title)}`}
+											href={`/briar-display/wiki/new?title=${encodeURIComponent(page.slug)}`}
 											className="border-b border-dashed border-red-500 text-red-600 transition-colors hover:text-red-800"
 											title="点击创建此页面"
 										>
-											{page.title}
+											{page.slug}
 										</a>
 									</td>
 									<td className="hidden whitespace-nowrap px-4 py-2 text-right text-muted-foreground sm:table-cell">
-										{page.viewCount ?? 0}
+										{page.referenceCount}
 									</td>
 									<td className="hidden px-4 py-2 md:table-cell">
 										<a
-											href={`/briar-display/wiki/new?title=${encodeURIComponent(page.title)}`}
+											href={`/briar-display/wiki/new?title=${encodeURIComponent(page.slug)}`}
 											className="inline-flex items-center gap-1 text-primary text-xs transition-colors hover:text-primary/80"
 										>
 											<ExternalLink className="h-3 w-3" />
