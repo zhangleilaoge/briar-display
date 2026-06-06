@@ -10,16 +10,18 @@ import { starController } from '../controllers/wiki/starController'
 import { tagController } from '../controllers/wiki/tagController'
 import { templateController } from '../controllers/wiki/templateController'
 import { watchlistController } from '../controllers/wiki/watchlistController'
-import { authMiddleware } from '../middleware/authMiddleware'
+import { wikiWriteGuard } from '../middleware/wikiWriteGuard'
 
 const wikiRoutes = new Hono()
 
+// 🔒 安全网：所有写操作自动走权限映射表（见 config/wikiPermissions.ts）
+// 新增写路由时，必须在映射表中声明权限，否则会被拦截
+wikiRoutes.use('/*', wikiWriteGuard)
+
 // ==================== Pages ====================
-// Public
 wikiRoutes.get('/pages', (c) => pageController.list(c))
 wikiRoutes.get('/pages/search', (c) => pageController.search(c))
 
-// Revisions / discussions / comments must come before /:namespace/:slug to avoid shadowing
 wikiRoutes.get('/pages/:slug/revisions', (c) => revisionController.list(c))
 wikiRoutes.get('/pages/:slug/revisions/:revId', (c) => revisionController.getById(c))
 wikiRoutes.get('/pages/:slug/diff', (c) => revisionController.getDiff(c))
@@ -35,106 +37,74 @@ wikiRoutes.get('/pages/:slug/comments', (c) => inlineCommentController.list(c))
 wikiRoutes.get('/pages/:slug/comments/:anchor', (c) => inlineCommentController.listByAnchor(c))
 wikiRoutes.get('/pages/:slug/change-requests', (c) => changeRequestController.listByPage(c))
 
-// Page detail routes
 wikiRoutes.get('/pages/:namespace/:slug', (c) => pageController.getBySlug(c))
 wikiRoutes.get('/pages/:namespace/:slug/details', (c) => pageController.getDetails(c))
 
-// Protected
-wikiRoutes.post('/pages', authMiddleware, (c) => pageController.create(c))
-wikiRoutes.put('/pages/:slug', authMiddleware, (c) => pageController.update(c))
-wikiRoutes.delete('/pages/:slug', authMiddleware, (c) => pageController.delete(c))
+wikiRoutes.post('/pages', (c) => pageController.create(c))
+wikiRoutes.put('/pages/:slug', (c) => pageController.update(c))
+wikiRoutes.delete('/pages/:slug', (c) => pageController.delete(c))
 
-// Protected revisions
-wikiRoutes.post('/pages/:slug/revisions/:revId/revert', authMiddleware, (c) =>
-	revisionController.revert(c),
-)
+wikiRoutes.post('/pages/:slug/revisions/:revId/revert', (c) => revisionController.revert(c))
 
-// Protected discussions
-wikiRoutes.post('/pages/:slug/discussions', authMiddleware, (c) =>
-	discussionController.createTopic(c),
-)
-wikiRoutes.post('/pages/:slug/discussions/:topicId/replies', authMiddleware, (c) =>
+wikiRoutes.post('/pages/:slug/discussions', (c) => discussionController.createTopic(c))
+wikiRoutes.post('/pages/:slug/discussions/:topicId/replies', (c) =>
 	discussionController.createReply(c),
 )
-wikiRoutes.put('/pages/:slug/discussions/:topicId/resolve', authMiddleware, (c) =>
+wikiRoutes.put('/pages/:slug/discussions/:topicId/resolve', (c) =>
 	discussionController.markResolved(c),
 )
 
-// Protected inline comments
-wikiRoutes.post('/pages/:slug/comments', authMiddleware, (c) => inlineCommentController.create(c))
-wikiRoutes.put('/pages/:slug/comments/:id', authMiddleware, (c) =>
-	inlineCommentController.update(c),
-)
-wikiRoutes.delete('/pages/:slug/comments/:id', authMiddleware, (c) =>
-	inlineCommentController.delete(c),
-)
+wikiRoutes.post('/pages/:slug/comments', (c) => inlineCommentController.create(c))
+wikiRoutes.put('/pages/:slug/comments/:id', (c) => inlineCommentController.update(c))
+wikiRoutes.delete('/pages/:slug/comments/:id', (c) => inlineCommentController.delete(c))
 
-// Protected change requests
-wikiRoutes.post('/pages/:slug/change-requests', authMiddleware, (c) =>
-	changeRequestController.create(c),
-)
+wikiRoutes.post('/pages/:slug/change-requests', (c) => changeRequestController.create(c))
 
 // ==================== Categories ====================
-// Public
 wikiRoutes.get('/categories', (c) => categoryController.list(c))
 wikiRoutes.get('/categories/tree', (c) => categoryController.getTree(c))
 wikiRoutes.get('/categories/:slug', (c) => categoryController.getBySlug(c))
 
-// Protected
-wikiRoutes.post('/categories', authMiddleware, (c) => categoryController.create(c))
-wikiRoutes.put('/categories/:slug', authMiddleware, (c) => categoryController.update(c))
-wikiRoutes.delete('/categories/:slug', authMiddleware, (c) => categoryController.delete(c))
-wikiRoutes.post('/categories/:slug/pages', authMiddleware, (c) => categoryController.addPage(c))
-wikiRoutes.delete('/categories/:slug/pages/:pageId', authMiddleware, (c) =>
-	categoryController.removePage(c),
-)
+wikiRoutes.post('/categories', (c) => categoryController.create(c))
+wikiRoutes.put('/categories/:slug', (c) => categoryController.update(c))
+wikiRoutes.delete('/categories/:slug', (c) => categoryController.delete(c))
+wikiRoutes.post('/categories/:slug/pages', (c) => categoryController.addPage(c))
+wikiRoutes.delete('/categories/:slug/pages/:pageId', (c) => categoryController.removePage(c))
 
 // ==================== Tags ====================
-// Public
 wikiRoutes.get('/tags', (c) => tagController.list(c))
 wikiRoutes.get('/tags/:slug', (c) => tagController.getBySlug(c))
 wikiRoutes.get('/tags/:slug/pages', (c) => tagController.getPages(c))
 
-// Protected
-wikiRoutes.post('/tags', authMiddleware, (c) => tagController.create(c))
-wikiRoutes.delete('/tags/:id', authMiddleware, (c) => tagController.delete(c))
+wikiRoutes.post('/tags', (c) => tagController.create(c))
+wikiRoutes.delete('/tags/:id', (c) => tagController.delete(c))
 
 // ==================== Stars ====================
-// Protected
-wikiRoutes.get('/stars', authMiddleware, (c) => starController.list(c))
-wikiRoutes.post('/stars/:slug', authMiddleware, (c) => starController.add(c))
-wikiRoutes.delete('/stars/:slug', authMiddleware, (c) => starController.remove(c))
-wikiRoutes.get('/stars/:slug/status', authMiddleware, (c) => starController.isStarred(c))
+wikiRoutes.get('/stars', (c) => starController.list(c))
+wikiRoutes.post('/stars/:slug', (c) => starController.add(c))
+wikiRoutes.delete('/stars/:slug', (c) => starController.remove(c))
+wikiRoutes.get('/stars/:slug/status', (c) => starController.isStarred(c))
 
 // ==================== Templates ====================
-// Public
 wikiRoutes.get('/templates', (c) => templateController.list(c))
 wikiRoutes.get('/templates/:slug', (c) => templateController.getBySlug(c))
 
-// Protected
-wikiRoutes.post('/templates', authMiddleware, (c) => templateController.create(c))
-wikiRoutes.put('/templates/:slug', authMiddleware, (c) => templateController.update(c))
-wikiRoutes.delete('/templates/:slug', authMiddleware, (c) => templateController.delete(c))
+wikiRoutes.post('/templates', (c) => templateController.create(c))
+wikiRoutes.put('/templates/:slug', (c) => templateController.update(c))
+wikiRoutes.delete('/templates/:slug', (c) => templateController.delete(c))
 
 // ==================== Watchlist ====================
-// Protected
-wikiRoutes.get('/watchlist', authMiddleware, (c) => watchlistController.list(c))
-wikiRoutes.post('/watchlist/:slug', authMiddleware, (c) => watchlistController.add(c))
-wikiRoutes.delete('/watchlist/:slug', authMiddleware, (c) => watchlistController.remove(c))
-wikiRoutes.get('/watchlist/:slug/status', authMiddleware, (c) => watchlistController.isWatching(c))
+wikiRoutes.get('/watchlist', (c) => watchlistController.list(c))
+wikiRoutes.post('/watchlist/:slug', (c) => watchlistController.add(c))
+wikiRoutes.delete('/watchlist/:slug', (c) => watchlistController.remove(c))
+wikiRoutes.get('/watchlist/:slug/status', (c) => watchlistController.isWatching(c))
 
 // ==================== Change Requests (Global) ====================
-// Protected
-wikiRoutes.get('/change-requests/my', authMiddleware, (c) =>
-	changeRequestController.listByRequester(c),
-)
-wikiRoutes.put('/change-requests/:id/review', authMiddleware, (c) =>
-	changeRequestController.review(c),
-)
-wikiRoutes.delete('/change-requests/:id', authMiddleware, (c) => changeRequestController.delete(c))
+wikiRoutes.get('/change-requests/my', (c) => changeRequestController.listByRequester(c))
+wikiRoutes.put('/change-requests/:id/review', (c) => changeRequestController.review(c))
+wikiRoutes.delete('/change-requests/:id', (c) => changeRequestController.delete(c))
 
 // ==================== Special Pages ====================
-// Public
 wikiRoutes.get('/special/recent-changes', (c) => specialController.recentChanges(c))
 wikiRoutes.get('/special/statistics', (c) => specialController.statistics(c))
 wikiRoutes.get('/special/all-pages', (c) => specialController.allPages(c))

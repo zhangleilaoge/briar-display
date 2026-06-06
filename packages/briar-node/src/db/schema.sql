@@ -34,11 +34,6 @@ CREATE TABLE IF NOT EXISTS users (
   INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
--- 插入默认管理员账户（密码: admin123）
-INSERT INTO users (id, name, email, password_hash) VALUES
-  (UUID(), 'Briar Admin', 'admin@briar.dev', '$2a$10$YourHashedPasswordHere')
-ON DUPLICATE KEY UPDATE name=name;
-
 -- 通用验证码表（支持邮箱验证、密码重置等多种场景）
 CREATE TABLE IF NOT EXISTS verification_codes (
   id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
@@ -283,6 +278,144 @@ CREATE TABLE IF NOT EXISTS wiki_change_requests (
   FOREIGN KEY (requester_id) REFERENCES users(id),
   FOREIGN KEY (reviewer_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Wiki 变更请求表';
+
+-- ============================================================
+-- RBAC 权限系统表
+-- ============================================================
+
+-- 角色表
+CREATE TABLE IF NOT EXISTS roles (
+  id VARCHAR(36) PRIMARY KEY COMMENT '角色唯一标识',
+  name VARCHAR(50) NOT NULL UNIQUE COMMENT '角色标识（英文）',
+  display_name VARCHAR(100) NOT NULL COMMENT '角色显示名称',
+  description VARCHAR(500) COMMENT '角色描述',
+  level INT NOT NULL DEFAULT 0 COMMENT '角色等级（数字越大权限越高）',
+  is_system BOOLEAN DEFAULT FALSE COMMENT '是否系统内置角色（不可删除）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  INDEX idx_name (name),
+  INDEX idx_level (level)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色表';
+
+-- 权限表
+CREATE TABLE IF NOT EXISTS permissions (
+  id VARCHAR(36) PRIMARY KEY COMMENT '权限唯一标识',
+  code VARCHAR(100) NOT NULL UNIQUE COMMENT '权限编码（如 wiki:page:create）',
+  name VARCHAR(100) NOT NULL COMMENT '权限名称',
+  description VARCHAR(500) COMMENT '权限描述',
+  type ENUM('page', 'api') NOT NULL COMMENT '权限类型：page=页面访问，api=功能操作',
+  module VARCHAR(50) NOT NULL COMMENT '所属模块（wiki、admin、system）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  INDEX idx_code (code),
+  INDEX idx_type (type),
+  INDEX idx_module (module)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='权限表';
+
+-- 角色-权限关联表
+CREATE TABLE IF NOT EXISTS role_permissions (
+  role_id VARCHAR(36) NOT NULL COMMENT '角色 ID',
+  permission_id VARCHAR(36) NOT NULL COMMENT '权限 ID',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (role_id, permission_id),
+  FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+  FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色-权限关联表';
+
+-- 用户-角色关联表
+CREATE TABLE IF NOT EXISTS user_roles (
+  user_id VARCHAR(36) NOT NULL COMMENT '用户 ID',
+  role_id VARCHAR(36) NOT NULL COMMENT '角色 ID',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (user_id, role_id),
+  INDEX idx_role_id (role_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户-角色关联表';
+
+-- 初始化 4 级角色
+INSERT INTO roles (id, name, display_name, description, level, is_system) VALUES
+  ('role-user', 'user', '普通用户', '可创建和编辑文章，参与讨论和互动', 10, TRUE),
+  ('role-moderator', 'moderator', '管理员', '可删除文章、管理分类、标签和模板', 50, TRUE),
+  ('role-admin', 'admin', '超级管理员', '拥有所有权限，可管理用户、角色和系统配置', 100, TRUE)
+ON DUPLICATE KEY UPDATE display_name=display_name;
+
+-- 初始化权限数据
+INSERT INTO permissions (id, code, name, type, module) VALUES
+  -- 页面访问权限（默认开放，用于未来扩展）
+  ('perm-page-wiki', 'page:wiki', '访问 Wiki', 'page', 'wiki'),
+  ('perm-page-admin', 'page:admin', '访问管理后台', 'page', 'admin'),
+  ('perm-page-business', 'page:business', '访问业务页面', 'page', 'system'),
+  -- Wiki 读写权限（普通用户）
+  ('perm-wiki-page-create', 'wiki:page:create', '创建 Wiki 页面', 'api', 'wiki'),
+  ('perm-wiki-page-update', 'wiki:page:update', '编辑 Wiki 页面', 'api', 'wiki'),
+  ('perm-wiki-discussion-create', 'wiki:discussion:create', '创建讨论', 'api', 'wiki'),
+  ('perm-wiki-discussion-reply', 'wiki:discussion:reply', '回复讨论', 'api', 'wiki'),
+  ('perm-wiki-comment-create', 'wiki:comment:create', '创建评论', 'api', 'wiki'),
+  ('perm-wiki-comment-update', 'wiki:comment:update', '编辑自己的评论', 'api', 'wiki'),
+  ('perm-wiki-change-request-create', 'wiki:change-request:create', '创建变更请求', 'api', 'wiki'),
+  ('perm-wiki-watchlist-manage', 'wiki:watchlist:manage', '管理关注列表', 'api', 'wiki'),
+  ('perm-wiki-star-manage', 'wiki:star:manage', '管理收藏', 'api', 'wiki'),
+  -- Wiki 管理权限（管理员）
+  ('perm-wiki-page-delete', 'wiki:page:delete', '删除 Wiki 页面', 'api', 'wiki'),
+  ('perm-wiki-page-protect', 'wiki:page:protect', '保护 Wiki 页面', 'api', 'wiki'),
+  ('perm-wiki-revision-revert', 'wiki:revision:revert', '回退版本', 'api', 'wiki'),
+  ('perm-wiki-category-create', 'wiki:category:create', '创建分类', 'api', 'wiki'),
+  ('perm-wiki-category-update', 'wiki:category:update', '编辑分类', 'api', 'wiki'),
+  ('perm-wiki-category-delete', 'wiki:category:delete', '删除分类', 'api', 'wiki'),
+  ('perm-wiki-tag-create', 'wiki:tag:create', '创建标签', 'api', 'wiki'),
+  ('perm-wiki-tag-delete', 'wiki:tag:delete', '删除标签', 'api', 'wiki'),
+  ('perm-wiki-template-create', 'wiki:template:create', '创建模板', 'api', 'wiki'),
+  ('perm-wiki-template-update', 'wiki:template:update', '编辑模板', 'api', 'wiki'),
+  ('perm-wiki-template-delete', 'wiki:template:delete', '删除模板', 'api', 'wiki'),
+  ('perm-wiki-discussion-resolve', 'wiki:discussion:resolve', '标记讨论已解决', 'api', 'wiki'),
+  ('perm-wiki-comment-delete', 'wiki:comment:delete', '删除评论', 'api', 'wiki'),
+  ('perm-wiki-change-request-review', 'wiki:change-request:review', '审核变更请求', 'api', 'wiki'),
+  -- 超级管理权限
+  ('perm-admin-role-manage', 'admin:role:manage', '管理角色', 'api', 'admin'),
+  ('perm-admin-permission-manage', 'admin:permission:manage', '管理权限', 'api', 'admin'),
+  ('perm-admin-user-manage', 'admin:user:manage', '管理用户', 'api', 'admin'),
+  ('perm-admin-user-role-assign', 'admin:user-role:assign', '分配用户角色', 'api', 'admin')
+ON DUPLICATE KEY UPDATE name=name;
+
+-- ==================== 角色权限分配 ====================
+
+-- 超级管理员：所有权限
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT 'role-admin', id FROM permissions
+ON DUPLICATE KEY UPDATE role_id=role_id;
+
+-- 管理员：Wiki 读写 + 管理权限（不含 admin:* 超级管理权限）
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT 'role-moderator', id FROM permissions WHERE code IN (
+  'page:wiki', 'page:business',
+  'wiki:page:create', 'wiki:page:update', 'wiki:page:delete', 'wiki:page:protect',
+  'wiki:revision:revert',
+  'wiki:category:create', 'wiki:category:update', 'wiki:category:delete',
+  'wiki:tag:create', 'wiki:tag:delete',
+  'wiki:template:create', 'wiki:template:update', 'wiki:template:delete',
+  'wiki:discussion:create', 'wiki:discussion:reply', 'wiki:discussion:resolve',
+  'wiki:comment:create', 'wiki:comment:update', 'wiki:comment:delete',
+  'wiki:change-request:create', 'wiki:change-request:review',
+  'wiki:watchlist:manage', 'wiki:star:manage'
+)
+ON DUPLICATE KEY UPDATE role_id=role_id;
+
+-- 普通用户：读写 + 创建标签/分类 + 删除自己的文章
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT 'role-user', id FROM permissions WHERE code IN (
+  'page:wiki', 'page:business',
+  'wiki:page:create', 'wiki:page:update', 'wiki:page:delete',
+  'wiki:category:create', 'wiki:category:update',
+  'wiki:tag:create',
+  'wiki:discussion:create', 'wiki:discussion:reply',
+  'wiki:comment:create', 'wiki:comment:update',
+  'wiki:change-request:create',
+  'wiki:watchlist:manage', 'wiki:star:manage'
+)
+ON DUPLICATE KEY UPDATE role_id=role_id;
+
+-- 超级管理员用户：启动时由 authService 自动分配 admin 角色
+-- 详见 packages/briar-node/src/services/authService.ts
 
 -- 请求日志表
 CREATE TABLE IF NOT EXISTS request_logs (

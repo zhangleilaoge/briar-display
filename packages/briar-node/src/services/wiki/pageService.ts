@@ -258,14 +258,15 @@ export const pageService = {
 
 	/**
 	 * Soft delete a page with ownership check
+	 * @param canDeleteAny - true 时可删除任意文章（moderator+），false 时只能删自己的
 	 */
-	async delete(slug: string, userId: string): Promise<boolean> {
+	async delete(slug: string, userId: string, canDeleteAny = false): Promise<boolean> {
 		const page = await pageDal.findBySlug('main', slug)
 		if (!page) {
 			throw new Error('PAGE_NOT_FOUND')
 		}
 
-		if (page.authorId !== userId) {
+		if (!canDeleteAny && page.authorId !== userId) {
 			throw new Error('FORBIDDEN')
 		}
 

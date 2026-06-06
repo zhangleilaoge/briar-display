@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button'
 import ArticleBacklinks from '@/components/wiki/article/ArticleBacklinks'
 import ArticleSubpages from '@/components/wiki/article/ArticleSubpages'
 import ArticleToc, { type TocItem } from '@/components/wiki/article/ArticleToc'
+import PermissionGuard from '@/components/wiki/common/PermissionGuard'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiFooter from '@/components/wiki/layout/WikiFooter'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
+import { PERMISSIONS } from '@briar/shared'
 import type { WikiBacklink, WikiCategory, WikiPage, WikiPageSummary, WikiTag } from '@briar/shared'
 import { AlertTriangle, Eye, FolderOpen, Loader2, Pencil, Star, Tag } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -260,13 +262,15 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 					<h2 id={id} {...props}>
 						<span className="group relative">
 							{children}
-							<a
-								href={`/briar-display/wiki/${slug}/edit`}
-								className="float-right ml-2 mt-1 inline-flex items-center gap-1 text-[12px] font-normal text-wiki-text-muted opacity-0 transition-opacity hover:text-wiki-link group-hover:opacity-100"
-							>
-								<Pencil className="h-3 w-3" />
-								编辑
-							</a>
+							<PermissionGuard permission={PERMISSIONS.WIKI_PAGE_UPDATE}>
+								<a
+									href={`/briar-display/wiki/${slug}/edit`}
+									className="float-right ml-2 mt-1 inline-flex items-center gap-1 text-[12px] font-normal text-wiki-text-muted opacity-0 transition-opacity hover:text-wiki-link group-hover:opacity-100"
+								>
+									<Pencil className="h-3 w-3" />
+									编辑
+								</a>
+							</PermissionGuard>
 						</span>
 					</h2>
 				)
@@ -278,13 +282,15 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 					<h3 id={id} {...props}>
 						<span className="group relative">
 							{children}
-							<a
-								href={`/briar-display/wiki/${slug}/edit`}
-								className="float-right ml-2 mt-0.5 inline-flex items-center gap-1 text-[11px] font-normal text-wiki-text-muted opacity-0 transition-opacity hover:text-wiki-link group-hover:opacity-100"
-							>
-								<Pencil className="h-2.5 w-2.5" />
-								编辑
-							</a>
+							<PermissionGuard permission={PERMISSIONS.WIKI_PAGE_UPDATE}>
+								<a
+									href={`/briar-display/wiki/${slug}/edit`}
+									className="float-right ml-2 mt-0.5 inline-flex items-center gap-1 text-[11px] font-normal text-wiki-text-muted opacity-0 transition-opacity hover:text-wiki-link group-hover:opacity-100"
+								>
+									<Pencil className="h-2.5 w-2.5" />
+									编辑
+								</a>
+							</PermissionGuard>
 						</span>
 					</h3>
 				)
@@ -392,28 +398,32 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 			<div className="flex items-center justify-between">
 				<WikiBreadcrumbs items={[{ label: page.title }]} />
 				<div className="flex items-center gap-2">
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						onClick={handleToggleStar}
-						disabled={starLoading}
-						className={cn(starred && 'border-wiki-link bg-wiki-link/10 text-wiki-link')}
-					>
-						<Star className={cn('h-3.5 w-3.5', starred && 'fill-wiki-link')} />
-						{starred ? '已收藏' : '收藏'}
-					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						onClick={handleToggleWatch}
-						disabled={watchLoading}
-						className={cn(watching && 'border-wiki-link bg-wiki-link/10 text-wiki-link')}
-					>
-						<Eye className="h-3.5 w-3.5" />
-						{watching ? '已关注' : '关注'}
-					</Button>
+					<PermissionGuard permission={PERMISSIONS.WIKI_STAR_MANAGE}>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={handleToggleStar}
+							disabled={starLoading}
+							className={cn(starred && 'border-wiki-link bg-wiki-link/10 text-wiki-link')}
+						>
+							<Star className={cn('h-3.5 w-3.5', starred && 'fill-wiki-link')} />
+							{starred ? '已收藏' : '收藏'}
+						</Button>
+					</PermissionGuard>
+					<PermissionGuard permission={PERMISSIONS.WIKI_WATCHLIST_MANAGE}>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={handleToggleWatch}
+							disabled={watchLoading}
+							className={cn(watching && 'border-wiki-link bg-wiki-link/10 text-wiki-link')}
+						>
+							<Eye className="h-3.5 w-3.5" />
+							{watching ? '已关注' : '关注'}
+						</Button>
+					</PermissionGuard>
 				</div>
 			</div>
 

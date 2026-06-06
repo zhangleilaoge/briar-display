@@ -5,6 +5,7 @@ import { AUTH_CONFIG } from '../config/auth'
 import { type UserRecord, userDal } from '../dal/userDal'
 import { VerificationCodeType, verificationCodeDal } from '../dal/verificationCodeDal'
 import { emailService } from './emailService'
+import { permissionService } from './permissionService'
 
 export interface AuthPayload {
 	sub: string
@@ -27,30 +28,41 @@ const generateVerificationCode = (): string => {
 }
 
 /**
- * 创建默认管理员账户
+ * 确保超级管理员账户拥有 admin 角色
+ * 当指定邮箱的用户已存在时，自动分配 admin 角色
  */
-const seedDefaultUser = async () => {
+const ADMIN_EMAIL = 'zhangleilaoge@qq.com'
+
+const ensureAdminRole = async () => {
 	try {
-		const existing = await userDal.findByEmail('admin@briar.dev')
-		if (existing) {
+		const adminUser = await userDal.findByEmail(ADMIN_EMAIL)
+		if (!adminUser) {
+			console.log(`ℹ️  管理员账户 ${ADMIN_EMAIL} 尚未注册，跳过角色分配`)
 			return
 		}
 
-		const passwordHash = await bcrypt.hash('admin123', 10)
-		await userDal.create({
-			name: 'Briar Admin',
-			email: 'admin@briar.dev',
-			passwordHash,
-		})
-		console.log('✅ 默认管理员账户已创建')
+		const { userRoleDal } = await import('../dal/userRoleDal')
+		const { roleDal } = await import('../dal/roleDal')
+
+		const adminRole = await roleDal.findByName('admin')
+		if (!adminRole) {
+			console.error('❌ admin 角色不存在，请先执行数据库初始化')
+			return
+		}
+
+		const hasRole = await userRoleDal.hasRole(adminUser.id, adminRole.id)
+		if (!hasRole) {
+			await userRoleDal.addRole(adminUser.id, adminRole.id)
+			console.log(`✅ 已为 ${ADMIN_EMAIL} 分配 admin 角色`)
+		}
 	} catch (error) {
-		console.error('❌ 创建默认管理员账户失败:', error)
+		console.error('❌ 管理员角色分配失败:', error)
 	}
 }
 
 // 延迟执行，确保数据库连接已建立
 setTimeout(() => {
-	seedDefaultUser()
+	ensureAdminRole()
 }, 1000)
 
 export const authService = {
@@ -63,7 +75,8 @@ export const authService = {
 		const passwordHash = await bcrypt.hash(password, 10)
 		const record = await userDal.create({ name, email, passwordHash })
 		const token = authService.createToken(record)
-		return { user: toPublicUser(record), token }
+		const permissions = await permissionService.getUserPermissions(record.id)
+		return { user: toPublicUser(record), token, permissions }
 	},
 
 	async login(email: string, password: string) {
@@ -78,7 +91,8 @@ export const authService = {
 		}
 
 		const token = authService.createToken(record)
-		return { user: toPublicUser(record), token }
+		const permissions = await permissionService.getUserPermissions(record.id)
+		return { user: toPublicUser(record), token, permissions }
 	},
 
 	async sendPasswordResetCode(email: string) {
@@ -138,7 +152,8 @@ export const authService = {
 		}
 
 		const token = authService.createToken(updatedUser)
-		return { user: toPublicUser(updatedUser), token }
+		const permissions = await permissionService.getUserPermissions(updatedUser.id)
+		return { user: toPublicUser(updatedUser), token, permissions }
 	},
 
 	createToken(record: UserRecord) {

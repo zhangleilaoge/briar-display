@@ -12,3 +12,6 @@ export * from './utils'
 
 // 导出常量
 export * from './constants'
+
+// 导出权限系统
+export * from './permissions'

@@ -41,7 +41,7 @@ export default function LoginPage() {
 		try {
 			const result = await login({ email, password })
 			if (result.success && result.data) {
-				setAuthToken(result.data.token, result.data.user)
+				setAuthToken(result.data.token, result.data.user, result.data.permissions)
 				window.location.href = 'business'
 				return
 			}
@@ -143,9 +143,6 @@ export default function LoginPage() {
 								<Button variant="outline" className="w-full" type="button">
 									使用企业 SSO
 								</Button>
-								<p className="text-center text-xs text-muted-foreground">
-									测试账号：admin@briar.dev / admin123
-								</p>
 								<p className="text-center text-xs text-muted-foreground">
 									还没有账号？{' '}
 									<a href="register" className="text-primary hover:underline">

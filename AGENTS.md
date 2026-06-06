@@ -85,9 +85,21 @@ make lint:fix  # biome check . --write
 | 文件 | 作用 |
 | :--- | :--- |
 | `packages/briar-node/src/index.ts` | 后端入口。注册中间件、API 路由、静态资源服务 |
-| `packages/briar-node/src/routes/api.ts` | API 路由汇总（auth、wiki） |
+| `packages/briar-node/src/routes/api.ts` | API 路由汇总（auth、admin、wiki） |
+| `packages/briar-node/src/routes/admin.ts` | 权限管理 API（角色、权限、用户角色分配） |
 | `packages/briar-node/src/middleware/config.ts` | 全局中间件配置（auth、cors、logger、errorHandler） |
+| `packages/briar-node/src/middleware/permissionMiddleware.ts` | 权限检查中间件 `requirePermission()` |
+| `packages/briar-node/src/middleware/wikiWriteGuard.ts` | Wiki 写操作默认保护（安全网） |
+| `packages/briar-node/src/config/wikiPermissions.ts` | **Wiki 路由权限映射表**（单一权限来源） |
 | `packages/briar-node/src/config/routes.ts` | 公开路径白名单配置 |
+| `packages/briar-node/src/services/permissionService.ts` | 权限服务（缓存、校验、角色管理） |
+| `packages/briar-node/src/dal/roleDal.ts` | 角色数据访问层 |
+| `packages/briar-node/src/dal/permissionDal.ts` | 权限数据访问层 |
+| `packages/briar-node/src/dal/userRoleDal.ts` | 用户-角色关联数据访问层 |
+| `packages/briar-shared/src/permissions.ts` | 权限编码常量、分组定义 |
+| `packages/briar-display/src/contexts/PermissionContext.tsx` | 前端权限上下文（React Context） |
+| `packages/briar-display/src/api/admin.ts` | 前端权限管理 API |
+| `packages/briar-display/src/components/wiki/common/PermissionGuard.tsx` | 前端权限守卫组件 |
 | `packages/briar-display/src/api/request.ts` | 前端 axios 实例，baseURL 根据环境自动计算 |
 | `packages/briar-shared/src/constants.ts` | 共享常量：`API_BASE_PATH`、`NODE_PORT`、`DISPLAY_PORT` |
 | `default.conf` | Nginx 配置模板 |
@@ -119,6 +131,18 @@ app.route('/api', apiRoutes)
 - `POST /api/auth/register`
 - `POST /api/auth/send-reset-code`
 - `POST /api/auth/reset-password`
+
+**Admin API**（权限管理，需认证 + 对应权限）：
+- `GET /api/admin/roles` — 角色列表
+- `GET /api/admin/roles/:id` — 角色详情（含权限）
+- `POST /api/admin/roles` — 创建角色
+- `PUT /api/admin/roles/:id` — 更新角色
+- `DELETE /api/admin/roles/:id` — 删除角色
+- `PUT /api/admin/roles/:id/permissions` — 设置角色权限
+- `GET /api/admin/permissions` — 权限列表
+- `GET /api/admin/users` — 用户列表（含角色）
+- `PUT /api/admin/users/:userId/roles` — 设置用户角色
+- `GET /api/admin/me/permissions` — 当前用户权限（任何已登录用户可调用）
 
 **Wiki API**（分层架构：dal → service → controller → route）：
 - Pages:
@@ -244,6 +268,140 @@ const getApiBaseUrl = () => {
 - `wiki_templates` 表
 
 数据库名固定为 `briar_display`。
+
+## RBAC 权限系统
+
+### 架构概览
+
+采用 **RBAC（基于角色的访问控制）** 模型，分为两个维度：
+- **页面访问权限**（`page:*`）— 控制用户能看到哪些页面
+- **功能操作权限**（`api:*` / `wiki:*` / `admin:*`）— 控制用户能执行哪些操作
+
+```
+用户 → 角色 → 权限
+user_roles  role_permissions  permissions
+```
+
+### 默认角色
+
+| 角色 | 标识 | 等级 | 权限范围 |
+| :--- | :--- | :--- | :--- |
+| 普通用户 | `user` | 10 | 创建/编辑文章、讨论、评论、收藏、关注 |
+| 管理员 | `moderator` | 50 | + 删除、分类/标签/模板管理、版本回退、审核变更 |
+| 超级管理员 | `admin` | 100 | + 管理后台（角色/权限/用户分配），自动放行所有检查 |
+
+访客（未登录）不需要角色，通过公开路由访问只读内容。
+
+### 权限编码格式
+
+```
+{模块}:{资源}:{操作}
+```
+
+示例：
+- `page:wiki` — 页面访问权限
+- `wiki:page:create` — Wiki 页面创建
+- `wiki:category:delete` — Wiki 分类删除
+- `admin:role:manage` — 管理角色
+
+### ⚠️ 新增 Wiki 写路由的规范（安全网机制）
+
+**所有 Wiki 写操作（POST/PUT/DELETE）都必须在权限映射表中声明权限。**
+
+权限映射表位于：`packages/briar-node/src/config/wikiPermissions.ts`
+
+```ts
+export const WIKI_ROUTE_PERMISSIONS: Record<string, string | null> = {
+  'POST /pages': PERMISSIONS.WIKI_PAGE_CREATE,
+  'PUT /pages/:slug': PERMISSIONS.WIKI_PAGE_UPDATE,
+  // ...
+}
+```
+
+**工作原理**：`wikiWriteGuard` 中间件拦截所有写请求，在映射表中查找所需权限：
+1. **找到权限编码** → 检查用户是否拥有该权限
+2. **标记为 `null`** → 显式公开，放行
+3. **未找到（新路由忘了声明）** → **默认拒绝**，返回 403 + 控制台警告
+
+**新增写路由的步骤**：
+
+```ts
+// 1. 在 wikiPermissions.ts 中添加权限映射
+'POST /new-resource': PERMISSIONS.WIKI_NEW_RESOURCE,
+
+// 2. 在 permissions.ts 中定义权限编码常量
+WIKI_NEW_RESOURCE: 'wiki:new-resource:create',
+
+// 3. 在 schema.sql 中插入权限记录（如果是新权限）
+INSERT INTO permissions (id, code, name, type, module) VALUES
+  ('perm-wiki-new-resource', 'wiki:new-resource:create', '创建新资源', 'api', 'wiki');
+
+// 4. 为对应角色授权
+INSERT INTO role_permissions (role_id, permission_id) VALUES ('role-editor', 'perm-wiki-new-resource');
+
+// 5. 在 wiki.ts 中注册路由（不需要手动加 requirePermission）
+wikiRoutes.post('/new-resource', (c) => controller.create(c))
+```
+
+**如果忘记在映射表中声明**：写操作会返回 403，控制台输出警告。这确保了安全性。
+
+### 前端权限使用
+
+#### PermissionContext
+
+Wiki SPA 已通过 `PermissionProvider` 包裹，所有子组件可使用：
+
+```tsx
+import { usePermissions } from '@/contexts/PermissionContext'
+
+function MyComponent() {
+  const { hasPermission, isAdmin, isLoggedIn } = usePermissions()
+
+  if (!hasPermission('wiki:page:create')) return null
+  return <Button>新建</Button>
+}
+```
+
+#### PermissionGuard 组件
+
+用于条件渲染 UI 元素：
+
+```tsx
+import PermissionGuard from '@/components/wiki/common/PermissionGuard'
+
+<PermissionGuard permission="wiki:page:delete">
+  <Button variant="destructive">删除</Button>
+</PermissionGuard>
+```
+
+#### 管理后台页面
+
+- `/briar-display/wiki/special/admin/permissions` — 角色与权限管理
+- `/briar-display/wiki/special/admin/users` — 用户角色分配
+
+侧边栏"管理"区域仅对拥有 `page:admin` 权限的用户可见。
+
+### 权限管理 API
+
+| 端点 | 方法 | 说明 |
+| :--- | :--- | :--- |
+| `/api/admin/roles` | GET/POST | 角色列表/创建 |
+| `/api/admin/roles/:id` | GET/PUT/DELETE | 角色详情/更新/删除 |
+| `/api/admin/roles/:id/permissions` | PUT | 设置角色权限 |
+| `/api/admin/permissions` | GET/POST | 权限列表/创建 |
+| `/api/admin/permissions/:id` | PUT/DELETE | 权限更新/删除 |
+| `/api/admin/users` | GET | 所有用户及其角色 |
+| `/api/admin/users/:userId/roles` | GET/PUT | 获取/设置用户角色 |
+| `/api/admin/me/permissions` | GET | 当前用户的权限信息 |
+
+### 数据库表
+
+- `roles` — 角色定义
+- `permissions` — 权限定义（type: page/api）
+- `role_permissions` — 角色-权限关联
+- `user_roles` — 用户-角色关联
+
+运行 `make db-setup` 自动初始化默认数据。
 
 ## 修改建议
 

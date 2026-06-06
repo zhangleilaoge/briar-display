@@ -1,6 +1,8 @@
 'use client'
 
+import { usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
+import { PERMISSIONS } from '@briar/shared'
 
 type TabKey = 'read' | 'talk' | 'edit' | 'history'
 
@@ -12,12 +14,23 @@ interface WikiTabsProps {
 }
 
 export default function WikiTabs({ slug, active, discussionCount, className }: WikiTabsProps) {
-	const tabs: { key: TabKey; label: string; href: string }[] = [
+	const { hasPermission, isAdmin } = usePermissions()
+
+	const allTabs: { key: TabKey; label: string; href: string; requirePermission?: string }[] = [
 		{ key: 'read', label: '阅读', href: `/briar-display/wiki/${slug}` },
 		{ key: 'talk', label: '讨论', href: `/briar-display/wiki/${slug}/talk` },
-		{ key: 'edit', label: '编辑', href: `/briar-display/wiki/${slug}/edit` },
+		{
+			key: 'edit',
+			label: '编辑',
+			href: `/briar-display/wiki/${slug}/edit`,
+			requirePermission: PERMISSIONS.WIKI_PAGE_UPDATE,
+		},
 		{ key: 'history', label: '历史', href: `/briar-display/wiki/${slug}/history` },
 	]
+
+	const tabs = allTabs.filter(
+		(tab) => !tab.requirePermission || isAdmin || hasPermission(tab.requirePermission),
+	)
 
 	return (
 		<div className={cn('w-full border-b border-wiki-border-light', className)}>

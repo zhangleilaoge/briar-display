@@ -286,7 +286,14 @@ export const pageController = {
 				)
 			}
 
-			await pageService.delete(slug, user.id)
+			// moderator+ 可删除任意文章，普通用户只能删自己的
+			// 用 wiki:category:delete 区分（只有 moderator+ 才有）
+			const { permissionService } = await import('../../services/permissionService')
+			const canDeleteAny =
+				(await permissionService.isAdmin(user.id)) ||
+				(await permissionService.hasPermission(user.id, 'wiki:category:delete'))
+
+			await pageService.delete(slug, user.id, canDeleteAny)
 
 			return c.json<ApiResponse>({
 				success: true,

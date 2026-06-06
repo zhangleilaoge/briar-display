@@ -39,7 +39,7 @@ export const globalMiddlewares: MiddlewareConfig[] = [
 	{
 		middleware: authMiddleware,
 		match: (c) => c.req.path.startsWith('/api'),
-		ignore: (c) => isApiPublicPath(c.req.path),
+		ignore: (c) => isApiPublicPath(c.req.path, c.req.method),
 		priority: 30,
 	},
 	{

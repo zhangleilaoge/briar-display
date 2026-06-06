@@ -70,8 +70,14 @@ export const isAssetPath = (pathname: string): boolean => {
 
 /**
  * 判断 API 路径是否需要认证
+ * 只有 GET/HEAD/OPTIONS 请求才可能被视为公开，写操作始终需要认证
  */
-export const isApiPublicPath = (pathname: string): boolean => {
+export const isApiPublicPath = (pathname: string, method?: string): boolean => {
+	// 写操作（POST/PUT/PATCH/DELETE）始终需要认证
+	if (method && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+		return false
+	}
+
 	// 检查精确路径匹配
 	const exactMatch = RouteConfig.API_PUBLIC_PATHS.some(
 		(path) => pathname === path || pathname.startsWith(`${path}/`),
