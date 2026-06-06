@@ -62,13 +62,15 @@ export default defineConfig({
 				output: {
 					manualChunks(id) {
 						if (id.includes('node_modules')) {
-							if (id.includes('react-dom')) return 'react-vendor'
-							if (id.includes('react/') && !id.includes('react-dom')) return 'react-vendor'
-							if (id.includes('react-markdown')) return 'markdown-vendor'
+							if (id.includes('node_modules/react-dom')) return 'react-dom-vendor'
+							if (id.includes('node_modules/react/')) return 'react-vendor'
+							if (id.includes('node_modules/react-markdown')) return 'markdown-vendor'
+							if (id.includes('tiptap') || id.includes('prosemirror')) return 'tiptap-vendor'
 						}
-						// wiki 页面和编辑器组件拆分
+						// 编辑器单独拆（TipTap 很重，只在编辑时加载）
+						if (id.includes('/components/wiki/editor/')) return 'wiki-editor'
+						// 页面组件
 						if (id.includes('/components/wiki/pages/')) return 'wiki-pages'
-						if (id.includes('/components/wiki/editor/')) return 'wiki-pages'
 					},
 				},
 			},
