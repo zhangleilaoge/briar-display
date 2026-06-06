@@ -21,8 +21,21 @@ export default function WikiPagination({
 	const totalPages = Math.ceil(total / limit)
 	const currentPage = Math.floor(offset / limit) + 1
 
-	if (totalPages <= 1) {
+	if (total === 0) {
 		return null
+	}
+
+	if (totalPages <= 1) {
+		return (
+			<div
+				className={cn(
+					'flex items-center justify-center pt-4 text-sm text-muted-foreground',
+					className,
+				)}
+			>
+				共 {total} 条记录
+			</div>
+		)
 	}
 
 	const handlePageChange = (page: number) => {
