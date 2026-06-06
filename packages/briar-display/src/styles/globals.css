@@ -120,6 +120,7 @@
 		color: var(--wiki-link-hover);
 	}
 
+
 	/* Route loader animation */
 	@keyframes wiki-route-slide {
 		0% {

@@ -1,6 +1,7 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Loader2, Search } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -109,14 +110,13 @@ export default function SearchDropdown({ onSelect, className }: SearchDropdownPr
 		<div ref={containerRef} className={cn('relative', className)}>
 			<div className="relative">
 				<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-wiki-text-muted" />
-				<input
-					type="text"
+				<Input
 					value={query}
 					onChange={(e) => handleChange(e.target.value)}
 					onKeyDown={handleKeyDown}
 					onFocus={() => results.length > 0 && setOpen(true)}
 					placeholder="搜索文章..."
-					className="h-8 w-full rounded border border-wiki-border-light bg-wiki-bg-secondary pl-9 pr-3 text-[13px] text-wiki-text outline-none transition-colors placeholder:text-wiki-text-muted focus:border-wiki-link focus:bg-wiki-bg"
+					className="h-8 pl-9 pr-3"
 				/>
 				{loading && (
 					<Loader2 className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-wiki-text-muted" />

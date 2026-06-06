@@ -1,6 +1,9 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiPagination from '@/components/wiki/common/WikiPagination'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
@@ -90,14 +93,16 @@ function ReplyItem({
 					<span>·</span>
 					<time>{formatDate(reply.createdAt)}</time>
 					{isLoggedIn() && (
-						<button
+						<Button
 							type="button"
+							variant="ghost"
+							size="sm"
 							onClick={() => setShowReplyForm(!showReplyForm)}
-							className="ml-auto inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground"
+							className="ml-auto"
 						>
 							<Reply className="h-3 w-3" />
 							回复
-						</button>
+						</Button>
 					)}
 				</div>
 				<div className="prose prose-sm mt-1 max-w-none">
@@ -108,28 +113,25 @@ function ReplyItem({
 					<div className="mt-2 space-y-2">
 						{error && <p className="text-red-500 text-xs">{error}</p>}
 						<div className="flex gap-2">
-							<textarea
+							<Textarea
 								value={replyContent}
 								onChange={(e) => setReplyContent(e.target.value)}
 								placeholder="写下你的回复..."
 								rows={2}
-								className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+								className="flex-1 min-h-0"
 							/>
-							<button
+							<Button
 								type="button"
 								onClick={handleSubmitReply}
 								disabled={submitting || !replyContent.trim()}
-								className={cn(
-									'self-end rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-sm transition-colors hover:bg-primary/90',
-									(submitting || !replyContent.trim()) && 'cursor-not-allowed opacity-50',
-								)}
+								className="self-end"
 							>
 								{submitting ? (
 									<Loader2 className="h-4 w-4 animate-spin" />
 								) : (
 									<Send className="h-4 w-4" />
 								)}
-							</button>
+							</Button>
 						</div>
 					</div>
 				)}
@@ -293,22 +295,18 @@ function TopicItem({
 						<div className="border-t border-border bg-muted/30 px-4 py-3">
 							{error && <p className="mb-2 text-red-500 text-xs">{error}</p>}
 							<div className="flex gap-2">
-								<textarea
+								<Textarea
 									value={replyContent}
 									onChange={(e) => setReplyContent(e.target.value)}
 									placeholder="写下你的回复..."
 									rows={3}
-									className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+									className="flex-1"
 								/>
 								<div className="flex flex-col gap-2">
-									<button
+									<Button
 										type="button"
 										onClick={handleSubmitReply}
 										disabled={submitting || !replyContent.trim()}
-										className={cn(
-											'inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-primary-foreground text-sm transition-colors hover:bg-primary/90',
-											(submitting || !replyContent.trim()) && 'cursor-not-allowed opacity-50',
-										)}
 									>
 										{submitting ? (
 											<Loader2 className="h-4 w-4 animate-spin" />
@@ -316,13 +314,15 @@ function TopicItem({
 											<Send className="h-4 w-4" />
 										)}
 										发送
-									</button>
+									</Button>
 									{!topic.resolved && (
-										<button
+										<Button
 											type="button"
+											variant="outline"
+											size="sm"
 											onClick={handleResolve}
 											disabled={resolving}
-											className="inline-flex items-center gap-1 rounded-md border border-green-300 bg-green-50 px-3 py-2 text-green-700 text-sm transition-colors hover:bg-green-100"
+											className="border-green-300 text-green-700 hover:bg-green-50"
 										>
 											{resolving ? (
 												<Loader2 className="h-4 w-4 animate-spin" />
@@ -330,7 +330,7 @@ function TopicItem({
 												<CheckCircle2 className="h-4 w-4" />
 											)}
 											标记已解决
-										</button>
+										</Button>
 									)}
 								</div>
 							</div>
@@ -397,14 +397,10 @@ export default function WikiTalkPage({ slug }: WikiTalkPageProps) {
 					讨论页
 				</h2>
 				{isLoggedIn() && (
-					<button
-						type="button"
-						onClick={() => setShowNewTopic(!showNewTopic)}
-						className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-sm transition-colors hover:bg-primary/90"
-					>
+					<Button type="button" onClick={() => setShowNewTopic(!showNewTopic)}>
 						<MessageSquarePlus className="h-4 w-4" />
 						新话题
-					</button>
+					</Button>
 				)}
 			</div>
 
@@ -427,8 +423,7 @@ export default function WikiTalkPage({ slug }: WikiTalkPageProps) {
 					<h3 className="mb-2 font-medium text-sm">创建新话题</h3>
 					{error && <p className="mb-2 text-red-500 text-xs">{error}</p>}
 					<div className="flex gap-2">
-						<input
-							type="text"
+						<Input
 							value={newTopicTitle}
 							onChange={(e) => setNewTopicTitle(e.target.value)}
 							placeholder="输入话题标题..."
@@ -438,16 +433,12 @@ export default function WikiTalkPage({ slug }: WikiTalkPageProps) {
 									handleCreateTopic()
 								}
 							}}
-							className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+							className="flex-1"
 						/>
-						<button
+						<Button
 							type="button"
 							onClick={handleCreateTopic}
 							disabled={creating || !newTopicTitle.trim()}
-							className={cn(
-								'inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-primary-foreground text-sm transition-colors hover:bg-primary/90',
-								(creating || !newTopicTitle.trim()) && 'cursor-not-allowed opacity-50',
-							)}
 						>
 							{creating ? (
 								<Loader2 className="h-4 w-4 animate-spin" />
@@ -455,18 +446,18 @@ export default function WikiTalkPage({ slug }: WikiTalkPageProps) {
 								<Send className="h-4 w-4" />
 							)}
 							发布
-						</button>
-						<button
+						</Button>
+						<Button
 							type="button"
+							variant="ghost"
 							onClick={() => {
 								setShowNewTopic(false)
 								setNewTopicTitle('')
 								setError(null)
 							}}
-							className="rounded-md px-3 py-2 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground"
 						>
 							取消
-						</button>
+						</Button>
 					</div>
 				</div>
 			)}
@@ -483,13 +474,9 @@ export default function WikiTalkPage({ slug }: WikiTalkPageProps) {
 					<MessageSquare className="h-10 w-10 opacity-30" />
 					<p className="text-sm">暂无讨论话题</p>
 					{isLoggedIn() && (
-						<button
-							type="button"
-							onClick={() => setShowNewTopic(true)}
-							className="text-primary text-sm underline hover:text-primary/80"
-						>
+						<Button type="button" variant="link" onClick={() => setShowNewTopic(true)}>
 							创建第一个话题
-						</button>
+						</Button>
 					)}
 				</div>
 			) : (

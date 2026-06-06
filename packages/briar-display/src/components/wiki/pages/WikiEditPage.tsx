@@ -2,28 +2,29 @@
 
 import { wikiApi } from '@/api/wiki'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Textarea } from '@/components/ui/textarea'
 import TagInput from '@/components/wiki/common/TagInput'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
+import CategorySelector from '@/components/wiki/editor/CategorySelector'
+import {
+	ToolbarButton,
+	ToolbarSeparator,
+	renderMentions,
+} from '@/components/wiki/editor/EditorToolbar'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
-import type {
-	WikiCategoryTreeNode,
-	WikiPage,
-	WikiPageVisibility,
-	WikiSearchResult,
-} from '@briar/shared'
+import type { WikiPage, WikiPageVisibility, WikiSearchResult } from '@briar/shared'
 import Highlight from '@tiptap/extension-highlight'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
-import { EditorContent, useEditor } from '@tiptap/react'
+import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import {
 	Bold,
-	ChevronDown,
-	ChevronRight,
 	Code,
 	FileText,
 	Heading2,
@@ -35,7 +36,6 @@ import {
 	List,
 	ListOrdered,
 	Loader2,
-	Plus,
 	Quote,
 	Redo,
 	Tag,
@@ -43,7 +43,7 @@ import {
 	Upload,
 	X,
 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Markdown } from 'tiptap-markdown'
 
@@ -51,222 +51,7 @@ interface WikiEditPageProps {
 	slug: string
 }
 
-/** 将 [[slug|display]] 语法转为 markdown 链接 */
-function renderMentions(content: string): string {
-	return content.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_match, slug, display) => {
-		const label = display || slug
-		return `[${label}](/briar-display/wiki/${slug})`
-	})
-}
-
 type EditMode = 'visual' | 'source'
-
-/** Toolbar button component */
-function ToolbarButton({
-	icon: Icon,
-	label,
-	isActive = false,
-	disabled = false,
-	onClick,
-}: {
-	icon: React.ElementType
-	label: string
-	isActive?: boolean
-	disabled?: boolean
-	onClick: () => void
-}) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			disabled={disabled}
-			title={label}
-			className={cn(
-				'inline-flex h-8 w-8 items-center justify-center rounded-sm transition-colors',
-				isActive ? 'bg-wiki-link text-white' : 'text-wiki-text hover:bg-wiki-bg-tertiary',
-				disabled && 'cursor-not-allowed opacity-50',
-			)}
-		>
-			<Icon className="h-4 w-4" />
-		</button>
-	)
-}
-
-function ToolbarSeparator() {
-	return <div className="mx-1 h-6 w-px bg-wiki-border-light" />
-}
-
-function CategorySelector({
-	selected,
-	onChange,
-}: {
-	selected: string[]
-	onChange: (ids: string[]) => void
-}) {
-	const [tree, setTree] = useState<WikiCategoryTreeNode[]>([])
-	const [expanded, setExpanded] = useState<Set<string>>(new Set())
-	const [loading, setLoading] = useState(true)
-	const [showCreate, setShowCreate] = useState(false)
-	const [newCatName, setNewCatName] = useState('')
-	const [creating, setCreating] = useState(false)
-
-	useEffect(() => {
-		const fetchTree = async () => {
-			const res = await wikiApi.getCategoryTree()
-			if (res.success && res.data) {
-				setTree(res.data)
-				setExpanded(new Set(res.data.map((c) => c.id)))
-			}
-			setLoading(false)
-		}
-		fetchTree()
-	}, [])
-
-	const toggleExpand = (id: string) => {
-		setExpanded((prev) => {
-			const next = new Set(prev)
-			if (next.has(id)) next.delete(id)
-			else next.add(id)
-			return next
-		})
-	}
-
-	const toggleSelect = (id: string) => {
-		if (selected.includes(id)) {
-			onChange(selected.filter((s) => s !== id))
-		} else {
-			onChange([...selected, id])
-		}
-	}
-
-	const handleCreateCategory = async () => {
-		if (!newCatName.trim()) return
-		setCreating(true)
-		const res = await wikiApi.createCategory({ name: newCatName.trim() })
-		setCreating(false)
-		if (res.success && res.data) {
-			setNewCatName('')
-			setShowCreate(false)
-			// 刷新分类树并自动选中新分类
-			const treeRes = await wikiApi.getCategoryTree()
-			if (treeRes.success && treeRes.data) {
-				setTree(treeRes.data)
-				setExpanded(new Set(treeRes.data.map((c) => c.id)))
-			}
-			onChange([...selected, res.data.id])
-		} else {
-			alert(res.message || '创建分类失败')
-		}
-	}
-
-	const renderNode = (node: WikiCategoryTreeNode, depth = 0) => {
-		const hasChildren = node.children.length > 0
-		const isExpanded = expanded.has(node.id)
-		const isSelected = selected.includes(node.id)
-
-		return (
-			<div key={node.id}>
-				<div
-					className={cn(
-						'flex items-center gap-1 rounded-sm px-2 py-1 text-[13px] transition-colors hover:bg-wiki-bg-tertiary',
-						isSelected && 'bg-wiki-link/10',
-					)}
-					style={{ paddingLeft: `${depth * 20 + 8}px` }}
-				>
-					{hasChildren ? (
-						<button
-							type="button"
-							onClick={() => toggleExpand(node.id)}
-							className="flex-shrink-0 p-0.5"
-						>
-							{isExpanded ? (
-								<ChevronDown className="h-3.5 w-3.5" />
-							) : (
-								<ChevronRight className="h-3.5 w-3.5" />
-							)}
-						</button>
-					) : (
-						<span className="w-5" />
-					)}
-					<label className="flex flex-1 cursor-pointer items-center gap-2">
-						<input
-							type="checkbox"
-							checked={isSelected}
-							onChange={() => toggleSelect(node.id)}
-							className="h-3.5 w-3.5 rounded-sm border-wiki-border"
-						/>
-						<span>{node.name}</span>
-						{node.pageCount > 0 && <span className="text-wiki-text-muted">({node.pageCount})</span>}
-					</label>
-				</div>
-				{hasChildren && isExpanded && (
-					<div>{node.children.map((child) => renderNode(child, depth + 1))}</div>
-				)}
-			</div>
-		)
-	}
-
-	if (loading) {
-		return (
-			<div className="flex items-center gap-2 py-2 text-[13px] text-wiki-text-muted">
-				<Loader2 className="h-4 w-4 animate-spin" />
-				加载分类...
-			</div>
-		)
-	}
-
-	return (
-		<div className="space-y-2">
-			{tree.length > 0 ? (
-				<div className="max-h-[200px] overflow-y-auto rounded-sm border border-wiki-border-light">
-					<div className="p-1">{tree.map((node) => renderNode(node))}</div>
-				</div>
-			) : (
-				<p className="py-2 text-[13px] text-wiki-text-muted">暂无分类</p>
-			)}
-
-			{showCreate ? (
-				<div className="flex items-center gap-2">
-					<input
-						type="text"
-						value={newCatName}
-						onChange={(e) => setNewCatName(e.target.value)}
-						onKeyDown={(e) => e.key === 'Enter' && handleCreateCategory()}
-						placeholder="新分类名称"
-						className="flex-1 rounded-sm border border-wiki-border bg-wiki-bg px-2 py-1 text-[13px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none"
-					/>
-					<button
-						type="button"
-						onClick={handleCreateCategory}
-						disabled={creating || !newCatName.trim()}
-						className="rounded-sm bg-wiki-link px-2 py-1 text-[12px] text-white hover:bg-wiki-link-hover disabled:opacity-50"
-					>
-						{creating ? '...' : '创建'}
-					</button>
-					<button
-						type="button"
-						onClick={() => {
-							setShowCreate(false)
-							setNewCatName('')
-						}}
-						className="rounded-sm px-2 py-1 text-[12px] text-wiki-text-muted hover:bg-wiki-bg-tertiary"
-					>
-						取消
-					</button>
-				</div>
-			) : (
-				<button
-					type="button"
-					onClick={() => setShowCreate(true)}
-					className="inline-flex items-center gap-1 text-[12px] text-wiki-link hover:underline"
-				>
-					<Plus className="h-3 w-3" />
-					新建分类
-				</button>
-			)}
-		</div>
-	)
-}
 
 export default function WikiEditPage({ slug }: WikiEditPageProps) {
 	const isNew = slug === 'new' || slug === ''
@@ -283,9 +68,14 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 	const [categoryIds, setCategoryIds] = useState<string[]>([])
 	const [lastReadAt, setLastReadAt] = useState<string>('')
 
+	// Link state
+	const [showLinkMenu, setShowLinkMenu] = useState(false)
+	const [linkUrl, setLinkUrl] = useState('')
+
 	// Image upload state
 	const [showImageMenu, setShowImageMenu] = useState(false)
 	const [imageUrl, setImageUrl] = useState('')
+	const fileInputRef = useRef<HTMLInputElement>(null)
 
 	/** 读取本地图片文件转为 base64 并插入编辑器 */
 	const handleImageFile = useCallback((file: File, view: import('prosemirror-view').EditorView) => {
@@ -354,6 +144,25 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 				return false
 			},
 		},
+	})
+
+	// Subscribe to editor state for reactive toolbar highlights
+	const editorState = useEditorState({
+		editor,
+		selector: ({ editor: e }) => ({
+			isBold: e.isActive('bold'),
+			isItalic: e.isActive('italic'),
+			isHeading2: e.isActive('heading', { level: 2 }),
+			isHeading3: e.isActive('heading', { level: 3 }),
+			isHeading4: e.isActive('heading', { level: 4 }),
+			isBulletList: e.isActive('bulletList'),
+			isOrderedList: e.isActive('orderedList'),
+			isCodeBlock: e.isActive('codeBlock'),
+			isBlockquote: e.isActive('blockquote'),
+			isLink: e.isActive('link'),
+			canUndo: e.can().undo(),
+			canRedo: e.can().redo(),
+		}),
 	})
 
 	// Load existing page content
@@ -501,12 +310,29 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 	}, [isNew, slug])
 
 	// TipTap toolbar actions
-	const addLink = useCallback(() => {
+	const openLinkMenu = useCallback(() => {
 		if (!editor) return
-		const url = window.prompt('输入链接 URL:')
-		if (url) {
-			editor.chain().focus().setLink({ href: url }).run()
+		// Pre-fill with existing link URL if cursor is on a link
+		if (editor.isActive('link')) {
+			setLinkUrl(editor.getAttributes('link').href || '')
+		} else {
+			setLinkUrl('')
 		}
+		setShowLinkMenu(true)
+	}, [editor])
+
+	const insertLink = useCallback(() => {
+		if (!editor || !linkUrl.trim()) return
+		editor.chain().focus().setLink({ href: linkUrl.trim() }).run()
+		setLinkUrl('')
+		setShowLinkMenu(false)
+	}, [editor, linkUrl])
+
+	const removeLink = useCallback(() => {
+		if (!editor) return
+		editor.chain().focus().unsetLink().run()
+		setLinkUrl('')
+		setShowLinkMenu(false)
 	}, [editor])
 
 	const addImageFromUrl = useCallback(() => {
@@ -568,7 +394,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		return (
 			<div className="space-y-4">
 				<WikiBreadcrumbs items={[{ label: isNew ? '新建文章' : '编辑文章' }]} />
-				<WikiTabs slug={slug} active="edit" />
+				{!isNew && <WikiTabs slug={slug} active="edit" />}
 				<div className="flex items-center justify-center py-20">
 					<Loader2 className="h-8 w-8 animate-spin text-wiki-text-muted" />
 					<span className="ml-2 text-wiki-text-muted">加载中...</span>
@@ -585,7 +411,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 					{ label: isNew ? '新建' : '编辑' },
 				]}
 			/>
-			<WikiTabs slug={slug} active="edit" />
+			{!isNew && <WikiTabs slug={slug} active="edit" />}
 
 			<h1 className="border-b border-wiki-border-light pb-2 text-[1.5em] font-normal text-wiki-text">
 				{isNew ? '新建文章' : `编辑: ${existingPage?.title || slug}`}
@@ -599,22 +425,20 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 
 			{/* Title input */}
 			<div>
-				<label htmlFor="wiki-title" className="mb-1 block text-[13px] font-medium text-wiki-text">
+				<label htmlFor="wiki-title" className="mb-3 block text-[13px] font-medium text-wiki-text">
 					标题
 				</label>
-				<input
+				<Input
 					id="wiki-title"
-					type="text"
 					value={title}
 					onChange={(e) => setTitle(e.target.value)}
 					placeholder="输入文章标题"
-					className="w-full rounded-sm border border-wiki-border bg-wiki-bg px-3 py-2 text-[14px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none focus:ring-1 focus:ring-wiki-link"
 				/>
 			</div>
 
 			{/* Visibility */}
 			<div>
-				<label className="mb-1 block text-[13px] font-medium text-wiki-text">可见性</label>
+				<label className="mb-3 block text-[13px] font-medium text-wiki-text">可见性</label>
 				<div className="flex gap-3">
 					<label className="flex items-center gap-1.5 text-[13px] text-wiki-text">
 						<input
@@ -654,10 +478,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 
 			{/* Tags */}
 			<div>
-				<label className="mb-1 block text-[13px] font-medium text-wiki-text">
-					<Tag className="mr-1 inline-block h-3.5 w-3.5" />
-					标签
-				</label>
+				<label className="mb-3 block text-[13px] font-medium text-wiki-text">标签</label>
 				<TagInput value={tags} onChange={setTags} />
 				<p className="mt-1 text-[11px] text-wiki-text-muted">
 					回车或逗号添加标签，输入时显示已有标签建议
@@ -665,36 +486,25 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 			</div>
 			{/* Categories */}
 			<div>
-				<label className="mb-1 block text-[13px] font-medium text-wiki-text">分类</label>
+				<label className="mb-3 block text-[13px] font-medium text-wiki-text">分类</label>
 				<CategorySelector selected={categoryIds} onChange={setCategoryIds} />
 			</div>
 
+			<label className="mb-3 block text-[13px] font-medium text-wiki-text">内容</label>
 			{/* Mode toggle */}
 			<div className="flex items-center gap-2">
-				<button
-					type="button"
+				<Button
+					variant={mode === 'visual' ? 'default' : 'outline'}
 					onClick={() => handleModeChange('visual')}
-					className={cn(
-						'reounded-sm px-3 py-1.5 text-[13px] transition-colors',
-						mode === 'visual'
-							? 'bg-wiki-link text-white'
-							: 'border border-wiki-border-light text-wiki-text hover:bg-wiki-bg-secondary',
-					)}
 				>
 					可视化
-				</button>
-				<button
-					type="button"
+				</Button>
+				<Button
+					variant={mode === 'source' ? 'default' : 'outline'}
 					onClick={() => handleModeChange('source')}
-					className={cn(
-						'reounded-sm px-3 py-1.5 text-[13px] transition-colors',
-						mode === 'source'
-							? 'bg-wiki-link text-white'
-							: 'border border-wiki-border-light text-wiki-text hover:bg-wiki-bg-secondary',
-					)}
 				>
 					源码
-				</button>
+				</Button>
 			</div>
 
 			{/* Visual editor mode */}
@@ -705,13 +515,13 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 						<ToolbarButton
 							icon={Bold}
 							label="加粗"
-							isActive={editor.isActive('bold')}
+							isActive={editorState.isBold}
 							onClick={() => editor.chain().focus().toggleBold().run()}
 						/>
 						<ToolbarButton
 							icon={Italic}
 							label="斜体"
-							isActive={editor.isActive('italic')}
+							isActive={editorState.isItalic}
 							onClick={() => editor.chain().focus().toggleItalic().run()}
 						/>
 
@@ -720,19 +530,19 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 						<ToolbarButton
 							icon={Heading2}
 							label="标题 2"
-							isActive={editor.isActive('heading', { level: 2 })}
+							isActive={editorState.isHeading2}
 							onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
 						/>
 						<ToolbarButton
 							icon={Heading3}
 							label="标题 3"
-							isActive={editor.isActive('heading', { level: 3 })}
+							isActive={editorState.isHeading3}
 							onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
 						/>
 						<ToolbarButton
 							icon={Heading4}
 							label="标题 4"
-							isActive={editor.isActive('heading', { level: 4 })}
+							isActive={editorState.isHeading4}
 							onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
 						/>
 
@@ -741,92 +551,129 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 						<ToolbarButton
 							icon={List}
 							label="无序列表"
-							isActive={editor.isActive('bulletList')}
+							isActive={editorState.isBulletList}
 							onClick={() => editor.chain().focus().toggleBulletList().run()}
 						/>
 						<ToolbarButton
 							icon={ListOrdered}
 							label="有序列表"
-							isActive={editor.isActive('orderedList')}
+							isActive={editorState.isOrderedList}
 							onClick={() => editor.chain().focus().toggleOrderedList().run()}
 						/>
 
 						<ToolbarSeparator />
 
-						<ToolbarButton icon={Link2} label="插入链接" onClick={addLink} />
-						<div className="relative">
-							<ToolbarButton
-								icon={FileText}
-								label="提及文档"
-								onClick={() => setShowMention(!showMention)}
-							/>
-							{showMention && (
-								<div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-md border border-wiki-border-light bg-wiki-bg shadow-lg">
-									<div className="p-2">
-										<div className="flex items-center gap-1">
-											<input
-												type="text"
-												value={mentionQuery}
-												onChange={(e) => {
-													setMentionQuery(e.target.value)
-													searchPages(e.target.value)
-												}}
-												placeholder="搜索页面标题..."
-												className="flex-1 rounded-sm border border-wiki-border bg-wiki-bg px-2 py-1 text-[13px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none"
-											/>
-											<button
-												type="button"
-												onClick={() => {
-													setShowMention(false)
-													setMentionQuery('')
-												}}
-												className="rounded-sm p-1 text-wiki-text-muted hover:bg-wiki-bg-tertiary"
-											>
-												<X className="h-3.5 w-3.5" />
-											</button>
-										</div>
+						<Popover open={showLinkMenu} onOpenChange={setShowLinkMenu}>
+							<PopoverTrigger asChild>
+								<div>
+									<ToolbarButton
+										icon={Link2}
+										label="插入链接"
+										isActive={editorState.isLink}
+										onClick={openLinkMenu}
+									/>
+								</div>
+							</PopoverTrigger>
+							<PopoverContent className="w-72" align="start" sideOffset={4}>
+								<div className="space-y-3">
+									<p className="font-medium text-sm">插入链接</p>
+									<div className="flex gap-1.5">
+										<Input
+											value={linkUrl}
+											onChange={(e) => setLinkUrl(e.target.value)}
+											onKeyDown={(e) => e.key === 'Enter' && insertLink()}
+											placeholder="https://..."
+											className="flex-1"
+										/>
+										<Button size="sm" onClick={insertLink} disabled={!linkUrl.trim()}>
+											确定
+										</Button>
 									</div>
-									<div className="max-h-[200px] overflow-y-auto border-t border-wiki-border-light">
-										{mentionLoading ? (
-											<div className="flex items-center gap-2 px-3 py-2 text-[12px] text-wiki-text-muted">
-												<Loader2 className="h-3 w-3 animate-spin" />
-												搜索中...
-											</div>
-										) : mentionResults.length > 0 ? (
-											mentionResults.map((page) => (
-												<button
-													key={page.id}
-													type="button"
-													onClick={() => insertWikiLink(page.title)}
-													className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] transition-colors hover:bg-wiki-bg-tertiary"
-												>
-													<FileText className="h-3.5 w-3.5 flex-shrink-0 text-wiki-text-muted" />
-													<span className="truncate text-wiki-link">{page.title}</span>
-												</button>
-											))
-										) : mentionQuery.trim() ? (
-											<div className="px-3 py-2 text-[12px] text-wiki-text-muted">
-												未找到匹配页面
-											</div>
-										) : (
-											<div className="px-3 py-2 text-[12px] text-wiki-text-muted">
-												输入关键词搜索页面
-											</div>
-										)}
+									{editorState.isLink && (
+										<button
+											type="button"
+											onClick={removeLink}
+											className="w-full rounded-md border border-input px-2 py-1 text-sm text-destructive transition-colors hover:bg-destructive/10"
+										>
+											移除链接
+										</button>
+									)}
+								</div>
+							</PopoverContent>
+						</Popover>
+						<Popover open={showMention} onOpenChange={setShowMention}>
+							<PopoverTrigger asChild>
+								<div>
+									<ToolbarButton
+										icon={FileText}
+										label="提及文档"
+										onClick={() => setShowMention(!showMention)}
+									/>
+								</div>
+							</PopoverTrigger>
+							<PopoverContent className="w-72 p-0" align="start" sideOffset={4}>
+								<div className="p-2">
+									<div className="flex items-center gap-1">
+										<Input
+											value={mentionQuery}
+											onChange={(e) => {
+												setMentionQuery(e.target.value)
+												searchPages(e.target.value)
+											}}
+											placeholder="搜索页面标题..."
+											className="flex-1"
+										/>
+										<Button
+											variant="ghost"
+											size="icon"
+											className="h-8 w-8"
+											onClick={() => {
+												setShowMention(false)
+												setMentionQuery('')
+											}}
+										>
+											<X className="h-3.5 w-3.5" />
+										</Button>
 									</div>
 								</div>
-							)}
-						</div>
+								<div className="max-h-[200px] overflow-y-auto border-t border-wiki-border-light">
+									{mentionLoading ? (
+										<div className="flex items-center gap-2 px-3 py-2 text-[12px] text-wiki-text-muted">
+											<Loader2 className="h-3 w-3 animate-spin" />
+											搜索中...
+										</div>
+									) : mentionResults.length > 0 ? (
+										mentionResults.map((page) => (
+											<button
+												key={page.id}
+												type="button"
+												onClick={() => insertWikiLink(page.title)}
+												className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] transition-colors hover:bg-wiki-bg-tertiary"
+											>
+												<FileText className="h-3.5 w-3.5 flex-shrink-0 text-wiki-text-muted" />
+												<span className="truncate text-wiki-link">{page.title}</span>
+											</button>
+										))
+									) : mentionQuery.trim() ? (
+										<div className="px-3 py-2 text-[12px] text-wiki-text-muted">未找到匹配页面</div>
+									) : (
+										<div className="px-3 py-2 text-[12px] text-wiki-text-muted">
+											输入关键词搜索页面
+										</div>
+									)}
+								</div>
+							</PopoverContent>
+						</Popover>
 						<ToolbarButton
 							icon={Code}
 							label="代码块"
-							isActive={editor.isActive('codeBlock')}
+							isActive={editorState.isCodeBlock}
 							onClick={() => editor.chain().focus().toggleCodeBlock().run()}
 						/>
 						<ToolbarButton
 							icon={Quote}
 							label="引用"
-							isActive={editor.isActive('blockquote')}
+							isActive={editorState.isBlockquote}
 							onClick={() => editor.chain().focus().toggleBlockquote().run()}
 						/>
 						<Popover open={showImageMenu} onOpenChange={setShowImageMenu}>
@@ -842,32 +689,33 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 							<PopoverContent className="w-72" align="start" sideOffset={4}>
 								<div className="space-y-3">
 									<p className="font-medium text-sm">插入图片</p>
-									<div className="space-y-2">
-										<label>
-											<Button variant="outline" size="sm" className="w-full cursor-pointer" asChild>
-												<span>
-													<Upload className="mr-2 h-4 w-4" />
-													选择本地文件
-												</span>
-											</Button>
-											<input
-												type="file"
-												accept="image/*"
-												onChange={handleFileSelect}
-												className="hidden"
-											/>
-										</label>
-										<div className="text-center text-[12px] text-muted-foreground">
-											或输入图片 URL
+									<div className="space-y-3">
+										<input
+											ref={fileInputRef}
+											type="file"
+											accept="image/*"
+											onChange={handleFileSelect}
+											className="hidden"
+										/>
+										<Button
+											variant="outline"
+											size="sm"
+											className="w-full"
+											onClick={() => fileInputRef.current?.click()}
+										>
+											<Upload className="mr-2 h-4 w-4" />
+											选择本地文件
+										</Button>
+										<div className="flex items-center gap-2 text-[12px] text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
+											或
 										</div>
 										<div className="flex gap-1.5">
-											<input
-												type="text"
+											<Input
 												value={imageUrl}
 												onChange={(e) => setImageUrl(e.target.value)}
 												onKeyDown={(e) => e.key === 'Enter' && addImageFromUrl()}
 												placeholder="https://..."
-												className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+												className="flex-1 text-sm"
 											/>
 											<Button size="sm" onClick={addImageFromUrl} disabled={!imageUrl.trim()}>
 												确定
@@ -886,13 +734,13 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 						<ToolbarButton
 							icon={Undo}
 							label="撤销"
-							disabled={!editor.can().undo()}
+							disabled={!editorState.canUndo}
 							onClick={() => editor.chain().focus().undo().run()}
 						/>
 						<ToolbarButton
 							icon={Redo}
 							label="重做"
-							disabled={!editor.can().redo()}
+							disabled={!editorState.canRedo}
 							onClick={() => editor.chain().focus().redo().run()}
 						/>
 					</div>
@@ -907,18 +755,17 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 				<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 					{/* Textarea */}
 					<div>
-						<label className="mb-1 block text-[13px] font-medium text-wiki-text">源码</label>
-						<textarea
+						<Textarea
 							value={sourceContent}
 							onChange={(e) => setSourceContent(e.target.value)}
 							placeholder="输入 Markdown 源码..."
-							className="h-[500px] w-full resize-y rounded-sm border border-wiki-border bg-wiki-bg px-3 py-2 font-mono text-[13px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none focus:ring-1 focus:ring-wiki-link"
+							className="h-[500px] resize-y font-mono"
 						/>
 					</div>
 
 					{/* Preview */}
 					<div>
-						<label className="mb-1 block text-[13px] font-medium text-wiki-text">预览</label>
+						<label className="mb-3 block text-[13px] font-medium text-wiki-text">预览</label>
 						<div className="h-[500px] overflow-y-auto rounded-sm border border-wiki-border-light bg-wiki-bg-secondary p-4">
 							{sourceContent ? (
 								<div className="prose prose-wiki max-w-none">
@@ -937,43 +784,28 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 				<div>
 					<label
 						htmlFor="edit-summary"
-						className="mb-1 block text-[13px] font-medium text-wiki-text"
+						className="mb-3 block text-[13px] font-medium text-wiki-text"
 					>
 						编辑摘要
 					</label>
-					<input
+					<Input
 						id="edit-summary"
-						type="text"
 						value={editSummary}
 						onChange={(e) => setEditSummary(e.target.value)}
 						placeholder="简要描述你的更改（可选）"
-						className="w-full rounded-sm border border-wiki-border bg-wiki-bg px-3 py-2 text-[13px] text-wiki-text placeholder:text-wiki-text-muted focus:border-wiki-link focus:outline-none focus:ring-1 focus:ring-wiki-link"
 					/>
 				</div>
 			</div>
 
 			{/* Action buttons */}
 			<div className="flex items-center gap-3 border-t border-wiki-border-light pt-4">
-				<button
-					type="button"
-					onClick={handleSave}
-					disabled={saving}
-					className={cn(
-						'inline-flex items-center gap-2 rounded-sm bg-wiki-link px-5 py-2 text-[13px] font-medium text-white transition-colors hover:bg-wiki-link-hover',
-						saving && 'cursor-not-allowed opacity-70',
-					)}
-				>
-					{saving && <Loader2 className="h-4 w-4 animate-spin" />}
+				<Button onClick={handleSave} disabled={saving}>
+					{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 					{isNew ? '创建页面' : '保存更改'}
-				</button>
-				<button
-					type="button"
-					onClick={handleCancel}
-					disabled={saving}
-					className="rounded-sm border border-wiki-border-light px-5 py-2 text-[13px] text-wiki-text transition-colors hover:bg-wiki-bg-secondary"
-				>
+				</Button>
+				<Button variant="outline" onClick={handleCancel} disabled={saving}>
 					取消
-				</button>
+				</Button>
 			</div>
 		</div>
 	)

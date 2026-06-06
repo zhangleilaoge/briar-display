@@ -1,6 +1,8 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import type { WikiTag } from '@briar/shared'
 import { Loader2, Plus, Tag, X } from 'lucide-react'
@@ -102,14 +104,15 @@ export default function WikiTagsIndex() {
 
 			<div className="flex items-center justify-between border-b border-wiki-border-light pb-2">
 				<h1 className="text-[1.5em] font-normal text-wiki-text">标签</h1>
-				<button
+				<Button
 					type="button"
+					variant="outline"
+					size="sm"
 					onClick={() => setShowCreate(!showCreate)}
-					className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-sm transition-colors hover:bg-primary/90"
 				>
 					{showCreate ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
 					{showCreate ? '取消' : '新建标签'}
-				</button>
+				</Button>
 			</div>
 
 			{showCreate && (
@@ -118,11 +121,9 @@ export default function WikiTagsIndex() {
 					<div className="space-y-3">
 						<div>
 							<label className="mb-1 block text-muted-foreground text-xs">名称 *</label>
-							<input
-								type="text"
+							<Input
 								value={newName}
 								onChange={(e) => setNewName(e.target.value)}
-								className="w-full rounded border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
 								placeholder="标签名称"
 							/>
 						</div>
@@ -150,14 +151,14 @@ export default function WikiTagsIndex() {
 							</div>
 						</div>
 						<div className="flex items-center gap-2">
-							<button
+							<Button
 								type="button"
+								size="sm"
 								onClick={handleCreate}
 								disabled={creating || !newName.trim()}
-								className="rounded bg-primary px-4 py-1.5 text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-50"
 							>
 								{creating ? '创建中...' : '创建'}
-							</button>
+							</Button>
 							<span className="text-muted-foreground text-xs">预览：</span>
 							<span
 								className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm text-white"

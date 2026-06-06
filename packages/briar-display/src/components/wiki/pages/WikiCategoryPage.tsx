@@ -1,6 +1,8 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiLink from '@/components/wiki/common/WikiLink'
 import { cn } from '@/lib/utils'
@@ -130,22 +132,20 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 						{category.name}
 					</h2>
 					<div className="flex items-center gap-1">
-						<button
-							type="button"
-							onClick={startEdit}
-							className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground"
-						>
+						<Button type="button" variant="ghost" size="sm" onClick={startEdit}>
 							<Pencil className="h-3.5 w-3.5" />
 							编辑
-						</button>
-						<button
+						</Button>
+						<Button
 							type="button"
+							variant="ghost"
+							size="sm"
 							onClick={handleDelete}
-							className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-red-100 hover:text-red-600"
+							className="text-wiki-link-red hover:bg-wiki-highlight"
 						>
 							<Trash2 className="h-3.5 w-3.5" />
 							删除
-						</button>
+						</Button>
 					</div>
 				</div>
 
@@ -154,39 +154,28 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 						<div className="space-y-3">
 							<div>
 								<label className="mb-1 block text-muted-foreground text-xs">名称</label>
-								<input
-									type="text"
-									value={editName}
-									onChange={(e) => setEditName(e.target.value)}
-									className="w-full rounded border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
-								/>
+								<Input value={editName} onChange={(e) => setEditName(e.target.value)} />
 							</div>
 							<div>
 								<label className="mb-1 block text-muted-foreground text-xs">描述</label>
-								<input
-									type="text"
+								<Input
 									value={editDescription}
 									onChange={(e) => setEditDescription(e.target.value)}
-									className="w-full rounded border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
 									placeholder="可选描述"
 								/>
 							</div>
 							<div className="flex items-center gap-2">
-								<button
+								<Button
 									type="button"
+									size="sm"
 									onClick={handleSave}
 									disabled={saving || !editName.trim()}
-									className="rounded bg-primary px-4 py-1.5 text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-50"
 								>
 									{saving ? '保存中...' : '保存'}
-								</button>
-								<button
-									type="button"
-									onClick={() => setEditing(false)}
-									className="rounded px-4 py-1.5 text-muted-foreground text-sm hover:bg-muted"
-								>
+								</Button>
+								<Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>
 									取消
-								</button>
+								</Button>
 							</div>
 						</div>
 					</div>

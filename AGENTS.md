@@ -300,3 +300,43 @@ bun run --filter @briar/shared build
 | `default.conf` | `./scripts/deploy-nginx.sh` |
 | `.env` | `pm2 restart briar-node`（让 PM2 重新加载 env_file） |
 | `packages/briar-shared/src/**/*.ts` | `./scripts/deploy.sh --full-build`（需完整构建） |
+
+## Wiki UI 风格规范
+
+参考 MediaWiki Vector 2022 皮肤，定义以下 UI 规范：
+
+### 颜色
+
+| 用途 | 变量 | 亮色值 |
+| :--- | :--- | :--- |
+| 背景 | `--wiki-bg` | `#ffffff` |
+| 次级背景 | `--wiki-bg-secondary` | `#f8f9fa` |
+| 三级背景 | `--wiki-bg-tertiary` | `#eaecf0` |
+| 边框 | `--wiki-border` | `#a2a9b1` |
+| 浅边框 | `--wiki-border-light` | `#c8ccd1` |
+| 链接/强调色 | `--wiki-link` | `#3366cc` |
+| 链接悬停 | `--wiki-link-hover` | `#447ff5` |
+| 正文 | `--wiki-text` | `#202122` |
+| 次级文字 | `--wiki-text-secondary` | `#54595d` |
+| 弱化文字 | `--wiki-text-muted` | `#72777d` |
+
+### 输入框
+
+- 统一使用 shadcn `Input` 组件（`@/components/ui/input`）
+- 高度：`h-8`（32px）
+- 圆角：`rounded-sm`（2px）
+- 边框：`border-wiki-border`，聚焦时切换为 `border-wiki-link`（不使用 ring/outline）
+- 背景：`bg-wiki-bg`
+- 字号：`text-[13px]`
+- 占位符：`text-wiki-text-muted`
+
+### 按钮
+
+- 主操作：`bg-wiki-link text-white hover:bg-wiki-link-hover rounded-sm`
+- 次要操作：`border border-wiki-border-light text-wiki-text hover:bg-wiki-bg-secondary rounded-sm`
+- 工具栏按钮：`h-8 w-8 rounded-sm`，激活态 `bg-wiki-link text-white`
+
+### 间距
+
+- 块元素 margin 使用 Tailwind Typography 配置覆盖（`tailwind.config.mjs`）
+- 编辑器/表单内部间距：`space-y-3` 或 `gap-2`

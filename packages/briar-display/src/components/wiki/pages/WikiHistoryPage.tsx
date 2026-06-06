@@ -1,6 +1,7 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import { Button } from '@/components/ui/button'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
@@ -186,24 +187,14 @@ export default function WikiHistoryPage({ slug }: WikiHistoryPageProps) {
 			<div className="flex flex-wrap items-center gap-3 rounded-sm border border-wiki-border-light bg-wiki-bg-secondary px-4 py-3">
 				<GitCompare className="h-4 w-4 text-wiki-text-secondary" />
 				<span className="text-[13px] text-wiki-text">选择两个版本进行比较（点击下方单选按钮）</span>
-				<button
-					type="button"
-					onClick={handleCompare}
-					disabled={!fromRev || !toRev || diffLoading}
-					className={cn(
-						'inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-[13px] transition-colors',
-						fromRev && toRev
-							? 'bg-wiki-link text-white hover:bg-wiki-link-hover'
-							: 'cursor-not-allowed bg-wiki-bg-tertiary text-wiki-text-muted',
-					)}
-				>
+				<Button type="button" onClick={handleCompare} disabled={!fromRev || !toRev || diffLoading}>
 					{diffLoading ? (
 						<Loader2 className="h-3.5 w-3.5 animate-spin" />
 					) : (
 						<ArrowLeftRight className="h-3.5 w-3.5" />
 					)}
 					比较选中版本
-				</button>
+				</Button>
 			</div>
 
 			{/* Revision table */}
@@ -291,11 +282,13 @@ export default function WikiHistoryPage({ slug }: WikiHistoryPageProps) {
 										</span>
 									</td>
 									<td className="px-3 py-2.5">
-										<button
+										<Button
 											type="button"
+											variant="ghost"
+											size="sm"
 											onClick={() => handleRevert(rev.id)}
 											disabled={reverting === rev.id}
-											className="inline-flex items-center gap-1 text-[12px] text-wiki-link-red transition-colors hover:underline disabled:opacity-50"
+											className="text-wiki-link-red"
 											title="回滚到此版本"
 										>
 											{reverting === rev.id ? (
@@ -304,7 +297,7 @@ export default function WikiHistoryPage({ slug }: WikiHistoryPageProps) {
 												<RotateCcw className="h-3.5 w-3.5" />
 											)}
 											回滚
-										</button>
+										</Button>
 									</td>
 								</tr>
 							)
