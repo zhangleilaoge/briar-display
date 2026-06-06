@@ -47,10 +47,10 @@ export default function WikiPagination({
 				disabled={currentPage <= 1}
 				onClick={() => handlePageChange(currentPage - 1)}
 				className={cn(
-					'inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm transition-colors',
+					'inline-flex h-8 items-center gap-1 rounded-sm px-3 text-[13px] transition-colors',
 					currentPage <= 1
-						? 'cursor-not-allowed text-muted-foreground/50'
-						: 'text-foreground hover:bg-muted',
+						? 'cursor-not-allowed text-wiki-text-muted'
+						: 'border border-wiki-border-light text-wiki-text hover:bg-wiki-bg-secondary',
 				)}
 			>
 				<ChevronLeft className="h-4 w-4" />
@@ -62,16 +62,22 @@ export default function WikiPagination({
 					<button
 						type="button"
 						onClick={() => handlePageChange(1)}
-						className="rounded-md px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-muted"
+						className="inline-flex h-8 items-center justify-center rounded-sm border border-wiki-border-light px-3 text-[13px] text-wiki-text transition-colors hover:bg-wiki-bg-secondary"
 					>
 						1
 					</button>
-					{start > 2 && <span className="px-1 text-muted-foreground">...</span>}
+					{start > 2 && (
+						<span className="inline-flex h-8 items-center px-1 text-[13px] text-wiki-text-muted">
+							...
+						</span>
+					)}
 				</>
 			)}
 
 			{total === 0 && (
-				<span className="px-3 py-1.5 text-sm text-muted-foreground">共 0 条记录</span>
+				<span className="inline-flex h-8 items-center px-3 text-[13px] text-wiki-text-muted">
+					共 0 条记录
+				</span>
 			)}
 
 			{pages.map((page) => (
@@ -80,10 +86,10 @@ export default function WikiPagination({
 					key={page}
 					onClick={() => handlePageChange(page)}
 					className={cn(
-						'rounded-md px-3 py-1.5 text-sm transition-colors',
+						'inline-flex h-8 min-w-[2rem] items-center justify-center rounded-sm px-3 text-[13px] transition-colors',
 						page === currentPage
-							? 'bg-primary font-medium text-primary-foreground'
-							: 'text-foreground hover:bg-muted',
+							? 'bg-wiki-link font-medium text-white hover:bg-wiki-link-hover'
+							: 'border border-wiki-border-light text-wiki-text hover:bg-wiki-bg-secondary',
 					)}
 				>
 					{page}
@@ -92,11 +98,15 @@ export default function WikiPagination({
 
 			{end < totalPages && (
 				<>
-					{end < totalPages - 1 && <span className="px-1 text-muted-foreground">...</span>}
+					{end < totalPages - 1 && (
+						<span className="inline-flex h-8 items-center px-1 text-[13px] text-wiki-text-muted">
+							...
+						</span>
+					)}
 					<button
 						type="button"
 						onClick={() => handlePageChange(totalPages)}
-						className="rounded-md px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-muted"
+						className="inline-flex h-8 items-center justify-center rounded-sm border border-wiki-border-light px-3 text-[13px] text-wiki-text transition-colors hover:bg-wiki-bg-secondary"
 					>
 						{totalPages}
 					</button>
@@ -108,10 +118,10 @@ export default function WikiPagination({
 				disabled={currentPage >= totalPages}
 				onClick={() => handlePageChange(currentPage + 1)}
 				className={cn(
-					'inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm transition-colors',
+					'inline-flex h-8 items-center gap-1 rounded-sm px-3 text-[13px] transition-colors',
 					currentPage >= totalPages
-						? 'cursor-not-allowed text-muted-foreground/50'
-						: 'text-foreground hover:bg-muted',
+						? 'cursor-not-allowed text-wiki-text-muted'
+						: 'border border-wiki-border-light text-wiki-text hover:bg-wiki-bg-secondary',
 				)}
 			>
 				下一页
