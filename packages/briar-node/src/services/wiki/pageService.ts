@@ -15,17 +15,13 @@ import { tagService } from './tagService'
 export const pageService = {
 	/**
 	 * Generate URL-friendly slug from title
-	 * Supports CJK: percent-encode non-ASCII characters
+	 * Supports CJK: preserve non-ASCII characters
 	 */
 	generateSlug(title: string): string {
-		// Check if title contains non-ASCII characters (CJK, etc.)
-		if (title.split('').some((c) => c.charCodeAt(0) > 127)) {
-			return encodeURIComponent(title.trim()).replace(/%20/g, '-')
-		}
 		return title
 			.toLowerCase()
 			.trim()
-			.replace(/[^a-z0-9\s-]/g, '')
+			.replace(/[^a-z0-9\s\u4e00-\u9fff]/g, '')
 			.replace(/\s+/g, '-')
 			.replace(/-+/g, '-')
 			.replace(/^-|-$/g, '')
