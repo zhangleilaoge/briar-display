@@ -11,14 +11,16 @@ interface StatCardProps {
 	icon: React.ReactNode
 	label: string
 	value: number
+	href?: string
 	className?: string
 }
 
-function StatCard({ icon, label, value, className }: StatCardProps) {
-	return (
+function StatCard({ icon, label, value, href, className }: StatCardProps) {
+	const content = (
 		<div
 			className={cn(
 				'flex items-center gap-4 rounded-lg border border-border bg-white p-4 shadow-sm transition-shadow hover:shadow-md',
+				href && 'cursor-pointer',
 				className,
 			)}
 		>
@@ -30,6 +32,24 @@ function StatCard({ icon, label, value, className }: StatCardProps) {
 				<p className="text-muted-foreground text-sm">{label}</p>
 			</div>
 		</div>
+	)
+
+	if (!href) {
+		return content
+	}
+
+	return (
+		<a
+			href={href}
+			onClick={(e) => {
+				e.preventDefault()
+				window.history.pushState({}, '', href)
+				window.dispatchEvent(new PopStateEvent('popstate'))
+			}}
+			className="block"
+		>
+			{content}
+		</a>
 	)
 }
 
@@ -75,27 +95,31 @@ export default function WikiStatistics() {
 						icon={<FileText className="h-6 w-6" />}
 						label="总页面数"
 						value={stats.totalPages}
+						href="/briar-display/wiki/special/all-pages"
 					/>
 					<StatCard
 						icon={<FileText className="h-6 w-6" />}
 						label="文章数"
 						value={stats.totalArticles}
-						className="border-l-4 border-l-blue-500"
+						href="/briar-display/wiki/"
 					/>
 					<StatCard
 						icon={<Clock className="h-6 w-6" />}
 						label="总修订数"
 						value={stats.totalRevisions}
+						href="/briar-display/wiki/special/recent-changes"
 					/>
 					<StatCard
 						icon={<FolderTree className="h-6 w-6" />}
 						label="分类数"
 						value={stats.totalCategories}
+						href="/briar-display/wiki/categories"
 					/>
 					<StatCard
 						icon={<LayoutList className="h-6 w-6" />}
 						label="模板数"
 						value={stats.totalTemplates}
+						href="/briar-display/wiki/special/templates"
 					/>
 					<StatCard
 						icon={<Users className="h-6 w-6" />}
@@ -103,19 +127,29 @@ export default function WikiStatistics() {
 						value={stats.totalUsers}
 					/>
 					<div className="sm:col-span-2 lg:col-span-3">
-						<div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-							<div className="flex items-center gap-3">
-								<div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-primary/20 text-primary">
-									<Clock className="h-6 w-6" />
-								</div>
-								<div>
-									<p className="font-serif text-2xl font-normal text-foreground">
-										{stats.recentEdits24h.toLocaleString()}
-									</p>
-									<p className="text-muted-foreground text-sm">最近 24 小时编辑次数</p>
+						<a
+							href="/briar-display/wiki/special/recent-changes"
+							onClick={(e) => {
+								e.preventDefault()
+								window.history.pushState({}, '', '/briar-display/wiki/special/recent-changes')
+								window.dispatchEvent(new PopStateEvent('popstate'))
+							}}
+							className="block"
+						>
+							<div className="rounded-lg border border-primary/30 bg-primary/5 p-4 transition-shadow hover:shadow-md">
+								<div className="flex items-center gap-3">
+									<div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-primary/20 text-primary">
+										<Clock className="h-6 w-6" />
+									</div>
+									<div>
+										<p className="font-serif text-2xl font-normal text-foreground">
+											{stats.recentEdits24h.toLocaleString()}
+										</p>
+										<p className="text-muted-foreground text-sm">最近 24 小时编辑次数</p>
+									</div>
 								</div>
 							</div>
-						</div>
+						</a>
 					</div>
 				</div>
 			) : null}
