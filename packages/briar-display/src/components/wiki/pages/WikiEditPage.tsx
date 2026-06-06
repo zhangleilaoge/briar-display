@@ -3,27 +3,21 @@
 import { wikiApi } from '@/api/wiki'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import TagInput from '@/components/wiki/common/TagInput'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import CategorySelector from '@/components/wiki/editor/CategorySelector'
-import { renderMentions } from '@/components/wiki/editor/EditorToolbar'
 import VisualEditor, { type VisualEditorHandle } from '@/components/wiki/editor/VisualEditor'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import type { WikiPage, WikiPageVisibility } from '@briar/shared'
 import { Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import ReactMarkdown from 'react-markdown'
 
 interface WikiEditPageProps {
 	slug: string
 }
 
-type EditMode = 'visual' | 'source'
-
 export default function WikiEditPage({ slug }: WikiEditPageProps) {
 	const isNew = slug === 'new' || slug === ''
-	const [mode, setMode] = useState<EditMode>('visual')
 	const [title, setTitle] = useState('')
 	const [sourceContent, setSourceContent] = useState('')
 	const [editSummary, setEditSummary] = useState('')
@@ -73,15 +67,6 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		}
 	}, [slug, isNew])
 
-	// Sync content when switching modes
-	const handleModeChange = useCallback((newMode: EditMode) => {
-		if (newMode === 'source' && editorRef.current) {
-			const md = editorRef.current.getMarkdown()
-			setSourceContent(md)
-		}
-		setMode(newMode)
-	}, [])
-
 	// Save handler
 	const handleSave = useCallback(async () => {
 		if (!title.trim()) {
@@ -92,8 +77,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		setSaving(true)
 		setError(null)
 
-		const content =
-			mode === 'visual' && editorRef.current ? editorRef.current.getMarkdown() : sourceContent
+		const content = editorRef.current ? editorRef.current.getMarkdown() : sourceContent
 
 		try {
 			if (isNew) {
@@ -141,18 +125,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		} finally {
 			setSaving(false)
 		}
-	}, [
-		title,
-		mode,
-		sourceContent,
-		editSummary,
-		isNew,
-		slug,
-		visibility,
-		tags,
-		categoryIds,
-		lastReadAt,
-	])
+	}, [title, sourceContent, editSummary, isNew, slug, visibility, tags, categoryIds, lastReadAt])
 
 	// Cancel handler
 	const handleCancel = useCallback(() => {
@@ -265,57 +238,11 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 			</div>
 
 			<label className="mb-3 block text-[13px] font-medium text-wiki-text">内容</label>
-			{/* Mode toggle */}
-			<div className="flex items-center gap-2">
-				<Button
-					variant={mode === 'visual' ? 'default' : 'outline'}
-					onClick={() => handleModeChange('visual')}
-				>
-					可视化
-				</Button>
-				<Button
-					variant={mode === 'source' ? 'default' : 'outline'}
-					onClick={() => handleModeChange('source')}
-				>
-					源码
-				</Button>
-			</div>
-
-			{/* Visual editor mode */}
-			{mode === 'visual' && (
-				<VisualEditor
-					ref={editorRef}
-					initialContent={sourceContent}
-					onChange={(md) => setSourceContent(md)}
-				/>
-			)}
-
-			{/* Source editor mode */}
-			{mode === 'source' && (
-				<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-					<div>
-						<Textarea
-							value={sourceContent}
-							onChange={(e) => setSourceContent(e.target.value)}
-							placeholder="输入 Markdown 源码..."
-							className="h-[500px] resize-y font-mono"
-						/>
-					</div>
-
-					<div>
-						<label className="mb-3 block text-[13px] font-medium text-wiki-text">预览</label>
-						<div className="h-[500px] overflow-y-auto rounded-sm border border-wiki-border-light bg-wiki-bg-secondary p-4">
-							{sourceContent ? (
-								<div className="prose prose-wiki max-w-none">
-									<ReactMarkdown>{renderMentions(sourceContent)}</ReactMarkdown>
-								</div>
-							) : (
-								<p className="text-[13px] italic text-wiki-text-muted">预览区域</p>
-							)}
-						</div>
-					</div>
-				</div>
-			)}
+			<VisualEditor
+				ref={editorRef}
+				initialContent={sourceContent}
+				onChange={(md) => setSourceContent(md)}
+			/>
 
 			{/* Edit summary & controls */}
 			<div className="space-y-3 rounded-sm border border-wiki-border-light bg-wiki-bg-secondary p-4">

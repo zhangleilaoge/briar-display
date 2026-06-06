@@ -40,6 +40,7 @@
         "@radix-ui/react-popover": "^1.1.6",
         "@radix-ui/react-select": "^2.2.6",
         "@tailwindcss/typography": "^0.5.19",
+        "@tiptap/core": "^3",
         "@tiptap/extension-code-block-lowlight": "^3",
         "@tiptap/extension-highlight": "^3",
         "@tiptap/extension-image": "^3",

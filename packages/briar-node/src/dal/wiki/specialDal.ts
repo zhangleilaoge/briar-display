@@ -171,18 +171,15 @@ export const specialDal = {
 		limit = 50,
 		offset = 0,
 	): Promise<{ items: WikiPageListItem[]; total: number }> {
-		// Pages not referenced by any other page's content via [[slug]] or \[\[slug\]\]
+		// Pages not referenced by any existing page via wiki_backlinks
 		const countRow = await queryOne<{ cnt: number }>(
 			`SELECT COUNT(*) as cnt FROM wiki_pages p
 			WHERE p.status != 'deleted'
 			AND NOT EXISTS (
-				SELECT 1 FROM wiki_pages ref
-				WHERE ref.status != 'deleted'
-				AND ref.id != p.id
-				AND (
-					LOWER(ref.content) LIKE CONCAT('%[[', LOWER(p.slug), ']]%')
-					OR LOWER(ref.content) LIKE CONCAT('%\\\\[\\\\[', LOWER(p.slug), '\\\\]\\\\]%')
-				)
+				SELECT 1 FROM wiki_backlinks b
+				INNER JOIN wiki_pages src ON b.source_page_id = src.id
+				WHERE b.target_page_id = p.id
+				AND src.status != 'deleted'
 			)`,
 		)
 		const total = countRow?.cnt || 0
@@ -192,13 +189,10 @@ export const specialDal = {
 			FROM wiki_pages p
 			WHERE p.status != 'deleted'
 			AND NOT EXISTS (
-				SELECT 1 FROM wiki_pages ref
-				WHERE ref.status != 'deleted'
-				AND ref.id != p.id
-				AND (
-					LOWER(ref.content) LIKE CONCAT('%[[', LOWER(p.slug), ']]%')
-					OR LOWER(ref.content) LIKE CONCAT('%\\\\[\\\\[', LOWER(p.slug), '\\\\]\\\\]%')
-				)
+				SELECT 1 FROM wiki_backlinks b
+				INNER JOIN wiki_pages src ON b.source_page_id = src.id
+				WHERE b.target_page_id = p.id
+				AND src.status != 'deleted'
 			)
 			ORDER BY p.title ASC
 			LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
