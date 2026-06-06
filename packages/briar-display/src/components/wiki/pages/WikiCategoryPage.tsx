@@ -26,7 +26,8 @@ interface WikiCategoryPageProps {
 	slug: string
 }
 
-function formatDate(date: Date | string) {
+function formatDate(date?: Date | string | null) {
+	if (!date) return '—'
 	const d = typeof date === 'string' ? new Date(date) : date
 	return d.toLocaleString('zh-CN', {
 		year: 'numeric',
@@ -54,10 +55,10 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 
 		const res = await wikiApi.getCategory(slug, PAGE_SIZE, offset)
 		if (res.success && res.data) {
-			setCategory(res.data)
+			setCategory(res.data.category)
 			setPages(res.data.pages.items)
 			setTotal(res.data.pages.total)
-			setSubcategories(res.data.subcategories ?? [])
+			setSubcategories([])
 		} else {
 			setError(res.message || '加载分类失败')
 		}
@@ -262,7 +263,7 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 											)}
 										</td>
 										<td className="hidden px-4 py-2 text-muted-foreground sm:table-cell">
-											{page.updatedAt ? formatDate(page.updatedAt) : '—'}
+											{formatDate(page.updatedAt)}
 										</td>
 										<td className="hidden px-4 py-2 text-right text-muted-foreground md:table-cell">
 											{(page.viewCount ?? 0).toLocaleString()}
