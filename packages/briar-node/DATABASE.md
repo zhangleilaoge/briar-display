@@ -54,14 +54,11 @@ mysql -h your-host -u your-user -p < packages/briar-node/src/db/schema.sql
 | created_at    | TIMESTAMP    | 创建时间     |
 | updated_at    | TIMESTAMP    | 更新时间     |
 
-## 默认账户
+## 默认管理员
 
-系统会自动创建一个默认管理员账户：
+系统不会自动创建管理员账户。首次部署时，第一个注册的用户不会自动获得管理员权限。
 
-- 邮箱: `admin@briar.dev`
-- 密码: `admin123`
-
-**⚠️ 生产环境请务必修改默认密码！**
+要将某个用户设为超级管理员，将其邮箱配置在 `packages/briar-node/src/services/authService.ts` 的 `ADMIN_EMAIL` 常量中。服务启动时会自动为该用户分配 `admin` 角色。
 
 ## 数据库连接
 

@@ -48,3 +48,42 @@ export interface AuthSession {
 	token: string
 	user: User
 }
+
+/**
+ * 角色信息
+ */
+export interface Role {
+	id: string
+	name: string
+	displayName: string
+	description?: string
+	isSystem: boolean
+	createdAt: Date
+}
+
+/**
+ * 权限信息
+ */
+export interface Permission {
+	id: string
+	code: string
+	name: string
+	description?: string
+	type: 'page' | 'api'
+	module: string
+}
+
+/**
+ * 带权限的角色信息
+ */
+export interface RoleWithPermissions extends Role {
+	permissions: Permission[]
+}
+
+/**
+ * 带角色的用户信息
+ */
+export interface UserWithRoles extends User {
+	roles: Role[]
+	permissions: string[]
+}

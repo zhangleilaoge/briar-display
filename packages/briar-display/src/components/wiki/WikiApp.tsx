@@ -3,6 +3,7 @@
 import NotFound from '@/components/wiki/common/NotFound'
 import RouteLoader from '@/components/wiki/common/RouteLoader'
 import WikiLayout from '@/components/wiki/layout/WikiLayout'
+import { PermissionProvider } from '@/contexts/PermissionContext'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import WikiAllPages from './pages/WikiAllPages'
 import WikiArticlePage from './pages/WikiArticlePage'
@@ -12,6 +13,8 @@ import WikiEditPage from './pages/WikiEditPage'
 import WikiHistoryPage from './pages/WikiHistoryPage'
 import WikiHomePage from './pages/WikiHomePage'
 
+import AdminPermissionsPage from './pages/AdminPermissionsPage'
+import AdminUsersPage from './pages/AdminUsersPage'
 import WikiOrphanedPages from './pages/WikiOrphanedPages'
 import WikiRecentChanges from './pages/WikiRecentChanges'
 import WikiSearchResults from './pages/WikiSearchResults'
@@ -86,6 +89,14 @@ function matchRoute(pathname: string): RouteMatch | null {
 			page: <WikiTemplatePage slug={templateMatch[1]} />,
 			title: '模板 - Briar Wiki',
 		}
+	}
+
+	// Special pages - Admin
+	if (relative === '/special/admin/permissions') {
+		return { page: <AdminPermissionsPage />, title: '权限管理 - Briar Wiki' }
+	}
+	if (relative === '/special/admin/users') {
+		return { page: <AdminUsersPage />, title: '用户角色 - Briar Wiki' }
 	}
 
 	// Special pages
@@ -257,9 +268,11 @@ export default function WikiApp() {
 	}
 
 	return (
-		<WikiLayout showSidebar={route.showSidebar !== false}>
-			<RouteLoader loading={loading} />
-			{route.page}
-		</WikiLayout>
+		<PermissionProvider>
+			<WikiLayout showSidebar={route.showSidebar !== false}>
+				<RouteLoader loading={loading} />
+				{route.page}
+			</WikiLayout>
+		</PermissionProvider>
 	)
 }

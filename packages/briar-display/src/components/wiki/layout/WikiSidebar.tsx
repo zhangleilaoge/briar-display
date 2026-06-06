@@ -1,6 +1,8 @@
 'use client'
 
+import { usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
+import { PERMISSIONS } from '@briar/shared'
 import {
 	BarChart3,
 	Eye,
@@ -9,6 +11,8 @@ import {
 	Home,
 	LayoutList,
 	Link2,
+	Settings,
+	Shield,
 	Star,
 	Tag,
 	TrendingUp,
@@ -19,12 +23,14 @@ interface SidebarLink {
 	label: string
 	href: string
 	icon?: React.ReactNode
+	requirePermission?: string
 }
 
 interface SidebarSection {
 	title: string
 	links: SidebarLink[]
 	requireAuth?: boolean
+	requirePermission?: string
 }
 
 const sections: SidebarSection[] = [
@@ -100,6 +106,25 @@ const sections: SidebarSection[] = [
 			},
 		],
 	},
+	{
+		title: '管理',
+		requireAuth: true,
+		requirePermission: PERMISSIONS.PAGE_ADMIN,
+		links: [
+			{
+				label: '权限管理',
+				href: '/briar-display/wiki/special/admin/permissions',
+				icon: <Shield className="h-3.5 w-3.5" />,
+				requirePermission: PERMISSIONS.ADMIN_ROLE_MANAGE,
+			},
+			{
+				label: '用户角色',
+				href: '/briar-display/wiki/special/admin/users',
+				icon: <Settings className="h-3.5 w-3.5" />,
+				requirePermission: PERMISSIONS.ADMIN_USER_ROLE_ASSIGN,
+			},
+		],
+	},
 ]
 
 function isActiveLink(href: string, pathname: string): boolean {
@@ -120,16 +145,14 @@ function isActiveLink(href: string, pathname: string): boolean {
 
 export default function WikiSidebar() {
 	const [pathname, setPathname] = useState('')
-	const [isLoggedIn, setIsLoggedIn] = useState(false)
+	const { isLoggedIn, hasPermission, hasAnyPermission } = usePermissions()
 
 	useEffect(() => {
 		setPathname(window.location.pathname)
-		setIsLoggedIn(!!localStorage.getItem('briar_token'))
 
 		const handlePop = () => setPathname(window.location.pathname)
 		window.addEventListener('popstate', handlePop)
 
-		// Also update on SPA navigation (pushState)
 		const origPushState = history.pushState.bind(history)
 		history.pushState = (...args: Parameters<typeof history.pushState>) => {
 			origPushState(...args)
@@ -151,8 +174,14 @@ export default function WikiSidebar() {
 	return (
 		<nav className="py-3 text-[13px]">
 			{sections.map((section) => {
-				// Skip auth-required sections for logged-out users
 				if (section.requireAuth && !isLoggedIn) return null
+				if (section.requirePermission && !hasPermission(section.requirePermission)) return null
+
+				// 过滤没有权限的链接
+				const visibleLinks = section.links.filter(
+					(link) => !link.requirePermission || hasPermission(link.requirePermission),
+				)
+				if (visibleLinks.length === 0) return null
 
 				return (
 					<div key={section.title}>
@@ -160,7 +189,7 @@ export default function WikiSidebar() {
 							{section.title}
 						</h3>
 						<ul>
-							{section.links.map((link) => {
+							{visibleLinks.map((link) => {
 								const active = isActiveLink(link.href, pathname)
 								return (
 									<li key={link.href}>

@@ -22,7 +22,7 @@ export interface ResetPasswordPayload {
 	newPassword: string
 }
 
-export const setAuthToken = (token: string, user?: AuthSession['user']) => {
+export const setAuthToken = (token: string, user?: AuthSession['user'], permissions?: string[]) => {
 	if (typeof window === 'undefined') {
 		return
 	}
@@ -34,6 +34,9 @@ export const setAuthToken = (token: string, user?: AuthSession['user']) => {
 	if (user) {
 		window.localStorage.setItem('briar_user', JSON.stringify(user))
 	}
+	if (permissions) {
+		window.localStorage.setItem('briar_permissions', JSON.stringify(permissions))
+	}
 }
 
 export const clearAuthToken = () => {
@@ -43,17 +46,24 @@ export const clearAuthToken = () => {
 
 	window.localStorage.removeItem('briar_token')
 	window.localStorage.removeItem('briar_user')
+	window.localStorage.removeItem('briar_permissions')
 	document.cookie = 'briar_token=; Path=/; Max-Age=0'
 	apiClient.defaults.headers.common.Authorization = undefined
 }
 
 export const login = async (payload: LoginPayload) => {
-	const response = await apiClient.post<ApiResponse<AuthSession>>('/auth/login', payload)
+	const response = await apiClient.post<ApiResponse<AuthSession & { permissions: string[] }>>(
+		'/auth/login',
+		payload,
+	)
 	return response.data
 }
 
 export const register = async (payload: RegisterPayload) => {
-	const response = await apiClient.post<ApiResponse<AuthSession>>('/auth/register', payload)
+	const response = await apiClient.post<ApiResponse<AuthSession & { permissions: string[] }>>(
+		'/auth/register',
+		payload,
+	)
 	return response.data
 }
 
@@ -63,6 +73,9 @@ export const sendPasswordResetCode = async (payload: SendResetCodePayload) => {
 }
 
 export const resetPassword = async (payload: ResetPasswordPayload) => {
-	const response = await apiClient.post<ApiResponse<AuthSession>>('/auth/reset-password', payload)
+	const response = await apiClient.post<ApiResponse<AuthSession & { permissions: string[] }>>(
+		'/auth/reset-password',
+		payload,
+	)
 	return response.data
 }

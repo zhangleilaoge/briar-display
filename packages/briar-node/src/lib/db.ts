@@ -54,6 +54,28 @@ export const execute = async (sql: string, values?: any[]): Promise<mysql.Result
 }
 
 /**
+ * 在事务中执行一系列操作
+ * 用法: await transaction(async (conn) => { await conn.execute(...) })
+ */
+export const transaction = async <T>(
+	fn: (conn: mysql.PoolConnection) => Promise<T>,
+): Promise<T> => {
+	const pool = getPool()
+	const conn = await pool.getConnection()
+	try {
+		await conn.beginTransaction()
+		const result = await fn(conn)
+		await conn.commit()
+		return result
+	} catch (err) {
+		await conn.rollback()
+		throw err
+	} finally {
+		conn.release()
+	}
+}
+
+/**
  * 关闭连接池
  */
 export const closePool = async (): Promise<void> => {
