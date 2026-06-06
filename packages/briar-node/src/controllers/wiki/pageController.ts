@@ -1,6 +1,7 @@
 import type { ApiResponse, WikiNamespace, WikiPageStatus } from '@briar/shared'
 import { HTTP_STATUS } from '@briar/shared'
 import type { Context } from 'hono'
+import { userDal } from '../../dal/userDal'
 import { backlinkDal } from '../../dal/wiki/backlinkDal'
 import { categoryDal } from '../../dal/wiki/categoryDal'
 import { pageDal } from '../../dal/wiki/pageDal'
@@ -161,11 +162,12 @@ export const pageController = {
 			}
 
 			// Fetch related data
-			const [categories, tags, backlinksResult, subpagesResult] = await Promise.all([
+			const [categories, tags, backlinksResult, subpagesResult, lastEditor] = await Promise.all([
 				categoryDal.getPageCategories(page.id),
 				tagDal.listByPageId(page.id),
 				backlinkDal.findByTargetPage(page.id),
 				pageDal.list({ limit: 100, offset: 0, namespace: page.namespace }),
+				page.lastEditorId ? userDal.findById(page.lastEditorId) : Promise.resolve(null),
 			])
 
 			const childPages = subpagesResult.items.filter((p) => p.parentId === page.id)
@@ -174,6 +176,7 @@ export const pageController = {
 				success: true,
 				data: {
 					...page,
+					lastEditorName: lastEditor?.name || null,
 					categories,
 					tags,
 					backlinks: backlinksResult.items,
