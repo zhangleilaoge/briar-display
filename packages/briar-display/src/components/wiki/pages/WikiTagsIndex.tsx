@@ -1,10 +1,12 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
-import type { WikiTag } from '@briar/shared'
+import { usePermissions } from '@/contexts/PermissionContext'
+import { PERMISSIONS, type WikiTag } from '@briar/shared'
 import { Loader2, Plus, Tag, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -31,6 +33,8 @@ export default function WikiTagsIndex() {
 	const [newName, setNewName] = useState('')
 	const [newColor, setNewColor] = useState(COLOR_PRESETS[0])
 	const [creating, setCreating] = useState(false)
+	const { hasPermission, isAdmin } = usePermissions()
+	const canManageTags = isAdmin || hasPermission(PERMISSIONS.WIKI_TAG_CREATE)
 
 	const fetchTags = useCallback(async () => {
 		setLoading(true)
@@ -62,7 +66,7 @@ export default function WikiTagsIndex() {
 				setShowCreate(false)
 				fetchTags()
 			} else {
-				alert(res.message || '创建失败')
+				setError(res.message || '创建失败')
 			}
 		} finally {
 			setCreating(false)
@@ -75,28 +79,17 @@ export default function WikiTagsIndex() {
 		if (res.success) {
 			fetchTags()
 		} else {
-			alert(res.message || '删除失败')
+			setError(res.message || '删除失败')
 		}
 	}
 
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center py-20">
-				<Loader2 className="h-8 w-8 animate-spin text-wiki-text-muted" />
-				<span className="ml-2 text-wiki-text-muted">加载中...</span>
+				<Loader2 className="h-6 w-6 animate-spin text-wiki-text-muted" />
 			</div>
 		)
 	}
-
-	if (error) {
-		return (
-			<div className="rounded-sm border border-wiki-highlight bg-wiki-highlight px-4 py-3 text-[13px] text-wiki-link-red">
-				{error}
-			</div>
-		)
-	}
-
-	const maxCount = Math.max(...tags.map((t) => t.pageCount), 1)
 
 	return (
 		<div className="space-y-5">
@@ -104,39 +97,51 @@ export default function WikiTagsIndex() {
 
 			<div className="flex items-center justify-between border-b border-wiki-border-light pb-2">
 				<h1 className="text-[1.5em] font-normal text-wiki-text">标签</h1>
-				<Button
-					type="button"
-					variant="outline"
-					size="sm"
-					onClick={() => setShowCreate(!showCreate)}
-				>
-					{showCreate ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-					{showCreate ? '取消' : '新建标签'}
-				</Button>
+				{canManageTags && (
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={() => setShowCreate(!showCreate)}
+					>
+						{showCreate ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+						{showCreate ? '取消' : '新建标签'}
+					</Button>
+				)}
 			</div>
 
+			{error && (
+				<div className="flex items-center gap-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+					{error}
+					<button type="button" onClick={() => setError(null)} className="ml-auto">
+						<X className="h-4 w-4" />
+					</button>
+				</div>
+			)}
+
 			{showCreate && (
-				<div className="rounded-md border border-border bg-white p-4">
-					<h3 className="mb-3 font-medium text-sm">新建标签</h3>
-					<div className="space-y-3">
+				<div className="rounded border border-wiki-border-light bg-wiki-bg-secondary p-4 space-y-3">
+					<h3 className="text-[13px] font-medium text-wiki-text">新建标签</h3>
+					<div className="grid gap-3 sm:grid-cols-2">
 						<div>
-							<label className="mb-1 block text-muted-foreground text-xs">名称 *</label>
+							<label className="mb-1 block text-[12px] text-wiki-text-muted">名称</label>
 							<Input
 								value={newName}
 								onChange={(e) => setNewName(e.target.value)}
 								placeholder="标签名称"
+								className="h-8 text-[13px]"
 							/>
 						</div>
 						<div>
-							<label className="mb-1 block text-muted-foreground text-xs">颜色</label>
-							<div className="flex flex-wrap items-center gap-2">
+							<label className="mb-1 block text-[12px] text-wiki-text-muted">颜色</label>
+							<div className="flex flex-wrap items-center gap-1.5">
 								{COLOR_PRESETS.map((color) => (
 									<button
 										key={color}
 										type="button"
 										onClick={() => setNewColor(color)}
-										className={`h-7 w-7 rounded-full transition-all ${
-											newColor === color ? 'ring-2 ring-primary ring-offset-2' : 'hover:scale-110'
+										className={`h-6 w-6 rounded-full transition-all ${
+											newColor === color ? 'ring-2 ring-wiki-link ring-offset-1' : 'hover:scale-110'
 										}`}
 										style={{ backgroundColor: color }}
 									/>
@@ -145,29 +150,26 @@ export default function WikiTagsIndex() {
 									type="color"
 									value={newColor}
 									onChange={(e) => setNewColor(e.target.value)}
-									className="h-7 w-7 cursor-pointer rounded border-0"
+									className="h-6 w-6 cursor-pointer rounded border-0"
 									title="自定义颜色"
 								/>
 							</div>
 						</div>
-						<div className="flex items-center gap-2">
-							<Button
-								type="button"
-								size="sm"
-								onClick={handleCreate}
-								disabled={creating || !newName.trim()}
-							>
-								{creating ? '创建中...' : '创建'}
-							</Button>
-							<span className="text-muted-foreground text-xs">预览：</span>
-							<span
-								className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm text-white"
-								style={{ backgroundColor: newColor }}
-							>
-								<Tag className="h-3 w-3" />
-								{newName || '标签名'}
-							</span>
-						</div>
+					</div>
+					<div className="flex items-center gap-3">
+						<Button
+							type="button"
+							size="sm"
+							onClick={handleCreate}
+							disabled={creating || !newName.trim()}
+							className="h-7 text-xs"
+						>
+							{creating ? '创建中...' : '创建'}
+						</Button>
+						<span className="text-[12px] text-wiki-text-muted">预览：</span>
+						<Badge className="text-white" style={{ backgroundColor: newColor }}>
+							{newName || '标签名'}
+						</Badge>
 					</div>
 				</div>
 			)}
@@ -175,36 +177,36 @@ export default function WikiTagsIndex() {
 			{tags.length === 0 ? (
 				<div className="py-12 text-center text-[13px] text-wiki-text-muted">暂无标签</div>
 			) : (
-				<div className="flex flex-wrap gap-3">
-					{tags.map((tag) => {
-						const size = 12 + (tag.pageCount / maxCount) * 8
-						return (
-							<span key={tag.id} className="group relative inline-flex items-center">
-								<a
-									href={`/briar-display/wiki/tag/${tag.slug}`}
-									className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-white transition-all hover:opacity-80 hover:shadow-sm"
-									style={{
-										backgroundColor: tag.color,
-										fontSize: `${size}px`,
-									}}
-								>
-									<Tag className="h-3 w-3" />
-									{tag.name}
-									{tag.pageCount > 0 && (
-										<span className="ml-0.5 text-[10px] opacity-70">({tag.pageCount})</span>
-									)}
-								</a>
+				<div className="flex flex-wrap gap-2">
+					{tags.map((tag) => (
+						<a
+							key={tag.id}
+							href={`/briar-display/wiki/tag/${tag.slug}`}
+							className="group relative inline-flex items-center"
+						>
+							<Badge
+								className="cursor-pointer text-white transition-all hover:opacity-80 hover:shadow-sm"
+								style={{ backgroundColor: tag.color }}
+							>
+								<Tag className="mr-1 h-3 w-3" />
+								{tag.name}
+								{tag.pageCount > 0 && <span className="ml-1 opacity-70">{tag.pageCount}</span>}
+							</Badge>
+							{canManageTags && (
 								<button
 									type="button"
-									onClick={() => handleDelete(tag)}
-									className="-right-1.5 -top-1.5 absolute flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100"
+									onClick={(e) => {
+										e.preventDefault()
+										handleDelete(tag)
+									}}
+									className="-right-1 -top-1 absolute flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100"
 									title={`删除标签「${tag.name}」`}
 								>
-									<X className="h-3 w-3" />
+									<X className="h-2.5 w-2.5" />
 								</button>
-							</span>
-						)
-					})}
+							)}
+						</a>
+					))}
 				</div>
 			)}
 		</div>

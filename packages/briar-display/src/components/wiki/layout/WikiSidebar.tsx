@@ -172,23 +172,22 @@ export default function WikiSidebar() {
 	}, [])
 
 	return (
-		<nav className="py-3 text-[13px]">
-			{sections.map((section) => {
+		<nav className="px-3 py-4">
+			{sections.map((section, sectionIdx) => {
 				if (section.requireAuth && !isLoggedIn) return null
 				if (section.requirePermission && !hasPermission(section.requirePermission)) return null
 
-				// 过滤没有权限的链接
 				const visibleLinks = section.links.filter(
 					(link) => !link.requirePermission || hasPermission(link.requirePermission),
 				)
 				if (visibleLinks.length === 0) return null
 
 				return (
-					<div key={section.title}>
-						<h3 className="px-3 pb-1 pt-4 text-[11px] font-medium uppercase tracking-wider text-wiki-text-muted first:pt-2">
+					<div key={section.title} className={sectionIdx > 0 ? 'mt-4' : ''}>
+						<h3 className="mb-1 px-2 text-[13px] font-semibold tracking-wide text-wiki-text-muted">
 							{section.title}
 						</h3>
-						<ul>
+						<ul className="space-y-0.5">
 							{visibleLinks.map((link) => {
 								const active = isActiveLink(link.href, pathname)
 								return (
@@ -196,13 +195,15 @@ export default function WikiSidebar() {
 										<a
 											href={link.href}
 											className={cn(
-												'flex items-center gap-2 rounded-r px-3 py-1.5 transition-colors',
+												'flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] transition-colors',
 												active
-													? 'border-l-[3px] border-wiki-link bg-wiki-bg-tertiary font-medium text-wiki-text'
-													: 'border-l-[3px] border-transparent text-wiki-text-secondary hover:bg-wiki-bg-tertiary hover:text-wiki-text',
+													? 'bg-wiki-bg-tertiary font-medium text-wiki-text'
+													: 'text-wiki-text-secondary hover:bg-wiki-bg-tertiary hover:text-wiki-text',
 											)}
 										>
-											{link.icon}
+											<span className={cn('text-wiki-text-muted', active && 'text-wiki-link')}>
+												{link.icon}
+											</span>
 											<span>{link.label}</span>
 										</a>
 									</li>
