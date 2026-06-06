@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiLink from '@/components/wiki/common/WikiLink'
+import WikiPagination from '@/components/wiki/common/WikiPagination'
 import { cn } from '@/lib/utils'
 import type { WikiCategory, WikiCategoryTreeNode, WikiPageSummary } from '@briar/shared'
 import {
@@ -18,6 +19,8 @@ import {
 	X,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+
+const PAGE_SIZE = 20
 
 interface WikiCategoryPageProps {
 	slug: string
@@ -36,6 +39,8 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 	const [category, setCategory] = useState<WikiCategory | null>(null)
 	const [subcategories, setSubcategories] = useState<WikiCategoryTreeNode[]>([])
 	const [pages, setPages] = useState<WikiPageSummary[]>([])
+	const [total, setTotal] = useState(0)
+	const [offset, setOffset] = useState(0)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const [editing, setEditing] = useState(false)
@@ -47,20 +52,17 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 		setLoading(true)
 		setError(null)
 
-		const res = await wikiApi.getCategory(slug)
+		const res = await wikiApi.getCategory(slug, PAGE_SIZE, offset)
 		if (res.success && res.data) {
 			setCategory(res.data)
-			const data = res.data as WikiCategory & {
-				pages?: WikiPageSummary[]
-				subcategories?: WikiCategoryTreeNode[]
-			}
-			setPages(data.pages ?? [])
-			setSubcategories(data.subcategories ?? [])
+			setPages(res.data.pages.items)
+			setTotal(res.data.pages.total)
+			setSubcategories(res.data.subcategories ?? [])
 		} else {
 			setError(res.message || '加载分类失败')
 		}
 		setLoading(false)
-	}, [slug])
+	}, [slug, offset])
 
 	useEffect(() => {
 		loadData()
@@ -271,6 +273,7 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 						</table>
 					</div>
 				)}
+				<WikiPagination total={total} limit={PAGE_SIZE} offset={offset} onPageChange={setOffset} />
 			</div>
 		</div>
 	)

@@ -69,11 +69,14 @@ export const categoryDal = {
 		return row ? mapRowToRecord(row) : null
 	},
 
-	async list(): Promise<WikiCategoryRecord[]> {
+	async list(limit = 50, offset = 0): Promise<{ items: WikiCategoryRecord[]; total: number }> {
+		const countRow = await queryOne<{ cnt: number }>('SELECT COUNT(*) as cnt FROM wiki_categories')
+		const total = countRow?.cnt || 0
+
 		const rows = await query<WikiCategoryRow>(
-			`SELECT ${SELECT_FIELDS} FROM wiki_categories ORDER BY name ASC`,
+			`SELECT ${SELECT_FIELDS} FROM wiki_categories ORDER BY name ASC LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
 		)
-		return rows.map(mapRowToRecord)
+		return { items: rows.map(mapRowToRecord), total }
 	},
 
 	async getTree(): Promise<WikiCategoryRecord[]> {
@@ -161,6 +164,43 @@ export const categoryDal = {
 			[pageId],
 		)
 		return rows.map(mapRowToRecord)
+	},
+
+	async getCategoryPages(
+		categoryId: string,
+		limit = 20,
+		offset = 0,
+	): Promise<{ items: any[]; total: number }> {
+		const countRow = await queryOne<{ cnt: number }>(
+			`SELECT COUNT(*) as cnt FROM wiki_page_categories pc
+			INNER JOIN wiki_pages p ON pc.page_id = p.id
+			WHERE pc.category_id = ? AND p.status != 'deleted'`,
+			[categoryId],
+		)
+		const total = countRow?.cnt || 0
+
+		const rows = await query<any>(
+			`SELECT p.id, p.title, p.slug, p.namespace, p.status, p.view_count, p.updated_at
+			FROM wiki_pages p
+			INNER JOIN wiki_page_categories pc ON p.id = pc.page_id
+			WHERE pc.category_id = ? AND p.status != 'deleted'
+			ORDER BY p.updated_at DESC
+			LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
+			[categoryId],
+		)
+
+		return {
+			items: rows.map((row: any) => ({
+				id: row.id,
+				title: row.title,
+				slug: row.slug,
+				namespace: row.namespace,
+				status: row.status,
+				viewCount: row.view_count,
+				updatedAt: row.updated_at,
+			})),
+			total,
+		}
 	},
 
 	async incrementPageCount(id: string): Promise<void> {

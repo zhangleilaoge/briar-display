@@ -28,17 +28,17 @@ export const changeRequestService = {
 		})
 	},
 
-	async listByPage(pageSlug: string, status?: WikiChangeRequestStatus) {
+	async listByPage(pageSlug: string, status?: WikiChangeRequestStatus, limit = 20, offset = 0) {
 		const page = await pageDal.findBySlug('main', pageSlug)
 		if (!page) {
 			throw new Error('PAGE_NOT_FOUND')
 		}
 
-		return changeRequestDal.listByPage(page.id, status)
+		return changeRequestDal.listByPage(page.id, status, limit, offset)
 	},
 
-	async listByRequester(requesterId: string) {
-		return changeRequestDal.listByRequester(requesterId)
+	async listByRequester(requesterId: string, limit = 20, offset = 0) {
+		return changeRequestDal.listByRequester(requesterId, limit, offset)
 	},
 
 	async listPendingForReviewer(pageSlug?: string) {

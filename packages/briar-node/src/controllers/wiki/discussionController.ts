@@ -143,6 +143,8 @@ export const discussionController = {
 		try {
 			const slug = c.req.param('slug')
 			const topicId = c.req.param('topicId')
+			const limit = Math.floor(Number(c.req.query('limit')) || 50)
+			const offset = Math.floor(Number(c.req.query('offset')) || 0)
 
 			if (!slug || !topicId) {
 				return c.json<ApiResponse>(
@@ -151,11 +153,16 @@ export const discussionController = {
 				)
 			}
 
-			const replies = await discussionService.getReplies(slug, topicId)
+			const result = await discussionService.getReplies(slug, topicId, limit, offset)
 
 			return c.json<ApiResponse>({
 				success: true,
-				data: replies,
+				data: {
+					items: result.items,
+					total: result.total,
+					limit,
+					offset,
+				},
 			})
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to get replies'

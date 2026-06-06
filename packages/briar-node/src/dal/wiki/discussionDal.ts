@@ -137,12 +137,22 @@ export const discussionDal = {
 		return row ? mapReplyToRecord(row) : null
 	},
 
-	async getReplies(topicId: string): Promise<WikiDiscussionReplyRecord[]> {
-		const rows = await query<WikiDiscussionReplyRow>(
-			`SELECT ${REPLY_FIELDS} FROM wiki_discussion_replies WHERE topic_id = ? ORDER BY created_at ASC`,
+	async getReplies(
+		topicId: string,
+		limit = 50,
+		offset = 0,
+	): Promise<{ items: WikiDiscussionReplyRecord[]; total: number }> {
+		const countRow = await queryOne<{ cnt: number }>(
+			'SELECT COUNT(*) as cnt FROM wiki_discussion_replies WHERE topic_id = ?',
 			[topicId],
 		)
-		return rows.map(mapReplyToRecord)
+		const total = countRow?.cnt || 0
+
+		const rows = await query<WikiDiscussionReplyRow>(
+			`SELECT ${REPLY_FIELDS} FROM wiki_discussion_replies WHERE topic_id = ? ORDER BY created_at ASC LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
+			[topicId],
+		)
+		return { items: rows.map(mapReplyToRecord), total }
 	},
 
 	async markResolved(topicId: string): Promise<boolean> {

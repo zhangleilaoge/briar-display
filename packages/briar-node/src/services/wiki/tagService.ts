@@ -9,8 +9,8 @@ export const tagService = {
 		return tagDal.create(payload)
 	},
 
-	async list() {
-		return tagDal.list()
+	async list(limit = 50, offset = 0) {
+		return tagDal.list(limit, offset)
 	},
 
 	async getBySlug(slug: string) {
@@ -34,7 +34,7 @@ export const tagService = {
 			throw new Error('TAG_NOT_FOUND')
 		}
 		const pages = await tagDal.listPagesByTagId(tag.id, options)
-		return { tag, pages }
+		return { tag, pages: pages.items, total: pages.total }
 	},
 
 	async getOrCreateTags(tagNames: string[]): Promise<{ id: string; name: string }[]> {

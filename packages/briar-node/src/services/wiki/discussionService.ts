@@ -61,7 +61,7 @@ export const discussionService = {
 	/**
 	 * Get replies for a discussion topic
 	 */
-	async getReplies(slug: string, topicId: string) {
+	async getReplies(slug: string, topicId: string, limit = 50, offset = 0) {
 		const page = await pageDal.findBySlug('main', slug)
 		if (!page) {
 			throw new Error('PAGE_NOT_FOUND')
@@ -72,7 +72,7 @@ export const discussionService = {
 			throw new Error('TOPIC_NOT_FOUND')
 		}
 
-		return discussionDal.getReplies(topicId)
+		return discussionDal.getReplies(topicId, limit, offset)
 	},
 
 	/**

@@ -161,14 +161,14 @@ export const pageController = {
 			}
 
 			// Fetch related data
-			const [categories, tags, backlinks, subpages] = await Promise.all([
+			const [categories, tags, backlinksResult, subpagesResult] = await Promise.all([
 				categoryDal.getPageCategories(page.id),
 				tagDal.listByPageId(page.id),
 				backlinkDal.findByTargetPage(page.id),
 				pageDal.list({ limit: 100, offset: 0, namespace: page.namespace }),
 			])
 
-			const childPages = subpages.items.filter((p) => p.parentId === page.id)
+			const childPages = subpagesResult.items.filter((p) => p.parentId === page.id)
 
 			return c.json<ApiResponse>({
 				success: true,
@@ -176,7 +176,7 @@ export const pageController = {
 					...page,
 					categories,
 					tags,
-					backlinks,
+					backlinks: backlinksResult.items,
 					subpages: childPages,
 				},
 			})
@@ -353,8 +353,16 @@ export const pageController = {
 				)
 			}
 
-			const backlinks = await backlinkDal.findByTargetPage(page.id)
-			return c.json<ApiResponse>({ success: true, data: backlinks })
+			const result = await backlinkDal.findByTargetPage(page.id)
+			return c.json<ApiResponse>({
+				success: true,
+				data: {
+					items: result.items,
+					total: result.total,
+					limit: 50,
+					offset: 0,
+				},
+			})
 		} catch (error) {
 			console.error('Error getting backlinks:', error)
 			return c.json<ApiResponse>(
@@ -387,8 +395,16 @@ export const pageController = {
 				)
 			}
 
-			const subpages = await pageService.getSubpages(page.id)
-			return c.json<ApiResponse>({ success: true, data: subpages })
+			const result = await pageService.getSubpages(page.id)
+			return c.json<ApiResponse>({
+				success: true,
+				data: {
+					items: result.items,
+					total: result.total,
+					limit: 20,
+					offset: 0,
+				},
+			})
 		} catch (error) {
 			console.error('Error getting subpages:', error)
 			return c.json<ApiResponse>(

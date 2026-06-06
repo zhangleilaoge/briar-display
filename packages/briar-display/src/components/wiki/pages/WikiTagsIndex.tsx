@@ -37,7 +37,7 @@ export default function WikiTagsIndex() {
 		try {
 			const res = await wikiApi.getTags()
 			if (res.success && res.data) {
-				setTags(res.data)
+				setTags(res.data.items)
 			} else {
 				setError(res.message || '加载标签失败')
 			}

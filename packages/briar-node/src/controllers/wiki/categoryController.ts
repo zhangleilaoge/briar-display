@@ -7,11 +7,18 @@ import { categoryService } from '../../services/wiki/categoryService'
 export const categoryController = {
 	async list(c: Context) {
 		try {
-			const categories = await categoryDal.list()
+			const limit = Math.floor(Number(c.req.query('limit')) || 50)
+			const offset = Math.floor(Number(c.req.query('offset')) || 0)
+			const result = await categoryDal.list(limit, offset)
 
 			return c.json<ApiResponse>({
 				success: true,
-				data: categories,
+				data: {
+					items: result.items,
+					total: result.total,
+					limit,
+					offset,
+				},
 			})
 		} catch (error) {
 			console.error('Error listing categories:', error)

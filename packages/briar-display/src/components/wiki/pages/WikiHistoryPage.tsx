@@ -3,11 +3,14 @@
 import { wikiApi } from '@/api/wiki'
 import { Button } from '@/components/ui/button'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
+import WikiPagination from '@/components/wiki/common/WikiPagination'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
 import type { WikiDiffLine, WikiDiffResult, WikiRevision } from '@briar/shared'
 import { ArrowLeftRight, Clock, GitCompare, Loader2, RotateCcw, Table } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+
+const PAGE_SIZE = 20
 
 interface WikiHistoryPageProps {
 	slug: string
@@ -66,6 +69,8 @@ function InlineDiffView({ diff }: { diff: WikiDiffResult }) {
 
 export default function WikiHistoryPage({ slug }: WikiHistoryPageProps) {
 	const [revisions, setRevisions] = useState<WikiRevision[]>([])
+	const [total, setTotal] = useState(0)
+	const [offset, setOffset] = useState(0)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const [fromRev, setFromRev] = useState<string | null>(null)
@@ -80,10 +85,11 @@ export default function WikiHistoryPage({ slug }: WikiHistoryPageProps) {
 		let cancelled = false
 		setLoading(true)
 
-		wikiApi.getRevisions(slug).then((res) => {
+		wikiApi.getRevisions(slug, PAGE_SIZE, offset).then((res) => {
 			if (cancelled) return
 			if (res.success && res.data) {
 				setRevisions(res.data.items)
+				setTotal(res.data.total)
 			} else {
 				setError(res.message || '加载版本历史失败')
 			}
@@ -93,7 +99,7 @@ export default function WikiHistoryPage({ slug }: WikiHistoryPageProps) {
 		return () => {
 			cancelled = true
 		}
-	}, [slug])
+	}, [slug, offset])
 
 	// Compare selected revisions
 	const handleCompare = useCallback(async () => {
@@ -305,6 +311,8 @@ export default function WikiHistoryPage({ slug }: WikiHistoryPageProps) {
 					</tbody>
 				</table>
 			</div>
+
+			<WikiPagination total={total} limit={PAGE_SIZE} offset={offset} onPageChange={setOffset} />
 
 			{/* Diff view */}
 			{diffError && (
