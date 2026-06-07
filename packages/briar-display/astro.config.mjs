@@ -81,10 +81,9 @@ export default defineConfig({
 							if (id.includes('node_modules/react-markdown')) return 'markdown-vendor'
 							if (id.includes('tiptap') || id.includes('prosemirror')) return 'tiptap-vendor'
 						}
-						// 编辑器单独拆（TipTap 很重，只在编辑时加载）
-						if (id.includes('/components/wiki/editor/')) return 'wiki-editor'
-						// 页面组件
-						if (id.includes('/components/wiki/pages/')) return 'wiki-pages'
+						// Wiki 相关组件合并（避免循环 chunk 依赖）
+						if (id.includes('/components/wiki/editor/') || id.includes('/components/wiki/pages/'))
+							return 'wiki'
 					},
 				},
 			},
