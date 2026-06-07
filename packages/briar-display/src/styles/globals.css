@@ -78,6 +78,7 @@
 		--border: 210 10% 80%;           /* --wiki-border-light #c8ccd1 */
 		--input: 210 10% 80%;
 		--ring: 217 59% 50%;             /* --wiki-link #3366cc */
+	}
 
 	* {
 		@apply border-border;
