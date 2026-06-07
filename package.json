@@ -9,8 +9,8 @@
 	"packageManager": "bun@1.2.0",
 	"workspaces": ["packages/*"],
 	"scripts": {
-		"dev": "concurrently -k -n shared,display -c gray,cyan --hide shared \"bun run --filter @briar/shared dev\" \"bun run --filter @briar/display dev\"",
-		"dev:node": "concurrently -k -n shared,node -c gray,magenta --hide shared \"bun run --filter @briar/shared dev\" \"bun run --filter @briar/node dev\"",
+		"dev": "bun run --filter @briar/shared build && concurrently -k -n shared,display,node -c gray,cyan,magenta --hide shared \"bun run --filter @briar/shared dev\" \"bun run --filter @briar/display dev\" \"bun run --filter @briar/node dev\"",
+		"dev:node": "bun run --filter @briar/shared build && concurrently -k -n shared,node -c gray,magenta --hide shared \"bun run --filter @briar/shared dev\" \"bun run --filter @briar/node dev\"",
 		"dev:shared": "bun run --filter @briar/shared dev",
 		"build": "bun run --filter @briar/shared build && bun run --filter @briar/display build",
 		"build:shared": "bun run --filter @briar/shared build",

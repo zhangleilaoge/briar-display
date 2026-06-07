@@ -33,6 +33,7 @@ const setupDatabase = async () => {
 			user: DatabaseConfig.user,
 			password: DatabaseConfig.password,
 			multipleStatements: true,
+			connectTimeout: 60000,
 		})
 
 		console.log('✅ 数据库连接成功')

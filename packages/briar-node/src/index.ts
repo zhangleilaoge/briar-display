@@ -15,7 +15,13 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const PORT = process.env.PORT || NODE_PORT
+
+// 优先使用 web/ 目录（GitHub Actions 部署的线上资源），fallback 到 dist/（本地构建）
+const WEB_PATH = path.resolve(__dirname, '../../briar-display/web')
 const DIST_PATH = path.resolve(__dirname, '../../briar-display/dist')
+const fs = await import('fs')
+const isDev = process.env.NODE_ENV !== 'production'
+const STATIC_PATH = isDev ? DIST_PATH : fs.existsSync(WEB_PATH) ? WEB_PATH : DIST_PATH
 
 const app = new Hono()
 
@@ -26,24 +32,23 @@ applyConfiguredMiddlewares(app, globalMiddlewares, '/*')
 app.route('/api', apiRoutes)
 
 // 静态资源
-app.use('/*', serveStatic({ root: DIST_PATH }))
+app.use('/*', serveStatic({ root: STATIC_PATH }))
 
 // Wiki SPA fallback: /briar-display/wiki/* 动态路由都返回 wiki/index.html
 app.get('/briar-display/wiki/*', async (c) => {
-	const fs = await import('fs')
-	const wikiIndexPath = path.join(DIST_PATH, 'briar-display/wiki/index.html')
+	const wikiIndexPath = path.join(STATIC_PATH, 'briar-display/wiki/index.html')
 	if (fs.existsSync(wikiIndexPath)) {
 		const html = fs.readFileSync(wikiIndexPath, 'utf-8')
 		return c.html(html)
 	}
 	// fallback to root
-	const rootIndexPath = path.join(DIST_PATH, 'index.html')
+	const rootIndexPath = path.join(STATIC_PATH, 'index.html')
 	const html = fs.readFileSync(rootIndexPath, 'utf-8')
 	return c.html(html)
 })
 
 // 其他页面 fallback
-app.get('/*', serveStatic({ path: './index.html', root: DIST_PATH }))
+app.get('/*', serveStatic({ path: './index.html', root: STATIC_PATH }))
 
 const startServer = async () => {
 	console.log('='.repeat(60))
@@ -58,7 +63,7 @@ const startServer = async () => {
 		process.exit(1)
 	}
 
-	console.log(`📦 前端资源目录: ${DIST_PATH}`)
+	console.log(`📦 前端资源目录: ${STATIC_PATH}`)
 	console.log(`🌐 服务器地址: http://localhost:${PORT}`)
 	console.log('='.repeat(60))
 

@@ -1,4 +1,5 @@
 'use client'
+import WikiLinkText from '@/components/wiki/common/WikiLinkText'
 
 import { wikiApi } from '@/api/wiki'
 import { Button } from '@/components/ui/button'
@@ -197,7 +198,7 @@ export default function WikiSearchResults() {
 
 												{result.summary && (
 													<p className="mt-1 line-clamp-2 text-[13px] leading-[1.6] text-wiki-text-secondary">
-														<HighlightedText text={result.summary} query={query} />
+														<WikiLinkText text={result.summary} highlightQuery={query} />
 													</p>
 												)}
 

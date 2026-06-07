@@ -3,9 +3,9 @@
 # Briar 项目部署脚本
 # 使用方式: ./scripts/deploy.sh [--skip-install] [--skip-build] [--full-build]
 #
-# 注意：前端 dist 由 GitHub Actions 构建并通过 rsync 同步到服务器，
-# 默认不再在服务器上构建前端，避免覆盖 GitHub Actions 同步过来的 dist。
-# 如需完整构建（首次部署或特殊情况），使用 --full-build。
+# 注意：前端资源由 GitHub Actions 构建并通过 rsync 同步到服务器的 web/ 目录，
+# 与本地构建输出的 dist/ 独立，避免互相覆盖。
+# 默认不再在服务器上构建前端。如需完整构建（首次部署或特殊情况），使用 --full-build。
 
 set -e
 
@@ -158,7 +158,7 @@ main() {
       fi
     else
       log_info "构建后端（node）..."
-      log_warn "前端 dist 由 GitHub Actions 同步，如需服务器构建请使用 --full-build"
+      log_warn "前端资源由 GitHub Actions 同步到 web/ 目录，如需服务器构建请使用 --full-build"
       if ! bun run --filter @briar/node build; then
         log_error "构建失败，正在恢复备份..."
         restore_backup

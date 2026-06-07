@@ -11,4 +11,5 @@ export const DatabaseConfig = {
 	connectionLimit: 10,
 	waitForConnections: true,
 	queueLimit: 0,
+	connectTimeout: 60000,
 } as const

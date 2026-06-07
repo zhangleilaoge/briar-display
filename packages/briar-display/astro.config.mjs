@@ -9,9 +9,10 @@ import { defineConfig } from 'astro/config'
 loadEnv(import.meta.url)
 
 const isBuildDev = process.env.BUILD_DEV === 'true'
+const isDev = process.argv.includes('dev')
 const cdnBase = process.env.BRIAR_TX_BUCKET_DOMAIN?.replace(/\/+$/, '')
 const cdnPrefix = 'static'
-const assetsPrefix = !isBuildDev && cdnBase ? `${cdnBase}/${cdnPrefix}` : undefined
+const assetsPrefix = !isDev && !isBuildDev && cdnBase ? `${cdnBase}/${cdnPrefix}` : undefined
 
 console.log('CDN Base:', assetsPrefix)
 
@@ -28,6 +29,11 @@ export default defineConfig({
 									.replace(/.*[/\\]src[/\\]/, 'src/')
 									.replace(/\\/g, '/')
 								if (!file.startsWith('src/')) return
+								// 避免 HMR 时重复添加
+								const hasDataFile = path.node.attributes.some(
+									(a) => a.type === 'JSXAttribute' && a.name?.name === 'data-file',
+								)
+								if (hasDataFile) return
 								const line = path.node.loc?.start.line || 0
 								path.node.attributes.push(
 									Object.assign({}, path.node.attributes[0], {
@@ -55,6 +61,14 @@ export default defineConfig({
 		resolve: {
 			alias: {
 				'@': fileURLToPath(new URL('./src', import.meta.url)),
+			},
+		},
+		server: {
+			proxy: {
+				'/api': {
+					target: 'http://localhost:3888',
+					changeOrigin: true,
+				},
 			},
 		},
 		build: {
