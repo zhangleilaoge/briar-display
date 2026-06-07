@@ -1,8 +1,8 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { WikiButton as Button } from '@/components/wiki/common/ui/button'
+import { WikiInput as Input } from '@/components/wiki/common/ui/input'
 import { cn } from '@/lib/utils'
 import type { WikiCategoryTreeNode } from '@briar/shared'
 import { ChevronDown, ChevronRight, Loader2, Plus } from 'lucide-react'

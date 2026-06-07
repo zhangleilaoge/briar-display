@@ -323,4 +323,50 @@ export const permissionService = {
 			}
 		})
 	},
+
+	/**
+	 * 搜索用户（含角色），支持关键词 + 分页
+	 */
+	async searchUsersWithRoles(params: {
+		keyword?: string
+		limit: number
+		offset: number
+	}): Promise<{
+		items: { userId: string; userName: string; userEmail: string; roles: Role[] }[]
+		total: number
+	}> {
+		const { rows: users, total } = await userDal.search(params)
+
+		// 只批量查当前页用户的角色
+		const userIds = users.map((u) => u.id)
+		if (userIds.length === 0) return { items: [], total }
+
+		const allUserRoles = await userRoleDal.listGroupedByUser()
+		const allRoleIds = [
+			...new Set(
+				userIds.flatMap((uid) => {
+					const info = allUserRoles.get(uid)
+					return info ? info.roles.map((r) => r.roleId) : []
+				}),
+			),
+		]
+		const roleMap = new Map((await roleDal.findByIds(allRoleIds)).map((r) => [r.id, r]))
+
+		const items = users.map((user) => {
+			const info = allUserRoles.get(user.id)
+			return {
+				userId: user.id,
+				userName: user.name,
+				userEmail: user.email,
+				roles: info
+					? info.roles
+							.map((r) => roleMap.get(r.roleId))
+							.filter(Boolean)
+							.map((r) => toRole(r!))
+					: [],
+			}
+		})
+
+		return { items, total }
+	},
 }

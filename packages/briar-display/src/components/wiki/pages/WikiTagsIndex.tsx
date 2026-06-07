@@ -2,9 +2,9 @@
 
 import { wikiApi } from '@/api/wiki'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
+import { WikiButton as Button } from '@/components/wiki/common/ui/button'
+import { WikiInput as Input } from '@/components/wiki/common/ui/input'
 import { usePermissions } from '@/contexts/PermissionContext'
 import { PERMISSIONS, type WikiTag } from '@briar/shared'
 import { Loader2, Plus, Tag, X } from 'lucide-react'

@@ -84,11 +84,24 @@ export const deletePermission = async (permId: string) => {
 
 // ==================== 用户角色分配 ====================
 
-export const getUsers = async () => {
-	const response =
-		await apiClient.get<
-			ApiResponse<{ userId: string; userName: string; userEmail: string; roles: Role[] }[]>
-		>('/admin/users')
+export const getUsers = async (params?: {
+	keyword?: string
+	page?: number
+	pageSize?: number
+}) => {
+	const searchParams = new URLSearchParams()
+	if (params?.keyword) searchParams.set('keyword', params.keyword)
+	if (params?.page) searchParams.set('page', String(params.page))
+	if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize))
+	const qs = searchParams.toString()
+	const response = await apiClient.get<
+		ApiResponse<{
+			items: { userId: string; userName: string; userEmail: string; roles: Role[] }[]
+			total: number
+			page: number
+			pageSize: number
+		}>
+	>(`/admin/users${qs ? `?${qs}` : ''}`)
 	return response.data
 }
 

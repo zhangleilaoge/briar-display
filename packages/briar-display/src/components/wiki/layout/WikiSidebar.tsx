@@ -6,9 +6,11 @@ import { PERMISSIONS } from '@briar/shared'
 import {
 	BarChart3,
 	Eye,
+	FileDiff,
 	FileText,
 	History,
 	Home,
+	ImageIcon,
 	LayoutList,
 	Link2,
 	Settings,
@@ -107,19 +109,34 @@ const sections: SidebarSection[] = [
 		],
 	},
 	{
+		title: '工具箱',
+		links: [
+			{
+				label: '文件 Diff',
+				href: '/briar-display/tools/diff',
+				icon: <FileDiff className="h-3.5 w-3.5" />,
+			},
+			{
+				label: '图片压缩',
+				href: '/briar-display/tools/compress',
+				icon: <ImageIcon className="h-3.5 w-3.5" />,
+			},
+		],
+	},
+	{
 		title: '管理',
 		requireAuth: true,
 		requirePermission: PERMISSIONS.PAGE_ADMIN,
 		links: [
 			{
 				label: '权限管理',
-				href: '/briar-display/wiki/special/admin/permissions',
+				href: '/briar-display/admin/permissions',
 				icon: <Shield className="h-3.5 w-3.5" />,
 				requirePermission: PERMISSIONS.ADMIN_ROLE_MANAGE,
 			},
 			{
 				label: '用户角色',
-				href: '/briar-display/wiki/special/admin/users',
+				href: '/briar-display/admin/users',
 				icon: <Settings className="h-3.5 w-3.5" />,
 				requirePermission: PERMISSIONS.ADMIN_USER_ROLE_ASSIGN,
 			},

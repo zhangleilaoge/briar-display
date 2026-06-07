@@ -1,7 +1,7 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
-import { Input } from '@/components/ui/input'
+import { WikiInput as Input } from '@/components/wiki/common/ui/input'
 import { cn } from '@/lib/utils'
 import { Loader2, Search } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'

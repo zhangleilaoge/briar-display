@@ -37,7 +37,7 @@ export default function RegisterPage() {
 			})
 			if (result.success && result.data) {
 				setAuthToken(result.data.token, result.data.user)
-				window.location.href = 'business'
+				window.location.href = '/briar-display/'
 				return
 			}
 			setError(result.message || '注册失败')

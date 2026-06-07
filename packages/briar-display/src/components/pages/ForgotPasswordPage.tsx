@@ -86,7 +86,7 @@ export default function ForgotPasswordPage() {
 				setAuthToken(result.data.token, result.data.user)
 				setSuccess('密码重置成功，正在跳转...')
 				setTimeout(() => {
-					window.location.href = 'business'
+					window.location.href = '/briar-display/'
 				}, 2000)
 			} else {
 				setError(result.message || '重置密码失败')

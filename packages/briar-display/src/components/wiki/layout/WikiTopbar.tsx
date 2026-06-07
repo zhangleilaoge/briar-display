@@ -1,7 +1,7 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
 import SearchDropdown from '@/components/wiki/common/SearchDropdown'
+import { WikiButton as Button } from '@/components/wiki/common/ui/button'
 import UserMenu from '@/components/wiki/layout/UserMenu'
 import { cn } from '@/lib/utils'
 import { Menu } from 'lucide-react'

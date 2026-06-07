@@ -1,10 +1,10 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import TagInput from '@/components/wiki/common/TagInput'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
+import { WikiButton as Button } from '@/components/wiki/common/ui/button'
+import { WikiInput as Input } from '@/components/wiki/common/ui/input'
 import CategorySelector from '@/components/wiki/editor/CategorySelector'
 import VisualEditor, { type VisualEditorHandle } from '@/components/wiki/editor/VisualEditor'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'

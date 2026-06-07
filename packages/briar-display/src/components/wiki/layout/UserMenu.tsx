@@ -1,7 +1,7 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { WikiButton as Button } from '@/components/wiki/common/ui/button'
 import { usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
 import { ChevronDown, History, LogOut, Plus, Shield, Star, User } from 'lucide-react'
