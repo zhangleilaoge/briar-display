@@ -1,3 +1,5 @@
+'use client'
+
 import { register, setAuthToken } from '@/api/auth'
 import { Button } from '@/components/ui/button'
 import {
@@ -49,10 +51,30 @@ export default function RegisterPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-[radial-gradient(circle_at_top,_hsl(var(--accent))_0%,_hsl(var(--background))_60%)]">
-			<div className="container flex min-h-screen items-center justify-center">
-				<div className="grid w-full max-w-5xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-					<Card className="order-2 lg:order-1">
+		<div className="relative flex min-h-screen overflow-hidden">
+			{/* Mesh gradient background */}
+			<div className="pointer-events-none fixed inset-0 -z-20">
+				<div className="absolute inset-0 bg-background" />
+				<div className="absolute -right-[15%] -top-[15%] h-[55%] w-[55%] rounded-full bg-purple-600/20 blur-[120px]" />
+				<div className="absolute bottom-[10%] left-[20%] h-[40%] w-[40%] rounded-full bg-blue-500/15 blur-[100px]" />
+				<div className="absolute right-1/3 top-1/2 h-[30%] w-[30%] rounded-full bg-teal-500/10 blur-[80px]" />
+			</div>
+
+			{/* Dot grid overlay */}
+			<div
+				className="pointer-events-none fixed inset-0 -z-10"
+				style={{
+					backgroundImage:
+						'radial-gradient(circle, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)',
+					backgroundSize: '24px 24px',
+				}}
+			/>
+
+			{/* Two-column layout — reversed order */}
+			<div className="grid w-full lg:grid-cols-2">
+				{/* Left: Form side */}
+				<div className="flex items-center justify-center p-6 lg:p-12">
+					<Card className="w-full max-w-md bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-xl">
 						<form onSubmit={handleSubmit}>
 							<CardHeader>
 								<CardTitle>创建账号</CardTitle>
@@ -100,12 +122,14 @@ export default function RegisterPage() {
 												placeholder="至少 8 位"
 												value={password}
 												onChange={(event) => setPassword(event.target.value)}
-												className="pr-12"
+												className="pr-10"
 												required
 											/>
-											<button
+											<Button
 												type="button"
-												className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+												variant="ghost"
+												size="icon"
+												className="absolute inset-y-0 right-0 h-full w-10 text-muted-foreground hover:text-foreground"
 												onClick={() => setShowPassword((visible) => !visible)}
 												aria-label={showPassword ? '隐藏密码' : '显示密码'}
 											>
@@ -114,7 +138,7 @@ export default function RegisterPage() {
 												) : (
 													<Eye className="h-4 w-4" />
 												)}
-											</button>
+											</Button>
 										</div>
 									</div>
 									<div className="space-y-2">
@@ -142,36 +166,27 @@ export default function RegisterPage() {
 								</Button>
 								<p className="text-center text-xs text-muted-foreground">
 									已有账号？{' '}
-									<a href="login" className="text-primary hover:underline">
+									<a href="/briar-display/login" className="text-primary hover:underline">
 										返回登录
 									</a>
 								</p>
 							</CardFooter>
 						</form>
 					</Card>
+				</div>
 
-					<div className="order-1 flex flex-col justify-center gap-6 lg:order-2">
-						<div className="space-y-3">
-							<p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">
-								Briar Launchpad
-							</p>
-							<h1 className="text-4xl font-semibold leading-tight">让流程自动化，从注册开始</h1>
-							<p className="text-lg text-muted-foreground">
-								连接业务系统、统一工作流、实时追踪 KPI。
-							</p>
-						</div>
-						<div className="grid gap-3 sm:grid-cols-2">
-							<div className="rounded-xl border border-border/60 bg-card/60 p-4">
-								<p className="text-sm text-muted-foreground">模版数量</p>
-								<p className="text-2xl font-semibold">34</p>
-								<p className="text-xs text-muted-foreground">可用流程</p>
-							</div>
-							<div className="rounded-xl border border-border/60 bg-card/60 p-4">
-								<p className="text-sm text-muted-foreground">平均部署</p>
-								<p className="text-2xl font-semibold">12 分钟</p>
-								<p className="text-xs text-muted-foreground">从创建到上线</p>
-							</div>
-						</div>
+				{/* Right: Brand side */}
+				<div className="relative hidden flex-col items-center justify-center overflow-hidden p-12 lg:flex">
+					{/* Floating decorative circles */}
+					<div className="absolute -right-16 top-1/4 h-64 w-64 rounded-full bg-purple-500/20 blur-[80px]" />
+					<div className="absolute -left-8 bottom-1/3 h-48 w-48 rounded-full bg-blue-500/20 blur-[60px]" />
+					<div className="absolute right-1/3 top-1/2 h-32 w-32 rounded-full bg-teal-500/15 blur-[50px]" />
+
+					<div className="relative z-10 space-y-6 text-center">
+						<h1 className="bg-gradient-to-br from-purple-600 via-blue-600 to-teal-500 bg-clip-text text-6xl font-bold tracking-tight text-transparent">
+							Briar
+						</h1>
+						<p className="text-xl text-muted-foreground">开始使用</p>
 					</div>
 				</div>
 			</div>
