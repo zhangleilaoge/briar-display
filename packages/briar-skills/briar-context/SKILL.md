@@ -52,7 +52,7 @@ description: >
 mkdir -p "$HOME/.config/briar-skills"
 cat > "$HOME/.config/briar-skills/.env" << 'EOF'
 GITLAB_TOKEN="your_gitlab_token"
-JIRA_USERNAME="zhanglei_zl"
+JIRA_USERNAME="your_username_or_email"
 JIRA_PASSWORD="your_password"
 EOF
 chmod 600 "$HOME/.config/briar-skills/.env"
