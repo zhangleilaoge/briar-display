@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { Shield, Users } from 'lucide-react'
+import { Radio, Shield, Users } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 interface NavItem {
@@ -20,6 +20,11 @@ const NAV_ITEMS: NavItem[] = [
 		label: '用户角色',
 		href: '/briar-display/admin/users',
 		icon: <Users className="h-4 w-4" />,
+	},
+	{
+		label: '天网日志',
+		href: '/briar-display/admin/logs',
+		icon: <Radio className="h-4 w-4" />,
 	},
 ]
 

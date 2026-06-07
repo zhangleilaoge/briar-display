@@ -13,7 +13,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
+import { PermissionProvider } from '@/contexts/PermissionContext'
+import { useRequirePermission } from '@/hooks/useRequirePermission'
 import {
 	PERMISSION_GROUPS,
 	type Permission,
@@ -43,7 +44,7 @@ export default function AdminPermissionsPage() {
 }
 
 function AdminPermissionsPageInner() {
-	const { hasPermission, isAdmin } = usePermissions()
+	const { loading: permLoading, authorized, denied } = useRequirePermission('admin:role:manage')
 	const [roles, setRoles] = useState<Role[]>([])
 	const [allPermissions, setAllPermissions] = useState<Permission[]>([])
 	const [selectedRole, setSelectedRole] = useState<RoleWithPermissions | null>(null)
@@ -61,8 +62,6 @@ function AdminPermissionsPageInner() {
 	const [editDescription, setEditDescription] = useState('')
 
 	const [selectedPermIds, setSelectedPermIds] = useState<Set<string>>(new Set())
-
-	const canManageRoles = hasPermission('admin:role:manage') || isAdmin
 
 	const fetchData = useCallback(async () => {
 		try {
@@ -190,7 +189,17 @@ function AdminPermissionsPageInner() {
 		})
 	}
 
-	if (!canManageRoles) {
+	if (permLoading || loading) {
+		return (
+			<AdminLayout currentPath="/briar-display/admin/permissions" title="权限管理">
+				<div className="flex items-center justify-center py-20">
+					<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+				</div>
+			</AdminLayout>
+		)
+	}
+
+	if (denied) {
 		return (
 			<AdminLayout currentPath="/briar-display/admin/permissions" title="权限管理">
 				<Card>
@@ -199,16 +208,6 @@ function AdminPermissionsPageInner() {
 						<span>你没有权限访问此页面</span>
 					</CardContent>
 				</Card>
-			</AdminLayout>
-		)
-	}
-
-	if (loading) {
-		return (
-			<AdminLayout currentPath="/briar-display/admin/permissions" title="权限管理">
-				<div className="flex items-center justify-center py-20">
-					<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-				</div>
 			</AdminLayout>
 		)
 	}

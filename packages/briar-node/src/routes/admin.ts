@@ -1,6 +1,7 @@
 import type { ApiResponse } from '@briar/shared'
 import { HTTP_STATUS, PERMISSIONS } from '@briar/shared'
 import { Hono } from 'hono'
+import { logDal } from '../dal/logDal'
 import { requirePermission } from '../middleware/permissionMiddleware'
 import { permissionService } from '../services/permissionService'
 
@@ -263,6 +264,73 @@ adminRoutes.get('/me/permissions', async (c) => {
 
 	const userWithRoles = await permissionService.getUserWithRoles(user.id)
 	return c.json<ApiResponse>({ success: true, data: userWithRoles })
+})
+
+// ==================== 请求日志 ====================
+
+/** 根据 traceId 查询请求日志 */
+adminRoutes.get(
+	'/logs/trace/:traceId',
+	requirePermission(PERMISSIONS.ADMIN_ROLE_MANAGE),
+	async (c) => {
+		const traceId = c.req.param('traceId')
+		const logs = await logDal.findByTraceId(traceId)
+		return c.json<ApiResponse>({ success: true, data: logs })
+	},
+)
+
+/** 最近的错误请求 */
+adminRoutes.get('/logs/errors', requirePermission(PERMISSIONS.ADMIN_ROLE_MANAGE), async (c) => {
+	const limit = Number(c.req.query('limit')) || 20
+	const logs = await logDal.findErrors(limit)
+	return c.json<ApiResponse>({ success: true, data: logs })
+})
+
+/** 最近的慢请求 */
+adminRoutes.get('/logs/slow', requirePermission(PERMISSIONS.ADMIN_ROLE_MANAGE), async (c) => {
+	const limit = Number(c.req.query('limit')) || 20
+	const logs = await logDal.findSlowRequests(limit)
+	return c.json<ApiResponse>({ success: true, data: logs })
+})
+
+/** 通用日志查询 */
+adminRoutes.get('/logs', requirePermission(PERMISSIONS.ADMIN_ROLE_MANAGE), async (c) => {
+	const q = c.req.query()
+	const statusGroup = q.statusGroup // '2xx' | '4xx' | '5xx'
+	let statusMin: number | undefined
+	let statusMax: number | undefined
+	if (statusGroup === '2xx') {
+		statusMin = 200
+		statusMax = 299
+	}
+	if (statusGroup === '4xx') {
+		statusMin = 400
+		statusMax = 499
+	}
+	if (statusGroup === '5xx') {
+		statusMin = 500
+		statusMax = 599
+	}
+
+	const result = await logDal.list({
+		method: q.method || undefined,
+		path: q.path || undefined,
+		statusMin: q.statusMin ? Number(q.statusMin) : statusMin,
+		statusMax: q.statusMax ? Number(q.statusMax) : statusMax,
+		traceId: q.traceId || undefined,
+		userId: q.userId || undefined,
+		startTime: q.startTime || undefined,
+		endTime: q.endTime || undefined,
+		limit: q.limit ? Number(q.limit) : 50,
+		offset: q.offset ? Number(q.offset) : 0,
+	})
+	return c.json<ApiResponse>({ success: true, data: result })
+})
+
+/** 日志统计概览 */
+adminRoutes.get('/logs/stats', requirePermission(PERMISSIONS.ADMIN_ROLE_MANAGE), async (c) => {
+	const stats = await logDal.getStats()
+	return c.json<ApiResponse>({ success: true, data: stats })
 })
 
 export default adminRoutes
