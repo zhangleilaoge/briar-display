@@ -126,6 +126,13 @@ function PortalPageInner() {
 							href="/briar-display/tools/diff"
 							gradient="from-teal-500 to-emerald-500"
 						/>
+						<EntryCard
+							icon={<ImageIcon className="h-5 w-5" />}
+							title="图床"
+							description="图片上传与相册管理"
+							href="/briar-display/images/upload"
+							gradient="from-pink-500 to-rose-500"
+						/>
 						{!loading && isAdmin && (
 							<div className="sm:col-span-2">
 								<EntryCard

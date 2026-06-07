@@ -164,6 +164,45 @@
 	}
 
 
+	/* Task list (checkbox) styling for TipTap editor and rendered content */
+	.prose ul[data-type="taskList"],
+	ul[data-type="taskList"] {
+		list-style: none !important;
+		padding-left: 0 !important;
+		margin-left: 0 !important;
+	}
+	.prose ul[data-type="taskList"] li,
+	ul[data-type="taskList"] li {
+		display: flex !important;
+		align-items: flex-start !important;
+		gap: 0.5rem !important;
+		margin-bottom: 0.25rem !important;
+		list-style: none !important;
+	}
+	.prose ul[data-type="taskList"] li > label,
+	ul[data-type="taskList"] li > label {
+		flex-shrink: 0 !important;
+		user-select: none !important;
+		margin-top: 0.2rem !important;
+	}
+	.prose ul[data-type="taskList"] li > label input[type="checkbox"],
+	ul[data-type="taskList"] li > label input[type="checkbox"] {
+		accent-color: var(--wiki-link) !important;
+		width: 1rem !important;
+		height: 1rem !important;
+		cursor: pointer !important;
+	}
+	.prose ul[data-type="taskList"] li > div,
+	ul[data-type="taskList"] li > div {
+		flex: 1 !important;
+		min-width: 0 !important;
+	}
+	.prose ul[data-type="taskList"] li[data-checked="true"] > div,
+	ul[data-type="taskList"] li[data-checked="true"] > div {
+		text-decoration: line-through !important;
+		color: var(--wiki-text-muted) !important;
+	}
+
 	/* Route loader animation */
 	@keyframes wiki-route-slide {
 		0% {

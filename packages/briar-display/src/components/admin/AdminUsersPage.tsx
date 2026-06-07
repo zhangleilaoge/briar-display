@@ -14,7 +14,8 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table'
-import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
+import { PermissionProvider } from '@/contexts/PermissionContext'
+import { useRequirePermission } from '@/hooks/useRequirePermission'
 import type { Role } from '@briar/shared'
 import { AlertCircle, Check, Loader2, Search, Shield, User, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -39,7 +40,11 @@ export default function AdminUsersPage() {
 }
 
 function AdminUsersPageInner() {
-	const { hasPermission, isAdmin } = usePermissions()
+	const {
+		loading: permLoading,
+		authorized,
+		denied,
+	} = useRequirePermission('admin:user-role:assign')
 	const [users, setUsers] = useState<UserWithRoles[]>([])
 	const [allRoles, setAllRoles] = useState<Role[]>([])
 	const [loading, setLoading] = useState(true)
@@ -53,8 +58,6 @@ function AdminUsersPageInner() {
 
 	const [editingUserId, setEditingUserId] = useState<string | null>(null)
 	const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(new Set())
-
-	const canManage = hasPermission('admin:user-role:assign') || isAdmin
 
 	const fetchUsers = useCallback(async (kw: string, p: number) => {
 		try {
@@ -131,7 +134,17 @@ function AdminUsersPageInner() {
 		})
 	}
 
-	if (!canManage) {
+	if (permLoading || loading) {
+		return (
+			<AdminLayout currentPath="/briar-display/admin/users" title="用户角色">
+				<div className="flex items-center justify-center py-20">
+					<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+				</div>
+			</AdminLayout>
+		)
+	}
+
+	if (denied) {
 		return (
 			<AdminLayout currentPath="/briar-display/admin/users" title="用户角色">
 				<Card>

@@ -6,6 +6,7 @@ import { WikiButton as Button } from '@/components/wiki/common/ui/button'
 import { WikiInput as Input } from '@/components/wiki/common/ui/input'
 import { ToolbarButton, ToolbarSeparator } from '@/components/wiki/editor/EditorToolbar'
 import SlashMenu from '@/components/wiki/editor/SlashMenu'
+import TableGridPicker from '@/components/wiki/editor/TableGridPicker'
 import { createSlashCommandExtension } from '@/components/wiki/editor/extensions/slashCommand'
 import { WikiLink } from '@/components/wiki/editor/extensions/wikiLink'
 import type { WikiSearchResult } from '@briar/shared'
@@ -152,7 +153,7 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 				HTMLAttributes: { class: 'not-prose' },
 			}),
 			TaskItem.configure({
-				nested: true,
+				nested: false,
 				HTMLAttributes: { class: 'flex items-start gap-2' },
 			}),
 			Placeholder.configure({ placeholder }),
@@ -189,6 +190,26 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 						event.preventDefault()
 						handleImageFile(file, view)
 						return true
+					}
+				}
+				return false
+			},
+			handleKeyDown: (view, event) => {
+				// Delete table with Backspace when cursor is at the very start of the first cell
+				if (event.key === 'Backspace') {
+					const { state } = view
+					const { $from } = state.selection
+					// Check if we're inside a table
+					const tableDepth = $from.depth - 1
+					if (tableDepth >= 0 && $from.node(tableDepth).type.name === 'table') {
+						// If the table is empty (only has header row with empty cells), delete it
+						const tableNode = $from.node(tableDepth)
+						const isEmpty = tableNode.textContent.trim() === ''
+						if (isEmpty) {
+							event.preventDefault()
+							editor?.chain().focus().deleteTable().run()
+							return true
+						}
 					}
 				}
 				return false
@@ -669,21 +690,12 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 									</button>
 								</div>
 							) : (
-								<button
-									type="button"
-									onClick={() => {
-										editor
-											.chain()
-											.focus()
-											.insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-											.run()
+								<TableGridPicker
+									onSelect={(rows, cols) => {
+										editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run()
 										setShowTableMenu(false)
 									}}
-									className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] transition-colors hover:bg-wiki-bg-tertiary"
-								>
-									<TableIcon className="mr-1.5 inline h-3.5 w-3.5" />
-									插入 3×3 表格
-								</button>
+								/>
 							)}
 						</div>
 					</PopoverContent>

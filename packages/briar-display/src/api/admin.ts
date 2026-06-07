@@ -121,3 +121,59 @@ export const getMyPermissions = async () => {
 	const response = await apiClient.get<ApiResponse<UserWithRoles>>('/admin/me/permissions')
 	return response.data
 }
+
+// ==================== 请求日志 ====================
+
+export interface RequestLogItem {
+	id: string
+	traceId: string
+	method: string
+	path: string
+	status: number
+	duration: number
+	ip: string | null
+	userAgent: string | null
+	userId: string | null
+	requestParams: Record<string, unknown> | null
+	errorMessage: string | null
+	createdAt: string
+}
+
+export const getLogs = async (params?: {
+	method?: string
+	path?: string
+	statusGroup?: string
+	traceId?: string
+	startTime?: string
+	endTime?: string
+	limit?: number
+	offset?: number
+}) => {
+	const searchParams = new URLSearchParams()
+	if (params?.method) searchParams.set('method', params.method)
+	if (params?.path) searchParams.set('path', params.path)
+	if (params?.statusGroup) searchParams.set('statusGroup', params.statusGroup)
+	if (params?.traceId) searchParams.set('traceId', params.traceId)
+	if (params?.startTime) searchParams.set('startTime', params.startTime)
+	if (params?.endTime) searchParams.set('endTime', params.endTime)
+	if (params?.limit) searchParams.set('limit', String(params.limit))
+	if (params?.offset) searchParams.set('offset', String(params.offset))
+	const qs = searchParams.toString()
+	const response = await apiClient.get<ApiResponse<{ items: RequestLogItem[]; total: number }>>(
+		`/admin/logs${qs ? `?${qs}` : ''}`,
+	)
+	return response.data
+}
+
+export const getLogStats = async () => {
+	const response =
+		await apiClient.get<
+			ApiResponse<{
+				todayTotal: number
+				todayErrors: number
+				avgDuration: number
+				slowCount: number
+			}>
+		>('/admin/logs/stats')
+	return response.data
+}
