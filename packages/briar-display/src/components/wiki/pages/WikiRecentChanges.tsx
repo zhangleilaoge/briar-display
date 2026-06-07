@@ -4,20 +4,11 @@ import { wikiApi } from '@/api/wiki'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiLink from '@/components/wiki/common/WikiLink'
 import WikiPagination from '@/components/wiki/common/WikiPagination'
-import { cn } from '@/lib/utils'
-import type { WikiNamespace, WikiRecentChange } from '@briar/shared'
-import { Clock, Loader2, TrendingUp } from 'lucide-react'
+import type { WikiRecentChange } from '@briar/shared'
+import { Clock, TrendingUp } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 const PAGE_SIZE = 50
-
-const namespaceLabels: Record<WikiNamespace, string> = {
-	main: '主',
-	talk: '讨论',
-	user: '用户',
-	template: '模板',
-	category: '分类',
-}
 
 function formatTime(date: Date | string) {
 	const d = typeof date === 'string' ? new Date(date) : date
@@ -50,21 +41,16 @@ export default function WikiRecentChanges() {
 	const [total, setTotal] = useState(0)
 	const [offset, setOffset] = useState(0)
 	const [loading, setLoading] = useState(true)
-	const [namespace, setNamespace] = useState<WikiNamespace | 'all'>('all')
 
 	const loadChanges = useCallback(async () => {
 		setLoading(true)
 		const res = await wikiApi.recentChanges(PAGE_SIZE, offset)
 		if (res.success && res.data) {
-			let items = res.data.items
-			if (namespace !== 'all') {
-				items = items.filter((c) => c.namespace === namespace)
-			}
-			setChanges(items)
+			setChanges(res.data.items)
 			setTotal(res.data.total)
 		}
 		setLoading(false)
-	}, [offset, namespace])
+	}, [offset])
 
 	useEffect(() => {
 		loadChanges()
@@ -74,27 +60,11 @@ export default function WikiRecentChanges() {
 		<div className="space-y-4">
 			<WikiBreadcrumbs items={[{ label: '最近更改' }]} />
 
-			<div className="flex items-center justify-between">
+			<div className="flex items-center">
 				<h2 className="flex items-center gap-2 font-serif text-xl font-normal text-foreground">
 					<TrendingUp className="h-5 w-5" />
 					最近更改
 				</h2>
-
-				<select
-					value={namespace}
-					onChange={(e) => {
-						setNamespace(e.target.value as WikiNamespace | 'all')
-						setOffset(0)
-					}}
-					className="rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-				>
-					<option value="all">所有命名空间</option>
-					<option value="main">主</option>
-					<option value="talk">讨论</option>
-					<option value="user">用户</option>
-					<option value="template">模板</option>
-					<option value="category">分类</option>
-				</select>
 			</div>
 
 			{loading ? (
@@ -143,14 +113,7 @@ export default function WikiRecentChanges() {
 										</span>
 									</td>
 									<td className="px-3 py-2">
-										<div className="flex items-center gap-1.5">
-											{change.namespace !== 'main' && (
-												<span className="rounded bg-muted px-1 py-0.5 text-muted-foreground text-xs">
-													{namespaceLabels[change.namespace]}
-												</span>
-											)}
-											<WikiLink slug={change.pageSlug} title={change.pageTitle} />
-										</div>
+										<WikiLink slug={change.pageSlug} title={change.pageTitle} />
 									</td>
 									<td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
 										{change.editorName || change.editorId.slice(0, 8)}

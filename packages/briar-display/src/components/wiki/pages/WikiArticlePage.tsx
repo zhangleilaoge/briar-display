@@ -2,6 +2,7 @@
 
 import { wikiApi } from '@/api/wiki'
 import ArticleBacklinks from '@/components/wiki/article/ArticleBacklinks'
+import ArticleNavbox from '@/components/wiki/article/ArticleNavbox'
 import ArticleSubpages from '@/components/wiki/article/ArticleSubpages'
 import ArticleToc, { type TocItem } from '@/components/wiki/article/ArticleToc'
 import PermissionGuard from '@/components/wiki/common/PermissionGuard'
@@ -10,6 +11,7 @@ import { WikiButton as Button } from '@/components/wiki/common/ui/button'
 import WikiFooter from '@/components/wiki/layout/WikiFooter'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
+import remarkTemplate from '@/remark/remark-template'
 import remarkWikiLink from '@/remark/remark-wiki-link'
 import { PERMISSIONS } from '@briar/shared'
 import type { WikiBacklink, WikiCategory, WikiPage, WikiPageSummary, WikiTag } from '@briar/shared'
@@ -239,6 +241,24 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 		return result.join('\n')
 	}, [page?.content, infoboxContent])
 
+	// Extract Navbox references from content
+	const navboxSlugs = useMemo(() => {
+		if (!page?.content) return []
+		const matches = page.content.match(/\{\{Navbox\|([^}]+)\}\}/g)
+		if (!matches) return []
+		return matches
+			.map((m) => {
+				const slug = m.match(/\{\{Navbox\|([^}]+)\}\}/)?.[1]?.trim()
+				return slug || ''
+			})
+			.filter(Boolean)
+	}, [page?.content])
+
+	// Strip Navbox markers from main content
+	const cleanContent = useMemo(() => {
+		return mainContent.replace(/\{\{Navbox\|[^}]+\}\}/g, '').replace(/\n{3,}/g, '\n\n')
+	}, [mainContent])
+
 	// Custom renderers for ReactMarkdown
 	const markdownComponents = useMemo(
 		() => ({
@@ -440,17 +460,49 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 				<div className="min-w-0 flex-1">
 					{/* Infobox floating right */}
 					{infoboxContent && (
-						<div className="float-right ml-4 mb-4 w-[280px] rounded-sm border border-wiki-border-light bg-wiki-bg-secondary p-4">
-							<div className="prose prose-wiki max-w-none text-[12px]">
-								<ReactMarkdown>{infoboxContent}</ReactMarkdown>
+						<div className="float-right ml-4 mb-4 w-[280px] overflow-hidden rounded-sm border border-wiki-border-light">
+							<div className="border-b border-wiki-border-light bg-wiki-bg-tertiary px-3 py-1.5">
+								<span className="text-[12px] font-medium text-wiki-text-secondary">📋 信息</span>
+							</div>
+							<div className="prose prose-wiki wiki-infobox max-w-none bg-wiki-bg-secondary p-3 text-[12px]">
+								<ReactMarkdown
+									remarkPlugins={[remarkWikiLink, remarkTemplate]}
+									components={{
+										img: ({ ...props }) => (
+											<img
+												{...props}
+												className="my-1 max-w-full rounded-sm"
+												alt={props.alt || ''}
+											/>
+										),
+										td: ({ children, ...props }) => (
+											<td {...props} className="break-words align-top">
+												{children}
+											</td>
+										),
+										th: ({ children, ...props }) => (
+											<th
+												{...props}
+												className="whitespace-nowrap font-medium text-wiki-text-secondary align-top"
+											>
+												{children}
+											</th>
+										),
+									}}
+								>
+									{infoboxContent}
+								</ReactMarkdown>
 							</div>
 						</div>
 					)}
 
 					{/* Article content */}
 					<article className="prose prose-wiki max-w-none">
-						<ReactMarkdown remarkPlugins={[remarkWikiLink]} components={markdownComponents}>
-							{mainContent}
+						<ReactMarkdown
+							remarkPlugins={[remarkWikiLink, remarkTemplate]}
+							components={markdownComponents}
+						>
+							{cleanContent}
 						</ReactMarkdown>
 					</article>
 				</div>
@@ -492,6 +544,15 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 			)}
 
 			<ArticleSubpages subpages={page.subpages} />
+
+			{/* Navboxes */}
+			{navboxSlugs.length > 0 && (
+				<div className="space-y-3">
+					{navboxSlugs.map((navSlug) => (
+						<ArticleNavbox key={navSlug} categorySlug={navSlug} />
+					))}
+				</div>
+			)}
 
 			<ArticleBacklinks backlinks={page.backlinks} />
 			{/* Footer */}

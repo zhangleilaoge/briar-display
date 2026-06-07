@@ -1,11 +1,14 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import PermissionGuard from '@/components/wiki/common/PermissionGuard'
+import TemplateFormDialog from '@/components/wiki/common/TemplateFormDialog'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiPagination from '@/components/wiki/common/WikiPagination'
+import { WikiButton as Button } from '@/components/wiki/common/ui/button'
 import { cn } from '@/lib/utils'
-import type { WikiTemplate } from '@briar/shared'
-import { FileCode, Loader2 } from 'lucide-react'
+import { PERMISSIONS, type WikiTemplate } from '@briar/shared'
+import { FileCode, Loader2, Plus } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 const PAGE_SIZE = 50
@@ -15,6 +18,7 @@ export default function WikiTemplatesList() {
 	const [total, setTotal] = useState(0)
 	const [offset, setOffset] = useState(0)
 	const [loading, setLoading] = useState(true)
+	const [showCreate, setShowCreate] = useState(false)
 
 	const loadTemplates = useCallback(async () => {
 		setLoading(true)
@@ -34,10 +38,18 @@ export default function WikiTemplatesList() {
 		<div className="space-y-4">
 			<WikiBreadcrumbs items={[{ label: '模板' }]} />
 
-			<h2 className="flex items-center gap-2 font-serif text-xl font-normal text-foreground">
-				<FileCode className="h-5 w-5" />
-				模板
-			</h2>
+			<div className="flex items-center justify-between">
+				<h2 className="flex items-center gap-2 font-serif text-xl font-normal text-foreground">
+					<FileCode className="h-5 w-5" />
+					模板
+				</h2>
+				<PermissionGuard permission={PERMISSIONS.WIKI_TEMPLATE_CREATE}>
+					<Button size="sm" onClick={() => setShowCreate(true)}>
+						<Plus className="mr-1 h-3.5 w-3.5" />
+						创建模板
+					</Button>
+				</PermissionGuard>
+			</div>
 
 			<p className="text-muted-foreground text-sm">共 {total.toLocaleString()} 个模板</p>
 
@@ -96,6 +108,16 @@ export default function WikiTemplatesList() {
 				offset={offset}
 				onPageChange={(newOffset) => {
 					setOffset(newOffset)
+				}}
+			/>
+
+			<TemplateFormDialog
+				open={showCreate}
+				onClose={() => setShowCreate(false)}
+				onSubmit={async (data) => {
+					const res = await wikiApi.createTemplate(data)
+					if (!res.success) throw new Error(res.message || '创建失败')
+					loadTemplates()
 				}}
 			/>
 		</div>

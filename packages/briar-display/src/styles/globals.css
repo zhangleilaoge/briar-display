@@ -141,6 +141,28 @@
 		color: var(--wiki-link-hover);
 	}
 
+	/* Infobox table styling */
+	.wiki-infobox table {
+		border-collapse: collapse;
+		width: 100%;
+	}
+	.wiki-infobox th,
+	.wiki-infobox td {
+		padding: 0.25em 0.5em;
+		border-bottom: 1px solid var(--wiki-border-light);
+	}
+	.wiki-infobox tr:last-child th,
+	.wiki-infobox tr:last-child td {
+		border-bottom: none;
+	}
+	.wiki-infobox tr:nth-child(even) {
+		background-color: rgba(0, 0, 0, 0.02);
+	}
+	.wiki-infobox img {
+		max-width: 100%;
+		border-radius: 2px;
+	}
+
 
 	/* Route loader animation */
 	@keyframes wiki-route-slide {

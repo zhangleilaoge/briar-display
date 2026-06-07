@@ -5,18 +5,27 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { WikiButton as Button } from '@/components/wiki/common/ui/button'
 import { WikiInput as Input } from '@/components/wiki/common/ui/input'
 import { ToolbarButton, ToolbarSeparator } from '@/components/wiki/editor/EditorToolbar'
+import SlashMenu from '@/components/wiki/editor/SlashMenu'
+import { createSlashCommandExtension } from '@/components/wiki/editor/extensions/slashCommand'
 import { WikiLink } from '@/components/wiki/editor/extensions/wikiLink'
 import type { WikiSearchResult } from '@briar/shared'
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import Highlight from '@tiptap/extension-highlight'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
+import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
+import TaskItem from '@tiptap/extension-task-item'
+import TaskList from '@tiptap/extension-task-list'
 import Underline from '@tiptap/extension-underline'
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
+import { common, createLowlight } from 'lowlight'
 import {
 	Bold,
+	CheckSquare,
 	Code,
+	FileCode,
 	FileText,
 	Heading2,
 	Heading3,
@@ -27,14 +36,21 @@ import {
 	List,
 	ListOrdered,
 	Loader2,
+	Plus,
 	Quote,
 	Redo,
+	TableIcon,
+	Trash2,
 	Undo,
 	Upload,
 	X,
 } from 'lucide-react'
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { Markdown } from 'tiptap-markdown'
+
+import 'highlight.js/styles/github.css'
+
+const lowlight = createLowlight(common)
 
 export interface VisualEditorHandle {
 	getMarkdown: () => string
@@ -62,6 +78,22 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 	const [mentionResults, setMentionResults] = useState<WikiSearchResult[]>([])
 	const [mentionLoading, setMentionLoading] = useState(false)
 
+	// Template state
+	const [showTemplate, setShowTemplate] = useState(false)
+	const [templateQuery, setTemplateQuery] = useState('')
+	const [templateResults, setTemplateResults] = useState<
+		{ name: string; description: string | null }[]
+	>([])
+	const [templateLoading, setTemplateLoading] = useState(false)
+
+	// Table menu state
+	const [showTableMenu, setShowTableMenu] = useState(false)
+
+	// Slash menu state
+	const [showSlashMenu, setShowSlashMenu] = useState(false)
+	const [slashQuery, setSlashQuery] = useState('')
+	const [slashPosition, setSlashPosition] = useState({ top: 0, left: 0 })
+
 	/** 读取本地图片文件转为 base64 并插入编辑器 */
 	const handleImageFile = useCallback((file: File, view: import('prosemirror-view').EditorView) => {
 		const reader = new FileReader()
@@ -77,7 +109,9 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 
 	const editor = useEditor({
 		extensions: [
-			StarterKit,
+			StarterKit.configure({
+				codeBlock: false,
+			}),
 			Underline,
 			Highlight.configure({ multicolor: false }),
 			Link.configure({
@@ -89,12 +123,38 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 				HTMLAttributes: { class: 'max-w-full h-auto rounded-sm' },
 				allowBase64: true,
 			}),
+			Table.configure({
+				resizable: true,
+				HTMLAttributes: { class: 'border-collapse w-full' },
+			}),
+			TableHeader.configure({
+				HTMLAttributes: {
+					class:
+						'border border-wiki-border-light bg-wiki-bg-tertiary px-2 py-1 text-left font-medium',
+				},
+			}),
+			TableCell.configure({
+				HTMLAttributes: { class: 'border border-wiki-border-light px-2 py-1' },
+			}),
+			TableRow,
+			CodeBlockLowlight.configure({
+				lowlight,
+				HTMLAttributes: { class: 'rounded-sm bg-wiki-bg-secondary p-4 font-mono text-sm' },
+			}),
+			TaskList.configure({
+				HTMLAttributes: { class: 'not-prose' },
+			}),
+			TaskItem.configure({
+				nested: true,
+				HTMLAttributes: { class: 'flex items-start gap-2' },
+			}),
 			Placeholder.configure({ placeholder }),
 			Markdown.configure({
 				html: true,
 				transformPastedText: true,
 				transformCopiedText: true,
 			}),
+			createSlashCommandExtension([]),
 		],
 		content: initialContent,
 		editorProps: {
@@ -131,6 +191,25 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 			// @ts-expect-error tiptap-markdown storage type
 			const md = e.storage.markdown.getMarkdown()
 			onChange?.(md)
+
+			// Detect slash command at start of line
+			const { state } = e
+			const { $from } = state.selection
+			const text = $from.parent.textContent
+			const cursorPos = $from.parentOffset
+			const beforeCursor = text.slice(0, cursorPos)
+			const slashMatch = beforeCursor.match(/^\/(.*)$/)
+
+			if (slashMatch) {
+				// Get cursor coordinates for positioning
+				const coords = e.view.coordsAtPos($from.pos)
+				setSlashPosition({ top: coords.bottom + 4, left: coords.left })
+				setSlashQuery(slashMatch[1])
+				setShowSlashMenu(true)
+			} else {
+				setShowSlashMenu(false)
+				setSlashQuery('')
+			}
 		},
 	})
 
@@ -161,6 +240,8 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 			isCodeBlock: e.isActive('codeBlock'),
 			isBlockquote: e.isActive('blockquote'),
 			isLink: e.isActive('link'),
+			isTable: e.isActive('table'),
+			isTaskList: e.isActive('taskList'),
 			canUndo: e.can().undo(),
 			canRedo: e.can().redo(),
 		}),
@@ -239,6 +320,29 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 			setShowMention(false)
 			setMentionQuery('')
 			setMentionResults([])
+		},
+		[editor],
+	)
+
+	const searchTemplates = useCallback(async (q: string) => {
+		setTemplateLoading(true)
+		const res = await wikiApi.getTemplates(5, 0)
+		if (res.success && res.data) {
+			const items = res.data.items || []
+			setTemplateResults(
+				q.trim() ? items.filter((t) => t.name.toLowerCase().includes(q.toLowerCase())) : items,
+			)
+		}
+		setTemplateLoading(false)
+	}, [])
+
+	const insertTemplate = useCallback(
+		(templateName: string) => {
+			if (!editor) return
+			editor.chain().focus().insertContent(`{{${templateName}}}`).run()
+			setShowTemplate(false)
+			setTemplateQuery('')
+			setTemplateResults([])
 		},
 		[editor],
 	)
@@ -399,6 +503,73 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 						</div>
 					</PopoverContent>
 				</Popover>
+				<Popover open={showTemplate} onOpenChange={setShowTemplate}>
+					<PopoverTrigger asChild>
+						<div>
+							<ToolbarButton
+								icon={FileCode}
+								label="插入模板"
+								onClick={() => {
+									setShowTemplate(!showTemplate)
+									searchTemplates('')
+								}}
+							/>
+						</div>
+					</PopoverTrigger>
+					<PopoverContent className="w-72 p-0" align="start" sideOffset={4}>
+						<div className="p-2">
+							<div className="flex items-center gap-1">
+								<Input
+									value={templateQuery}
+									onChange={(e) => {
+										setTemplateQuery(e.target.value)
+										searchTemplates(e.target.value)
+									}}
+									placeholder="搜索模板..."
+									className="flex-1"
+								/>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8"
+									onClick={() => {
+										setShowTemplate(false)
+										setTemplateQuery('')
+									}}
+								>
+									<X className="h-3.5 w-3.5" />
+								</Button>
+							</div>
+						</div>
+						<div className="max-h-[200px] overflow-y-auto border-t border-wiki-border-light">
+							{templateLoading ? (
+								<div className="flex items-center gap-2 px-3 py-2 text-[12px] text-wiki-text-muted">
+									<Loader2 className="h-3 w-3 animate-spin" />
+									搜索中...
+								</div>
+							) : templateResults.length > 0 ? (
+								templateResults.map((t) => (
+									<button
+										key={t.name}
+										type="button"
+										onClick={() => insertTemplate(t.name)}
+										className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] transition-colors hover:bg-wiki-bg-tertiary"
+									>
+										<FileCode className="h-3.5 w-3.5 flex-shrink-0 text-wiki-text-muted" />
+										<div className="min-w-0 flex-1">
+											<span className="truncate text-wiki-link">{t.name}</span>
+											{t.description && (
+												<p className="truncate text-[11px] text-wiki-text-muted">{t.description}</p>
+											)}
+										</div>
+									</button>
+								))
+							) : (
+								<div className="px-3 py-2 text-[12px] text-wiki-text-muted">暂无模板</div>
+							)}
+						</div>
+					</PopoverContent>
+				</Popover>
 				<ToolbarButton
 					icon={Code}
 					label="代码块"
@@ -411,6 +582,105 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 					isActive={editorState.isBlockquote}
 					onClick={() => editor.chain().focus().toggleBlockquote().run()}
 				/>
+				<ToolbarButton
+					icon={CheckSquare}
+					label="任务列表"
+					isActive={editorState.isTaskList}
+					onClick={() => editor.chain().focus().toggleTaskList().run()}
+				/>
+				<Popover open={showTableMenu} onOpenChange={setShowTableMenu}>
+					<PopoverTrigger asChild>
+						<div>
+							<ToolbarButton
+								icon={TableIcon}
+								label="表格"
+								isActive={editorState.isTable}
+								onClick={() => setShowTableMenu(true)}
+							/>
+						</div>
+					</PopoverTrigger>
+					<PopoverContent className="w-56" align="start" sideOffset={4}>
+						<div className="space-y-2">
+							<p className="font-medium text-sm">表格</p>
+							{editorState.isTable ? (
+								<div className="space-y-1">
+									<button
+										type="button"
+										onClick={() => {
+											editor.chain().focus().addColumnAfter().run()
+											setShowTableMenu(false)
+										}}
+										className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] transition-colors hover:bg-wiki-bg-tertiary"
+									>
+										<Plus className="mr-1.5 inline h-3.5 w-3.5" />
+										添加右侧列
+									</button>
+									<button
+										type="button"
+										onClick={() => {
+											editor.chain().focus().addRowAfter().run()
+											setShowTableMenu(false)
+										}}
+										className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] transition-colors hover:bg-wiki-bg-tertiary"
+									>
+										<Plus className="mr-1.5 inline h-3.5 w-3.5" />
+										添加下方行
+									</button>
+									<button
+										type="button"
+										onClick={() => {
+											editor.chain().focus().deleteColumn().run()
+											setShowTableMenu(false)
+										}}
+										className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-red-600 transition-colors hover:bg-red-50"
+									>
+										<Trash2 className="mr-1.5 inline h-3.5 w-3.5" />
+										删除当前列
+									</button>
+									<button
+										type="button"
+										onClick={() => {
+											editor.chain().focus().deleteRow().run()
+											setShowTableMenu(false)
+										}}
+										className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-red-600 transition-colors hover:bg-red-50"
+									>
+										<Trash2 className="mr-1.5 inline h-3.5 w-3.5" />
+										删除当前行
+									</button>
+									<div className="my-1 h-px bg-wiki-border-light" />
+									<button
+										type="button"
+										onClick={() => {
+											editor.chain().focus().deleteTable().run()
+											setShowTableMenu(false)
+										}}
+										className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] text-red-600 transition-colors hover:bg-red-50"
+									>
+										<Trash2 className="mr-1.5 inline h-3.5 w-3.5" />
+										删除表格
+									</button>
+								</div>
+							) : (
+								<button
+									type="button"
+									onClick={() => {
+										editor
+											.chain()
+											.focus()
+											.insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+											.run()
+										setShowTableMenu(false)
+									}}
+									className="w-full rounded-sm px-2 py-1.5 text-left text-[13px] transition-colors hover:bg-wiki-bg-tertiary"
+								>
+									<TableIcon className="mr-1.5 inline h-3.5 w-3.5" />
+									插入 3×3 表格
+								</button>
+							)}
+						</div>
+					</PopoverContent>
+				</Popover>
 				<Popover open={showImageMenu} onOpenChange={setShowImageMenu}>
 					<PopoverTrigger asChild>
 						<div>
@@ -479,6 +749,35 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 			</div>
 
 			<EditorContent editor={editor} />
+
+			{showSlashMenu && (
+				<SlashMenu
+					editor={editor}
+					query={slashQuery}
+					position={slashPosition}
+					onClose={() => {
+						setShowSlashMenu(false)
+						setSlashQuery('')
+					}}
+					onAction={(type) => {
+						if (type === 'image') setShowImageMenu(true)
+						if (type === 'link') {
+							setLinkUrl('')
+							setShowLinkMenu(true)
+						}
+						if (type === 'mention') {
+							setMentionQuery('')
+							setShowMention(true)
+							searchPages('')
+						}
+						if (type === 'template') {
+							setTemplateQuery('')
+							setShowTemplate(true)
+							searchTemplates('')
+						}
+					}}
+				/>
+			)}
 		</div>
 	)
 })
