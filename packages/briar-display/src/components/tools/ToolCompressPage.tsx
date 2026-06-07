@@ -171,62 +171,55 @@ export default function ToolCompressPage() {
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-4">
-							<div className="grid gap-4 sm:grid-cols-3">
-								<div className="space-y-1.5">
-									<Label>输出格式</Label>
-									<div className="flex gap-2">
-										{(
-											[
-												['image/jpeg', 'JPEG'],
-												['image/webp', 'WebP'],
-												['image/png', 'PNG'],
-											] as [OutputFormat, string][]
-										).map(([val, label]) => (
-											<Button
-												key={val}
-												variant={format === val ? 'default' : 'outline'}
-												size="sm"
-												onClick={() => setFormat(val)}
-											>
-												{label}
-											</Button>
-										))}
-									</div>
+							<div className="space-y-1.5">
+								<Label>输出格式</Label>
+								<div className="flex gap-2">
+									{(
+										[
+											['image/jpeg', 'JPEG'],
+											['image/webp', 'WebP'],
+											['image/png', 'PNG'],
+										] as [OutputFormat, string][]
+									).map(([val, label]) => (
+										<Button
+											key={val}
+											variant={format === val ? 'default' : 'outline'}
+											size="sm"
+											onClick={() => setFormat(val)}
+										>
+											{label}
+										</Button>
+									))}
 								</div>
+							</div>
 
-								<div className="space-y-1.5">
-									<Label>
-										质量{' '}
-										<span className="text-muted-foreground">({Math.round(quality * 100)}%)</span>
-									</Label>
+							<div className="space-y-1.5">
+								<Label>
+									质量 <span className="text-muted-foreground">({Math.round(quality * 100)}%)</span>
+								</Label>
+								<div className="flex h-9 items-center">
 									<Slider
 										min={10}
 										max={100}
 										step={1}
 										value={[Math.round(quality * 100)]}
 										onValueChange={([v]) => setQuality(v / 100)}
-										className="w-full"
-										disabled={format === 'image/png'}
 									/>
 								</div>
-
-								<div className="space-y-1.5">
-									<Label>最大宽度</Label>
-									<div className="flex items-center gap-2">
-										<Input
-											type="number"
-											value={maxWidth || ''}
-											onChange={(e) => setMaxWidth(Number(e.target.value) || 0)}
-											placeholder="不限制"
-											className="w-28"
-										/>
-										<span className="text-sm text-muted-foreground">px</span>
-									</div>
-								</div>
 							</div>
-							{format === 'image/png' && (
-								<p className="text-xs text-muted-foreground">PNG 为无损格式，质量设置不生效。</p>
-							)}
+
+							<div className="flex items-end gap-2">
+								<div className="flex-1 space-y-1.5">
+									<Label>最大宽度</Label>
+									<Input
+										type="number"
+										value={maxWidth || ''}
+										onChange={(e) => setMaxWidth(Number(e.target.value) || 0)}
+										placeholder="不限制"
+									/>
+								</div>
+								<span className="pb-2.5 text-sm text-muted-foreground">px</span>
+							</div>
 						</div>
 					</CardContent>
 				</Card>
