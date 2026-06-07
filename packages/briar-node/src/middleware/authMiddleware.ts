@@ -20,22 +20,10 @@ export const authMiddleware: MiddlewareHandler = async (c, next) => {
 		)
 	}
 
+	let user: { id: string; name: string; email: string; createdAt: Date } | null = null
 	try {
 		const payload = authService.verifyToken(token)
-		const user = await authService.getUserById(payload.sub)
-		if (!user) {
-			return c.json<ApiResponse>(
-				{
-					success: false,
-					message: 'Unauthorized',
-					code: HTTP_STATUS.UNAUTHORIZED,
-				},
-				HTTP_STATUS.UNAUTHORIZED,
-			)
-		}
-
-		c.set('user', user)
-		await next()
+		user = await authService.getUserById(payload.sub)
 	} catch (error) {
 		return c.json<ApiResponse>(
 			{
@@ -46,4 +34,18 @@ export const authMiddleware: MiddlewareHandler = async (c, next) => {
 			HTTP_STATUS.UNAUTHORIZED,
 		)
 	}
+
+	if (!user) {
+		return c.json<ApiResponse>(
+			{
+				success: false,
+				message: 'Unauthorized',
+				code: HTTP_STATUS.UNAUTHORIZED,
+			},
+			HTTP_STATUS.UNAUTHORIZED,
+		)
+	}
+
+	c.set('user', user)
+	await next()
 }
