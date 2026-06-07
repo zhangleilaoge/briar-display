@@ -17,6 +17,21 @@
 
 set -e
 
+# --- 统一加载 .env 配置 ---
+load_env() {
+	# 1. 全局配置
+	GLOBAL_ENV="$HOME/.config/briar-skills/.env"
+	if [ -f "$GLOBAL_ENV" ]; then
+		set -a; source "$GLOBAL_ENV"; set +a
+	fi
+	# 2. 向后兼容：项目内 .env
+	PROJECT_ENV="$HOME/Documents/briar-display/.env"
+	if [ -f "$PROJECT_ENV" ]; then
+		set -a; source "$PROJECT_ENV"; set +a
+	fi
+}
+load_env
+
 # --- 智能参数解析 ---
 DOMAIN="gitlab.qima-inc.com"
 DAYS=30
