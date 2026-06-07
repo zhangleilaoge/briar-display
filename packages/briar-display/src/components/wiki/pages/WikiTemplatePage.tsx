@@ -1,11 +1,14 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
+import PermissionGuard from '@/components/wiki/common/PermissionGuard'
+import TemplateFormDialog from '@/components/wiki/common/TemplateFormDialog'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
+import { WikiButton as Button } from '@/components/wiki/common/ui/button'
 import { cn } from '@/lib/utils'
-import type { WikiTemplate } from '@briar/shared'
-import { Calendar, Check, Copy, FileCode, Loader2, User } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { PERMISSIONS, type WikiTemplate } from '@briar/shared'
+import { Calendar, Check, Copy, FileCode, Loader2, Pencil, Trash2, User } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 
 interface WikiTemplatePageProps {
 	slug: string
@@ -27,19 +30,36 @@ export default function WikiTemplatePage({ slug }: WikiTemplatePageProps) {
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const [copied, setCopied] = useState(false)
+	const [showEdit, setShowEdit] = useState(false)
+	const [deleting, setDeleting] = useState(false)
+
+	const fetchTemplate = useCallback(async () => {
+		const res = await wikiApi.getTemplate(slug)
+		if (res.success && res.data) {
+			setTemplate(res.data)
+		} else {
+			setError(res.message || '加载模板失败')
+		}
+		setLoading(false)
+	}, [slug])
 
 	useEffect(() => {
-		const fetchTemplate = async () => {
-			const res = await wikiApi.getTemplate(slug)
-			if (res.success && res.data) {
-				setTemplate(res.data)
-			} else {
-				setError(res.message || '加载模板失败')
-			}
-			setLoading(false)
-		}
 		fetchTemplate()
-	}, [slug])
+	}, [fetchTemplate])
+
+	const handleDelete = async () => {
+		if (!template) return
+		if (!window.confirm(`确定删除模板「${template.name}」吗？此操作不可撤销。`)) return
+		setDeleting(true)
+		const res = await wikiApi.deleteTemplate(slug)
+		if (res.success) {
+			window.history.pushState({}, '', '/briar-display/wiki/special/templates')
+			window.dispatchEvent(new PopStateEvent('popstate'))
+		} else {
+			alert(res.message || '删除失败')
+			setDeleting(false)
+		}
+	}
 
 	const handleCopy = () => {
 		if (!template) return
@@ -74,14 +94,40 @@ export default function WikiTemplatePage({ slug }: WikiTemplatePageProps) {
 		<div className="space-y-4">
 			<WikiBreadcrumbs items={[{ label: '模板' }, { label: template.name }]} />
 
-			<div>
-				<h2 className="flex items-center gap-2 font-serif text-xl font-normal text-foreground">
-					<FileCode className="h-5 w-5" />
-					模板: {template.name}
-				</h2>
-				{template.description && (
-					<p className="mt-1 text-muted-foreground text-sm">{template.description}</p>
-				)}
+			<div className="flex items-center justify-between">
+				<div>
+					<h2 className="flex items-center gap-2 font-serif text-xl font-normal text-foreground">
+						<FileCode className="h-5 w-5" />
+						模板: {template.name}
+					</h2>
+					{template.description && (
+						<p className="mt-1 text-muted-foreground text-sm">{template.description}</p>
+					)}
+				</div>
+				<div className="flex items-center gap-2">
+					<PermissionGuard permission={PERMISSIONS.WIKI_TEMPLATE_UPDATE}>
+						<Button size="sm" variant="outline" onClick={() => setShowEdit(true)}>
+							<Pencil className="mr-1 h-3.5 w-3.5" />
+							编辑
+						</Button>
+					</PermissionGuard>
+					<PermissionGuard permission={PERMISSIONS.WIKI_TEMPLATE_DELETE}>
+						<Button
+							size="sm"
+							variant="outline"
+							className="text-red-600 hover:bg-red-50 hover:text-red-700"
+							onClick={handleDelete}
+							disabled={deleting}
+						>
+							{deleting ? (
+								<Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+							) : (
+								<Trash2 className="mr-1 h-3.5 w-3.5" />
+							)}
+							删除
+						</Button>
+					</PermissionGuard>
+				</div>
 			</div>
 
 			{/* Meta info */}
@@ -151,6 +197,17 @@ export default function WikiTemplatePage({ slug }: WikiTemplatePageProps) {
 					即可嵌入此模板的内容。
 				</p>
 			</div>
+
+			<TemplateFormDialog
+				open={showEdit}
+				onClose={() => setShowEdit(false)}
+				initialData={template}
+				onSubmit={async (data) => {
+					const res = await wikiApi.updateTemplate(slug, data)
+					if (!res.success) throw new Error(res.message || '保存失败')
+					await fetchTemplate()
+				}}
+			/>
 		</div>
 	)
 }

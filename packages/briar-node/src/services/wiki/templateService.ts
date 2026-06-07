@@ -54,7 +54,12 @@ export const templateService = {
 	 * Get template by slug
 	 */
 	async getBySlug(slug: string) {
-		return templateDal.findBySlug(slug)
+		const template = await templateDal.findBySlug(slug)
+		if (template) {
+			// fire-and-forget usage tracking
+			templateDal.incrementUsageCount(template.id).catch(() => {})
+		}
+		return template
 	},
 
 	/**
