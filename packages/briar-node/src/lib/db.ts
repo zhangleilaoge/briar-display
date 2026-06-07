@@ -28,10 +28,17 @@ const cleanValues = (values?: any[]): any[] | undefined => {
 }
 
 /**
- * 执行查询
+ * 执行查询（使用 prepared statement）
+ * 注意：mysql2 的 execute 不支持 LIMIT/OFFSET 参数，这类查询会自动降级为 query
  */
 export const query = async <T = any>(sql: string, values?: any[]): Promise<T[]> => {
 	const pool = getPool()
+	// mysql2 execute 不支持 LIMIT/OFFSET 参数绑定，降级为普通 query
+	const useQuery = sql.match(/LIMIT\s*\?|OFFSET\s*\?/i)
+	if (useQuery) {
+		const [rows] = await pool.query(sql, cleanValues(values))
+		return rows as T[]
+	}
 	const [rows] = await pool.execute(sql, cleanValues(values))
 	return rows as T[]
 }
