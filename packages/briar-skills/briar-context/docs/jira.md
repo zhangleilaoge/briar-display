@@ -20,7 +20,7 @@
 在 `~/.config/briar-skills/.env` 中配置：
 
 ```bash
-JIRA_USERNAME="zhanglei_zl"
+JIRA_USERNAME="your_username_or_email"
 JIRA_PASSWORD="your_password"
 # 或者使用 API token（优先级更高）：
 # JIRA_API_TOKEN="your_api_token"
