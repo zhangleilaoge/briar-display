@@ -20,6 +20,15 @@ import WikiRecentChanges from './pages/WikiRecentChanges'
 import WikiSearchResults from './pages/WikiSearchResults'
 import WikiStarsList from './pages/WikiStarsList'
 import WikiStatistics from './pages/WikiStatistics'
+
+const decodeURIComponentSafe = (str: string): string => {
+	try {
+		return decodeURIComponent(str)
+	} catch {
+		return str
+	}
+}
+
 import WikiTagPage from './pages/WikiTagPage'
 import WikiTagsIndex from './pages/WikiTagsIndex'
 import WikiTalkPage from './pages/WikiTalkPage'
@@ -68,7 +77,7 @@ function matchRoute(pathname: string): RouteMatch | null {
 	const categoryMatch = relative.match(/^\/category\/(.+)$/)
 	if (categoryMatch) {
 		return {
-			page: <WikiCategoryPage slug={categoryMatch[1]} />,
+			page: <WikiCategoryPage slug={decodeURIComponentSafe(categoryMatch[1])} />,
 			title: '分类 - Briar Wiki',
 		}
 	}
@@ -77,7 +86,7 @@ function matchRoute(pathname: string): RouteMatch | null {
 	const tagMatch = relative.match(/^\/tag\/(.+)$/)
 	if (tagMatch) {
 		return {
-			page: <WikiTagPage slug={tagMatch[1]} />,
+			page: <WikiTagPage slug={decodeURIComponentSafe(tagMatch[1])} />,
 			title: '标签 - Briar Wiki',
 		}
 	}
@@ -86,7 +95,7 @@ function matchRoute(pathname: string): RouteMatch | null {
 	const templateMatch = relative.match(/^\/template\/(.+)$/)
 	if (templateMatch) {
 		return {
-			page: <WikiTemplatePage slug={templateMatch[1]} />,
+			page: <WikiTemplatePage slug={decodeURIComponentSafe(templateMatch[1])} />,
 			title: '模板 - Briar Wiki',
 		}
 	}
@@ -138,7 +147,7 @@ function matchRoute(pathname: string): RouteMatch | null {
 	// /wiki/:slug/talk → Talk
 	const slugParts = relative.split('/').filter(Boolean)
 	if (slugParts.length >= 1) {
-		const slug = slugParts[0]
+		const slug = decodeURIComponentSafe(slugParts[0])
 		const action = slugParts[1]
 
 		if (action === 'edit') {

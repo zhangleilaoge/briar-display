@@ -59,12 +59,16 @@ db-setup:
 	@echo "🗄️  初始化数据库..."
 	@bun run --filter @briar/node db:setup
 
-# 启动前端开发服务器
+# 启动全量开发服务（shared + display + node）
 dev:
-	bun run --filter @briar/display dev
+	bun dev
 
-# 启动后端开发服务
+# 启动后端开发服务（并确保 shared 已构建）
 dev-node:
+	@if [ ! -f "packages/briar-shared/dist/index.js" ]; then \
+		echo "📦 @briar/shared 未构建，先构建..."; \
+		bun run --filter @briar/shared build; \
+	fi
 	bun run --filter @briar/node dev
 
 # 启动 shared 包监听模式

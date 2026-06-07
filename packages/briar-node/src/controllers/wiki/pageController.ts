@@ -115,7 +115,7 @@ export const pageController = {
 			}
 
 			// Increment view count
-			await pageDal.incrementViewCount(page.id)
+			pageDal.incrementViewCount(page.id).catch(() => {})
 
 			return c.json<ApiResponse>({
 				success: true,
@@ -171,6 +171,9 @@ export const pageController = {
 			])
 
 			const childPages = subpagesResult.items.filter((p) => p.parentId === page.id)
+
+			// Increment view count
+			pageDal.incrementViewCount(page.id).catch(() => {})
 
 			return c.json<ApiResponse>({
 				success: true,

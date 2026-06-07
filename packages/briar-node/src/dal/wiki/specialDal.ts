@@ -113,7 +113,7 @@ export const specialDal = {
 					"SELECT COUNT(*) as cnt FROM wiki_pages WHERE status != 'deleted'",
 				),
 				queryOne<{ cnt: number }>(
-					"SELECT COUNT(*) as cnt FROM wiki_pages WHERE status = 'published' AND namespace = 'main'",
+					"SELECT COUNT(*) as cnt FROM wiki_pages WHERE status IN ('published', 'protected') AND namespace = 'main'",
 				),
 				queryOne<{ cnt: number }>('SELECT COUNT(*) as cnt FROM wiki_revisions'),
 				queryOne<{ cnt: number }>('SELECT COUNT(*) as cnt FROM wiki_categories'),
@@ -140,7 +140,7 @@ export const specialDal = {
 		limit = 50,
 		offset = 0,
 	): Promise<{ items: WikiPageListItem[]; total: number }> {
-		const conditions = ["status != 'deleted'"]
+		const conditions = ["status IN ('published', 'protected')", "visibility != 'private'"]
 		const values: any[] = []
 
 		if (namespace) {
@@ -148,7 +148,7 @@ export const specialDal = {
 			values.push(namespace)
 		}
 
-		const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+		const where = `WHERE ${conditions.join(' AND ')}`
 
 		const countRow = await queryOne<{ cnt: number }>(
 			`SELECT COUNT(*) as cnt FROM wiki_pages ${where}`,

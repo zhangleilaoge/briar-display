@@ -1,4 +1,5 @@
 'use client'
+import WikiLinkText from '@/components/wiki/common/WikiLinkText'
 
 import { wikiApi } from '@/api/wiki'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
@@ -174,7 +175,7 @@ export default function WikiTagPage({ slug }: WikiTagPageProps) {
 											{formatDate(page.updatedAt)}
 										</td>
 										<td className="hidden max-w-xs truncate px-4 py-2 text-muted-foreground md:table-cell">
-											{page.summary || '—'}
+											<WikiLinkText text={page.summary || '—'} />
 										</td>
 									</tr>
 								))}

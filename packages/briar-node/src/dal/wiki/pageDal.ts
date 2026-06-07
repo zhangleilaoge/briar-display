@@ -159,7 +159,7 @@ export const pageDal = {
 
 		// Try FULLTEXT search first
 		const countRow = await queryOne<{ cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM wiki_pages WHERE status != 'deleted' AND ${visibilityCondition} AND ${matchExpr}`,
+			`SELECT COUNT(*) as cnt FROM wiki_pages WHERE status IN ('published', 'protected') AND ${visibilityCondition} AND ${matchExpr}`,
 			userId ? [userId, queryStr] : [queryStr],
 		)
 		const fulltextTotal = countRow?.cnt || 0
@@ -168,7 +168,7 @@ export const pageDal = {
 			const items = await query<WikiPageRow>(
 				`SELECT ${SELECT_SUMMARY_FIELDS}, ${matchExpr} as relevance
 				FROM wiki_pages
-				WHERE status != 'deleted' AND ${visibilityCondition} AND ${matchExpr}
+				WHERE status IN ('published', 'protected') AND ${visibilityCondition} AND ${matchExpr}
 				ORDER BY relevance DESC
 				LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
 				userId ? [userId, queryStr, queryStr] : [queryStr, queryStr],
@@ -179,7 +179,7 @@ export const pageDal = {
 		// Fallback to LIKE for short queries / single chars that FULLTEXT misses
 		const likePattern = `%${queryStr}%`
 		const likeCountRow = await queryOne<{ cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM wiki_pages WHERE status != 'deleted' AND ${visibilityCondition} AND (title LIKE ? OR content LIKE ?)`,
+			`SELECT COUNT(*) as cnt FROM wiki_pages WHERE status IN ('published', 'protected') AND ${visibilityCondition} AND (title LIKE ? OR content LIKE ?)`,
 			userId ? [userId, likePattern, likePattern] : [likePattern, likePattern],
 		)
 		const likeTotal = likeCountRow?.cnt || 0
@@ -187,7 +187,7 @@ export const pageDal = {
 		const likeItems = await query<WikiPageRow>(
 			`SELECT ${SELECT_SUMMARY_FIELDS}
 			FROM wiki_pages
-			WHERE status != 'deleted' AND ${visibilityCondition} AND (title LIKE ? OR content LIKE ?)
+			WHERE status IN ('published', 'protected') AND ${visibilityCondition} AND (title LIKE ? OR content LIKE ?)
 			ORDER BY updated_at DESC
 			LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(offset)}`,
 			userId ? [userId, likePattern, likePattern] : [likePattern, likePattern],

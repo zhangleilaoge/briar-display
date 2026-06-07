@@ -2,6 +2,7 @@
 
 import { wikiApi } from '@/api/wiki'
 
+import WikiLinkText from '@/components/wiki/common/WikiLinkText'
 import { cn } from '@/lib/utils'
 import type {
 	WikiCategoryTreeNode,
@@ -104,7 +105,7 @@ export default function WikiHomePage() {
 											</h3>
 											{article.summary && (
 												<p className="mt-1 line-clamp-2 text-[13px] leading-[1.6] text-wiki-text-secondary">
-													{article.summary}
+													<WikiLinkText text={article.summary} />
 												</p>
 											)}
 											<div className="mt-1.5 flex items-center gap-3 text-[12px] text-wiki-text-muted">

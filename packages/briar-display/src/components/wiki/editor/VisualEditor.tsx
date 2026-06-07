@@ -217,14 +217,17 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 	)
 
 	const searchPages = useCallback(async (q: string) => {
-		if (!q.trim()) {
-			setMentionResults([])
-			return
-		}
 		setMentionLoading(true)
-		const res = await wikiApi.search(q, 8)
-		if (res.success && res.data) {
-			setMentionResults(res.data.items)
+		if (!q.trim()) {
+			const res = await wikiApi.allPages(8, 0)
+			if (res.success && res.data) {
+				setMentionResults(res.data.items)
+			}
+		} else {
+			const res = await wikiApi.search(q, 8)
+			if (res.success && res.data) {
+				setMentionResults(res.data.items)
+			}
 		}
 		setMentionLoading(false)
 	}, [])

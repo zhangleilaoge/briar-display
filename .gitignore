@@ -1,5 +1,6 @@
 # build output
 dist/
+packages/briar-display/web/
 
 # generated types
 .astro/
