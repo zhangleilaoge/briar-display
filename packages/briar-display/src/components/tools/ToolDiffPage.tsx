@@ -236,7 +236,7 @@ export default function ToolDiffPage() {
 							onDragOver={(e) => e.preventDefault()}
 							className="relative"
 						>
-							<div className="mb-1 flex items-center justify-between text-sm text-muted-foreground">
+							<div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
 								<span>原始文本</span>
 								<Button
 									variant="link"
@@ -261,7 +261,7 @@ export default function ToolDiffPage() {
 							onDragOver={(e) => e.preventDefault()}
 							className="relative"
 						>
-							<div className="mb-1 flex items-center justify-between text-sm text-muted-foreground">
+							<div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
 								<span>修改后文本</span>
 								<Button
 									variant="link"

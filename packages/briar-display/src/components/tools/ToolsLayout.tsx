@@ -36,12 +36,7 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 			<header className="sticky top-0 z-50 border-b bg-background">
 				<div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between px-6">
 					<div className="flex items-center gap-6">
-						<a
-							href="/briar-display/"
-							className="text-sm font-semibold text-foreground hover:text-primary"
-						>
-							Briar
-						</a>
+						<span className="text-sm font-semibold text-foreground">工具箱</span>
 						<nav className="flex items-center gap-1">
 							{NAV_ITEMS.map((item) => {
 								const isActive = currentPath === item.href
@@ -60,9 +55,6 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 							})}
 						</nav>
 					</div>
-					<a href="/briar-display/" className="text-xs text-muted-foreground hover:text-foreground">
-						← 门户
-					</a>
 				</div>
 			</header>
 
