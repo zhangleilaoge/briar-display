@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "briar-monorepo",
+      "dependencies": {
+        "upng-js": "^2.1.0",
+      },
       "devDependencies": {
         "@astrojs/node": "^10.1.3",
         "@biomejs/biome": "1.9.4",

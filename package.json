@@ -32,5 +32,8 @@
 		"babel-plugin-react-dev-locator": "^1.0.6",
 		"concurrently": "^8.2.2",
 		"lefthook": "^1.10.0"
+	},
+	"dependencies": {
+		"upng-js": "^2.1.0"
 	}
 }
