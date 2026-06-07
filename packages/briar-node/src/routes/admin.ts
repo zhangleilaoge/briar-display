@@ -319,6 +319,7 @@ adminRoutes.get('/logs', requirePermission(PERMISSIONS.ADMIN_ROLE_MANAGE), async
 		statusMax: q.statusMax ? Number(q.statusMax) : statusMax,
 		traceId: q.traceId || undefined,
 		userId: q.userId || undefined,
+		keyword: q.keyword || undefined,
 		startTime: q.startTime || undefined,
 		endTime: q.endTime || undefined,
 		limit: q.limit ? Number(q.limit) : 50,

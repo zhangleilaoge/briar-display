@@ -32,6 +32,8 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 
 **代码规范**：Biome（见 `biome.json`）+ Lefthook（pre-commit: check + typecheck）。Tab 缩进、单引号、尾逗号、分号按需。
 
+**UI 组件**：优先使用 shadcn/ui 组件（`@/components/ui/`），不要用原生 HTML 元素（`<select>`、`<input>`、`<dialog>` 等）。Radix Select、Input、Button、Dialog 等已配好样式和 wiki 主题适配。
+
 ## 重要文件路径
 
 | 文件 | 作用 |

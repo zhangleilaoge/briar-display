@@ -127,6 +127,7 @@ export const logDal = {
 			statusMax?: number
 			traceId?: string
 			userId?: string
+			keyword?: string
 			startTime?: string
 			endTime?: string
 			limit?: number
@@ -157,8 +158,15 @@ export const logDal = {
 			values.push(filters.traceId)
 		}
 		if (filters.userId) {
-			conditions.push('user_id = ?')
-			values.push(filters.userId)
+			conditions.push('user_id LIKE ?')
+			values.push(`%${filters.userId}%`)
+		}
+		if (filters.keyword) {
+			conditions.push(
+				'(path LIKE ? OR error_message LIKE ? OR request_params LIKE ? OR trace_id LIKE ?)',
+			)
+			const kw = `%${filters.keyword}%`
+			values.push(kw, kw, kw, kw)
 		}
 		if (filters.startTime) {
 			conditions.push('created_at >= ?')

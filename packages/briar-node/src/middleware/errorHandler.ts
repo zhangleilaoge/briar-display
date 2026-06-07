@@ -1,6 +1,7 @@
 import { type ApiResponse, HTTP_STATUS } from '@briar/shared'
 import type { Context, MiddlewareHandler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
+import { logDal } from '../dal/logDal'
 
 /**
  * 全局错误处理中间件
@@ -11,7 +12,26 @@ export const errorHandler = (): MiddlewareHandler => {
 		try {
 			await next()
 		} catch (error) {
-			console.error('🔴 Unhandled error:', error)
+			const traceId = c.get('traceId') as string | undefined
+			const errorMsg = error instanceof Error ? error.message : String(error)
+			console.error(`🔴 Unhandled error [${traceId || 'no-trace'}]:`, error)
+
+			// 写入数据库
+			if (traceId) {
+				logDal
+					.create({
+						traceId,
+						method: c.req.method,
+						path: c.req.path,
+						status: error instanceof HTTPException ? error.status : 500,
+						duration: 0,
+						ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || undefined,
+						userAgent: c.req.header('user-agent') || undefined,
+						userId: (c.get('user') as { id: string } | undefined)?.id,
+						errorMessage: errorMsg,
+					})
+					.catch(() => {})
+			}
 
 			// 处理 Hono HTTPException
 			if (error instanceof HTTPException) {
