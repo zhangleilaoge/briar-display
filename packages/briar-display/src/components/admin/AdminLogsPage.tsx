@@ -5,6 +5,7 @@ import AdminLayout from '@/components/admin/AdminLayout'
 import AdminPagination from '@/components/admin/AdminPagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DateRangePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import {
 	Select,
@@ -24,7 +25,6 @@ import {
 	Copy,
 	Loader2,
 	Radio,
-	RefreshCw,
 	Search,
 	Timer,
 	Zap,
@@ -69,12 +69,6 @@ function formatFullTime(date: string | Date) {
 	return d.toLocaleString('zh-CN', { hour12: false })
 }
 
-function getDefaultStartTime(): string {
-	const d = new Date()
-	d.setHours(d.getHours() - 24)
-	return d.toISOString().slice(0, 16)
-}
-
 export default function AdminLogsPage() {
 	return (
 		<PermissionProvider>
@@ -98,8 +92,12 @@ function AdminLogsPageInner() {
 	const [statusGroup, setStatusGroup] = useState('all')
 	const [keyword, setKeyword] = useState('')
 	const [userId, setUserId] = useState('')
-	const [startTime, setStartTime] = useState(getDefaultStartTime())
-	const [endTime, setEndTime] = useState('')
+	const [startDate, setStartDate] = useState<Date | undefined>(() => {
+		const d = new Date()
+		d.setDate(d.getDate() - 1)
+		return d
+	})
+	const [endDate, setEndDate] = useState<Date | undefined>()
 
 	// Stats
 	const [stats, setStats] = useState({
@@ -116,8 +114,8 @@ function AdminLogsPageInner() {
 			traceId: traceId || undefined,
 			keyword: keyword || undefined,
 			userId: userId || undefined,
-			startTime: startTime ? new Date(startTime).toISOString() : undefined,
-			endTime: endTime ? new Date(endTime).toISOString() : undefined,
+			startTime: startDate?.toISOString(),
+			endTime: endDate?.toISOString(),
 			limit: PAGE_SIZE,
 			offset,
 		})
@@ -126,7 +124,7 @@ function AdminLogsPageInner() {
 			setTotal(res.data.total)
 		}
 		setLoading(false)
-	}, [method, statusGroup, traceId, keyword, userId, startTime, endTime, offset])
+	}, [method, statusGroup, traceId, keyword, userId, startDate, endDate, offset])
 
 	const fetchStats = useCallback(async () => {
 		const res = await getLogStats()
@@ -138,7 +136,7 @@ function AdminLogsPageInner() {
 		setOffset(0)
 		fetchLogs()
 		fetchStats()
-	}, [method, statusGroup, traceId, keyword, userId, startTime, endTime])
+	}, [method, statusGroup, traceId, keyword, userId, startDate, endDate])
 
 	useEffect(() => {
 		fetchLogs()
@@ -291,51 +289,108 @@ function AdminLogsPageInner() {
 						</Select>
 					</div>
 					<div /> {/* empty cell for alignment */}
-					{/* Row 3: Time range */}
-					<div className="flex items-center gap-2">
+					{/* Row 3: Time range — full width */}
+					<div className="col-span-full flex items-center gap-2">
 						<label className="w-16 shrink-0 text-right text-[12px] text-muted-foreground">
-							开始时间
+							时间
 						</label>
-						<Input
-							type="datetime-local"
-							value={startTime}
-							onChange={(e) => setStartTime(e.target.value)}
-							className="h-8 flex-1 text-xs"
+						<DateRangePicker
+							start={startDate}
+							end={endDate}
+							onStartChange={setStartDate}
+							onEndChange={setEndDate}
+							className="flex-1"
 						/>
-					</div>
-					<div className="flex items-center gap-2">
-						<label className="w-16 shrink-0 text-right text-[12px] text-muted-foreground">
-							结束时间
-						</label>
-						<Input
-							type="datetime-local"
-							value={endTime}
-							onChange={(e) => setEndTime(e.target.value)}
-							className="h-8 flex-1 text-xs"
-						/>
-					</div>
-					<div className="flex items-center gap-2">
-						<Button variant="outline" size="sm" onClick={handleSearch} className="h-8 gap-1">
-							<Search className="h-3.5 w-3.5" />
-							查询
-						</Button>
 						<Button
-							variant="ghost"
+							variant="outline"
 							size="sm"
 							onClick={() => {
-								setTraceId('')
-								setMethod('all')
-								setStatusGroup('all')
-								setKeyword('')
-								setUserId('')
-								setStartTime(getDefaultStartTime())
-								setEndTime('')
+								const d = new Date()
+								d.setHours(d.getHours() - 1)
+								setStartDate(d)
+								setEndDate(undefined)
 							}}
 							className="h-8 text-xs"
 						>
-							重置
+							1h
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => {
+								const d = new Date()
+								d.setHours(d.getHours() - 6)
+								setStartDate(d)
+								setEndDate(undefined)
+							}}
+							className="h-8 text-xs"
+						>
+							6h
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => {
+								const d = new Date()
+								d.setDate(d.getDate() - 1)
+								setStartDate(d)
+								setEndDate(undefined)
+							}}
+							className="h-8 text-xs"
+						>
+							1d
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => {
+								const d = new Date()
+								d.setDate(d.getDate() - 7)
+								setStartDate(d)
+								setEndDate(undefined)
+							}}
+							className="h-8 text-xs"
+						>
+							7d
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => {
+								setStartDate(undefined)
+								setEndDate(undefined)
+							}}
+							className="h-8 text-xs"
+						>
+							全部
 						</Button>
 					</div>
+				</div>
+
+				{/* Action buttons — separate row */}
+				<div className="mt-3 flex items-center justify-end gap-2">
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => {
+							setTraceId('')
+							setMethod('all')
+							setStatusGroup('all')
+							setKeyword('')
+							setUserId('')
+							const d = new Date()
+							d.setDate(d.getDate() - 1)
+							setStartDate(d)
+							setEndDate(undefined)
+						}}
+						className="h-8"
+					>
+						重置
+					</Button>
+					<Button size="sm" onClick={handleSearch} className="h-8 gap-1">
+						<Search className="h-3.5 w-3.5" />
+						查询
+					</Button>
 				</div>
 			</div>
 
