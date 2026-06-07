@@ -113,6 +113,8 @@ Astro 页面位于 `packages/briar-display/src/pages/briar-display/`，生产环
 - `/briar-display/admin/users` — 用户角色分配
 - `/briar-display/tools/diff` — 在线文件 Diff
 - `/briar-display/tools/compress` — 在线图片压缩
+- `/briar-display/images/upload` — 图床上传
+- `/briar-display/images/gallery` — 图床相册
 - `/briar-display/wiki/...` — Wiki SPA（详见 `packages/briar-display/src/components/wiki/AGENTS.md`）
 
 ### 后端路由

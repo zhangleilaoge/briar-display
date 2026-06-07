@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { Download, ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
+import UPNG from 'upng-js'
 import ToolsLayout from './ToolsLayout'
 
 type OutputFormat = 'image/jpeg' | 'image/webp' | 'image/png'
@@ -32,12 +33,6 @@ function formatSize(bytes: number): string {
 	return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
 }
 
-function getFormatLabel(mime: string): string {
-	if (mime === 'image/jpeg') return 'JPEG'
-	if (mime === 'image/webp') return 'WebP'
-	return 'PNG'
-}
-
 function getExt(mime: string): string {
 	if (mime === 'image/jpeg') return '.jpg'
 	if (mime === 'image/webp') return '.webp'
@@ -49,6 +44,7 @@ async function compressImage(
 	format: OutputFormat,
 	quality: number,
 	maxWidth: number,
+	pngColors: number,
 ): Promise<Omit<CompressResult, 'id'>> {
 	return new Promise((resolve, reject) => {
 		const img = new Image()
@@ -56,7 +52,6 @@ async function compressImage(
 			let { width, height } = img
 			const originalUrl = URL.createObjectURL(file)
 
-			// Scale down if maxWidth is set
 			if (maxWidth > 0 && width > maxWidth) {
 				const ratio = maxWidth / width
 				width = maxWidth
@@ -69,28 +64,48 @@ async function compressImage(
 			const ctx = canvas.getContext('2d')!
 			ctx.drawImage(img, 0, 0, width, height)
 
-			canvas.toBlob(
-				(blob) => {
-					if (!blob) {
-						reject(new Error('压缩失败'))
-						return
-					}
-					resolve({
-						name: file.name,
-						originalSize: file.size,
-						originalUrl,
-						compressedSize: blob.size,
-						compressedUrl: URL.createObjectURL(blob),
-						compressedBlob: blob,
-						width: img.width,
-						height: img.height,
-						newWidth: width,
-						newHeight: height,
-					})
-				},
-				format,
-				quality,
-			)
+			if (format === 'image/png') {
+				// UPNG 量化压缩 — 类似 TinyPNG 的色盘缩减
+				const imageData = ctx.getImageData(0, 0, width, height)
+				const pngBuf = UPNG.encode([imageData.data.buffer], width, height, pngColors)
+				const blob = new Blob([pngBuf], { type: 'image/png' })
+				resolve({
+					name: file.name,
+					originalSize: file.size,
+					originalUrl,
+					compressedSize: blob.size,
+					compressedUrl: URL.createObjectURL(blob),
+					compressedBlob: blob,
+					width: img.width,
+					height: img.height,
+					newWidth: width,
+					newHeight: height,
+				})
+			} else {
+				// JPEG/WebP 用 Canvas 质量控制
+				canvas.toBlob(
+					(blob) => {
+						if (!blob) {
+							reject(new Error('压缩失败'))
+							return
+						}
+						resolve({
+							name: file.name,
+							originalSize: file.size,
+							originalUrl,
+							compressedSize: blob.size,
+							compressedUrl: URL.createObjectURL(blob),
+							compressedBlob: blob,
+							width: img.width,
+							height: img.height,
+							newWidth: width,
+							newHeight: height,
+						})
+					},
+					format,
+					quality,
+				)
+			}
 		}
 		img.onerror = () => reject(new Error('图片加载失败'))
 		img.src = URL.createObjectURL(file)
@@ -100,6 +115,7 @@ async function compressImage(
 export default function ToolCompressPage() {
 	const [format, setFormat] = useState<OutputFormat>('image/jpeg')
 	const [quality, setQuality] = useState(0.8)
+	const [pngColors, setPngColors] = useState(256)
 	const [maxWidth, setMaxWidth] = useState(0)
 	const [results, setResults] = useState<CompressResult[]>([])
 	const [compressing, setCompressing] = useState(false)
@@ -116,7 +132,7 @@ export default function ToolCompressPage() {
 				const newResults: CompressResult[] = []
 				for (const file of imageFiles) {
 					try {
-						const result = await compressImage(file, format, quality, maxWidth)
+						const result = await compressImage(file, format, quality, maxWidth, pngColors)
 						newResults.push({ ...result, id: `${Date.now()}-${Math.random()}` })
 					} catch (err) {
 						console.error(`压缩 ${file.name} 失败:`, err)
@@ -127,7 +143,7 @@ export default function ToolCompressPage() {
 				setCompressing(false)
 			}
 		},
-		[format, quality, maxWidth],
+		[format, quality, maxWidth, pngColors],
 	)
 
 	const handleDrop = useCallback(
@@ -157,6 +173,8 @@ export default function ToolCompressPage() {
 			return prev.filter((p) => p.id !== id)
 		})
 	}
+
+	const isPng = format === 'image/png'
 
 	return (
 		<ToolsLayout currentPath="/briar-display/tools/compress" title="图片压缩">
@@ -193,20 +211,41 @@ export default function ToolCompressPage() {
 								</div>
 							</div>
 
-							<div className="space-y-1.5">
-								<Label>
-									质量 <span className="text-muted-foreground">({Math.round(quality * 100)}%)</span>
-								</Label>
-								<div className="flex h-9 items-center">
-									<Slider
-										min={10}
-										max={100}
-										step={1}
-										value={[Math.round(quality * 100)]}
-										onValueChange={([v]) => setQuality(v / 100)}
-									/>
+							{isPng ? (
+								<div className="space-y-1.5">
+									<Label>
+										颜色数量 <span className="text-muted-foreground">({pngColors})</span>
+									</Label>
+									<div className="flex h-9 items-center">
+										<Slider
+											min={8}
+											max={256}
+											step={8}
+											value={[pngColors]}
+											onValueChange={([v]) => setPngColors(v)}
+										/>
+									</div>
+									<p className="text-xs text-muted-foreground">
+										越少体积越小，256 接近原图，64 适合图标/截图
+									</p>
 								</div>
-							</div>
+							) : (
+								<div className="space-y-1.5">
+									<Label>
+										质量{' '}
+										<span className="text-muted-foreground">({Math.round(quality * 100)}%)</span>
+									</Label>
+									<div className="flex h-9 items-center">
+										<Slider
+											min={10}
+											max={100}
+											step={1}
+											value={[Math.round(quality * 100)]}
+											onValueChange={([v]) => setQuality(v / 100)}
+										/>
+									</div>
+								</div>
+							)}
 
 							<div className="flex items-end gap-2">
 								<div className="flex-1 space-y-1.5">
@@ -279,14 +318,12 @@ export default function ToolCompressPage() {
 							return (
 								<Card key={r.id}>
 									<CardContent className="flex items-center gap-4 py-4">
-										{/* 缩略图 */}
 										<img
 											src={r.compressedUrl}
 											alt={r.name}
 											className="h-16 w-16 rounded border object-contain"
 										/>
 
-										{/* 信息 */}
 										<div className="min-w-0 flex-1">
 											<p className="truncate text-sm font-medium">{r.name}</p>
 											<p className="text-xs text-muted-foreground">
@@ -300,14 +337,12 @@ export default function ToolCompressPage() {
 											</p>
 										</div>
 
-										{/* 大小对比 */}
 										<div className="flex items-center gap-3 text-sm">
 											<span className="text-muted-foreground">{formatSize(r.originalSize)}</span>
 											<span className="text-muted-foreground">→</span>
 											<span className="font-medium">{formatSize(r.compressedSize)}</span>
 										</div>
 
-										{/* 压缩率 */}
 										<Badge
 											variant="outline"
 											className={
@@ -317,7 +352,6 @@ export default function ToolCompressPage() {
 											{isBigger ? `+${Math.abs(ratio)}%` : `-${ratio}%`}
 										</Badge>
 
-										{/* 操作 */}
 										<div className="flex items-center gap-1">
 											<Button
 												variant="outline"
