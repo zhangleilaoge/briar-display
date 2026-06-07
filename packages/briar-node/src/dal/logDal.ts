@@ -41,7 +41,11 @@ const mapRow = (row: RequestLogRow): RequestLogRecord => ({
 	ip: row.ip,
 	userAgent: row.user_agent,
 	userId: row.user_id,
-	requestParams: row.request_params ? JSON.parse(row.request_params) : null,
+	requestParams: row.request_params
+		? typeof row.request_params === 'string'
+			? JSON.parse(row.request_params)
+			: row.request_params
+		: null,
 	errorMessage: row.error_message,
 	createdAt: row.created_at,
 })
