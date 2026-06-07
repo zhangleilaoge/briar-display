@@ -45,12 +45,18 @@ import {
 	Upload,
 	X,
 } from 'lucide-react'
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import {
+	forwardRef,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useMemo,
+	useRef,
+	useState,
+} from 'react'
 import { Markdown } from 'tiptap-markdown'
 
 import 'highlight.js/styles/github.css'
-
-const lowlight = createLowlight(common)
 
 export interface VisualEditorHandle {
 	getMarkdown: () => string
@@ -71,6 +77,7 @@ const VisualEditor = forwardRef<VisualEditorHandle, VisualEditorProps>(function 
 	const [showImageMenu, setShowImageMenu] = useState(false)
 	const [imageUrl, setImageUrl] = useState('')
 	const fileInputRef = useRef<HTMLInputElement>(null)
+	const lowlight = useMemo(() => createLowlight(common), [])
 
 	// Mention state
 	const [showMention, setShowMention] = useState(false)
