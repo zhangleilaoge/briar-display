@@ -6,6 +6,13 @@ import AdminPagination from '@/components/admin/AdminPagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import {
@@ -14,7 +21,6 @@ import {
 	Check,
 	ChevronDown,
 	ChevronRight,
-	Clock,
 	Copy,
 	Loader2,
 	Radio,
@@ -23,7 +29,7 @@ import {
 	Timer,
 	Zap,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 const PAGE_SIZE = 50
 
@@ -63,20 +69,10 @@ function formatFullTime(date: string | Date) {
 	return d.toLocaleString('zh-CN', { hour12: false })
 }
 
-function timeRangeToISO(range: string): string | undefined {
-	const now = new Date()
-	switch (range) {
-		case '1h':
-			return new Date(now.getTime() - 3600000).toISOString()
-		case '6h':
-			return new Date(now.getTime() - 21600000).toISOString()
-		case '24h':
-			return new Date(now.getTime() - 86400000).toISOString()
-		case '7d':
-			return new Date(now.getTime() - 604800000).toISOString()
-		default:
-			return undefined
-	}
+function getDefaultStartTime(): string {
+	const d = new Date()
+	d.setHours(d.getHours() - 24)
+	return d.toISOString().slice(0, 16)
 }
 
 export default function AdminLogsPage() {
@@ -98,11 +94,12 @@ function AdminLogsPageInner() {
 
 	// Filters
 	const [traceId, setTraceId] = useState('')
-	const [method, setMethod] = useState('')
-	const [statusGroup, setStatusGroup] = useState('')
-	const [pathSearch, setPathSearch] = useState('')
-	const [timeRange, setTimeRange] = useState('24h')
-	const [autoRefresh, setAutoRefresh] = useState(false)
+	const [method, setMethod] = useState('all')
+	const [statusGroup, setStatusGroup] = useState('all')
+	const [keyword, setKeyword] = useState('')
+	const [userId, setUserId] = useState('')
+	const [startTime, setStartTime] = useState(getDefaultStartTime())
+	const [endTime, setEndTime] = useState('')
 
 	// Stats
 	const [stats, setStats] = useState({
@@ -112,15 +109,15 @@ function AdminLogsPageInner() {
 		slowCount: 0,
 	})
 
-	const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null)
-
 	const fetchLogs = useCallback(async () => {
 		const res = await getLogs({
-			method: method || undefined,
-			path: pathSearch || undefined,
-			statusGroup: statusGroup || undefined,
+			method: method !== 'all' ? method : undefined,
+			statusGroup: statusGroup !== 'all' ? statusGroup : undefined,
 			traceId: traceId || undefined,
-			startTime: timeRangeToISO(timeRange),
+			keyword: keyword || undefined,
+			userId: userId || undefined,
+			startTime: startTime ? new Date(startTime).toISOString() : undefined,
+			endTime: endTime ? new Date(endTime).toISOString() : undefined,
 			limit: PAGE_SIZE,
 			offset,
 		})
@@ -129,7 +126,7 @@ function AdminLogsPageInner() {
 			setTotal(res.data.total)
 		}
 		setLoading(false)
-	}, [method, pathSearch, statusGroup, traceId, timeRange, offset])
+	}, [method, statusGroup, traceId, keyword, userId, startTime, endTime, offset])
 
 	const fetchStats = useCallback(async () => {
 		const res = await getLogStats()
@@ -141,28 +138,23 @@ function AdminLogsPageInner() {
 		setOffset(0)
 		fetchLogs()
 		fetchStats()
-	}, [method, pathSearch, statusGroup, traceId, timeRange])
+	}, [method, statusGroup, traceId, keyword, userId, startTime, endTime])
 
 	useEffect(() => {
 		fetchLogs()
 	}, [offset])
 
-	useEffect(() => {
-		if (autoRefresh) {
-			refreshTimer.current = setInterval(() => {
-				fetchLogs()
-				fetchStats()
-			}, 5000)
-		}
-		return () => {
-			if (refreshTimer.current) clearInterval(refreshTimer.current)
-		}
-	}, [autoRefresh, fetchLogs, fetchStats])
-
 	const handleCopyTraceId = (tid: string) => {
 		navigator.clipboard.writeText(tid)
 		setCopiedTraceId(tid)
 		setTimeout(() => setCopiedTraceId(null), 2000)
+	}
+
+	const handleSearch = () => {
+		setLoading(true)
+		setOffset(0)
+		fetchLogs()
+		fetchStats()
 	}
 
 	if (permLoading) {
@@ -228,88 +220,122 @@ function AdminLogsPageInner() {
 			</div>
 
 			{/* Filters */}
-			<div className="mb-4 flex flex-wrap items-end gap-2 rounded-md border bg-card p-3">
-				<div className="flex flex-col gap-1">
-					<label className="text-[11px] text-muted-foreground">Trace ID</label>
-					<Input
-						value={traceId}
-						onChange={(e) => setTraceId(e.target.value)}
-						placeholder="粘贴 trace-id..."
-						className="h-8 w-48 text-xs"
-					/>
-				</div>
-				<div className="flex flex-col gap-1">
-					<label className="text-[11px] text-muted-foreground">方法</label>
-					<select
-						value={method}
-						onChange={(e) => setMethod(e.target.value)}
-						className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-					>
-						<option value="">全部</option>
-						<option value="GET">GET</option>
-						<option value="POST">POST</option>
-						<option value="PUT">PUT</option>
-						<option value="DELETE">DELETE</option>
-					</select>
-				</div>
-				<div className="flex flex-col gap-1">
-					<label className="text-[11px] text-muted-foreground">状态</label>
-					<select
-						value={statusGroup}
-						onChange={(e) => setStatusGroup(e.target.value)}
-						className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-					>
-						<option value="">全部</option>
-						<option value="2xx">2xx 成功</option>
-						<option value="4xx">4xx 客户端错误</option>
-						<option value="5xx">5xx 服务端错误</option>
-					</select>
-				</div>
-				<div className="flex flex-col gap-1">
-					<label className="text-[11px] text-muted-foreground">时间范围</label>
-					<select
-						value={timeRange}
-						onChange={(e) => setTimeRange(e.target.value)}
-						className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-					>
-						<option value="1h">最近 1 小时</option>
-						<option value="6h">最近 6 小时</option>
-						<option value="24h">最近 24 小时</option>
-						<option value="7d">最近 7 天</option>
-						<option value="">全部</option>
-					</select>
-				</div>
-				<div className="flex flex-col gap-1">
-					<label className="text-[11px] text-muted-foreground">路径</label>
-					<Input
-						value={pathSearch}
-						onChange={(e) => setPathSearch(e.target.value)}
-						placeholder="搜索路径..."
-						className="h-8 w-40 text-xs"
-					/>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button
-						variant={autoRefresh ? 'default' : 'outline'}
-						size="sm"
-						onClick={() => setAutoRefresh(!autoRefresh)}
-						className="h-8 gap-1"
-					>
-						<RefreshCw className={`h-3.5 w-3.5 ${autoRefresh ? 'animate-spin' : ''}`} />
-						{autoRefresh ? '自动刷新中' : '自动刷新'}
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => {
-							fetchLogs()
-							fetchStats()
-						}}
-						className="h-8 gap-1"
-					>
-						<Search className="h-3.5 w-3.5" />
-						查询
-					</Button>
+			<div className="mb-4 rounded-md border bg-card p-4">
+				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+					{/* Row 1 */}
+					<div className="flex items-center gap-2">
+						<label className="w-16 shrink-0 text-right text-[12px] text-muted-foreground">
+							Trace ID
+						</label>
+						<Input
+							value={traceId}
+							onChange={(e) => setTraceId(e.target.value)}
+							placeholder="粘贴 trace-id..."
+							className="h-8 flex-1 text-xs"
+						/>
+					</div>
+					<div className="flex items-center gap-2">
+						<label className="w-16 shrink-0 text-right text-[12px] text-muted-foreground">
+							关键词
+						</label>
+						<Input
+							value={keyword}
+							onChange={(e) => setKeyword(e.target.value)}
+							placeholder="路径/参数/错误..."
+							className="h-8 flex-1 text-xs"
+						/>
+					</div>
+					<div className="flex items-center gap-2">
+						<label className="w-16 shrink-0 text-right text-[12px] text-muted-foreground">
+							用户 ID
+						</label>
+						<Input
+							value={userId}
+							onChange={(e) => setUserId(e.target.value)}
+							placeholder="用户 ID..."
+							className="h-8 flex-1 text-xs"
+						/>
+					</div>
+					{/* Row 2 */}
+					<div className="flex items-center gap-2">
+						<label className="w-16 shrink-0 text-right text-[12px] text-muted-foreground">
+							方法
+						</label>
+						<Select value={method} onValueChange={setMethod}>
+							<SelectTrigger className="h-8 flex-1 text-xs">
+								<SelectValue placeholder="全部" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">全部</SelectItem>
+								<SelectItem value="GET">GET</SelectItem>
+								<SelectItem value="POST">POST</SelectItem>
+								<SelectItem value="PUT">PUT</SelectItem>
+								<SelectItem value="DELETE">DELETE</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+					<div className="flex items-center gap-2">
+						<label className="w-16 shrink-0 text-right text-[12px] text-muted-foreground">
+							状态
+						</label>
+						<Select value={statusGroup} onValueChange={setStatusGroup}>
+							<SelectTrigger className="h-8 flex-1 text-xs">
+								<SelectValue placeholder="全部" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">全部</SelectItem>
+								<SelectItem value="2xx">2xx 成功</SelectItem>
+								<SelectItem value="4xx">4xx 客户端错误</SelectItem>
+								<SelectItem value="5xx">5xx 服务端错误</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+					<div /> {/* empty cell for alignment */}
+					{/* Row 3: Time range */}
+					<div className="flex items-center gap-2">
+						<label className="w-16 shrink-0 text-right text-[12px] text-muted-foreground">
+							开始时间
+						</label>
+						<Input
+							type="datetime-local"
+							value={startTime}
+							onChange={(e) => setStartTime(e.target.value)}
+							className="h-8 flex-1 text-xs"
+						/>
+					</div>
+					<div className="flex items-center gap-2">
+						<label className="w-16 shrink-0 text-right text-[12px] text-muted-foreground">
+							结束时间
+						</label>
+						<Input
+							type="datetime-local"
+							value={endTime}
+							onChange={(e) => setEndTime(e.target.value)}
+							className="h-8 flex-1 text-xs"
+						/>
+					</div>
+					<div className="flex items-center gap-2">
+						<Button variant="outline" size="sm" onClick={handleSearch} className="h-8 gap-1">
+							<Search className="h-3.5 w-3.5" />
+							查询
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={() => {
+								setTraceId('')
+								setMethod('all')
+								setStatusGroup('all')
+								setKeyword('')
+								setUserId('')
+								setStartTime(getDefaultStartTime())
+								setEndTime('')
+							}}
+							className="h-8 text-xs"
+						>
+							重置
+						</Button>
+					</div>
 				</div>
 			</div>
 

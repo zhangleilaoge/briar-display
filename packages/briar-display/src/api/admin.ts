@@ -144,6 +144,8 @@ export const getLogs = async (params?: {
 	path?: string
 	statusGroup?: string
 	traceId?: string
+	userId?: string
+	keyword?: string
 	startTime?: string
 	endTime?: string
 	limit?: number
@@ -154,6 +156,8 @@ export const getLogs = async (params?: {
 	if (params?.path) searchParams.set('path', params.path)
 	if (params?.statusGroup) searchParams.set('statusGroup', params.statusGroup)
 	if (params?.traceId) searchParams.set('traceId', params.traceId)
+	if (params?.userId) searchParams.set('userId', params.userId)
+	if (params?.keyword) searchParams.set('keyword', params.keyword)
 	if (params?.startTime) searchParams.set('startTime', params.startTime)
 	if (params?.endTime) searchParams.set('endTime', params.endTime)
 	if (params?.limit) searchParams.set('limit', String(params.limit))
