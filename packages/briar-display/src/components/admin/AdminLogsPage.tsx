@@ -29,7 +29,7 @@ import {
 	Timer,
 	Zap,
 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 const PAGE_SIZE = 50
 
@@ -85,6 +85,18 @@ function AdminLogsPageInner() {
 	const [loading, setLoading] = useState(true)
 	const [expandedId, setExpandedId] = useState<string | null>(null)
 	const [copiedTraceId, setCopiedTraceId] = useState<string | null>(null)
+
+	// Query summary
+	const querySummary = useMemo(() => {
+		const counts = { success: 0, redirect: 0, clientError: 0, serverError: 0 }
+		for (const log of logs) {
+			if (log.status >= 200 && log.status < 300) counts.success++
+			else if (log.status >= 300 && log.status < 400) counts.redirect++
+			else if (log.status >= 400 && log.status < 500) counts.clientError++
+			else if (log.status >= 500) counts.serverError++
+		}
+		return counts
+	}, [logs])
 
 	// Filters
 	const [traceId, setTraceId] = useState('')
@@ -300,6 +312,7 @@ function AdminLogsPageInner() {
 							onStartChange={setStartDate}
 							onEndChange={setEndDate}
 							className="flex-1"
+							showTime
 						/>
 						<Button
 							variant="outline"
@@ -368,7 +381,7 @@ function AdminLogsPageInner() {
 				</div>
 
 				{/* Action buttons — separate row */}
-				<div className="mt-3 flex items-center justify-end gap-2">
+				<div className="mt-6 flex items-center justify-end gap-2 border-t pt-4">
 					<Button
 						variant="outline"
 						size="sm"
@@ -393,6 +406,29 @@ function AdminLogsPageInner() {
 					</Button>
 				</div>
 			</div>
+
+			{/* Query summary */}
+			{!loading && logs.length > 0 && (
+				<div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border bg-card px-4 py-3 text-xs text-muted-foreground">
+					<span>
+						总计 <strong className="text-foreground">{total.toLocaleString()}</strong> 条
+					</span>
+					<span className="hidden h-3 w-px bg-border sm:inline" />
+					<span className="flex items-center gap-1.5">
+						<span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+						2xx <strong className="text-foreground">{querySummary.success}</strong>
+					</span>
+					<span className="flex items-center gap-1.5">
+						<span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+						4xx <strong className="text-foreground">{querySummary.clientError}</strong>
+					</span>
+					<span className="flex items-center gap-1.5">
+						<span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+						5xx <strong className="text-foreground">{querySummary.serverError}</strong>
+					</span>
+					{total > logs.length && <span className="ml-auto text-[11px] opacity-60">本页统计</span>}
+				</div>
+			)}
 
 			{/* Log table */}
 			{loading ? (
