@@ -46,6 +46,7 @@
 		"highlight.js": "^11.11.1",
 		"lowlight": "^3.3.0",
 		"lucide-react": "^0.568.0",
+		"pako": "^2.1.0",
 		"react": "^19.2.3",
 		"react-dom": "^19.2.3",
 		"react-markdown": "^9.0.1",
@@ -53,6 +54,7 @@
 		"tailwindcss-animate": "^1.0.7",
 		"tiptap-markdown": "^0.8.10",
 		"unist-util-visit": "^5.1.0",
+		"upng-js": "^2.1.0",
 		"vue": "^3.5.26"
 	},
 	"devDependencies": {
@@ -61,6 +63,7 @@
 		"@tiptap/pm": "^3",
 		"@tiptap/react": "^3",
 		"@tiptap/starter-kit": "^3",
+		"@types/pako": "^2.0.4",
 		"autoprefixer": "^10.4.20",
 		"chokidar-cli": "^3.0.0",
 		"postcss": "^8.4.47",

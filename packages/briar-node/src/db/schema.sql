@@ -437,3 +437,26 @@ CREATE TABLE IF NOT EXISTS request_logs (
   INDEX idx_duration (duration),
   INDEX idx_user_id (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='请求日志表';
+
+-- ============================================================
+-- 图床系统表
+-- ============================================================
+
+-- 图片表
+CREATE TABLE IF NOT EXISTS images (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  user_id VARCHAR(36) NOT NULL COMMENT '上传者 ID',
+  original_name VARCHAR(255) NOT NULL COMMENT '原始文件名',
+  filename VARCHAR(255) NOT NULL COMMENT 'COS key: images/{userId}/{uuid}.{ext}',
+  mime_type VARCHAR(50) NOT NULL COMMENT 'MIME 类型',
+  size INT UNSIGNED NOT NULL COMMENT '文件大小（字节）',
+  width INT UNSIGNED COMMENT '图片宽度',
+  height INT UNSIGNED COMMENT '图片高度',
+  cdn_url VARCHAR(500) NOT NULL COMMENT 'CDN 完整 URL',
+  thumbnail_url VARCHAR(500) COMMENT '缩略图 URL',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
+  INDEX idx_user_id (user_id),
+  INDEX idx_created_at (created_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='图床图片表';
