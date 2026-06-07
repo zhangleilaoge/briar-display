@@ -1,10 +1,10 @@
 'use client'
 
 import { type ImageItem, deleteImage, getImages } from '@/api/images'
+import AdminPagination from '@/components/admin/AdminPagination'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import WikiPagination from '@/components/wiki/common/WikiPagination'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { Loader2, Search, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -162,14 +162,12 @@ export default function ImageGalleryPage() {
 							</div>
 
 							{/* Pagination */}
-							{total > PAGE_SIZE && (
-								<WikiPagination
-									total={total}
-									limit={PAGE_SIZE}
-									offset={(page - 1) * PAGE_SIZE}
-									onPageChange={(offset) => setPage(Math.floor(offset / PAGE_SIZE) + 1)}
-								/>
-							)}
+							<AdminPagination
+								total={total}
+								limit={PAGE_SIZE}
+								offset={(page - 1) * PAGE_SIZE}
+								onPageChange={(offset) => setPage(Math.floor(offset / PAGE_SIZE) + 1)}
+							/>
 						</>
 					)}
 				</div>
