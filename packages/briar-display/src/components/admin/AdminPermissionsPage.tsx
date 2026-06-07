@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { usePermissions } from '@/contexts/PermissionContext'
+import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import {
 	PERMISSION_GROUPS,
 	type Permission,
@@ -35,6 +35,14 @@ import { useCallback, useEffect, useState } from 'react'
 import AdminLayout from './AdminLayout'
 
 export default function AdminPermissionsPage() {
+	return (
+		<PermissionProvider>
+			<AdminPermissionsPageInner />
+		</PermissionProvider>
+	)
+}
+
+function AdminPermissionsPageInner() {
 	const { hasPermission, isAdmin } = usePermissions()
 	const [roles, setRoles] = useState<Role[]>([])
 	const [allPermissions, setAllPermissions] = useState<Permission[]>([])

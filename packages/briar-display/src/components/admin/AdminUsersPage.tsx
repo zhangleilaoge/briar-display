@@ -14,7 +14,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table'
-import { usePermissions } from '@/contexts/PermissionContext'
+import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import type { Role } from '@briar/shared'
 import { AlertCircle, Check, Loader2, Search, Shield, User, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -31,6 +31,14 @@ interface UserWithRoles {
 const PAGE_SIZE = 20
 
 export default function AdminUsersPage() {
+	return (
+		<PermissionProvider>
+			<AdminUsersPageInner />
+		</PermissionProvider>
+	)
+}
+
+function AdminUsersPageInner() {
 	const { hasPermission, isAdmin } = usePermissions()
 	const [users, setUsers] = useState<UserWithRoles[]>([])
 	const [allRoles, setAllRoles] = useState<Role[]>([])
