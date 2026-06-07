@@ -286,6 +286,19 @@ export const pageDal = {
 			values.push(data.redirectTarget)
 		}
 
+		// Only update updated_at when meaningful content/meta changes
+		const hasContentChange =
+			data.title !== undefined ||
+			data.content !== undefined ||
+			data.summary !== undefined ||
+			data.status !== undefined ||
+			data.visibility !== undefined ||
+			data.slug !== undefined
+
+		if (hasContentChange) {
+			updates.push('updated_at = NOW()')
+		}
+
 		if (updates.length === 0) {
 			return pageDal.findById(id)
 		}
