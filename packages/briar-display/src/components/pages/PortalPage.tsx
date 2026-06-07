@@ -134,15 +134,13 @@ function PortalPageInner() {
 							gradient="from-pink-500 to-rose-500"
 						/>
 						{!loading && isAdmin && (
-							<div className="sm:col-span-2">
-								<EntryCard
-									icon={<Shield className="h-5 w-5" />}
-									title="管理后台"
-									description="角色权限与用户管理"
-									href="/briar-display/admin/permissions"
-									gradient="from-amber-500 to-orange-500"
-								/>
-							</div>
+							<EntryCard
+								icon={<Shield className="h-5 w-5" />}
+								title="管理后台"
+								description="角色权限与用户管理"
+								href="/briar-display/admin/permissions"
+								gradient="from-amber-500 to-orange-500"
+							/>
 						)}
 					</div>
 				</div>
