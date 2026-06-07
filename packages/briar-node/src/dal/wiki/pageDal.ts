@@ -315,7 +315,10 @@ export const pageDal = {
 	},
 
 	async incrementViewCount(id: string): Promise<void> {
-		await execute('UPDATE wiki_pages SET view_count = view_count + 1 WHERE id = ?', [id])
+		await execute(
+			'UPDATE wiki_pages SET view_count = view_count + 1, updated_at = updated_at WHERE id = ?',
+			[id],
+		)
 	},
 
 	async checkSlugExists(
