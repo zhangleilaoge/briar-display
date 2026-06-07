@@ -169,10 +169,23 @@ adminRoutes.delete(
 
 // ==================== 用户角色分配 ====================
 
-/** 获取所有用户及其角色 */
+/** 获取所有用户及其角色（支持搜索+分页） */
 adminRoutes.get('/users', requirePermission(PERMISSIONS.ADMIN_USER_ROLE_ASSIGN), async (c) => {
-	const users = await permissionService.getAllUsersWithRoles()
-	return c.json<ApiResponse>({ success: true, data: users })
+	const keyword = c.req.query('keyword') || undefined
+	const page = Math.max(1, Number(c.req.query('page')) || 1)
+	const pageSize = Math.min(100, Math.max(1, Number(c.req.query('pageSize')) || 20))
+	const offset = (page - 1) * pageSize
+
+	const { items, total } = await permissionService.searchUsersWithRoles({
+		keyword,
+		limit: pageSize,
+		offset,
+	})
+
+	return c.json<ApiResponse>({
+		success: true,
+		data: { items, total, page, pageSize },
+	})
 })
 
 /** 获取指定用户的角色 */

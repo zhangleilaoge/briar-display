@@ -1,9 +1,9 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
-import { Button } from '@/components/ui/button'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiPagination from '@/components/wiki/common/WikiPagination'
+import { WikiButton as Button } from '@/components/wiki/common/ui/button'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'
 import type { WikiDiffLine, WikiDiffResult, WikiRevision } from '@briar/shared'

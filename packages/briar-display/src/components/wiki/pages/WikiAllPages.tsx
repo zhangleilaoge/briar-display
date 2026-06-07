@@ -1,10 +1,10 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
-import { Input } from '@/components/ui/input'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiLink from '@/components/wiki/common/WikiLink'
 import WikiPagination from '@/components/wiki/common/WikiPagination'
+import { WikiInput as Input } from '@/components/wiki/common/ui/input'
 import type { WikiPageSummary } from '@briar/shared'
 import { FileText, Loader2, Search, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'

@@ -14,7 +14,7 @@ export default function WikiLayout({ children, showSidebar = true }: WikiLayoutP
 	const [sidebarOpen, setSidebarOpen] = useState(false)
 
 	return (
-		<div className="min-h-screen bg-[#f8f9fa]">
+		<div className="wiki-theme min-h-screen bg-[#f8f9fa]">
 			{/* Topbar */}
 			<WikiTopbar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
 

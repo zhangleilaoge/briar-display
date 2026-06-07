@@ -36,6 +36,37 @@ export const userDal = {
 		return rows.map(mapRowToRecord)
 	},
 
+	async search(params: {
+		keyword?: string
+		limit: number
+		offset: number
+	}): Promise<{ rows: UserRecord[]; total: number }> {
+		const conditions: string[] = []
+		const values: any[] = []
+
+		if (params.keyword) {
+			conditions.push('(u.name LIKE ? OR u.email LIKE ?)')
+			const like = `%${params.keyword}%`
+			values.push(like, like)
+		}
+
+		const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+		const countRow = await queryOne<{ cnt: number }>(
+			`SELECT COUNT(*) AS cnt FROM users u ${where}`,
+			values,
+		)
+		const total = countRow?.cnt ?? 0
+
+		const rows = await query<UserRow>(
+			`SELECT u.id, u.name, u.email, u.password_hash, u.created_at, u.updated_at
+			 FROM users u ${where} ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
+			[...values, params.limit, params.offset],
+		)
+
+		return { rows: rows.map(mapRowToRecord), total }
+	},
+
 	async findByEmail(email: string): Promise<UserRecord | null> {
 		const row = await queryOne<UserRow>(
 			'SELECT id, name, email, password_hash, created_at, updated_at FROM users WHERE email = ?',

@@ -1,11 +1,11 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import WikiLink from '@/components/wiki/common/WikiLink'
 import WikiPagination from '@/components/wiki/common/WikiPagination'
+import { WikiButton as Button } from '@/components/wiki/common/ui/button'
+import { WikiInput as Input } from '@/components/wiki/common/ui/input'
 import { cn } from '@/lib/utils'
 import type { WikiCategory, WikiCategoryTreeNode, WikiPageSummary } from '@briar/shared'
 import {

@@ -1,9 +1,9 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { WikiButton as Button } from '@/components/wiki/common/ui/button'
+import { WikiInput as Input } from '@/components/wiki/common/ui/input'
 import { ToolbarButton, ToolbarSeparator } from '@/components/wiki/editor/EditorToolbar'
 import { WikiLink } from '@/components/wiki/editor/extensions/wikiLink'
 import type { WikiSearchResult } from '@briar/shared'

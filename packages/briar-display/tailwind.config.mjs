@@ -83,7 +83,7 @@ export default {
 					4: 'hsl(var(--chart-4))',
 					5: 'hsl(var(--chart-5))',
 				},
-				/* Vector 2022 Wikipedia colors */
+				/* Wiki 模块颜色 tokens（详见 src/components/wiki/AGENTS.md） */
 				wiki: {
 					bg: 'var(--wiki-bg)',
 					'bg-secondary': 'var(--wiki-bg-secondary)',

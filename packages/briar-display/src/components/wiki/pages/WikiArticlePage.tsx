@@ -1,12 +1,12 @@
 'use client'
 
 import { wikiApi } from '@/api/wiki'
-import { Button } from '@/components/ui/button'
 import ArticleBacklinks from '@/components/wiki/article/ArticleBacklinks'
 import ArticleSubpages from '@/components/wiki/article/ArticleSubpages'
 import ArticleToc, { type TocItem } from '@/components/wiki/article/ArticleToc'
 import PermissionGuard from '@/components/wiki/common/PermissionGuard'
 import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
+import { WikiButton as Button } from '@/components/wiki/common/ui/button'
 import WikiFooter from '@/components/wiki/layout/WikiFooter'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import { cn } from '@/lib/utils'

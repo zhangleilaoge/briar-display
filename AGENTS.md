@@ -85,23 +85,15 @@ make lint:fix  # biome check . --write
 | 文件 | 作用 |
 | :--- | :--- |
 | `packages/briar-node/src/index.ts` | 后端入口。注册中间件、API 路由、静态资源服务 |
-| `packages/briar-node/src/routes/api.ts` | API 路由汇总（auth、admin、wiki） |
+| `packages/briar-node/src/routes/api.ts` | API 路由汇总 |
 | `packages/briar-node/src/routes/admin.ts` | 权限管理 API（角色、权限、用户角色分配） |
 | `packages/briar-node/src/middleware/config.ts` | 全局中间件配置（auth、cors、logger、errorHandler） |
 | `packages/briar-node/src/middleware/permissionMiddleware.ts` | 权限检查中间件 `requirePermission()` |
-| `packages/briar-node/src/middleware/wikiWriteGuard.ts` | Wiki 写操作默认保护（安全网） |
-| `packages/briar-node/src/config/wikiPermissions.ts` | **Wiki 路由权限映射表**（单一权限来源） |
 | `packages/briar-node/src/config/routes.ts` | 公开路径白名单配置 |
 | `packages/briar-node/src/services/permissionService.ts` | 权限服务（缓存、校验、角色管理） |
-| `packages/briar-node/src/dal/roleDal.ts` | 角色数据访问层 |
-| `packages/briar-node/src/dal/permissionDal.ts` | 权限数据访问层 |
-| `packages/briar-node/src/dal/userRoleDal.ts` | 用户-角色关联数据访问层 |
 | `packages/briar-shared/src/permissions.ts` | 权限编码常量、分组定义 |
-| `packages/briar-display/src/contexts/PermissionContext.tsx` | 前端权限上下文（React Context） |
-| `packages/briar-display/src/api/admin.ts` | 前端权限管理 API |
-| `packages/briar-display/src/components/wiki/common/PermissionGuard.tsx` | 前端权限守卫组件 |
-| `packages/briar-display/src/api/request.ts` | 前端 axios 实例，baseURL 根据环境自动计算 |
 | `packages/briar-shared/src/constants.ts` | 共享常量：`API_BASE_PATH`、`NODE_PORT`、`DISPLAY_PORT` |
+| `packages/briar-display/src/api/request.ts` | 前端 axios 实例，baseURL 根据环境自动计算 |
 | `default.conf` | Nginx 配置模板 |
 | `ecosystem.config.cjs` | PM2 配置（生产环境） |
 | `Makefile` | 常用开发命令 |
@@ -113,10 +105,15 @@ make lint:fix  # biome check . --write
 Astro 页面位于 `packages/briar-display/src/pages/briar-display/`，生产环境通过 Nginx 的 `/briar-display/` location 代理访问。
 
 前端页面：
+- `/briar-display/` — 门户入口页
 - `/briar-display/login`
 - `/briar-display/register`
-- `/briar-display/business`
 - `/briar-display/forgot-password`
+- `/briar-display/admin/permissions` — 角色与权限管理
+- `/briar-display/admin/users` — 用户角色分配
+- `/briar-display/tools/diff` — 在线文件 Diff
+- `/briar-display/tools/compress` — 在线图片压缩
+- `/briar-display/wiki/...` — Wiki SPA（详见 `packages/briar-display/src/components/wiki/AGENTS.md`）
 
 ### 后端路由
 
@@ -140,58 +137,11 @@ app.route('/api', apiRoutes)
 - `DELETE /api/admin/roles/:id` — 删除角色
 - `PUT /api/admin/roles/:id/permissions` — 设置角色权限
 - `GET /api/admin/permissions` — 权限列表
-- `GET /api/admin/users` — 用户列表（含角色）
+- `GET /api/admin/users` — 用户列表（含角色，支持 keyword/page/pageSize 查询）
 - `PUT /api/admin/users/:userId/roles` — 设置用户角色
 - `GET /api/admin/me/permissions` — 当前用户权限（任何已登录用户可调用）
 
-**Wiki API**（分层架构：dal → service → controller → route）：
-- Pages:
-  - `GET /api/wiki/pages` — 列表（?namespace, ?status, ?limit, ?offset）
-  - `GET /api/wiki/pages/search` — 全文搜索（?q, ?limit, ?offset）
-  - `GET /api/wiki/pages/:namespace/:slug` — 获取页面（自动跟踪重定向）
-  - `GET /api/wiki/pages/:slug/redirects` — 获取重定向列表
-  - `POST /api/wiki/pages`（需认证）— 创建页面
-  - `PUT /api/wiki/pages/:slug`（需认证）— 更新页面
-  - `DELETE /api/wiki/pages/:slug`（需认证）— 软删除页面
-- Revisions:
-  - `GET /api/wiki/pages/:slug/revisions` — 版本列表
-  - `GET /api/wiki/pages/:slug/revisions/:revId` — 获取版本
-  - `GET /api/wiki/pages/:slug/diff` — 版本差异（?from, ?to）
-  - `POST /api/wiki/pages/:slug/revisions/:revId/revert`（需认证）— 回退版本
-- Categories:
-  - `GET /api/wiki/categories` — 列表
-  - `GET /api/wiki/categories/tree` — 分类树
-  - `GET /api/wiki/categories/:slug` — 分类详情（含页面列表）
-  - `POST /api/wiki/categories`（需认证）
-  - `PUT /api/wiki/categories/:slug`（需认证）
-  - `DELETE /api/wiki/categories/:slug`（需认证）
-  - `POST /api/wiki/categories/:slug/pages`（需认证）— 添加页面到分类
-  - `DELETE /api/wiki/categories/:slug/pages/:pageId`（需认证）— 移除分类关联
-- Discussions:
-  - `GET /api/wiki/pages/:slug/discussions` — 讨论列表
-  - `GET /api/wiki/pages/:slug/discussions/:topicId` — 获取讨论主题
-  - `GET /api/wiki/pages/:slug/discussions/:topicId/replies` — 获取回复
-  - `POST /api/wiki/pages/:slug/discussions`（需认证）— 创建讨论主题
-  - `POST /api/wiki/pages/:slug/discussions/:topicId/replies`（需认证）— 创建回复
-  - `PUT /api/wiki/pages/:slug/discussions/:topicId/resolve`（需认证）— 标记已解决
-- Templates:
-  - `GET /api/wiki/templates` — 列表
-  - `GET /api/wiki/templates/:slug` — 获取模板
-  - `POST /api/wiki/templates`（需认证）
-  - `PUT /api/wiki/templates/:slug`（需认证）
-  - `DELETE /api/wiki/templates/:slug`（需认证）
-- Watchlist:
-  - `GET /api/wiki/watchlist`（需认证）— 用户关注列表
-  - `POST /api/wiki/watchlist/:slug`（需认证）— 关注页面
-  - `DELETE /api/wiki/watchlist/:slug`（需认证）— 取消关注
-  - `GET /api/wiki/watchlist/:slug/status`（需认证）— 检查是否关注
-- Special Pages:
-  - `GET /api/wiki/special/recent-changes` — 最近更改
-  - `GET /api/wiki/special/statistics` — 统计数据
-  - `GET /api/wiki/special/all-pages` — 所有页面
-  - `GET /api/wiki/special/orphaned-pages` — 孤立页面
-  - `GET /api/wiki/special/wanted-pages` — 缺失页面
-  - `GET /api/wiki/special/user-contributions/:userId` — 用户贡献
+**Wiki API** — 详见 `packages/briar-display/src/components/wiki/AGENTS.md`
 
 ### Nginx 代理规则（关键）
 
@@ -255,17 +205,7 @@ const getApiBaseUrl = () => {
 
 ### 5. 数据库初始化
 
-`make db-setup` 执行 `packages/briar-node/src/db/setup.ts`，会读取 `packages/briar-node/src/db/schema.sql`。schema 包含：
-- `users` 表
-- `verification_codes` 表
-- `wiki_pages` 表（含 FULLTEXT 索引 ngram 分词）
-- `wiki_revisions` 表
-- `wiki_categories` 表（支持层级）
-- `wiki_page_categories` 表（页面-分类关联）
-- `wiki_discussions` 表
-- `wiki_discussion_replies` 表
-- `wiki_watchlist` 表
-- `wiki_templates` 表
+`make db-setup` 执行 `packages/briar-node/src/db/setup.ts`，会读取 `packages/briar-node/src/db/schema.sql`。
 
 数据库名固定为 `briar_display`。
 
@@ -301,98 +241,7 @@ user_roles  role_permissions  permissions
 示例：
 - `page:wiki` — 页面访问权限
 - `wiki:page:create` — Wiki 页面创建
-- `wiki:category:delete` — Wiki 分类删除
 - `admin:role:manage` — 管理角色
-
-### ⚠️ 新增 Wiki 写路由的规范（安全网机制）
-
-**所有 Wiki 写操作（POST/PUT/DELETE）都必须在权限映射表中声明权限。**
-
-权限映射表位于：`packages/briar-node/src/config/wikiPermissions.ts`
-
-```ts
-export const WIKI_ROUTE_PERMISSIONS: Record<string, string | null> = {
-  'POST /pages': PERMISSIONS.WIKI_PAGE_CREATE,
-  'PUT /pages/:slug': PERMISSIONS.WIKI_PAGE_UPDATE,
-  // ...
-}
-```
-
-**工作原理**：`wikiWriteGuard` 中间件拦截所有写请求，在映射表中查找所需权限：
-1. **找到权限编码** → 检查用户是否拥有该权限
-2. **标记为 `null`** → 显式公开，放行
-3. **未找到（新路由忘了声明）** → **默认拒绝**，返回 403 + 控制台警告
-
-**新增写路由的步骤**：
-
-```ts
-// 1. 在 wikiPermissions.ts 中添加权限映射
-'POST /new-resource': PERMISSIONS.WIKI_NEW_RESOURCE,
-
-// 2. 在 permissions.ts 中定义权限编码常量
-WIKI_NEW_RESOURCE: 'wiki:new-resource:create',
-
-// 3. 在 schema.sql 中插入权限记录（如果是新权限）
-INSERT INTO permissions (id, code, name, type, module) VALUES
-  ('perm-wiki-new-resource', 'wiki:new-resource:create', '创建新资源', 'api', 'wiki');
-
-// 4. 为对应角色授权
-INSERT INTO role_permissions (role_id, permission_id) VALUES ('role-editor', 'perm-wiki-new-resource');
-
-// 5. 在 wiki.ts 中注册路由（不需要手动加 requirePermission）
-wikiRoutes.post('/new-resource', (c) => controller.create(c))
-```
-
-**如果忘记在映射表中声明**：写操作会返回 403，控制台输出警告。这确保了安全性。
-
-### 前端权限使用
-
-#### PermissionContext
-
-Wiki SPA 已通过 `PermissionProvider` 包裹，所有子组件可使用：
-
-```tsx
-import { usePermissions } from '@/contexts/PermissionContext'
-
-function MyComponent() {
-  const { hasPermission, isAdmin, isLoggedIn } = usePermissions()
-
-  if (!hasPermission('wiki:page:create')) return null
-  return <Button>新建</Button>
-}
-```
-
-#### PermissionGuard 组件
-
-用于条件渲染 UI 元素：
-
-```tsx
-import PermissionGuard from '@/components/wiki/common/PermissionGuard'
-
-<PermissionGuard permission="wiki:page:delete">
-  <Button variant="destructive">删除</Button>
-</PermissionGuard>
-```
-
-#### 管理后台页面
-
-- `/briar-display/wiki/special/admin/permissions` — 角色与权限管理
-- `/briar-display/wiki/special/admin/users` — 用户角色分配
-
-侧边栏"管理"区域仅对拥有 `page:admin` 权限的用户可见。
-
-### 权限管理 API
-
-| 端点 | 方法 | 说明 |
-| :--- | :--- | :--- |
-| `/api/admin/roles` | GET/POST | 角色列表/创建 |
-| `/api/admin/roles/:id` | GET/PUT/DELETE | 角色详情/更新/删除 |
-| `/api/admin/roles/:id/permissions` | PUT | 设置角色权限 |
-| `/api/admin/permissions` | GET/POST | 权限列表/创建 |
-| `/api/admin/permissions/:id` | PUT/DELETE | 权限更新/删除 |
-| `/api/admin/users` | GET | 所有用户及其角色 |
-| `/api/admin/users/:userId/roles` | GET/PUT | 获取/设置用户角色 |
-| `/api/admin/me/permissions` | GET | 当前用户的权限信息 |
 
 ### 数据库表
 
@@ -402,6 +251,10 @@ import PermissionGuard from '@/components/wiki/common/PermissionGuard'
 - `user_roles` — 用户-角色关联
 
 运行 `make db-setup` 自动初始化默认数据。
+
+### 前端权限使用
+
+Wiki 模块已通过 `PermissionProvider` 包裹，详见 `packages/briar-display/src/components/wiki/AGENTS.md`。
 
 ## 修改建议
 
@@ -458,43 +311,3 @@ bun run --filter @briar/shared build
 | `default.conf` | `./scripts/deploy-nginx.sh` |
 | `.env` | `pm2 restart briar-node`（让 PM2 重新加载 env_file） |
 | `packages/briar-shared/src/**/*.ts` | `./scripts/deploy.sh --full-build`（需完整构建） |
-
-## Wiki UI 风格规范
-
-参考 MediaWiki Vector 2022 皮肤，定义以下 UI 规范：
-
-### 颜色
-
-| 用途 | 变量 | 亮色值 |
-| :--- | :--- | :--- |
-| 背景 | `--wiki-bg` | `#ffffff` |
-| 次级背景 | `--wiki-bg-secondary` | `#f8f9fa` |
-| 三级背景 | `--wiki-bg-tertiary` | `#eaecf0` |
-| 边框 | `--wiki-border` | `#a2a9b1` |
-| 浅边框 | `--wiki-border-light` | `#c8ccd1` |
-| 链接/强调色 | `--wiki-link` | `#3366cc` |
-| 链接悬停 | `--wiki-link-hover` | `#447ff5` |
-| 正文 | `--wiki-text` | `#202122` |
-| 次级文字 | `--wiki-text-secondary` | `#54595d` |
-| 弱化文字 | `--wiki-text-muted` | `#72777d` |
-
-### 输入框
-
-- 统一使用 shadcn `Input` 组件（`@/components/ui/input`）
-- 高度：`h-8`（32px）
-- 圆角：`rounded-sm`（2px）
-- 边框：`border-wiki-border`，聚焦时切换为 `border-wiki-link`（不使用 ring/outline）
-- 背景：`bg-wiki-bg`
-- 字号：`text-[13px]`
-- 占位符：`text-wiki-text-muted`
-
-### 按钮
-
-- 主操作：`bg-wiki-link text-white hover:bg-wiki-link-hover rounded-sm`
-- 次要操作：`border border-wiki-border-light text-wiki-text hover:bg-wiki-bg-secondary rounded-sm`
-- 工具栏按钮：`h-8 w-8 rounded-sm`，激活态 `bg-wiki-link text-white`
-
-### 间距
-
-- 块元素 margin 使用 Tailwind Typography 配置覆盖（`tailwind.config.mjs`）
-- 编辑器/表单内部间距：`space-y-3` 或 `gap-2`

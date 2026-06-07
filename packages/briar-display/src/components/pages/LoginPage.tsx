@@ -42,7 +42,7 @@ export default function LoginPage() {
 			const result = await login({ email, password })
 			if (result.success && result.data) {
 				setAuthToken(result.data.token, result.data.user, result.data.permissions)
-				window.location.href = 'business'
+				window.location.href = '/briar-display/'
 				return
 			}
 			setError(result.message || '登录失败')
@@ -54,106 +54,76 @@ export default function LoginPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-[radial-gradient(circle_at_top,_hsl(var(--secondary))_0%,_hsl(var(--background))_55%)]">
-			<div className="container flex min-h-screen items-center justify-center">
-				<div className="grid w-full gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-					<div className="flex flex-col justify-center gap-6">
-						<div className="space-y-3">
-							<p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">
-								Briar Workspace
-							</p>
-							<h1 className="text-4xl font-semibold leading-tight">欢迎回来</h1>
-							<p className="text-lg text-muted-foreground">
-								登录后继续管理你的业务空间。支持多团队、权限与审计日志。
-							</p>
+		<div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_hsl(var(--muted))_0%,_hsl(var(--background))_55%)] p-4">
+			<Card className="w-full max-w-sm shadow-lg">
+				<form onSubmit={handleSubmit}>
+					<CardHeader className="text-center">
+						<CardTitle className="text-xl">登录 Briar</CardTitle>
+						<CardDescription>使用你的邮箱和密码登录</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div className="space-y-2">
+							<Label htmlFor="email">邮箱</Label>
+							<Input
+								id="email"
+								type="email"
+								placeholder="name@example.com"
+								value={email}
+								onChange={(event) => setEmail(event.target.value)}
+								required
+							/>
 						</div>
-						<div className="grid gap-3 sm:grid-cols-2">
-							<div className="rounded-xl border border-border/60 bg-card/60 p-4">
-								<p className="text-sm text-muted-foreground">最近活动</p>
-								<p className="text-2xl font-semibold">128</p>
-								<p className="text-xs text-muted-foreground">待处理任务</p>
+						<div className="space-y-2">
+							<div className="flex items-center justify-between">
+								<Label htmlFor="password">密码</Label>
+								<a
+									href="/briar-display/forgot-password"
+									className="text-xs text-muted-foreground hover:text-primary"
+								>
+									忘记密码？
+								</a>
 							</div>
-							<div className="rounded-xl border border-border/60 bg-card/60 p-4">
-								<p className="text-sm text-muted-foreground">今日处理</p>
-								<p className="text-2xl font-semibold">96%</p>
-								<p className="text-xs text-muted-foreground">流程完成率</p>
+							<div className="relative">
+								<Input
+									id="password"
+									type={showPassword ? 'text' : 'password'}
+									placeholder="请输入密码"
+									value={password}
+									onChange={(event) => setPassword(event.target.value)}
+									className="pr-10"
+									required
+								/>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									className="absolute inset-y-0 right-0 h-full w-10 text-muted-foreground hover:text-foreground"
+									onClick={() => setShowPassword((visible) => !visible)}
+									aria-label={showPassword ? '隐藏密码' : '显示密码'}
+								>
+									{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+								</Button>
 							</div>
 						</div>
-					</div>
-
-					<Card className="shadow-xl">
-						<form onSubmit={handleSubmit}>
-							<CardHeader>
-								<CardTitle>账号登录</CardTitle>
-								<CardDescription>使用你的工作邮箱登录 Briar</CardDescription>
-							</CardHeader>
-							<CardContent className="space-y-4">
-								<div className="space-y-2">
-									<Label htmlFor="email">邮箱</Label>
-									<Input
-										id="email"
-										type="email"
-										placeholder="name@company.com"
-										value={email}
-										onChange={(event) => setEmail(event.target.value)}
-										required
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="password">密码</Label>
-									<div className="relative">
-										<Input
-											id="password"
-											type={showPassword ? 'text' : 'password'}
-											placeholder="请输入密码"
-											value={password}
-											onChange={(event) => setPassword(event.target.value)}
-											className="pr-12"
-											required
-										/>
-										<button
-											type="button"
-											className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
-											onClick={() => setShowPassword((visible) => !visible)}
-											aria-label={showPassword ? '隐藏密码' : '显示密码'}
-										>
-											{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-										</button>
-									</div>
-								</div>
-								<div className="flex items-center justify-between text-sm">
-									<label className="flex items-center gap-2 text-muted-foreground">
-										<input type="checkbox" className="h-4 w-4 rounded border-input" />
-										记住我
-									</label>
-									<a href="forgot-password" className="text-primary hover:underline">
-										忘记密码？
-									</a>
-								</div>
-								{error && (
-									<p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-										{error}
-									</p>
-								)}
-							</CardContent>
-							<CardFooter className="flex flex-col gap-3">
-								<Button className="w-full" disabled={loading} type="submit">
-									{loading ? '登录中...' : '登录'}
-								</Button>
-								<Button variant="outline" className="w-full" type="button">
-									使用企业 SSO
-								</Button>
-								<p className="text-center text-xs text-muted-foreground">
-									还没有账号？{' '}
-									<a href="register" className="text-primary hover:underline">
-										创建账号
-									</a>
-								</p>
-							</CardFooter>
-						</form>
-					</Card>
-				</div>
-			</div>
+						{error && (
+							<p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+								{error}
+							</p>
+						)}
+					</CardContent>
+					<CardFooter className="flex flex-col gap-3">
+						<Button className="w-full" disabled={loading} type="submit">
+							{loading ? '登录中...' : '登录'}
+						</Button>
+						<p className="text-center text-xs text-muted-foreground">
+							还没有账号？{' '}
+							<a href="/briar-display/register" className="text-primary hover:underline">
+								创建账号
+							</a>
+						</p>
+					</CardFooter>
+				</form>
+			</Card>
 		</div>
 	)
 }
