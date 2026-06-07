@@ -33,10 +33,49 @@ description: >
 
 | 行为 | 触发关键词 | 文档 | 工具 |
 |------|-----------|------|------|
-| 获取 Jira 内容 | "看看这个需求"、"获取 Jira"、Jira 链接 | [docs/jira.md](docs/jira.md) | AppleScript + Chrome |
-| 获取 MR 背景信息 | "获取 MR 的关联需求"、"MR 背景" | [docs/gitlab-mr.md](docs/gitlab-mr.md) | GitLab API / AppleScript fallback |
+| 获取 Jira 内容 | "看看这个需求"、"获取 Jira"、Jira 链接 | [docs/jira.md](docs/jira.md) | Linux: REST API + basic auth / macOS: AppleScript + Chrome |
+| 获取 MR 背景信息 | "获取 MR 的关联需求"、"MR 背景" | [docs/gitlab-mr.md](docs/gitlab-mr.md) | GitLab API |
 | 获取内网页面 | "获取内容"、"看看这个页面"、内网链接（含 `qima-inc`） | [docs/generic.md](docs/generic.md) | curl → AppleScript fallback |
 | 汇总上下文 | "整理上下文"、"汇总信息"、多个链接 | — | 多次调用上述能力后汇总 |
+
+---
+
+## 凭证配置
+
+所有 briar skill 共用同一套 `.env` 加载机制：
+
+1. **全局配置**（推荐）：`~/.config/briar-skills/.env`
+2. **项目内配置**（向后兼容）：`~/Documents/briar-display/.env`
+
+**初始化**：
+```bash
+mkdir -p "$HOME/.config/briar-skills"
+cat > "$HOME/.config/briar-skills/.env" << 'EOF'
+GITLAB_TOKEN="your_gitlab_token"
+JIRA_USERNAME="zhanglei_zl"
+JIRA_PASSWORD="your_password"
+EOF
+chmod 600 "$HOME/.config/briar-skills/.env"
+```
+
+| 变量 | 用途 | 必需 |
+|------|------|------|
+| `GITLAB_TOKEN` | GitLab API 调用 | 是（MR/GitLab 相关） |
+| `JIRA_USERNAME` | Jira REST API basic auth | 是（Linux 获取 Jira） |
+| `JIRA_PASSWORD` | Jira REST API basic auth | 是（Linux 获取 Jira） |
+| `JIRA_API_TOKEN` | Jira API token（优先于密码） | 否 |
+
+> **注意**：脚本启动时自动 `source` 上述 `.env` 文件，无需手动 export。
+
+---
+
+## 平台支持矩阵
+
+| 平台 | Jira | GitLab MR | 通用内网页面 |
+|------|------|-----------|-------------|
+| **Linux** | ✅ REST API + basic auth | ✅ GitLab API | ⚠️ curl（公开页）/ 手动提供（登录页） |
+| **macOS** | ✅ AppleScript + Chrome | ✅ GitLab API | ✅ AppleScript + Chrome |
+| **Windows** | ❌ 未实现 | ❌ 未实现 | ❌ 未实现 |
 
 ---
 
@@ -52,41 +91,41 @@ URL="https://jira.qima-inc.com/browse/CSWT-191480"
 if echo "$URL" | grep -qE 'jira\..*/browse/'; then
     TYPE="jira"
 elif echo "$URL" | grep -qE 'gitlab\..*/-/merge_requests/'; then
-    TYPE="gitlab-mr-bg"  # 仅获取 MR 背景信息，MR 业务操作由 briar-mr 处理
+    TYPE="gitlab-mr-bg"
 elif echo "$URL" | grep -qE 'gitlab\..*/-/wikis/'; then
     TYPE="gitlab-wiki"
 elif echo "$URL" | grep -qE 'qima-inc'; then
     TYPE="intranet"
 else
-    # 非内网页面，不归本 skill 处理，让 Agent 自然处理
     echo "Non-intranet URL, skipping briar-context."
     exit 0
 fi
 ```
 
-| 类型 | URL 特征 | 处理方式 |
-|------|---------|---------|
-| Jira | 包含 `jira.`、`/browse/` | AppleScript + Chrome |
-| GitLab MR（背景） | 包含 `gitlab.`、`/-/merge_requests/` | GitLab API → AppleScript fallback |
-| GitLab Wiki | 包含 `gitlab.`、`/-/wikis/` | GitLab API / 页面抓取 |
-| 内网页面 | 包含 `qima-inc` 的任意 URL | curl → AppleScript fallback |
+### Linux: Jira REST API
 
-### AppleScript + Chrome 基础设施
+```bash
+# 自动从 ~/.config/briar-skills/.env 读取凭证
+curl -s -u "$JIRA_USERNAME:$JIRA_PASSWORD" \
+  "https://jira.qima-inc.com/rest/api/2/issue/CSWT-191480" | jq .
+```
 
-多个信息源（Jira、内网页面、GitLab MR fallback）共用此基础设施。
+返回字段：
+- `.key` — ticket ID
+- `.fields.summary` — 标题
+- `.fields.description` — 描述（HTML，需去标签）
+- `.fields.status.name` — 状态
+- `.fields.priority.name` — 优先级
+- `.fields.assignee.displayName` — 经办人
+- `.fields.reporter.displayName` — 报告人
+
+### macOS: AppleScript + Chrome
 
 **前置要求**：
-- macOS 系统
 - Chrome 已安装（`/Applications/Google Chrome.app`）
 - Chrome 已开启**"允许 Apple 事件中的 JavaScript"**
 
-**检查支持**：
-```bash
-osascript -e 'tell application "Google Chrome" to return version'
-```
-
-**开启方式**（如未开启）：
-> 菜单栏 → **查看 → 开发者 → 允许 Apple 事件中的 JavaScript**
+**开启方式**：菜单栏 → **查看 → 开发者 → 允许 Apple 事件中的 JavaScript**
 
 **获取脚本**（智能提取主内容区 + 轮询加载 + 自动关闭）：
 ```applescript
@@ -95,13 +134,11 @@ tell application "Google Chrome"
     tell front window
         set newTab to make new tab at end of tabs
         set URL of newTab to "TARGET_URL"
-        -- 轮询等待页面加载完成，最多 10 秒
         repeat 20 times
             delay 0.5
             set readyState to execute newTab javascript "document.readyState"
             if readyState is "complete" then exit repeat
         end repeat
-        -- SPA 页面（Jira 等）在 readyState complete 后仍需等待 3 秒让动态内容渲染
         delay 3
         set pageResult to execute newTab javascript "
 (function() {
@@ -120,18 +157,14 @@ tell application "Google Chrome"
 end tell
 ```
 
-> 相比直接抓 `document.body.innerText`，优先提取 `main` / `article` / `[role=main]` 等主内容区，过滤掉导航栏、侧边栏等噪音。
-
 ---
 
 ## 注意事项
 
-1. **AppleScript 会实际打开 Chrome 标签页**，获取完成后**自动关闭**，无需手动清理
-2. **Cookie 安全**：通过 AppleScript 获取的 cookie 是内存中的实时值，不要持久化到日志或文件
-3. **Chrome 文件锁**：SQLite 中的 cookie 不是实时的，不能通过复制 `~/Library/Application Support/Google/Chrome/Profile 1/Cookies` 来获取登录态
-4. **降级策略**：如果 AppleScript 获取失败（Chrome 未开启支持），提示用户开启或手动复制页面内容
-5. **SPA 等待**：单页应用（Jira、GitLab 等）在 `document.readyState === 'complete'` 后仍需固定等待 **3 秒**，让 JavaScript 动态渲染主内容区，否则可能返回空或残缺内容
-6. **超时控制**：AppleScript 轮询 `document.readyState`，加载完成后固定等待 3 秒再提取，最长等待 10 秒
+1. **AppleScript 会实际打开 Chrome 标签页**，获取完成后**自动关闭**
+2. **SPA 等待**：单页应用（Jira、GitLab 等）在 `document.readyState === 'complete'` 后仍需固定等待 **3 秒**
+3. **Linux 登录态**：Linux 服务器无法复用浏览器 cookie，Jira 必须通过 REST API + basic auth 获取
+4. **Cookie 安全**：通过 AppleScript 获取的 cookie 是内存中的实时值，不要持久化到日志或文件
 
 ---
 

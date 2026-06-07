@@ -11,6 +11,21 @@
 
 set -e
 
+# --- 统一加载 .env 配置 ---
+load_env() {
+	# 1. 全局配置
+	GLOBAL_ENV="$HOME/.config/briar-skills/.env"
+	if [ -f "$GLOBAL_ENV" ]; then
+		set -a; source "$GLOBAL_ENV"; set +a
+	fi
+	# 2. 向后兼容：项目内 .env
+	PROJECT_ENV="$HOME/Documents/briar-display/.env"
+	if [ -f "$PROJECT_ENV" ]; then
+		set -a; source "$PROJECT_ENV"; set +a
+	fi
+}
+load_env
+
 ACTION="${1}"
 
 show_usage() {
@@ -44,13 +59,13 @@ if [ "$ACTION" = "worktree" ]; then
 	REPO_NAME="${3}"
 	if [ "$SUBCMD" = "add" ] || [ "$SUBCMD" = "remove" ]; then
 		BRANCH="${4}"
-		BASE_DIR="${5:-${BRIAR_REPO_BASE_DIR:-/Users/zhanglei/Documents/projects}}"
+		BASE_DIR="${5:-${BRIAR_REPO_BASE_DIR:-$HOME/projects}}"
 	else
-		BASE_DIR="${4:-${BRIAR_REPO_BASE_DIR:-/Users/zhanglei/Documents/projects}}"
+		BASE_DIR="${4:-${BRIAR_REPO_BASE_DIR:-$HOME/projects}}"
 	fi
 else
 	REPO_NAME="${2}"
-	BASE_DIR="${3:-${BRIAR_REPO_BASE_DIR:-/Users/zhanglei/Documents/projects}}"
+	BASE_DIR="${3:-${BRIAR_REPO_BASE_DIR:-$HOME/projects}}"
 	DOMAIN="${4:-gitlab.qima-inc.com}"
 fi
 

@@ -11,15 +11,11 @@
 需要 `GITLAB_TOKEN`，读取优先级：
 1. 环境变量 `GITLAB_TOKEN`
 2. `~/.config/briar-skills/.env`
-3. `~/Documents/projects/briar-display/packages/briar-skills/.env`（向后兼容）
+3. `~/Documents/briar-display/.env`（向后兼容）
 
 ```bash
-if [ -z "$GITLAB_TOKEN" ]; then
-    GLOBAL_ENV="$HOME/.config/briar-skills/.env"
-    if [ -f "$GLOBAL_ENV" ]; then
-        GITLAB_TOKEN=$(grep GITLAB_TOKEN "$GLOBAL_ENV" | cut -d= -f2-)
-    fi
-fi
+# 脚本启动时自动加载，无需手动设置
+# load_env() 会自动 source 上述 .env 文件
 ```
 
 ---
@@ -89,12 +85,13 @@ fi
 
 ---
 
-## 无 Token 时的 Fallback
+## 无 Token 时的处理
 
-如果没有 `GITLAB_TOKEN`，降级为页面抓取（AppleScript + Chrome）：
+如果没有 `GITLAB_TOKEN`，脚本会报错并提示：
 
-```bash
-echo "[briar-context] No GITLAB_TOKEN found, falling back to page scraping..."
-# 调用 AppleScript + Chrome 获取 MR 页面内容
-# 见 SKILL.md → AppleScript 基础设施
 ```
+[briar-context] No GITLAB_TOKEN found.
+  Set it in ~/.config/briar-skills/.env or $HOME/Documents/briar-display/.env
+```
+
+请确保 `.env` 文件已正确配置并设置权限 `chmod 600`。
