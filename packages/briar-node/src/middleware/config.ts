@@ -1,5 +1,6 @@
 import type { Context, MiddlewareHandler } from 'hono'
 import { isApiPublicPath, isAssetPath, isPublicPath } from '../config/routes'
+import { apiWriteGuard } from './apiWriteGuard'
 import { authMiddleware } from './authMiddleware'
 import { corsMiddleware, errorHandler, loggerMiddleware, pageAuthMiddleware } from './index'
 import { traceIdMiddleware } from './traceId'
@@ -41,6 +42,11 @@ export const globalMiddlewares: MiddlewareConfig[] = [
 		match: (c) => c.req.path.startsWith('/api'),
 		ignore: (c) => isApiPublicPath(c.req.path, c.req.method),
 		priority: 30,
+	},
+	{
+		middleware: apiWriteGuard,
+		match: (c) => c.req.path.startsWith('/api'),
+		priority: 35,
 	},
 	{
 		middleware: pageAuthMiddleware(),

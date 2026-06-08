@@ -14,12 +14,17 @@ export const RouteConfig = {
 	/** 公开的路径前缀 */
 	PUBLIC_PREFIXES: ['/demo'],
 
-	/** API 不需要认证的路径 */
-	API_PUBLIC_PATHS: [
+	/** 所有方法都公开的 API 路径（跳过 JWT 验证，如登录/注册）
+	 *  与 apiPermissions.ts 中标记为 null 的条目保持一致 */
+	API_UNRESTRICTED_PATHS: [
 		'/api/auth/login',
 		'/api/auth/register',
 		'/api/auth/send-reset-code',
 		'/api/auth/reset-password',
+	],
+
+	/** API GET 公开的路径（写操作仍需认证） */
+	API_PUBLIC_PATHS: [
 		'/api/readme-ai',
 		'/api/readme-ai/init',
 		'/api/readme-ai/rewrite',
@@ -31,14 +36,13 @@ export const RouteConfig = {
 		'/api/wiki/templates',
 	],
 
-	/** API 不需要认证的路径前缀 */
+	/** API GET 公开的路径前缀（写操作仍需认证） */
 	API_PUBLIC_PREFIXES: [
 		'/api/wiki/special',
 		'/api/wiki/pages/',
 		'/api/wiki/categories/',
 		'/api/wiki/tags/',
 		'/api/wiki/templates/',
-		'/api/logs',
 	],
 
 	/** 资源文件前缀 */
@@ -70,16 +74,15 @@ export const isAssetPath = (pathname: string): boolean => {
 
 /**
  * 判断 API 路径是否需要认证
- * API_PUBLIC_PATHS 中明确列出的路径始终公开（如登录/注册）
- * 其他路径：只有 GET/HEAD/OPTIONS 请求才可能被视为公开，写操作需要认证
+ * API_UNRESTRICTED_PATHS 中的路径始终公开（所有方法，如登录/注册）
+ * API_PUBLIC_PATHS / API_PUBLIC_PREFIXES 中的路径仅 GET/HEAD/OPTIONS 公开
  */
 export const isApiPublicPath = (pathname: string, method?: string): boolean => {
-	// 先检查精确路径匹配（如登录/注册接口，始终公开）
-	const exactMatch = RouteConfig.API_PUBLIC_PATHS.some(
+	// 登录/注册等接口，所有方法都公开
+	const unrestricted = RouteConfig.API_UNRESTRICTED_PATHS.some(
 		(path) => pathname === path || pathname.startsWith(`${path}/`),
 	)
-
-	if (exactMatch) {
+	if (unrestricted) {
 		return true
 	}
 
@@ -88,8 +91,11 @@ export const isApiPublicPath = (pathname: string, method?: string): boolean => {
 		return false
 	}
 
-	// 检查前缀匹配
+	// GET 请求检查公开路径匹配
+	const exactMatch = RouteConfig.API_PUBLIC_PATHS.some(
+		(path) => pathname === path || pathname.startsWith(`${path}/`),
+	)
 	const prefixMatch = RouteConfig.API_PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))
 
-	return prefixMatch
+	return exactMatch || prefixMatch
 }
