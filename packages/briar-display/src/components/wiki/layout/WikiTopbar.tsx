@@ -26,7 +26,7 @@ export default function WikiTopbar({ onMenuToggle, className }: WikiTopbarProps)
 					variant="ghost"
 					size="icon"
 					onClick={onMenuToggle}
-					className="lg:hidden text-wiki-text hover:text-wiki-text"
+					className="lg:hidden"
 					aria-label="切换侧栏"
 				>
 					<Menu className="h-5 w-5" />
