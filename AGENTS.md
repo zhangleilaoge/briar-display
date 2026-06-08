@@ -42,7 +42,9 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 | `packages/briar-node/src/routes/api.ts` | API 路由汇总 |
 | `packages/briar-node/src/routes/admin.ts` | Admin API（角色/权限/用户/日志） |
 | `packages/briar-node/src/middleware/config.ts` | 全局中间件配置 |
-| `packages/briar-node/src/config/routes.ts` | 公开路径白名单 |
+| `packages/briar-node/src/middleware/apiWriteGuard.ts` | 全局写操作安全网（默认拒绝未声明的写路由） |
+| `packages/briar-node/src/config/routes.ts` | 公开路径白名单（控制 JWT 验证跳过） |
+| `packages/briar-node/src/config/apiPermissions.ts` | 全局写路由权限映射表（**新增写路由必须在此注册**） |
 | `packages/briar-shared/src/constants.ts` | 共享常量（`API_BASE_PATH`、`NODE_PORT`） |
 | `packages/briar-shared/src/permissions.ts` | 权限编码常量和分组 |
 | `packages/briar-display/src/api/request.ts` | 前端 axios 实例，baseURL 自动计算 |
@@ -109,6 +111,19 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 权限编码格式：`{模块}:{资源}:{操作}`（如 `wiki:page:create`、`admin:role:manage`）。
 
 前端使用 `useRequirePermission` hook 或 `<PermissionGuard>` 组件。
+
+### 安全架构：两层防线
+
+**第一层：authMiddleware + routes.ts（谁能访问）**
+- `routes.ts` 中的 `API_UNRESTRICTED_PATHS` 控制哪些路径跳过 JWT 验证（如登录/注册）
+- `API_PUBLIC_PATHS` / `API_PUBLIC_PREFIXES` 控制 GET 请求的公开访问（如 wiki 浏览）
+
+**第二层：apiWriteGuard + apiPermissions.ts（能做什么）**
+- 全局中间件，拦截所有 POST/PUT/PATCH/DELETE 请求
+- `apiPermissions.ts` 是统一的写路由权限映射表
+- 已声明 → 检查权限；标记 null → 公开放行；未声明 → **默认拒绝（403）+ 控制台警告**
+
+**新增写路由时必须在 `apiPermissions.ts` 中注册**，否则会被拦截。这是故意设计的安全网。
 
 ## 部署
 

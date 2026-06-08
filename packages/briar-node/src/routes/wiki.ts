@@ -10,13 +10,8 @@ import { starController } from '../controllers/wiki/starController'
 import { tagController } from '../controllers/wiki/tagController'
 import { templateController } from '../controllers/wiki/templateController'
 import { watchlistController } from '../controllers/wiki/watchlistController'
-import { wikiWriteGuard } from '../middleware/wikiWriteGuard'
 
 const wikiRoutes = new Hono()
-
-// 🔒 安全网：所有写操作自动走权限映射表（见 config/wikiPermissions.ts）
-// 新增写路由时，必须在映射表中声明权限，否则会被拦截
-wikiRoutes.use('/*', wikiWriteGuard)
 
 // ==================== Pages ====================
 wikiRoutes.get('/pages', (c) => pageController.list(c))

@@ -1,10 +1,11 @@
-import { HTTP_STATUS } from '@briar/shared'
+import { HTTP_STATUS, PERMISSIONS } from '@briar/shared'
 import { Hono } from 'hono'
+import { requirePermission } from '../middleware/permissionMiddleware'
 import { certificateService } from '../services/certificateService'
 
 const certRoutes = new Hono()
 
-certRoutes.post('/renew', async (c) => {
+certRoutes.post('/renew', requirePermission(PERMISSIONS.ADMIN_ROLE_MANAGE), async (c) => {
 	const domain = process.env.CERTIFICATE_DOMAIN || 'stardew.site'
 
 	// 异步执行续期，避免 HTTP 超时（nginx 默认 60s）
