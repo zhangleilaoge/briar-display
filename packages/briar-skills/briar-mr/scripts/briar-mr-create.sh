@@ -1,23 +1,35 @@
 #!/bin/bash
 # briar-mr-create.sh - 创建 MR
 # Usage: ./briar-mr-create.sh <domain> <project_path> <source_branch> <target_branch> <title> [description]
+#
+# Token 加载优先级：环境变量 GITLAB_TOKEN → ~/.config/briar-skills/.env → ~/.git-credentials
 
 set -e
 
-# --- 统一加载 .env 配置 ---
-load_env() {
-	# 1. 全局配置
-	GLOBAL_ENV="$HOME/.config/briar-skills/.env"
-	if [ -f "$GLOBAL_ENV" ]; then
-		set -a; source "$GLOBAL_ENV"; set +a
+# --- Token 自动加载 ---
+load_gitlab_token() {
+	if [ -n "$GITLAB_TOKEN" ] && [ "$GITLAB_TOKEN" != "***" ]; then
+		return
 	fi
-	# 2. 向后兼容：项目内 .env
-	PROJECT_ENV="$HOME/Documents/briar-display/.env"
-	if [ -f "$PROJECT_ENV" ]; then
-		set -a; source "$PROJECT_ENV"; set +a
+	if [ -f "$HOME/.config/briar-skills/.env" ]; then
+		# shellcheck disable=SC1091
+		source "$HOME/.config/briar-skills/.env" 2>/dev/null || true
+		if [ -n "$GITLAB_TOKEN" ] && [ "$GITLAB_TOKEN" != "***" ]; then
+			return
+		fi
 	fi
+	local cred_token
+	cred_token=$(grep "gitlab.qima-inc.com" "$HOME/.git-credentials" 2>/dev/null \
+		| sed 's/.*oauth2:\([^@]*\)@.*/\1/' | head -1)
+	if [ -n "$cred_token" ]; then
+		export GITLAB_TOKEN="$cred_token"
+		return
+	fi
+	echo "Error: GITLAB_TOKEN not found. Set it via env, ~/.config/briar-skills/.env, or ~/.git-credentials."
+	exit 1
 }
-load_env
+
+load_gitlab_token
 
 DOMAIN="${1:-gitlab.qima-inc.com}"
 PROJECT_PATH="${2}"
@@ -28,11 +40,6 @@ DESCRIPTION="${6}"
 
 if [ -z "$PROJECT_PATH" ] || [ -z "$SOURCE_BRANCH" ] || [ -z "$TARGET_BRANCH" ] || [ -z "$TITLE" ]; then
 	echo "Usage: $0 <domain> <project_path> <source_branch> <target_branch> <title> [description]"
-	exit 1
-fi
-
-if [ -z "$GITLAB_TOKEN" ]; then
-	echo "Error: GITLAB_TOKEN is not set."
 	exit 1
 fi
 

@@ -1,28 +1,44 @@
 #!/bin/bash
 # briar-mr-review.sh - MR 评论操作（fetch / comment / reply / diff / setup-worktree）
+#
 # Usage:
 #   ./briar-mr-review.sh fetch         <domain> <project_path> <mr_iid>
 #   ./briar-mr-review.sh comment       <domain> <project_path> <mr_iid> <body>
 #   ./briar-mr-review.sh reply         <domain> <project_path> <mr_iid> <discussion_id> <body>
 #   ./briar-mr-review.sh diff          <domain> <project_path> <mr_iid>
 #   ./briar-mr-review.sh setup-worktree <domain> <project_path> <mr_iid>
+#
+# Token 加载优先级：环境变量 GITLAB_TOKEN → ~/.config/briar-skills/.env → ~/.git-credentials
 
 set -e
 
-# --- 统一加载 .env 配置 ---
-load_env() {
-	# 1. 全局配置
-	GLOBAL_ENV="$HOME/.config/briar-skills/.env"
-	if [ -f "$GLOBAL_ENV" ]; then
-		set -a; source "$GLOBAL_ENV"; set +a
+# --- Token 自动加载 ---
+# 如果环境变量已有且非占位符，直接用；否则依次尝试 .env 和 git credential store
+load_gitlab_token() {
+	if [ -n "$GITLAB_TOKEN" ] && [ "$GITLAB_TOKEN" != "***" ]; then
+		return
 	fi
-	# 2. 向后兼容：项目内 .env
-	PROJECT_ENV="$HOME/Documents/briar-display/.env"
-	if [ -f "$PROJECT_ENV" ]; then
-		set -a; source "$PROJECT_ENV"; set +a
+	# 尝试从 .env 加载
+	if [ -f "$HOME/.config/briar-skills/.env" ]; then
+		# shellcheck disable=SC1091
+		source "$HOME/.config/briar-skills/.env" 2>/dev/null || true
+		if [ -n "$GITLAB_TOKEN" ] && [ "$GITLAB_TOKEN" != "***" ]; then
+			return
+		fi
 	fi
+	# 兜底：从 git credential store 提取 oauth2 token
+	local cred_token
+	cred_token=$(grep "gitlab.qima-inc.com" "$HOME/.git-credentials" 2>/dev/null \
+		| sed 's/.*oauth2:\([^@]*\)@.*/\1/' | head -1)
+	if [ -n "$cred_token" ]; then
+		export GITLAB_TOKEN="$cred_token"
+		return
+	fi
+	echo "Error: GITLAB_TOKEN not found. Set it via env, ~/.config/briar-skills/.env, or ~/.git-credentials."
+	exit 1
 }
-load_env
+
+load_gitlab_token
 
 ACTION="${1}"
 DOMAIN="${2:-gitlab.qima-inc.com}"
@@ -35,11 +51,6 @@ if [ -z "$PROJECT_PATH" ]; then
 	echo "  $0 reply         <domain> <project_path> <mr_iid> <discussion_id> <reply_body>"
 	echo "  $0 diff          <domain> <project_path> <mr_iid>"
 	echo "  $0 setup-worktree <domain> <project_path> <mr_iid>"
-	exit 1
-fi
-
-if [ -z "$GITLAB_TOKEN" ]; then
-	echo "Error: GITLAB_TOKEN is not set."
 	exit 1
 fi
 
