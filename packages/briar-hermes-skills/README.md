@@ -9,15 +9,40 @@
 | `network-proxy` | 外网代理（mihomo）+ 公司内网（飞连）配置与故障排查 | network-setup.md, vpn-reconnect.md, pitfall/mihomo-ipv6.md |
 | `coding-agents` | 编码代理工具（KimiCode/MimoCode）使用指南 | code-agents.md, coding-agents-comparison.md |
 
+## 开发流程
+
+**所有 skill 先在本仓库调整、提交、push，最后再同步到 hermes。**
+
+```bash
+# 1. 在 briar-hermes-skills 目录修改 skill
+vim network-proxy/SKILL.md
+
+# 2. 提交到本仓库
+git add .
+git commit -m "feat(network-proxy): xxx"
+git push origin master
+
+# 3. 最后同步到 hermes
+cp -r network-proxy ~/.hermes/skills/
+cp -r coding-agents ~/.hermes/skills/
+```
+
+**禁止**直接修改 `~/.hermes/skills/` 然后反向同步，hermes 是消费端不是源头。
+
 ## 使用方式
 
 ```bash
-# 导入到 hermes
+# 从本仓库导入到 hermes
+cp -r ./network-proxy ~/.hermes/skills/
+cp -r ./coding-agents ~/.hermes/skills/
+```
+
+或：
+
+```bash
 hermes skill import ./network-proxy
 hermes skill import ./coding-agents
 ```
-
-或手动复制到 `~/.hermes/skills/`。
 
 ## 沉淀原则
 
