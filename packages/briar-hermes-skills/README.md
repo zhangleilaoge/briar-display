@@ -49,3 +49,4 @@ hermes skill import ./coding-agents
 - **系统化知识**进 skill：有完整流程、有坑、有验证步骤
 - **碎片知识**留在 notes：临时记录、易变信息、凭据
 - **不重复**：skill 是权威来源，notes 只留引用
+- **skill 导入后删除 notes 重复内容**：skill 成为唯一权威来源后，对应的 notes 文件直接删除，避免双源维护
