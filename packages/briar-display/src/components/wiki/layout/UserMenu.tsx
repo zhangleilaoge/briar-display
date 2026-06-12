@@ -54,12 +54,13 @@ export default function UserMenu() {
 	// Not logged in
 	if (!token) {
 		return (
-			<Button variant="ghost" asChild>
-				<a href="/briar-display/login">
-					<User className="mr-1.5 h-3.5 w-3.5" />
-					登录
-				</a>
-			</Button>
+			<a
+				href="/briar-display/login"
+				className="inline-flex items-center gap-1.5 rounded-sm px-2 py-1.5 text-[13px] text-wiki-text transition-colors hover:bg-wiki-bg-tertiary"
+			>
+				<User className="h-3.5 w-3.5" />
+				登录
+			</a>
 		)
 	}
 

@@ -69,6 +69,7 @@ dev-node:
 		echo "📦 @briar/shared 未构建，先构建..."; \
 		bun run --filter @briar/shared build; \
 	fi
+	@lsof -ti :3888 | xargs kill -9 2>/dev/null || true
 	bun run --filter @briar/node dev
 
 # 启动 shared 包监听模式

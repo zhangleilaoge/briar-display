@@ -8,7 +8,8 @@
 	},
 	"dependencies": {
 		"cos-nodejs-sdk-v5": "^2.11.10",
-		"dotenv": "^16.4.5"
+		"dotenv": "^16.4.5",
+		"openai": "^6.42.0"
 	},
 	"devDependencies": {
 		"tsx": "^4.19.0"

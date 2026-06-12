@@ -188,9 +188,15 @@ export function useWikiNav() {
 // ---- Main component ----
 
 export default function WikiApp() {
-	const [currentPath, setCurrentPath] = useState(
-		typeof window !== 'undefined' ? window.location.pathname : WIKI_BASE,
-	)
+	// Use consistent initial state for SSR/CSR hydration
+	const [currentPath, setCurrentPath] = useState(WIKI_BASE)
+
+	// Sync with actual URL after hydration
+	useEffect(() => {
+		if (window.location.pathname !== WIKI_BASE) {
+			setCurrentPath(window.location.pathname)
+		}
+	}, [])
 	const [loading, setLoading] = useState(false)
 	const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
