@@ -14,6 +14,7 @@
 | `briar-fix` | 基于 Git worktree 的安全代码修复 |
 | `briar-mr` | GitLab MR 全能工具（创建、评论、review、pipeline） |
 | `briar-repo` | 从 GitLab 搜索并克隆仓库到本地 |
+| `briar-skynet` | 天网日志查询、traceId 链路追踪与日志导出下载 |
 
 ---
 
