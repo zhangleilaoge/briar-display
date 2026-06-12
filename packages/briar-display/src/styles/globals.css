@@ -141,6 +141,31 @@
 		color: var(--wiki-link-hover);
 	}
 
+	/* Table styling for wiki articles */
+	.prose-wiki table {
+		border-collapse: collapse;
+		width: 100%;
+		margin: 1em 0;
+		font-size: 0.875em;
+	}
+	.prose-wiki th,
+	.prose-wiki td {
+		border: 1px solid var(--wiki-border-light);
+		padding: 0.4em 0.75em;
+		text-align: left;
+	}
+	.prose-wiki th {
+		background-color: var(--wiki-bg-tertiary);
+		font-weight: 600;
+	}
+	.prose-wiki tr:hover {
+		background-color: rgba(0, 0, 0, 0.02);
+	}
+	.prose-wiki td > p,
+	.prose-wiki th > p {
+		margin: 0;
+	}
+
 	/* Infobox table styling */
 	.wiki-infobox table {
 		border-collapse: collapse;
@@ -245,4 +270,82 @@
 		--chart-4: 280 65% 60%;
 		--chart-5: 340 75% 55%;
 	}
+}
+
+/* BlockNote wiki theme overrides */
+.wiki-editor-container {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Liberation Sans", sans-serif;
+}
+
+.wiki-editor-container .bn-editor {
+	color: var(--wiki-text);
+	font-size: 0.875em;
+	line-height: 1.6;
+}
+
+.wiki-editor-container .bn-block-group > .bn-block-outer {
+	margin: 0;
+}
+
+.wiki-editor-container .bn-block-group > .bn-block-outer > .bn-block {
+	padding: 0.25em 0;
+}
+
+/* Table styling in editor */
+.wiki-editor-container table {
+	border-collapse: collapse;
+	width: 100%;
+}
+
+.wiki-editor-container th,
+.wiki-editor-container td {
+	border: 1px solid var(--wiki-border-light);
+	padding: 0.4em 0.75em;
+	text-align: left;
+}
+
+.wiki-editor-container th {
+	background-color: var(--wiki-bg-tertiary);
+	font-weight: 600;
+}
+
+/* Placeholder styling */
+.wiki-editor-container [data-placeholder]::before {
+	color: var(--wiki-text-muted);
+}
+
+/* Slash menu styling */
+.wiki-editor-container .bn-suggestion-menu {
+	border: 1px solid var(--wiki-border-light);
+	border-radius: 4px;
+	background: white;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.wiki-editor-container .bn-suggestion-menu-item {
+	padding: 6px 10px;
+	font-size: 13px;
+	color: var(--wiki-text);
+}
+
+.wiki-editor-container .bn-suggestion-menu-item:hover,
+.wiki-editor-container .bn-suggestion-menu-item[data-selected] {
+	background: var(--wiki-bg-tertiary);
+}
+
+/* Floating toolbar styling */
+.wiki-editor-container .bn-formatting-toolbar {
+	border: 1px solid var(--wiki-border-light);
+	border-radius: 4px;
+	background: white;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Side menu (drag handle) */
+.wiki-editor-container .bn-side-menu {
+	color: var(--wiki-text-muted);
+}
+
+.wiki-editor-container .bn-side-menu:hover {
+	color: var(--wiki-link);
 }

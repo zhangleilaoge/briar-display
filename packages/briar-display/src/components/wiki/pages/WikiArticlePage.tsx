@@ -18,6 +18,7 @@ import type { WikiBacklink, WikiCategory, WikiPage, WikiPageSummary, WikiTag } f
 import { AlertTriangle, Eye, FolderOpen, Loader2, Pencil, Star, Tag } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface WikiArticlePageProps {
 	slug: string
@@ -65,25 +66,34 @@ function extractToc(markdown: string): TocItem[] {
 	return toc
 }
 
-/** Extract infobox content from markdown (first table after first heading) */
+/** Extract infobox content from markdown (table must be immediately after first heading) */
 function extractInfobox(markdown: string): string | null {
 	const lines = markdown.split('\n')
 	let foundFirstHeading = false
-	let inTable = false
 	const tableLines: string[] = []
 
 	for (const line of lines) {
 		const trimmed = line.trim()
 		if (trimmed.match(/^#{1,4}\s+/)) {
 			foundFirstHeading = true
-			if (inTable && tableLines.length > 0) break
 			continue
 		}
-		if (foundFirstHeading && trimmed.startsWith('|') && trimmed.endsWith('|')) {
-			inTable = true
+		if (!foundFirstHeading) continue
+
+		// Skip empty lines after heading
+		if (!trimmed) continue
+
+		// If we already have table lines and hit a non-table line, stop
+		if (tableLines.length > 0 && !(trimmed.startsWith('|') && trimmed.endsWith('|'))) {
+			break
+		}
+
+		// If this is a table line and we haven't seen any non-table content yet
+		if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
 			tableLines.push(trimmed)
-		} else if (inTable) {
-			if (tableLines.length > 0) break
+		} else {
+			// Non-table content found before any table — no infobox
+			break
 		}
 	}
 
@@ -218,9 +228,6 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 			const trimmed = line.trim()
 			if (trimmed.match(/^#{1,4}\s+/)) {
 				foundFirstHeading = true
-				if (skippingTable) {
-					skippingTable = false
-				}
 				result.push(line)
 				continue
 			}
@@ -325,6 +332,26 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 					</a>
 				)
 			},
+			table: ({ children, ...props }: React.HTMLAttributes<HTMLTableElement>) => (
+				<div className="overflow-x-auto">
+					<table {...props} className="border-collapse">
+						{children}
+					</table>
+				</div>
+			),
+			th: ({ children, ...props }: React.HTMLAttributes<HTMLTableCellElement>) => (
+				<th
+					{...props}
+					className="border border-wiki-border-light bg-wiki-bg-tertiary px-3 py-1.5 text-left font-medium text-wiki-text"
+				>
+					{children}
+				</th>
+			),
+			td: ({ children, ...props }: React.HTMLAttributes<HTMLTableCellElement>) => (
+				<td {...props} className="border border-wiki-border-light px-3 py-1.5 text-wiki-text">
+					{children}
+				</td>
+			),
 		}),
 		[slug],
 	)
@@ -393,7 +420,7 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 					</div>
 				</div>
 				<div className="prose prose-wiki max-w-none">
-					<ReactMarkdown>{page.content}</ReactMarkdown>
+					<ReactMarkdown remarkPlugins={[remarkGfm]}>{page.content}</ReactMarkdown>
 				</div>
 			</div>
 		)
@@ -466,7 +493,7 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 							</div>
 							<div className="prose prose-wiki wiki-infobox max-w-none bg-wiki-bg-secondary p-3 text-[12px]">
 								<ReactMarkdown
-									remarkPlugins={[remarkWikiLink, remarkTemplate]}
+									remarkPlugins={[remarkGfm, remarkWikiLink, remarkTemplate]}
 									components={{
 										img: ({ ...props }) => (
 											<img
@@ -499,7 +526,7 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 					{/* Article content */}
 					<article className="prose prose-wiki max-w-none">
 						<ReactMarkdown
-							remarkPlugins={[remarkWikiLink, remarkTemplate]}
+							remarkPlugins={[remarkGfm, remarkWikiLink, remarkTemplate]}
 							components={markdownComponents}
 						>
 							{cleanContent}

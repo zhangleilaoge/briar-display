@@ -1,7 +1,6 @@
 'use client'
 
 import SearchDropdown from '@/components/wiki/common/SearchDropdown'
-import { WikiButton as Button } from '@/components/wiki/common/ui/button'
 import UserMenu from '@/components/wiki/layout/UserMenu'
 import { cn } from '@/lib/utils'
 import { Menu } from 'lucide-react'
@@ -21,16 +20,14 @@ export default function WikiTopbar({ onMenuToggle, className }: WikiTopbarProps)
 		>
 			{/* Left: hamburger + logo */}
 			<div className="flex items-center gap-3">
-				<Button
+				<button
 					type="button"
-					variant="ghost"
-					size="icon"
 					onClick={onMenuToggle}
-					className="lg:hidden"
+					className="inline-flex h-8 w-8 items-center justify-center rounded-sm text-wiki-text transition-colors hover:bg-wiki-bg-tertiary lg:hidden"
 					aria-label="切换侧栏"
 				>
 					<Menu className="h-5 w-5" />
-				</Button>
+				</button>
 				<a
 					href="/briar-display/wiki/"
 					className="flex items-center gap-2 text-wiki-text no-underline"

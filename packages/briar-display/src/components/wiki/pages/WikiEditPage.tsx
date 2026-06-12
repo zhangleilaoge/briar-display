@@ -6,7 +6,7 @@ import WikiBreadcrumbs from '@/components/wiki/common/WikiBreadcrumbs'
 import { WikiButton as Button } from '@/components/wiki/common/ui/button'
 import { WikiInput as Input } from '@/components/wiki/common/ui/input'
 import CategorySelector from '@/components/wiki/editor/CategorySelector'
-import VisualEditor, { type VisualEditorHandle } from '@/components/wiki/editor/VisualEditor'
+import WikiEditor, { type WikiEditorHandle } from '@/components/wiki/editor/WikiEditor'
 import WikiTabs from '@/components/wiki/layout/WikiTabs'
 import type { WikiPage, WikiPageVisibility } from '@briar/shared'
 import { Loader2 } from 'lucide-react'
@@ -30,7 +30,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 	const [categoryIds, setCategoryIds] = useState<string[]>([])
 	const [lastReadAt, setLastReadAt] = useState<string>('')
 
-	const editorRef = useRef<VisualEditorHandle>(null)
+	const editorRef = useRef<WikiEditorHandle>(null)
 
 	// Load existing page content
 	useEffect(() => {
@@ -77,7 +77,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		setSaving(true)
 		setError(null)
 
-		const content = editorRef.current ? editorRef.current.getMarkdown() : sourceContent
+		const content = editorRef.current ? await editorRef.current.getMarkdown() : sourceContent
 
 		try {
 			if (isNew) {
@@ -238,7 +238,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 			</div>
 
 			<label className="mb-3 block text-[13px] font-medium text-wiki-text">内容</label>
-			<VisualEditor
+			<WikiEditor
 				ref={editorRef}
 				initialContent={sourceContent}
 				onChange={(md) => setSourceContent(md)}

@@ -79,6 +79,7 @@ chmod 600 "$HOME/.config/briar-skills/.env"
 - 用户只说"MR 链接"而没有明确意图时，默认触发【获取评论】，**不要自动修复**；修复后不要自动回复 Discussion，需等用户明确要求。
 - 用户说"看看评论是否合理"时，触发【分析评论】：对每条评论逐条给出合理性判断（✅合理/⚠️合理但有保留/❌不合理），用表格呈现，标注是否需要修复。分析完等用户指示再行动。
 - **与 briar-context 的分工**：如果用户在 review MR 前要求"获取这个 MR 的关联需求/背景信息"，调用 `briar-context` 获取 Jira/背景；MR 本身的评论、review、pipeline 等业务操作由本 skill 处理。
+- **禁止自行 resolve 评论**：AI 回复 Discussion 时，**只回复、不 resolve**。回应只是让对方了解自己的想法/计划/解释，**不能代替对方判定该评论已经解决**。无论回复内容是认同、解释还是承诺修复，都不得勾选/设置 resolved。
 
 ---
 
@@ -127,3 +128,7 @@ briar-mr-review.sh reply <domain> <project_path> <mr_iid> <discussion_id> "回�
 ```
 
 获取 discussion_id：先用 `fetch` 拿到 discussions JSON，从中提取目标 comment 的 `id` 字段。
+
+### 只回复、不 resolve
+
+**AI 回复评论时严禁同时 resolve 该评论。** 回复的目的只是让对方了解自己的想法、解释或修复计划，**不是代替对方判定评论已解决**。无论认同评论、解释原因还是承诺修复，都不要将 discussion 标记为 resolved。
