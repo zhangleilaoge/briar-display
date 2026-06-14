@@ -1,0 +1,23 @@
+appId: com.briar.meeting
+productName: Briar Meeting
+copyright: Copyright © 2026 Briar
+directories:
+  output: dist-electron
+  buildResources: build
+files:
+  - dist/**
+  - dist-electron/**
+mac:
+  category: public.app-category.productivity
+  target:
+    - dmg
+    - zip
+win:
+  target:
+    - nsis
+linux:
+  target:
+    - AppImage
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

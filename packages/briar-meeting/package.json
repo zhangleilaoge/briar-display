@@ -1,0 +1,14 @@
+{
+	"name": "@briar/meeting",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"workspaces": ["packages/*"],
+	"scripts": {
+		"dev": "bun run --filter @briar/meeting-app dev",
+		"build": "bun run --filter @briar/meeting-sdk build && bun run --filter @briar/meeting-app build",
+		"typecheck": "bun run --filter @briar/meeting-sdk typecheck && bun run --filter @briar/meeting-app typecheck",
+		"lint": "biome check .",
+		"lint:fix": "biome check . --write"
+	}
+}
