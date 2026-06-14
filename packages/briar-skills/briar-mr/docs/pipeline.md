@@ -31,9 +31,9 @@ curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
 或通过脚本：
 
 ```bash
-./packages/briar-skills/briar-mr/scripts/briar-mr-pipeline.sh <domain> <project_path> <mr_iid>
+./scripts/briar-mr-pipeline.sh <domain> <project_path> <mr_iid>
 # 或
-./packages/briar-skills/briar-mr/scripts/briar-mr.sh pipeline <domain> <project_path> <mr_iid>
+./scripts/briar-mr.sh pipeline <domain> <project_path> <mr_iid>
 ```
 
 ---
@@ -81,16 +81,16 @@ briar-mr pipeline（获取失败日志）
 
 ```bash
 # 创建 worktree
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh setup \
+../../briar-fix/scripts/briar-fix.sh setup \
   "$HOME/projects/<repo>" <branch> fix-pipeline-<mr_iid>
 
 # 验证（会自动检测项目类型运行 lint/typecheck）
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh verify <worktree_path>
+../../briar-fix/scripts/briar-fix.sh verify <worktree_path>
 
 # 用户确认后提交
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh commit <worktree_path> "fix: 修复 CI 失败"
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh push <worktree_path>
+../../briar-fix/scripts/briar-fix.sh commit <worktree_path> "fix: 修复 CI 失败"
+../../briar-fix/scripts/briar-fix.sh push <worktree_path>
 
 # 清理
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh cleanup <repo_path> <worktree_path>
+../../briar-fix/scripts/briar-fix.sh cleanup <repo_path> <worktree_path>
 ```

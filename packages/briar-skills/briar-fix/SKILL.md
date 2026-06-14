@@ -99,7 +99,7 @@ briar-repo.sh worktree add <repo-name> <branch>
 在 worktree 中运行项目验证：
 
 ```bash
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh verify <worktree_path>
+./scripts/briar-fix.sh verify <worktree_path>
 ```
 
 脚本会自动检测项目类型并运行对应验证：
@@ -122,7 +122,7 @@ briar-repo.sh worktree add <repo-name> <branch>
 ### Step 5: 展示 Diff 给用户确认
 
 ```bash
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh diff <worktree_path>
+./scripts/briar-fix.sh diff <worktree_path>
 ```
 
 **必须展示给用户看**，不要自动提交。输出格式：
@@ -150,12 +150,12 @@ briar-repo.sh worktree add <repo-name> <branch>
 
 ```bash
 # 1. 提交
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh commit \
+./scripts/briar-fix.sh commit \
   <worktree_path> \
   "fix: 按 review 意见修复"
 
 # 2. Push（如果用户要求）
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh push <worktree_path>
+./scripts/briar-fix.sh push <worktree_path>
 ```
 
 **提交信息建议**：

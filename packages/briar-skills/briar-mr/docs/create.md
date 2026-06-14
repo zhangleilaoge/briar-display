@@ -68,14 +68,14 @@ FILES_CHANGED=$(git diff --name-only <target>..<source>)
 推导完成后调用脚本：
 
 ```bash
-./packages/briar-skills/briar-mr/scripts/briar-mr-create.sh \
+./scripts/briar-mr-create.sh \
   <domain> <project_path> <source_branch> <target_branch> "<title>" "<description>"
 ```
 
 或通过总入口：
 
 ```bash
-./packages/briar-skills/briar-mr/scripts/briar-mr.sh create \
+./scripts/briar-mr.sh create \
   <domain> <project_path> <source_branch> <target_branch> "<title>" "<description>"
 ```
 

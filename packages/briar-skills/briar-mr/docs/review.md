@@ -35,9 +35,9 @@ curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
 或通过脚本：
 
 ```bash
-./packages/briar-skills/briar-mr/scripts/briar-mr-review.sh fetch <domain> <project_path> <mr_iid>
+../scripts/briar-mr-review.sh fetch <domain> <project_path> <mr_iid>
 # 或
-./packages/briar-skills/briar-mr/scripts/briar-mr.sh fetch <domain> <project_path> <mr_iid>
+../scripts/briar-mr.sh fetch <domain> <project_path> <mr_iid>
 ```
 
 ### 输出格式
@@ -73,9 +73,9 @@ curl -s -X POST \
 或通过脚本：
 
 ```bash
-./packages/briar-skills/briar-mr/scripts/briar-mr-review.sh comment <domain> <project_path> <mr_iid> "评论内容"
+../scripts/briar-mr-review.sh comment <domain> <project_path> <mr_iid> "评论内容"
 # 或
-./packages/briar-skills/briar-mr/scripts/briar-mr.sh comment <domain> <project_path> <mr_iid> "评论内容"
+../scripts/briar-mr.sh comment <domain> <project_path> <mr_iid> "评论内容"
 ```
 
 ### 注意
@@ -111,9 +111,9 @@ curl -s -X POST \
 或通过脚本：
 
 ```bash
-./packages/briar-skills/briar-mr/scripts/briar-mr-review.sh reply <domain> <project_path> <mr_iid> <discussion_id> "回复内容"
+../scripts/briar-mr-review.sh reply <domain> <project_path> <mr_iid> <discussion_id> "回复内容"
 # 或
-./packages/briar-skills/briar-mr/scripts/briar-mr.sh reply <domain> <project_path> <mr_iid> <discussion_id> "回复内容"
+../scripts/briar-mr.sh reply <domain> <project_path> <mr_iid> <discussion_id> "回复内容"
 ```
 
 ### ⚠️ Shell JSON 引号坑（必看）
@@ -133,14 +133,16 @@ curl -s -X POST \
 
 **推荐方案 B：写临时文件**
 ```bash
-cat > /tmp/reply.json << 'EOF'
+REPLY_FILE=$(mktemp)
+cat > "$REPLY_FILE" << 'EOF'
 {"body":"已修复，将 `alt=\"\"` 改为 `alt={item.content || ''}` ✅"}
 EOF
 curl -s -X POST \
   --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
   --header "Content-Type: application/json" \
-  --data @/tmp/reply.json \
+  --data @"$REPLY_FILE" \
   "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID/discussions/$DISCUSSION_ID/notes"
+rm -f "$REPLY_FILE"
 ```
 
 ### 回复内容模板
@@ -177,9 +179,9 @@ curl -s -X PUT \
    先通过 API 获取 MR 的变更概览，判断是否需要切 worktree：
 
    ```bash
-   ./packages/briar-skills/briar-mr/scripts/briar-mr-review.sh diff <domain> <project_path> <mr_iid>
+   ../scripts/briar-mr-review.sh diff <domain> <project_path> <mr_iid>
    # 或
-   ./packages/briar-skills/briar-mr/scripts/briar-mr.sh diff <domain> <project_path> <mr_iid>
+   ../scripts/briar-mr.sh diff <domain> <project_path> <mr_iid>
    ```
 
    > 注：`diff` 子命令内部调用 GitLab `changes` API（`/merge_requests/:iid/changes`）。如需直接 curl，请使用 `changes` endpoint，部分 GitLab 实例的 `/diffs` 可能返回 404。
@@ -214,11 +216,11 @@ curl -s -X PUT \
    # 检查本地是否已有该仓库
    if [ ! -d "$LOCAL_REPO/.git" ]; then
        # 没有则拉取（复用 briar-repo）
-       ./packages/briar-skills/briar-repo/scripts/briar-repo.sh pull "$REPO_NAME"
+       ../../briar-repo/scripts/briar-repo.sh pull "$REPO_NAME"
    fi
 
    # 创建 review worktree（自动获取 MR 分支信息）
-   ./packages/briar-skills/briar-mr/scripts/briar-mr-review.sh \
+   ../scripts/briar-mr-review.sh \
        setup-worktree <domain> <project_path> <mr_iid>
    ```
 
@@ -289,7 +291,7 @@ curl -s -X PUT \
 
    ```bash
    # 方式一：通过 briar-fix 脚本（自动处理分支和目录）
-   ./packages/briar-skills/briar-fix/scripts/briar-fix.sh cleanup \
+   ../../briar-fix/scripts/briar-fix.sh cleanup \
        "$LOCAL_REPO" \
        "$WORKTREE_PATH"
 
@@ -502,21 +504,21 @@ for c in comments:
 
 ```bash
 # 创建 worktree
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh setup \
+../../briar-fix/scripts/briar-fix.sh setup \
   "$HOME/projects/<repo>" <branch> fix-<mr_iid>
 
 # 验证
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh verify <worktree_path>
+../../briar-fix/scripts/briar-fix.sh verify <worktree_path>
 
 # 展示 diff 等用户确认
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh diff <worktree_path>
+../../briar-fix/scripts/briar-fix.sh diff <worktree_path>
 
 # 用户确认后提交
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh commit <worktree_path> "fix: 按 review 修复"
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh push <worktree_path>
+../../briar-fix/scripts/briar-fix.sh commit <worktree_path> "fix: 按 review 修复"
+../../briar-fix/scripts/briar-fix.sh push <worktree_path>
 
 # 清理
-./packages/briar-skills/briar-fix/scripts/briar-fix.sh cleanup <repo_path> <worktree_path>
+../../briar-fix/scripts/briar-fix.sh cleanup <repo_path> <worktree_path>
 ```
 
 ### 输出总结

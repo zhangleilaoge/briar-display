@@ -88,7 +88,9 @@ chmod 600 "$HOME/.config/briar-skills/.env"
 所有行为都可通过 `briar-mr.sh` 调用，它会自动路由到对应的原子脚本：
 
 ```bash
-./packages/briar-skills/briar-mr/scripts/briar-mr.sh <action> [args...]
+./scripts/briar-mr.sh <action> [args...]
+# 或在 PATH 中直接使用
+briar-mr.sh <action> [args...]
 ```
 
 也可以直接调用原子脚本：

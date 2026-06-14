@@ -11,7 +11,7 @@
 需要 `GITLAB_TOKEN`，读取优先级：
 1. 环境变量 `GITLAB_TOKEN`
 2. `~/.config/briar-skills/.env`
-3. `~/Documents/briar-display/.env`（向后兼容）
+3. 当前 git 仓库根目录的 `.env`（向后兼容），或通过 `BRIAR_PROJECT_ENV` 显式指定
 
 ```bash
 # 脚本启动时自动加载，无需手动设置
@@ -91,7 +91,7 @@ fi
 
 ```
 [briar-context] No GITLAB_TOKEN found.
-  Set it in ~/.config/briar-skills/.env or $HOME/Documents/briar-display/.env
+  Set it in ~/.config/briar-skills/.env or the current git repository's .env (or via BRIAR_PROJECT_ENV)
 ```
 
 请确保 `.env` 文件已正确配置并设置权限 `chmod 600`。
