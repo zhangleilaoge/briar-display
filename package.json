@@ -7,7 +7,7 @@
 		"node": ">=22.0.0"
 	},
 	"packageManager": "bun@1.2.0",
-	"workspaces": ["packages/*"],
+	"workspaces": ["packages/*", "packages/briar-meeting/packages/*"],
 	"scripts": {
 		"dev": "rm -rf node_modules/.cache packages/*/node_modules/.cache; lsof -ti :3888 | xargs kill -9 2>/dev/null || true; bun run --filter @briar/shared build && concurrently -k -n shared,display,node -c gray,cyan,magenta --hide shared \"bun run --filter @briar/shared dev\" \"bun run --filter @briar/display dev\" \"bun run --filter @briar/node dev\"",
 		"dev:node": "rm -rf node_modules/.cache packages/*/node_modules/.cache; lsof -ti :3888 | xargs kill -9 2>/dev/null || true; bun run --filter @briar/shared build && concurrently -k -n shared,node -c gray,magenta --hide shared \"bun run --filter @briar/shared dev\" \"bun run --filter @briar/node dev\"",
@@ -15,12 +15,14 @@
 		"build": "bun run --filter @briar/shared build && bun run --filter @briar/display build",
 		"build:shared": "bun run --filter @briar/shared build",
 		"build:agent": "bun run --filter @briar/agent build",
+		"dev:meeting": "bun run --filter @briar/meeting-sdk build && bun run --filter @briar/meeting-app dev",
+		"build:meeting": "bun run --filter @briar/meeting-sdk build && bun run --filter @briar/meeting-app build",
 		"preview": "bun run --filter @briar/display preview",
 		"install:all": "bun install && rm -rf node_modules/.cache packages/*/node_modules/.cache",
 		"lint": "biome check .",
 		"lint:fix": "biome check . --write",
 		"format": "biome format . --write",
-		"typecheck": "bun run --filter @briar/shared typecheck && bun run --filter @briar/node typecheck && bun run --filter @briar/display typecheck",
+		"typecheck": "bun run --filter @briar/shared typecheck && bun run --filter @briar/node typecheck && bun run --filter @briar/display typecheck && bun run --filter @briar/meeting-sdk typecheck && bun run --filter @briar/meeting-app typecheck",
 		"scripts:zip": "bash packages/briar-scripts/scripts/clone-and-zip.sh"
 	},
 	"devDependencies": {
