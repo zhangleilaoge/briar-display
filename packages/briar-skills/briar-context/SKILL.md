@@ -45,7 +45,7 @@ description: >
 所有 briar skill 共用同一套 `.env` 加载机制：
 
 1. **全局配置**（推荐）：`~/.config/briar-skills/.env`
-2. **项目内配置**（向后兼容）：`~/Documents/briar-display/.env`
+2. **项目内配置**（向后兼容）：当前 git 仓库根目录的 `.env`，或通过环境变量 `BRIAR_PROJECT_ENV` 显式指定
 
 **初始化**：
 ```bash
@@ -171,7 +171,9 @@ end tell
 ## 总入口脚本
 
 ```bash
-./packages/briar-skills/briar-context/scripts/briar-context.sh <url>
+./scripts/briar-context.sh <url>
+# 或在 PATH 中直接使用
+briar-context.sh <url>
 ```
 
 脚本自动判断 URL 类型，选择最佳获取方式，输出结构化上下文。

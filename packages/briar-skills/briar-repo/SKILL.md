@@ -99,7 +99,9 @@ fi
 ### 脚本
 
 ```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh pull <repo-name> [base_dir]
+./scripts/briar-repo.sh pull <repo-name> [base_dir]
+# 或在 PATH 中直接使用
+briar-repo.sh pull <repo-name> [base_dir]
 ```
 
 ---
@@ -135,7 +137,9 @@ git checkout "$CURRENT_BRANCH"
 ### 脚本
 
 ```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh update <repo-name> [base_dir]
+./scripts/briar-repo.sh update <repo-name> [base_dir]
+# 或在 PATH 中直接使用
+briar-repo.sh update <repo-name> [base_dir]
 ```
 
 ---
@@ -165,7 +169,9 @@ git worktree prune
 ### 脚本
 
 ```bash
-./packages/briar-skills/briar-repo/scripts/briar-repo.sh clean <repo-name> [base_dir]
+./scripts/briar-repo.sh clean <repo-name> [base_dir]
+# 或在 PATH 中直接使用
+briar-repo.sh clean <repo-name> [base_dir]
 ```
 
 ---
@@ -200,16 +206,16 @@ briar-repo.sh worktree clean  <repo> [base_dir]           # 清理全部
 
 ### 1. 脚本默认 `BASE_DIR` 为 `$HOME/projects`
 
-**错误示例**（仓库实际在 `~/Documents/projects/briar-display`）：
+**错误示例**（仓库实际在 `~/work/briar-display`，不在默认 `$HOME/projects` 下）：
 ```bash
 ./briar-repo.sh clean briar-display
-# Error: /Users/xxx/projects/briar-display is not a git repository.
+# Error: $HOME/projects/briar-display is not a git repository.
 ```
 
 **正确做法**：显式传入 `base_dir` 参数：
 ```bash
-./briar-repo.sh clean briar-display "$HOME/Documents/projects"
-./briar-repo.sh worktree add briar-display test/20260522 "$HOME/Documents/projects"
+./briar-repo.sh clean briar-display "$HOME/work"
+./briar-repo.sh worktree add briar-display test/20260522 "$HOME/work"
 ```
 
 > 当不确定仓库路径时，优先使用 `pwd` 或向用户确认，而不是依赖默认值。
