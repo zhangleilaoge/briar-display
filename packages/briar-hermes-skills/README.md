@@ -8,6 +8,7 @@
 |------|------|------|
 | `network-proxy` | 外网代理（mihomo）+ 公司内网（飞连）配置与故障排查 | network-setup.md, vpn-reconnect.md, pitfall/mihomo-ipv6.md |
 | `coding-agents` | 编码代理工具（KimiCode/MimoCode）使用指南 | code-agents.md, coding-agents-comparison.md |
+| `obsidian` | Obsidian 知识库管理（替代 ~/notes/，结构化 markdown vault） | — |
 
 ## 开发流程
 
@@ -25,6 +26,7 @@ git push origin master
 # 3. 最后同步到 hermes
 cp -r network-proxy ~/.hermes/skills/
 cp -r coding-agents ~/.hermes/skills/
+cp -r obsidian ~/.hermes/skills/note-taking/
 ```
 
 **禁止**直接修改 `~/.hermes/skills/` 然后反向同步，hermes 是消费端不是源头。
