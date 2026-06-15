@@ -8,8 +8,29 @@
 #   ./briar-repo.sh worktree remove  <repo-name> <branch> [base_dir]
 #   ./briar-repo.sh worktree list    <repo-name> [base_dir]
 #   ./briar-repo.sh worktree clean   <repo-name> [base_dir]
+#
+# Default base_dir by domain:
+#   gitlab.qima-inc.com / gitlab.com -> $HOME/Documents/gitlab
+#   github.com                         -> $HOME/Documents/github
+#   others                             -> $HOME/projects
 
 set -e
+
+# --- 根据域名推断默认本地父目录 ---
+get_default_base_dir() {
+	local domain="${1:-}"
+	case "$domain" in
+		gitlab.qima-inc.com | gitlab.com)
+			echo "$HOME/Documents/gitlab"
+			;;
+		github.com)
+			echo "$HOME/Documents/github"
+			;;
+		*)
+			echo "$HOME/projects"
+			;;
+	esac
+}
 
 # --- 统一加载 .env 配置 ---
 load_env() {
@@ -50,13 +71,19 @@ show_usage() {
 	echo "  $0 worktree clean   <repo-name> [base_dir]"
 	echo ""
 	echo "Examples:"
-	echo "  $0 pull wsc-pc-channel"
-	echo "  $0 update wsc-pc-channel"
-	echo "  $0 clean wsc-pc-channel"
-	echo "  $0 worktree add wsc-pc-channel feat/foo"
-	echo "  $0 worktree remove wsc-pc-channel feat/foo"
-	echo "  $0 worktree list wsc-pc-channel"
-	echo "  $0 worktree clean wsc-pc-channel"
+	echo "  $0 pull retail-app-member"
+	echo "  $0 pull react github.com"
+	echo "  $0 update retail-app-member"
+	echo "  $0 clean retail-app-member"
+	echo "  $0 worktree add retail-app-member feat/foo"
+	echo "  $0 worktree remove retail-app-member feat/foo"
+	echo "  $0 worktree list retail-app-member"
+	echo "  $0 worktree clean retail-app-member"
+	echo ""
+	echo "Default base_dir:"
+	echo "  GitLab (gitlab.qima-inc.com / gitlab.com) -> $HOME/Documents/gitlab"
+	echo "  GitHub (github.com)                         -> $HOME/Documents/github"
+	echo "  Others                                      -> $HOME/projects"
 }
 
 if [ -z "$ACTION" ] || [ "$ACTION" = "-h" ] || [ "$ACTION" = "--help" ]; then
@@ -70,14 +97,30 @@ if [ "$ACTION" = "worktree" ]; then
 	REPO_NAME="${3}"
 	if [ "$SUBCMD" = "add" ] || [ "$SUBCMD" = "remove" ]; then
 		BRANCH="${4}"
-		BASE_DIR="${5:-${BRIAR_REPO_BASE_DIR:-$HOME/projects}}"
+		BASE_DIR="${5:-${BRIAR_REPO_BASE_DIR:-}}"
 	else
-		BASE_DIR="${4:-${BRIAR_REPO_BASE_DIR:-$HOME/projects}}"
+		BASE_DIR="${4:-${BRIAR_REPO_BASE_DIR:-}}"
+	fi
+	# worktree 必须有已存在的仓库，这里无法推断 domain，沿用旧默认
+	if [ -z "$BASE_DIR" ]; then
+		BASE_DIR="$HOME/projects"
 	fi
 else
 	REPO_NAME="${2}"
-	BASE_DIR="${3:-${BRIAR_REPO_BASE_DIR:-$HOME/projects}}"
-	DOMAIN="${4:-gitlab.qima-inc.com}"
+	ARG3="${3:-}"
+	ARG4="${4:-}"
+
+	# 智能识别 domain：第三个参数如果是已知域名，则视为 domain
+	case "$ARG3" in
+		gitlab.qima-inc.com | gitlab.com | github.com)
+			DOMAIN="$ARG3"
+			BASE_DIR="${BRIAR_REPO_BASE_DIR:-$(get_default_base_dir "$DOMAIN")}"
+			;;
+		*)
+			DOMAIN="${ARG4:-gitlab.qima-inc.com}"
+			BASE_DIR="${ARG3:-${BRIAR_REPO_BASE_DIR:-$(get_default_base_dir "$DOMAIN")}}"
+			;;
+	esac
 fi
 
 LOCAL_PATH="${BASE_DIR}/${REPO_NAME}"
@@ -89,11 +132,6 @@ fi
 
 # --- pull: 拉取仓库 ---
 if [ "$ACTION" = "pull" ]; then
-	if [ -z "$GITLAB_TOKEN" ]; then
-		echo "Error: GITLAB_TOKEN is not set."
-		exit 1
-	fi
-
 	# 1. 检查本地是否已存在
 	if [ -d "$LOCAL_PATH/.git" ]; then
 		echo "本地已有该仓库：$LOCAL_PATH"
@@ -103,34 +141,87 @@ if [ "$ACTION" = "pull" ]; then
 		exit 0
 	fi
 
-	# 2. 搜索 GitLab 项目
-	ENCODED_NAME=$(echo "$REPO_NAME" | sed 's/ /%20/g')
-	SEARCH_RESULT=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-		"https://${DOMAIN}/api/v4/projects?search=${ENCODED_NAME}&per_page=20")
+	# 2. 根据域名选择搜索方式
+	case "$DOMAIN" in
+		github.com)
+			# GitHub
+			if [ -z "$GITHUB_TOKEN" ]; then
+				# 未设置 GITHUB_TOKEN 时尝试从 briar-assets 读取
+				BRIAR_ASSETS_GITHUB_ENV="$HOME/Documents/github/briar-display/briar-assets/briar/.env"
+				if [ -f "$BRIAR_ASSETS_GITHUB_ENV" ]; then
+					GITHUB_TOKEN=$(grep '^BRIAR_GITHUB_TOKEN=' "$BRIAR_ASSETS_GITHUB_ENV" | cut -d= -f2-)
+				fi
+			fi
 
-	MATCHES=$(echo "$SEARCH_RESULT" | jq --arg name "$REPO_NAME" '[.[] | select(.name == $name)]')
-	COUNT=$(echo "$MATCHES" | jq 'length')
+			AUTH_HEADER=""
+			if [ -n "$GITHUB_TOKEN" ]; then
+				AUTH_HEADER="Authorization: token $GITHUB_TOKEN"
+			fi
 
-	if [ "$COUNT" = "0" ] || [ -z "$COUNT" ]; then
-		echo "❌ 未在 GitLab 找到名为 \"$REPO_NAME\" 的仓库"
-		exit 1
-	elif [ "$COUNT" = "1" ]; then
-		SELECTED=$(echo "$MATCHES" | jq '.[0]')
-	else
-		PREFERRED=$(echo "$MATCHES" | jq '[.[] | select(.path_with_namespace | startswith("wsc-node/"))] | .[0] // empty')
-		if [ -n "$PREFERRED" ] && [ "$PREFERRED" != "null" ]; then
-			SELECTED="$PREFERRED"
-			echo "发现多个同名仓库，自动选择正式仓库：$(echo "$SELECTED" | jq -r '.path_with_namespace')"
-		else
-			echo "发现多个同名仓库，请指定完整路径："
-			echo "$MATCHES" | jq -r '.[] | "  - \(.path_with_namespace) (\(.web_url))"'
-			exit 1
-		fi
-	fi
+			ENCODED_NAME=$(echo "$REPO_NAME" | sed 's/ /%20/g')
+			if [ -n "$AUTH_HEADER" ]; then
+				SEARCH_RESULT=$(curl -s -H "$AUTH_HEADER" \
+					"https://api.github.com/search/repositories?q=${ENCODED_NAME}&per_page=20")
+			else
+				SEARCH_RESULT=$(curl -s \
+					"https://api.github.com/search/repositories?q=${ENCODED_NAME}&per_page=20")
+			fi
 
-	PROJECT_PATH=$(echo "$SELECTED" | jq -r '.path_with_namespace')
-	SSH_URL=$(echo "$SELECTED" | jq -r '.ssh_url_to_repo')
-	WEB_URL=$(echo "$SELECTED" | jq -r '.web_url')
+			MATCHES=$(echo "$SEARCH_RESULT" | jq --arg name "$REPO_NAME" '[.items // [] | .[] | select(.name == $name)]')
+			COUNT=$(echo "$MATCHES" | jq 'length')
+
+			if [ "$COUNT" = "0" ] || [ -z "$COUNT" ]; then
+				echo "❌ 未在 GitHub 找到名为 \"$REPO_NAME\" 的仓库"
+				exit 1
+			elif [ "$COUNT" = "1" ]; then
+				SELECTED=$(echo "$MATCHES" | jq '.[0]')
+			else
+				echo "发现多个同名仓库，请指定完整路径（如 owner/repo）："
+				echo "$MATCHES" | jq -r '.[] | "  - \(.full_name) (\(.html_url))"'
+				exit 1
+			fi
+
+			PROJECT_PATH=$(echo "$SELECTED" | jq -r '.full_name')
+			SSH_URL=$(echo "$SELECTED" | jq -r '.ssh_url')
+			WEB_URL=$(echo "$SELECTED" | jq -r '.html_url')
+			;;
+
+		gitlab.qima-inc.com | gitlab.com | *)
+			# GitLab（默认）
+			if [ -z "$GITLAB_TOKEN" ]; then
+				echo "Error: GITLAB_TOKEN is not set."
+				exit 1
+			fi
+
+			ENCODED_NAME=$(echo "$REPO_NAME" | sed 's/ /%20/g')
+			SEARCH_RESULT=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+				"https://${DOMAIN}/api/v4/projects?search=${ENCODED_NAME}&per_page=20")
+
+			MATCHES=$(echo "$SEARCH_RESULT" | jq --arg name "$REPO_NAME" '[.[] | select(.name == $name)]')
+			COUNT=$(echo "$MATCHES" | jq 'length')
+
+			if [ "$COUNT" = "0" ] || [ -z "$COUNT" ]; then
+				echo "❌ 未在 GitLab 找到名为 \"$REPO_NAME\" 的仓库"
+				exit 1
+			elif [ "$COUNT" = "1" ]; then
+				SELECTED=$(echo "$MATCHES" | jq '.[0]')
+			else
+				PREFERRED=$(echo "$MATCHES" | jq '[.[] | select(.path_with_namespace | startswith("wsc-node/"))] | .[0] // empty')
+				if [ -n "$PREFERRED" ] && [ "$PREFERRED" != "null" ]; then
+					SELECTED="$PREFERRED"
+					echo "发现多个同名仓库，自动选择正式仓库：$(echo "$SELECTED" | jq -r '.path_with_namespace')"
+				else
+					echo "发现多个同名仓库，请指定完整路径："
+					echo "$MATCHES" | jq -r '.[] | "  - \(.path_with_namespace) (\(.web_url))"'
+					exit 1
+				fi
+			fi
+
+			PROJECT_PATH=$(echo "$SELECTED" | jq -r '.path_with_namespace')
+			SSH_URL=$(echo "$SELECTED" | jq -r '.ssh_url_to_repo')
+			WEB_URL=$(echo "$SELECTED" | jq -r '.web_url')
+			;;
+	esac
 
 	echo ""
 	echo "📦 准备克隆 $PROJECT_PATH"

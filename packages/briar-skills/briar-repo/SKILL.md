@@ -17,7 +17,7 @@ description: >
 
 | 能力 | 说明 |
 |------|------|
-| **拉取仓库** | 从 GitLab 搜索并克隆到本地 |
+| **拉取仓库** | 从 GitLab / GitHub 搜索并克隆到本地 |
 | **更新仓库** | stash 当前改动 → fetch --all → pull 所有跟踪分支 |
 | **清理工作区** | 删除所有 worktree → update（保持主仓库干净最新） |
 | **Worktree 管理** | 创建/删除/列出/清理 worktree |
@@ -34,11 +34,18 @@ description: >
 与 `briar-mr` 共用同一个 `.env` 文件：
 
 ```bash
-# 读取 GITLAB_TOKEN：优先环境变量 → 全局配置
+# 读取 GITLAB_TOKEN / GITHUB_TOKEN：优先环境变量 → 全局配置
 if [ -z "$GITLAB_TOKEN" ]; then
     ENV_FILE="$HOME/.config/briar-skills/.env"
     if [ -f "$ENV_FILE" ]; then
         export GITLAB_TOKEN=$(grep GITLAB_TOKEN "$ENV_FILE" | cut -d= -f2-)
+    fi
+fi
+
+if [ -z "$GITHUB_TOKEN" ]; then
+    ENV_FILE="$HOME/.config/briar-skills/.env"
+    if [ -f "$ENV_FILE" ]; then
+        export GITHUB_TOKEN=$(grep GITHUB_TOKEN "$ENV_FILE" | cut -d= -f2-)
     fi
 fi
 ```
@@ -47,13 +54,15 @@ fi
 
 > "我需要 GitLab Access Token 才能搜索和克隆仓库。请提供一个有 `read_api` 权限的 token。我会将其保存在本地 `.env` 文件中，不会提交到 Git。"
 
+对于 GitHub 私有仓库，脚本会优先从 `briar-assets/briar/.env` 读取 `BRIAR_GITHUB_TOKEN`；未找到时再向用户索要。
+
 ---
 
 ## 行为索引
 
 | 行为 | 触发关键词 | 命令 |
 |------|-----------|------|
-| 拉取仓库 | "帮我拉 xxx"、"克隆 xxx" | `briar-repo.sh pull <repo> [base_dir]` |
+| 拉取仓库 | "帮我拉 xxx"、"克隆 xxx" | `briar-repo.sh pull <repo> [base_dir] [domain]` |
 | 更新仓库 | "更新 xxx"、"pull 一下" | `briar-repo.sh update <repo> [base_dir]` |
 | 清理工作区 | "保持干净"、"清理 xxx" | `briar-repo.sh clean <repo> [base_dir]` |
 | 创建 Worktree | "建 worktree"、"开分支工作区" | `briar-repo.sh worktree add <repo> <branch> [base_dir]` |
@@ -63,7 +72,11 @@ fi
 
 **参数说明**：
 - `<repo>`: 仓库名称（脚本默认在 `base_dir` 下查找 `base_dir/<repo>`）
-- `[base_dir]`: 可选，仓库所在的父目录，**默认为 `$HOME/projects`**。如果仓库不在该路径下，必须显式传入。
+- `[base_dir]`: 可选，仓库所在的父目录。未指定时按 `domain` 自动选择：
+  - GitLab（`gitlab.qima-inc.com` / `gitlab.com`）→ `$HOME/Documents/gitlab`
+  - GitHub（`github.com`）→ `$HOME/Documents/github`
+  - 其他 → `$HOME/projects`
+- `[domain]`: 可选，仅在 `pull` 时有效，**默认为 `gitlab.qima-inc.com`**。可指定 `github.com` 拉取 GitHub 仓库。
 
 ---
 
@@ -75,33 +88,42 @@ fi
 
 1. **检查本地是否已存在**
    ```bash
-   LOCAL_PATH="$HOME/projects/<repo-name>"
+   LOCAL_PATH="<base-dir>/<repo-name>"
    if [ -d "$LOCAL_PATH/.git" ]; then
        echo "本地已有该仓库"
    fi
    ```
 
-2. **搜索 GitLab 项目**
-   ```bash
-   curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-     "https://gitlab.qima-inc.com/api/v4/projects?search=<repo-name>&per_page=20"
-   ```
+2. **搜索项目**
+   - GitLab：
+     ```bash
+     curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+       "https://<domain>/api/v4/projects?search=<repo-name>&per_page=20"
+     ```
+   - GitHub：
+     ```bash
+     curl -s -H "Authorization: token $GITHUB_TOKEN" \
+       "https://api.github.com/search/repositories?q=<repo-name>&per_page=20"
+     ```
 
 3. **选择仓库**
    - 只有一个结果：直接使用
-   - 有多个结果：优先选择 `wsc-node/` 前缀的正式仓库；无法自动选择时，展示列表让用户确认
+   - 有多个结果：GitLab 优先选择 `wsc-node/` 前缀的正式仓库；无法自动选择时，展示列表让用户确认
 
 4. **执行克隆**
    ```bash
-   git clone <ssh_url> "$HOME/projects/<repo-name>"
+   git clone <ssh_url> "<base-dir>/<repo-name>"
    ```
 
 ### 脚本
 
 ```bash
+# GitLab（默认）
 ./scripts/briar-repo.sh pull <repo-name> [base_dir]
-# 或在 PATH 中直接使用
 briar-repo.sh pull <repo-name> [base_dir]
+
+# GitHub
+briar-repo.sh pull <repo-name> [base_dir] github.com
 ```
 
 ---
@@ -204,9 +226,17 @@ briar-repo.sh worktree clean  <repo> [base_dir]           # 清理全部
 
 ## 已知陷阱
 
-### 1. 脚本默认 `BASE_DIR` 为 `$HOME/projects`
+### 1. 脚本默认 `BASE_DIR` 按仓库来源自动选择
 
-**错误示例**（仓库实际在 `~/work/briar-display`，不在默认 `$HOME/projects` 下）：
+当前默认规则：
+
+| 来源 | 默认目录 |
+|------|---------|
+| GitLab（`gitlab.qima-inc.com` / `gitlab.com`） | `$HOME/Documents/gitlab` |
+| GitHub（`github.com`） | `$HOME/Documents/github` |
+| 其他 | `$HOME/projects` |
+
+**错误示例**（仓库实际在 `~/work/briar-display`，不在默认目录下）：
 ```bash
 ./briar-repo.sh clean briar-display
 # Error: $HOME/projects/briar-display is not a git repository.
