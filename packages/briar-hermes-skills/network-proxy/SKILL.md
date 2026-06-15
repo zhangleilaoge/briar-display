@@ -1,6 +1,9 @@
 ---
 title: 网络代理配置与故障排查
-description: 外网代理（mihomo）和公司内网（飞连/corplink）的配置、管理与故障排查流程
+description: >-
+  外网代理（mihomo）和公司内网（飞连/corplink）的配置、管理与故障排查流程。
+  触发场景：任何需要访问内网资源（Jira、GitLab、*.qima-inc.com）的任务前，必须先加载此 skill 检查/重连 VPN。
+  VPN 重连只用 corplink-rs（不用 corplink-cli），PTY 模式 + 飞书链接授权。
 category: devops
 ---
 
