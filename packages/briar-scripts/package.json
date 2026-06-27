@@ -4,7 +4,8 @@
 	"private": true,
 	"scripts": {
 		"zip": "bash ./scripts/clone-and-zip.sh",
-		"upload:image": "tsx ./scripts/upload-image.ts"
+		"upload:image": "tsx ./scripts/upload-image.ts",
+		"bid-compare": "bun ./scripts/construction-plan-comparison/src/index.ts"
 	},
 	"dependencies": {
 		"cos-nodejs-sdk-v5": "^2.11.10",
