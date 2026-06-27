@@ -16,7 +16,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@earendil-works/pi-coding-agent": "^0.75.4",
+		"@earendil-works/pi-coding-agent": "^0.79.4",
 		"dotenv": "^17.4.2"
 	},
 	"devDependencies": {
