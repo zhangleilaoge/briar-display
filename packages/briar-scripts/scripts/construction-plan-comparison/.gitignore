@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+python_encoder/.venv/
+
+# Generated outputs
+bid_compare_*/
+bid_compare_result/
+test-result/
+demo-*/
+
+# Workspace
+input/
+
+# Misc
+.DS_Store
+*.log

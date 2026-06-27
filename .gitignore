@@ -37,5 +37,8 @@ backups/
 # temp scripts
 cert-renew-fetch.js
 
+# construction plan comparison generated outputs
+construction_comparison_report/
+
 # agent skills symlinks
 .agents/skills/
