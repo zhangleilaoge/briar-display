@@ -353,8 +353,8 @@ export function groupImages(
 		const best = bestCross ?? bestSame
 		if (!best) continue
 
-		// 计算组内每张图最相似的 TopK（K = min(9, groupSize/3)，至少取 1）
-		const topK = Math.max(1, Math.min(9, Math.floor(members.length / 3)))
+		// 计算组内每张图最相似的 TopK（K = max(9, groupSize/3)，但不超过 groupSize-1）
+		const topK = Math.min(members.length - 1, Math.max(9, Math.floor(members.length / 3)))
 		for (const mi of members) {
 			const sims: { imgPath: string; sim: number }[] = []
 			for (const mj of members) {
