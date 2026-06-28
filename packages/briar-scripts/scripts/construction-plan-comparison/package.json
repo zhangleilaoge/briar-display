@@ -7,6 +7,11 @@
 	"scripts": {
 		"start": "bun src/index.ts",
 		"compare": "bun src/index.ts",
+		"compare:resume": "bun src/index.ts --resume",
+		"compare:cli": "bun src/index.ts --docs",
+		"clean": "rm -rf bid_compare_result .compare-cache",
+		"test": "bun test",
+		"check": "bunx tsc --noEmit && bunx @biomejs/biome check src/",
 		"benchmark": "bun src/benchmark.ts"
 	},
 	"dependencies": {

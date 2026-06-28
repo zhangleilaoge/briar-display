@@ -255,7 +255,7 @@ function selectImgBlock(metaEl, event) {
     b.classList.add(cls);
     const meta = b.querySelector('.meta');
     if (meta && b.dataset.metaHtml) {
-      const pct = Math.round(t.sim * 100);
+      const pct = (t.sim * 100).toFixed(1);
       meta.innerHTML = b.dataset.metaHtml + '<span class="sim-pct"> (' + pct + '%)</span>';
     }
   });
