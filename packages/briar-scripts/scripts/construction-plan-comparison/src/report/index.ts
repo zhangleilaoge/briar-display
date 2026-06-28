@@ -337,7 +337,16 @@ ${docMapHtml}
 <span class="arrow">&#9656;</span>
 </div>
 <div class="drawer-body"><div class="drawer-content">
-<p style="color:#94a3b8;font-size:0.85em;margin-bottom:15px">已将非常相似的图片聚组合并，每组展示代表性对比图，可按文档展开查看全部图片。</p>
+<p style="color:#94a3b8;font-size:0.85em;margin-bottom:10px">已将非常相似的图片聚组合并。每组顶部是代表性对比图，下方可按文档展开查看该组全部图片。</p>
+<div style="color:#94a3b8;font-size:0.82em;margin-bottom:15px;padding:10px;background:#0f172a;border-radius:8px;border:1px solid #334155">
+  <strong style="color:#e2e8f0">说明：</strong>“跨文档相似组”表示 A、B 两份文档里长得很像的图片；“同一文档内重复组”表示只在某一份文档内部重复出现的图片（例如同一页眉、Logo 或图纸在多页重复）。默认只显示跨文档相似组，避免和串标排查无关的内部重复混淆。
+</div>
+<div class="filter-bar" style="margin-bottom:15px">
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:#e2e8f0;font-size:0.85em">
+    <input type="checkbox" id="showIntraDocGroups" onchange="filterImgGroups()">
+    显示“同一文档内重复”的组（例如某份文档内部重复的页眉/图纸）
+  </label>
+</div>
 <div id="imgGroupsContainer"></div>
 <div class="pagination" id="imgGroupsPagination"></div>
 </div></div></div>

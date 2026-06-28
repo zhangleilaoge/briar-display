@@ -19,6 +19,7 @@ import { Logger } from './logger.ts'
 import { extractImages } from './pdf/image-extractor.ts'
 import { extractTextAndTables } from './pdf/text-extractor.ts'
 import { PythonEnvError } from './python-env.ts'
+import { generateAllInOneHtmlReport } from './report/all-in-one.ts'
 import { exportAll } from './report/export.ts'
 import { generateHtmlReport } from './report/index.ts'
 import type {
@@ -299,6 +300,21 @@ async function main() {
 	const reportPath = path.join(outDir, 'index.html')
 	fs.writeFileSync(reportPath, html, 'utf-8')
 
+	// 生成 all-in-one 单文件报告（图片内嵌 base64，方便直接转发）
+	logger.info('生成 all-in-one 单文件报告...')
+	const imgPaths = new Set<string>()
+	for (const g of result.imgGroups) {
+		imgPaths.add(g.repA.imgPath)
+		imgPaths.add(g.repB.imgPath)
+		for (const d of g.itemsByDoc) {
+			for (const it of d.items) imgPaths.add(it.imgPath)
+		}
+	}
+	const allInOneHtml = generateAllInOneHtmlReport(html, outDir, Array.from(imgPaths))
+	const allInOnePath = path.join(outDir, 'index.all-in-one.html')
+	fs.writeFileSync(allInOnePath, allInOneHtml, 'utf-8')
+	logger.info(`  all-in-one: ${allInOnePath}`)
+
 	// 导出 CSV
 	logger.info('\n导出 CSV...')
 	const exports = exportAll(outDir, result)
@@ -317,6 +333,7 @@ async function main() {
 	logger.info(`  非标段: ${specialParas.length}`)
 	logger.info(`  数据: ${dataPath}`)
 	logger.info(`  报告: ${reportPath}`)
+	logger.info(`  all-in-one: ${allInOnePath}`)
 	logger.info('='.repeat(60))
 }
 
