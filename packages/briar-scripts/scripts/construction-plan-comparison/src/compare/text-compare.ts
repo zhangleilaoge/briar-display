@@ -1,5 +1,18 @@
 import { DEFAULT_CONFIG } from '../config.ts'
 import type { TextChunk, TextPair } from '../types.ts'
+import { extractKeywords } from './keyword-utils.ts'
+
+/**
+ * 计算两个关键词集合的重叠度
+ */
+function computeKeywordOverlap(a: Set<string>, b: Set<string>): number {
+	if (a.size === 0 || b.size === 0) return 0
+	let common = 0
+	for (const kw of a) {
+		if (b.has(kw)) common++
+	}
+	return common / Math.min(a.size, b.size)
+}
 
 /**
  * 字符级 N-gram 特征提取
@@ -61,8 +74,9 @@ export function compareTexts(
 	chunks: TextChunk[],
 	threshold = DEFAULT_CONFIG.TEXT_THRESHOLD,
 ): TextPair[] {
-	// 预计算所有 ngram 特征
+	// 预计算所有 ngram 特征和领域关键词集合
 	const features = chunks.map((c) => charNgrams(c.text))
+	const keywordSets = chunks.map((c) => new Set(extractKeywords(c.text)))
 	const matches: TextPair[] = []
 	const seen = new Set<string>()
 
@@ -75,7 +89,10 @@ export function compareTexts(
 			// 只比较不同文档
 			if (chunks[i].doc === chunks[j].doc) continue
 
-			const sim = cosineSimCounter(features[i], features[j])
+			const ngramSim = cosineSimCounter(features[i], features[j])
+			const keywordSim = computeKeywordOverlap(keywordSets[i], keywordSets[j])
+			// 混合相似度：n-gram 为主；存在领域关键词重叠时叠加少量加成
+			const sim = keywordSim > 0 ? ngramSim * 0.85 + keywordSim * 0.15 : ngramSim
 			if (sim < threshold) continue
 
 			// 过滤标准化内容
@@ -89,10 +106,10 @@ export function compareTexts(
 				sim: Math.round(sim * 10000) / 10000,
 				docA: chunks[i].doc,
 				pageA: chunks[i].page,
-				textA: chunks[i].text,
+				chunkAId: chunks[i].id,
 				docB: chunks[j].doc,
 				pageB: chunks[j].page,
-				textB: chunks[j].text,
+				chunkBId: chunks[j].id,
 			})
 		}
 	}

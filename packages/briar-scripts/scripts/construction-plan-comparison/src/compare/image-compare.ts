@@ -1,29 +1,18 @@
 import { spawn } from 'node:child_process'
-import fs from 'node:fs'
 import path from 'node:path'
 import { DEFAULT_CONFIG } from '../config.ts'
-import type { ImageItem, ImagePair } from '../types.ts'
+import type { Logger } from '../logger.ts'
+import { PythonEnvError, assertPythonPath, enhancePythonError } from '../python-env.ts'
+import type {
+	ImageGroup,
+	ImageItem,
+	ImageItemDisplay,
+	ImageItemSaved,
+	ImagePair,
+} from '../types.ts'
 
 const ENCODER_DIR = path.join(import.meta.dir, '..', '..', 'python_encoder')
 const ENCODER_PATH = path.join(ENCODER_DIR, 'image_encoder.py')
-
-/**
- * 查找可用的 Python 解释器路径
- * 优先级：PYTHON_PATH 环境变量 > ./python_encoder/.venv/bin/python > python3
- */
-function resolvePythonPath(): string {
-	const envPath = process.env.PYTHON_PATH
-	if (envPath && fs.existsSync(envPath)) {
-		return envPath
-	}
-
-	const venvPath = path.join(ENCODER_DIR, '.venv', 'bin', 'python')
-	if (fs.existsSync(venvPath)) {
-		return venvPath
-	}
-
-	return 'python3'
-}
 
 /**
  * 启动 Python 图片编码长驻子进程
@@ -35,13 +24,7 @@ function startEncoderProcess(): {
 	) => Promise<{ doc: number; page: number; idx: number; embedding: number[] }[]>
 	close: () => Promise<void>
 } {
-	const pythonPath = resolvePythonPath()
-
-	if (!fs.existsSync(pythonPath) && !pythonPath.includes(path.sep)) {
-		throw new Error(
-			`未找到 Python 解释器: ${pythonPath}\n请在 python_encoder/ 下创建虚拟环境，或设置 PYTHON_PATH 环境变量指向 Python 可执行文件。`,
-		)
-	}
+	const pythonPath = assertPythonPath()
 
 	const proc = spawn(pythonPath, [ENCODER_PATH], {
 		stdio: ['pipe', 'pipe', 'pipe'],
@@ -101,7 +84,9 @@ function startEncoderProcess(): {
 
 	proc.on('close', (code) => {
 		if (code !== 0) {
-			const err = new Error(`Python encoder exited with code ${code}: ${stderr}`)
+			const err = new PythonEnvError(
+				`Python encoder exited with code ${code}: ${enhancePythonError(stderr)}`,
+			)
 			for (const pending of pendingResolvers.splice(0)) {
 				pending.reject(err)
 			}
@@ -135,8 +120,9 @@ function startEncoderProcess(): {
  * 将图片编码为特征向量
  */
 export async function encodeImages(
-	images: Omit<ImageItem, 'embedding'>[],
+	images: ImageItemSaved[],
 	batchSize = DEFAULT_CONFIG.BATCH_SIZE,
+	logger?: Logger,
 ): Promise<ImageItem[]> {
 	if (images.length === 0) {
 		return []
@@ -146,15 +132,33 @@ export async function encodeImages(
 	const results: ImageItem[] = []
 
 	try {
+		// 流水线发送 batch（最多 3 个并发），减少 IPC 等待同时避免内存峰值
+		const concurrency = 3
+		const batches: { index: number; batch: typeof images }[] = []
 		for (let i = 0; i < images.length; i += batchSize) {
-			const batch = images.slice(i, i + batchSize)
-			console.log(
-				`  编码图片 ${i + 1}-${Math.min(i + batchSize, images.length)}/${images.length}...`,
+			batches.push({ index: i, batch: images.slice(i, i + batchSize) })
+		}
+
+		const allResults: {
+			batch: typeof images
+			embeddings: { doc: number; page: number; idx: number; embedding: number[] }[]
+		}[] = []
+		for (let i = 0; i < batches.length; i += concurrency) {
+			const slice = batches.slice(i, i + concurrency)
+			const sliceResults = await Promise.all(
+				slice.map(({ index, batch }) =>
+					encoder.send(batch).then((embeddings) => {
+						const msg = `  编码图片 ${index + 1}-${Math.min(index + batchSize, images.length)}/${images.length}...`
+						if (logger) logger.info(msg)
+						else console.log(msg)
+						return { batch, embeddings }
+					}),
+				),
 			)
+			allResults.push(...sliceResults)
+		}
 
-			const embeddings = await encoder.send(batch)
-
-			// 将 embedding 匹配回原始图片
+		for (const { batch, embeddings } of allResults) {
 			for (const img of batch) {
 				const emb = embeddings.find(
 					(e) => e.doc === img.doc && e.page === img.page && e.idx === img.idx,
@@ -166,6 +170,12 @@ export async function encodeImages(
 					})
 				}
 			}
+		}
+
+		if (results.length !== images.length) {
+			const msg = `  警告: ${images.length - results.length} 张图片编码失败`
+			if (logger) logger.warn(msg)
+			else console.warn(msg)
 		}
 	} finally {
 		await encoder.close()
@@ -224,4 +234,141 @@ export function compareImages(
 
 	pairs.sort((a, b) => b.sim - a.sim)
 	return pairs
+}
+
+/**
+ * 向量归一化（用于加速大规模点积）
+ */
+function normalizeVector(vec: number[]): number[] {
+	let norm = 0
+	for (const v of vec) norm += v * v
+	const inv = 1 / (Math.sqrt(norm) + 1e-8)
+	return vec.map((v) => v * inv)
+}
+
+/**
+ * 点积（要求输入向量已归一化，结果即余弦相似度）
+ */
+function dotProduct(a: number[], b: number[]): number {
+	let dot = 0
+	for (let i = 0; i < a.length; i++) dot += a[i] * b[i]
+	return dot
+}
+
+class UnionFind {
+	parent: number[]
+	rank: number[]
+	constructor(n: number) {
+		this.parent = Array.from({ length: n }, (_, i) => i)
+		this.rank = new Array(n).fill(0)
+	}
+	find(x: number): number {
+		let root = x
+		while (this.parent[root] !== root) root = this.parent[root]
+		let cur = x
+		while (this.parent[cur] !== root) {
+			const next = this.parent[cur]
+			this.parent[cur] = root
+			cur = next
+		}
+		return root
+	}
+	union(a: number, b: number): void {
+		const ra = this.find(a)
+		const rb = this.find(b)
+		if (ra === rb) return
+		if (this.rank[ra] < this.rank[rb]) {
+			this.parent[ra] = rb
+		} else if (this.rank[ra] > this.rank[rb]) {
+			this.parent[rb] = ra
+		} else {
+			this.parent[rb] = ra
+			this.rank[ra]++
+		}
+	}
+}
+
+/**
+ * 对相似图片进行聚类（包含同文档内重复图）
+ */
+export function groupImages(
+	images: ImageItem[],
+	threshold = DEFAULT_CONFIG.IMG_GROUP_THRESHOLD,
+): ImageGroup[] {
+	if (images.length < 2) return []
+
+	const norms = images.map((img) => normalizeVector(img.embedding))
+	const uf = new UnionFind(images.length)
+	const pairSims: { i: number; j: number; sim: number }[] = []
+
+	for (let i = 0; i < images.length; i++) {
+		for (let j = i + 1; j < images.length; j++) {
+			const sim = dotProduct(norms[i], norms[j])
+			if (sim < threshold) continue
+			uf.union(i, j)
+			pairSims.push({ i, j, sim: Math.round(sim * 10000) / 10000 })
+		}
+	}
+
+	// 收集簇
+	const clusters = new Map<number, number[]>()
+	for (let i = 0; i < images.length; i++) {
+		const root = uf.find(i)
+		if (!clusters.has(root)) clusters.set(root, [])
+		clusters.get(root)!.push(i)
+	}
+
+	const toDisplay = (img: ImageItem): ImageItemDisplay => ({
+		doc: img.doc,
+		page: img.page,
+		idx: img.idx,
+		width: img.width,
+		height: img.height,
+		imgPath: img.imgPath,
+	})
+
+	const groups: ImageGroup[] = []
+	let gid = 0
+	for (const [, members] of clusters) {
+		if (members.length < 2) continue
+		const memberSet = new Set(members)
+
+		// 在簇内找最佳代表对，优先跨文档
+		let bestCross: { i: number; j: number; sim: number } | null = null
+		let bestSame: { i: number; j: number; sim: number } | null = null
+		for (const p of pairSims) {
+			if (!memberSet.has(p.i) || !memberSet.has(p.j)) continue
+			if (images[p.i].doc === images[p.j].doc) {
+				if (!bestSame || p.sim > bestSame.sim) bestSame = p
+			} else {
+				if (!bestCross || p.sim > bestCross.sim) bestCross = p
+			}
+		}
+		const best = bestCross ?? bestSame
+		if (!best) continue
+
+		// 按文档分组
+		const byDoc = new Map<number, ImageItemDisplay[]>()
+		for (const idx of members) {
+			const img = images[idx]
+			if (!byDoc.has(img.doc)) byDoc.set(img.doc, [])
+			byDoc.get(img.doc)!.push(toDisplay(img))
+		}
+		const itemsByDoc = Array.from(byDoc.entries())
+			.map(([doc, items]) => ({ doc, items: items.sort((a, b) => a.page - b.page) }))
+			.sort((a, b) => a.doc - b.doc)
+
+		groups.push({
+			id: gid++,
+			size: members.length,
+			docs: itemsByDoc.map((d) => d.doc),
+			repA: toDisplay(images[best.i]),
+			repB: toDisplay(images[best.j]),
+			repSim: best.sim,
+			itemsByDoc,
+		})
+	}
+
+	groups.sort((a, b) => b.repSim - a.repSim)
+	return groups
 }

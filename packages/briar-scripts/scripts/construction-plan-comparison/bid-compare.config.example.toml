@@ -1,0 +1,33 @@
+# 施工方案比对工具配置文件示例
+# 复制为 bid-compare.config.toml 后生效
+
+# 输入文档路径（可选；未指定时读取 input/ 目录）
+# docs = ["doc1.pdf", "doc2.pdf"]
+
+# 输出目录
+output = "./bid_compare_result"
+
+# Python 解释器路径（可选；默认自动查找 .venv/bin/python）
+# python_path = "./python_encoder/.venv/bin/python"
+
+# 断点续跑：复用已缓存的文本/表格/图片编码结果
+# resume = false
+
+# 输出数据格式：json 或 msgpack
+# output_format = "json"
+
+[thresholds]
+img = 0.7    # 图片相似度阈值
+text = 0.5   # 文本相似度阈值
+table = 0.6  # 表格相似度阈值
+
+[text]
+chunk_size = 300    # 文本块大小（字符）
+chunk_overlap = 30  # 文本块重叠（字符）
+
+[image]
+min_size = 32           # 最小图片尺寸（像素）
+min_area = 8000         # 最小图片像素面积（过滤页码、小图标等噪声）
+group_threshold = 0.85  # 图片聚类阈值，高于此值的图会归入同一 group
+batch_size = 32         # 图片编码批次大小
+max_show = 500          # 报告中最多展示的图片对数量
