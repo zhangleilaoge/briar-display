@@ -100,6 +100,7 @@ export function generateHtmlReport(result: CompareResult, maxImgShow = 500): str
 				w: g.repA.width,
 				h: g.repA.height,
 				img: g.repA.imgPath,
+				top_similar: g.repA.topSimilar,
 			},
 			rep_b: {
 				doc: g.repB.doc,
@@ -107,6 +108,7 @@ export function generateHtmlReport(result: CompareResult, maxImgShow = 500): str
 				w: g.repB.width,
 				h: g.repB.height,
 				img: g.repB.imgPath,
+				top_similar: g.repB.topSimilar,
 			},
 			items_by_doc: g.itemsByDoc.map((d) => ({
 				doc: d.doc,
@@ -115,6 +117,7 @@ export function generateHtmlReport(result: CompareResult, maxImgShow = 500): str
 					w: it.width,
 					h: it.height,
 					img: it.imgPath,
+					top_similar: it.topSimilar,
 				})),
 			})),
 		})),
@@ -235,9 +238,25 @@ ${docTagStyles}
 .img-doc-panel{display:none;padding:10px;gap:10px;flex-wrap:wrap}
 .img-doc-panel.open{display:flex}
 .img-thumb{text-align:center}
-.img-thumb img{max-height:90px;max-width:140px;object-fit:contain;background:#0a0f1a;border-radius:6px;cursor:pointer;border:1px solid #334155}
+.img-thumb img{max-height:90px;max-width:140px;object-fit:contain;background:#0a0f1a;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:border-color .2s,box-shadow .2s}
 .img-thumb img:hover{border-color:#38bdf8}
 .img-thumb .meta{color:#94a3b8;font-size:0.7em;margin-top:4px}
+.img-block{display:inline-block;text-align:center;position:relative;padding:4px;border-radius:8px;transition:background .2s,box-shadow .2s}
+.img-block img{border:2px solid transparent;transition:border-color .2s,box-shadow .2s}
+.img-block .meta{cursor:pointer;color:#94a3b8;font-size:0.78em;margin-top:4px}
+.img-block.selected{background:rgba(34,197,94,.12);box-shadow:0 0 0 2px rgba(34,197,94,.5)}
+.img-block.selected img{border-color:#22c55e}
+.img-block.highlight-green{background:rgba(34,197,94,.12);box-shadow:0 0 0 2px rgba(34,197,94,.5)}
+.img-block.highlight-green img{border-color:#22c55e}
+.img-block.highlight-yellow{background:rgba(251,191,36,.12);box-shadow:0 0 0 2px rgba(251,191,36,.4)}
+.img-block.highlight-yellow img{border-color:#fbbf24}
+.img-block.highlight-red{background:rgba(239,68,68,.12);box-shadow:0 0 0 2px rgba(239,68,68,.4)}
+.img-block.highlight-red img{border-color:#ef4444}
+.img-block .sim-pct{font-weight:600;margin-left:4px}
+.img-block.highlight-green .sim-pct{color:#22c55e}
+.img-block.highlight-yellow .sim-pct{color:#fbbf24}
+.img-block.highlight-red .sim-pct{color:#ef4444}
+.img-block .orig-label{color:#22c55e;font-weight:600;margin-left:4px}
 .sim-c1{color:#ef4444}.sim-c2{color:#f97316}.sim-c3{color:#38bdf8}
 .table-pair{padding:16px;margin-bottom:16px;background:#0f172a;border-radius:12px;border:1px solid #334155}
 .table-pair-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px}
@@ -337,14 +356,14 @@ ${docMapHtml}
 <span class="arrow">&#9656;</span>
 </div>
 <div class="drawer-body"><div class="drawer-content">
-<p style="color:#94a3b8;font-size:0.85em;margin-bottom:10px">已将非常相似的图片聚组合并。每组顶部是代表性对比图，下方可按文档展开查看该组全部图片。</p>
+<p style="color:#94a3b8;font-size:0.85em;margin-bottom:10px"><strong style="color:#e2e8f0">点击图片预览，点击页面尺寸查看最关联图片。</strong> 关联图按相似度着色：绿色 ≥95%，黄色 ≥90%，红色 ≥80%。</p>
 <div style="color:#94a3b8;font-size:0.82em;margin-bottom:15px;padding:10px;background:#0f172a;border-radius:8px;border:1px solid #334155">
   <strong style="color:#e2e8f0">说明：</strong>“跨文档相似组”表示 A、B 两份文档里长得很像的图片；“同一文档内重复组”表示只在某一份文档内部重复出现的图片（例如同一页眉、Logo 或图纸在多页重复）。默认只显示跨文档相似组，避免和串标排查无关的内部重复混淆。
 </div>
 <div class="filter-bar" style="margin-bottom:15px">
   <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:#e2e8f0;font-size:0.85em">
-    <input type="checkbox" id="showIntraDocGroups" onchange="filterImgGroups()">
-    显示“同一文档内重复”的组（例如某份文档内部重复的页眉/图纸）
+    <input type="checkbox" id="filterIntraDocGroups" checked onchange="toggleIntraDocFilter()">
+    过滤同文档相似组
   </label>
 </div>
 <div id="imgGroupsContainer"></div>

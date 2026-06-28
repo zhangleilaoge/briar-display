@@ -221,17 +221,57 @@ filterTablePairs();
 // 图片 src 兜底（all-in-one 版本会注入 IMG_DATA）
 function imgSrc(p) { return (typeof IMG_DATA !== 'undefined' && IMG_DATA[p]) ? IMG_DATA[p] : p; }
 
+// 图片选中高亮交互：点击图片预览，点击图片下方“第X页 WxH”文本查看最关联图片
+document.addEventListener('click', function(e) { if (!e.target.closest('.img-block')) clearImgSelection(); });
+let selectedImgBlock = null;
+function clearImgSelection() {
+  if (!selectedImgBlock) return;
+  const gid = selectedImgBlock.dataset.group;
+  document.querySelectorAll('.img-block[data-group="' + gid + '"]').forEach(b => {
+    b.classList.remove('selected', 'highlight-green', 'highlight-yellow', 'highlight-red');
+    const meta = b.querySelector('.meta');
+    if (meta && b.dataset.metaHtml) meta.innerHTML = b.dataset.metaHtml;
+  });
+  selectedImgBlock = null;
+}
+function selectImgBlock(metaEl, event) {
+  event.stopPropagation();
+  const block = metaEl.closest('.img-block');
+  if (!block || selectedImgBlock === block) return;
+  clearImgSelection();
+  selectedImgBlock = block;
+  block.classList.add('selected');
+  const smeta = block.querySelector('.meta');
+  if (smeta && block.dataset.metaHtml) smeta.innerHTML = block.dataset.metaHtml + '<span class="orig-label"> (原图)</span>';
+  const top = JSON.parse(block.dataset.top || '[]');
+  const gid = block.dataset.group;
+  document.querySelectorAll('.img-block[data-group="' + gid + '"]').forEach(b => {
+    if (b === block) return;
+    const t = top.find(function(x) { return x.imgPath === b.dataset.img; });
+    if (!t) return;
+    let cls = 'highlight-red';
+    if (t.sim >= 0.95) cls = 'highlight-green';
+    else if (t.sim >= 0.90) cls = 'highlight-yellow';
+    b.classList.add(cls);
+    const meta = b.querySelector('.meta');
+    if (meta && b.dataset.metaHtml) {
+      const pct = Math.round(t.sim * 100);
+      meta.innerHTML = b.dataset.metaHtml + '<span class="sim-pct"> (' + pct + '%)</span>';
+    }
+  });
+}
+
 // 图片聚类组展示
 const IMGS_PER_PAGE = 10;
 let imgCurrentPage = 1;
-let showIntraDocGroups = false;
+let hideIntraDocGroups = true;
 function getImgGroups() {
-  if (showIntraDocGroups) return IMG_GROUPS;
-  return IMG_GROUPS.filter(g => g.docs.length > 1);
+  if (hideIntraDocGroups) return IMG_GROUPS.filter(g => g.docs.length > 1);
+  return IMG_GROUPS;
 }
-function filterImgGroups() {
-  const cb = document.getElementById('showIntraDocGroups');
-  showIntraDocGroups = cb ? cb.checked : false;
+function toggleIntraDocFilter() {
+  const cb = document.getElementById('filterIntraDocGroups');
+  hideIntraDocGroups = cb ? cb.checked : true;
   renderImgGroups(1);
 }
 function toggleImgDocGroup(header) {
@@ -239,8 +279,9 @@ function toggleImgDocGroup(header) {
   panel.classList.toggle('open');
   header.classList.toggle('open');
 }
-function renderImgItem(it, docIdx) {
-  return '<div class="img-thumb"><img src="' + imgSrc(it.img) + '" alt="" onclick="openOverlay(this.src,\\'' + '文档' + (docIdx+1) + ' 第' + it.page + '页 ' + it.w + 'x' + it.h + '\\')"><div class="meta">第' + it.page + '页 ' + it.w + 'x' + it.h + '</div></div>';
+function renderImgItem(it, docIdx, groupId) {
+  const metaHtml = '第' + it.page + '页 ' + it.w + 'x' + it.h;
+  return '<div class="img-block img-thumb" data-group="' + groupId + '" data-img="' + it.img + '" data-top="' + JSON.stringify(it.top_similar || []).replace(/"/g, '&quot;') + '" data-meta-html="' + metaHtml + '"><img src="' + imgSrc(it.img) + '" alt="" onclick="openOverlay(this.src,\\'' + metaHtml + '\\')"><div class="meta" onclick="selectImgBlock(this,event)">' + metaHtml + '</div></div>';
 }
 function renderImgGroups(page) {
   const container = document.getElementById("imgGroupsContainer");
@@ -259,17 +300,22 @@ function renderImgGroups(page) {
     const docTags = g.docs.map(d => '<span class="tag ' + dc[d] + '">' + dl[d] + '</span>').join(' ');
     html += '<div class="img-group"><div class="img-group-header">';
     html += '<div class="img-group-rep"><div class="side">';
-    html += '<img src="' + imgSrc(g.rep_a.img) + '" alt="" onclick="openOverlay(this.src,\\'' + dl[g.rep_a.doc] + ' 第' + g.rep_a.page + '页 ' + g.rep_a.w + 'x' + g.rep_a.h + '\\')">';
-    html += '<div class="meta"><span class="tag ' + dc[g.rep_a.doc] + '">' + dl[g.rep_a.doc] + '</span> 第' + g.rep_a.page + '页 ' + g.rep_a.w + 'x' + g.rep_a.h + '</div></div>';
+    const metaA = '<span class="tag ' + dc[g.rep_a.doc] + '">' + dl[g.rep_a.doc] + '</span> 第' + g.rep_a.page + '页 ' + g.rep_a.w + 'x' + g.rep_a.h;
+    const infoA = dl[g.rep_a.doc] + ' 第' + g.rep_a.page + '页 ' + g.rep_a.w + 'x' + g.rep_a.h;
+    html += '<div class="img-block" data-group="' + g.id + '" data-img="' + g.rep_a.img + '" data-top="' + JSON.stringify(g.rep_a.top_similar || []).replace(/"/g, '&quot;') + '" data-meta-html="' + metaA.replace(/"/g, '&quot;') + '"><img src="' + imgSrc(g.rep_a.img) + '" alt="" onclick="openOverlay(this.src,\\'' + infoA + '\\')"><div class="meta" onclick="selectImgBlock(this,event)">' + metaA + '</div></div>';
+    html += '</div>';
     html += '<div class="vs"><span class="sim ' + sc + '">' + g.rep_sim + '</span><span>#' + (gi+1) + '</span><span style="font-size:0.75em;color:#64748b">共' + g.size + '张</span></div>';
-    html += '<div class="side"><img src="' + imgSrc(g.rep_b.img) + '" alt="" onclick="openOverlay(this.src,\\'' + dl[g.rep_b.doc] + ' 第' + g.rep_b.page + '页 ' + g.rep_b.w + 'x' + g.rep_b.h + '\\')">';
-    html += '<div class="meta"><span class="tag ' + dc[g.rep_b.doc] + '">' + dl[g.rep_b.doc] + '</span> 第' + g.rep_b.page + '页 ' + g.rep_b.w + 'x' + g.rep_b.h + '</div></div></div>';
+    html += '<div class="side">';
+    const metaB = '<span class="tag ' + dc[g.rep_b.doc] + '">' + dl[g.rep_b.doc] + '</span> 第' + g.rep_b.page + '页 ' + g.rep_b.w + 'x' + g.rep_b.h;
+    const infoB = dl[g.rep_b.doc] + ' 第' + g.rep_b.page + '页 ' + g.rep_b.w + 'x' + g.rep_b.h;
+    html += '<div class="img-block" data-group="' + g.id + '" data-img="' + g.rep_b.img + '" data-top="' + JSON.stringify(g.rep_b.top_similar || []).replace(/"/g, '&quot;') + '" data-meta-html="' + metaB.replace(/"/g, '&quot;') + '"><img src="' + imgSrc(g.rep_b.img) + '" alt="" onclick="openOverlay(this.src,\\'' + infoB + '\\')"><div class="meta" onclick="selectImgBlock(this,event)">' + metaB + '</div></div>';
+    html += '</div></div>';
     const intraBadge = g.docs.length === 1 ? '<span style="font-size:0.75em;color:#94a3b8;margin-left:8px">（仅同一文档内重复）</span>' : '';
     html += '<div class="img-group-meta">' + docTags + intraBadge + '</div>';
     html += '</div><div class="img-group-docs">';
     for (const d of g.items_by_doc) {
       html += '<div class="img-doc-group"><div class="img-doc-header" onclick="toggleImgDocGroup(this)"><span class="tag ' + dc[d.doc] + '">' + dl[d.doc] + '</span> <span>' + d.items.length + ' 张</span><span class="arrow">&#9656;</span></div><div class="img-doc-panel">';
-      for (const it of d.items) html += renderImgItem(it, d.doc);
+      for (const it of d.items) html += renderImgItem(it, d.doc, g.id);
       html += '</div></div>';
     }
     html += '</div></div>';
@@ -285,7 +331,7 @@ function renderImgGroups(page) {
   pagination.innerHTML = ph;
   const rc = document.getElementById("imgResultCount"); if (rc) rc.textContent = groups.length + "组";
 }
-filterImgGroups();
+toggleIntraDocFilter();
 
 // 非标内容分页
 const SP_PER_PAGE = 10;

@@ -25,7 +25,7 @@ describe('loadConfig', () => {
 		expect(cfg.outputFormat).toBe('json')
 		expect(cfg.chunkSize).toBe(300)
 		expect(cfg.imgMinArea).toBe(8000)
-		expect(cfg.imgGroupThreshold).toBe(0.85)
+		expect(cfg.imgGroupThreshold).toBe(0.8)
 	})
 
 	it('能正确读取并解析配置文件', () => {
@@ -85,7 +85,7 @@ max_show = 100
 		expect(cfg.outputFormat).toBe('json')
 		expect(cfg.chunkSize).toBe(300)
 		expect(cfg.imgMinArea).toBe(8000)
-		expect(cfg.imgGroupThreshold).toBe(0.85)
+		expect(cfg.imgGroupThreshold).toBe(0.8)
 	})
 })
 

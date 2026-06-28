@@ -331,9 +331,15 @@ export function groupImages(
 	let gid = 0
 	for (const [, members] of clusters) {
 		if (members.length < 2) continue
-		const memberSet = new Set(members)
+
+		// 为每个成员创建一次展示对象，后续 rep 和 items 共用
+		const idxToDisplay = new Map<number, ImageItemDisplay>()
+		for (const idx of members) {
+			idxToDisplay.set(idx, toDisplay(images[idx]))
+		}
 
 		// 在簇内找最佳代表对，优先跨文档
+		const memberSet = new Set(members)
 		let bestCross: { i: number; j: number; sim: number } | null = null
 		let bestSame: { i: number; j: number; sim: number } | null = null
 		for (const p of pairSims) {
@@ -347,12 +353,27 @@ export function groupImages(
 		const best = bestCross ?? bestSame
 		if (!best) continue
 
+		// 计算组内每张图最相似的 TopK（K = min(9, groupSize/3)，至少取 1）
+		const topK = Math.max(1, Math.min(9, Math.floor(members.length / 3)))
+		for (const mi of members) {
+			const sims: { imgPath: string; sim: number }[] = []
+			for (const mj of members) {
+				if (mi === mj) continue
+				sims.push({
+					imgPath: images[mj].imgPath,
+					sim: Math.round(dotProduct(norms[mi], norms[mj]) * 10000) / 10000,
+				})
+			}
+			sims.sort((a, b) => b.sim - a.sim)
+			idxToDisplay.get(mi)!.topSimilar = sims.slice(0, topK)
+		}
+
 		// 按文档分组
 		const byDoc = new Map<number, ImageItemDisplay[]>()
 		for (const idx of members) {
-			const img = images[idx]
-			if (!byDoc.has(img.doc)) byDoc.set(img.doc, [])
-			byDoc.get(img.doc)!.push(toDisplay(img))
+			const d = idxToDisplay.get(idx)!
+			if (!byDoc.has(d.doc)) byDoc.set(d.doc, [])
+			byDoc.get(d.doc)!.push(d)
 		}
 		const itemsByDoc = Array.from(byDoc.entries())
 			.map(([doc, items]) => ({ doc, items: items.sort((a, b) => a.page - b.page) }))
@@ -362,8 +383,8 @@ export function groupImages(
 			id: gid++,
 			size: members.length,
 			docs: itemsByDoc.map((d) => d.doc),
-			repA: toDisplay(images[best.i]),
-			repB: toDisplay(images[best.j]),
+			repA: idxToDisplay.get(best.i)!,
+			repB: idxToDisplay.get(best.j)!,
 			repSim: best.sim,
 			itemsByDoc,
 		})
