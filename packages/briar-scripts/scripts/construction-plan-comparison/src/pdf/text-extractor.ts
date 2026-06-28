@@ -1,93 +1,130 @@
-import fs from 'node:fs'
-import { createRequire } from 'node:module'
+import { spawn } from 'node:child_process'
+import path from 'node:path'
 import { DEFAULT_CONFIG } from '../config.ts'
-import type { TextChunk } from '../types.ts'
+import { PythonEnvError, assertPythonPath, enhancePythonError } from '../python-env.ts'
+import type { TableChunk, TextChunk } from '../types.ts'
 
-const require = createRequire(import.meta.url)
-const pdfParse = require('pdf-parse') as (
-	buffer: Buffer,
-) => Promise<{ text: string; numpages: number }>
+const ENCODER_DIR = path.join(import.meta.dir, '..', '..', 'python_encoder')
+const EXTRACTOR_PATH = path.join(ENCODER_DIR, 'text_extractor.py')
 
-/**
- * 在 [searchStart, searchEnd) 范围内查找最后一个分隔符位置
- */
-function rfindInRange(text: string, sep: string, searchStart: number, searchEnd: number): number {
-	const substr = text.slice(searchStart, searchEnd)
-	const pos = substr.lastIndexOf(sep)
-	if (pos === -1) return -1
-	return searchStart + pos
-}
-
-/**
- * 固定长度拆分文本（移植自 Python 版本）
- */
-export function splitFixed(
-	text: string,
-	chunkSize = DEFAULT_CONFIG.CHUNK_SIZE,
-	overlap = DEFAULT_CONFIG.CHUNK_OVERLAP,
-): string[] {
-	const rawParas = text.split(/\n{2,}/)
-	const chunks: string[] = []
-
-	for (const para of rawParas) {
-		const cleaned = para.replace(/\s+/g, ' ').trim()
-		if (cleaned.length < 20) continue
-
-		if (cleaned.length <= chunkSize) {
-			chunks.push(cleaned)
-		} else {
-			let start = 0
-			while (start < cleaned.length) {
-				let end = Math.min(start + chunkSize, cleaned.length)
-
-				if (end < cleaned.length) {
-					// 在 chunk 的后半段查找句子边界
-					const searchStart = start + Math.floor(chunkSize / 2)
-					const seps = ['。', '；', '！', '？', '. ', '; ', '! ', '? ', '，', ', ']
-					for (const sep of seps) {
-						const pos = rfindInRange(cleaned, sep, searchStart, end)
-						if (pos >= searchStart) {
-							end = pos + sep.length
-							break
-						}
-					}
-				}
-
-				const chunk = cleaned.slice(start, end).trim()
-				if (chunk.length >= 20) {
-					chunks.push(chunk)
-				}
-
-				const nextStart = end - overlap
-				if (nextStart <= start) {
-					// 防止死循环，强制前进
-					start = end
-				} else {
-					start = nextStart
-				}
-				if (start >= cleaned.length) break
-			}
-		}
-	}
-	return chunks
-}
-
-/**
- * 从 PDF 提取文本（使用 pdf-parse）
- */
-export async function extractTexts(
+function extractViaPython(
 	pdfPath: string,
 	docIdx: number,
-	chunkSize?: number,
-	overlap?: number,
-): Promise<TextChunk[]> {
-	const buffer = fs.readFileSync(pdfPath)
-	const data = await pdfParse(buffer)
+	chunkSize: number,
+	chunkOverlap: number,
+): Promise<{
+	chunks: { page: number; type: 'text' | 'table'; text: string }[]
+	tables: { page: number; rows: string[][] }[]
+	error?: string
+	warning?: string
+}> {
+	return new Promise((resolve, reject) => {
+		let pythonPath: string
+		try {
+			pythonPath = assertPythonPath()
+		} catch (err) {
+			reject(err)
+			return
+		}
 
-	const chunks: TextChunk[] = []
-	const textChunks = splitFixed(data.text, chunkSize, overlap)
-	for (const text of textChunks) {
-		chunks.push({ doc: docIdx, page: 0, text })
+		const proc = spawn(pythonPath, [EXTRACTOR_PATH], {
+			stdio: ['pipe', 'pipe', 'pipe'],
+		})
+
+		let stdout = ''
+		let stderr = ''
+
+		proc.stdout.on('data', (data: Buffer) => {
+			stdout += data.toString()
+		})
+		proc.stderr.on('data', (data: Buffer) => {
+			stderr += data.toString()
+		})
+		proc.on('close', (code) => {
+			if (code !== 0) {
+				reject(
+					new PythonEnvError(
+						`Python text extractor failed (exit ${code}): ${enhancePythonError(stderr)}`,
+					),
+				)
+				return
+			}
+			// 某些库会往 stdout 打印警告，取最后一行 JSON 解析
+			const lastJsonLine = stdout
+				.split('\n')
+				.reverse()
+				.find((line) => line.trim().startsWith('{'))
+			if (!lastJsonLine) {
+				reject(new Error('No JSON output found from Python text extractor'))
+				return
+			}
+			try {
+				const result = JSON.parse(lastJsonLine) as {
+					chunks: { page: number; type: 'text' | 'table'; text: string }[]
+					tables: { page: number; rows: string[][] }[]
+					error?: string
+					warning?: string
+				}
+				resolve({
+					chunks: result.chunks ?? [],
+					tables: result.tables ?? [],
+					error: result.error,
+					warning: result.warning,
+				})
+			} catch (e) {
+				reject(new Error(`Failed to parse Python extractor output: ${e}`))
+			}
+		})
+		proc.on('error', reject)
+
+		proc.stdin.write(
+			JSON.stringify({
+				pdf_path: pdfPath,
+				doc_idx: docIdx,
+				chunk_size: chunkSize,
+				chunk_overlap: chunkOverlap,
+			}),
+		)
+		proc.stdin.end()
+	})
+}
+
+/**
+ * 从 PDF 提取文本与表格
+ * 使用 Python PyMuPDF 子进程，支持中文与表格结构
+ */
+export async function extractTextAndTables(
+	pdfPath: string,
+	docIdx: number,
+	chunkSize = DEFAULT_CONFIG.CHUNK_SIZE,
+	overlap = DEFAULT_CONFIG.CHUNK_OVERLAP,
+): Promise<{ chunks: TextChunk[]; tables: TableChunk[]; warning?: string }> {
+	const { chunks, tables, error, warning } = await extractViaPython(
+		pdfPath,
+		docIdx,
+		chunkSize,
+		overlap,
+	)
+	if (error) {
+		throw new Error(error)
 	}
-	return chunks
+	return {
+		chunks: chunks.map((c, i) => ({
+			id: `doc${docIdx}_p${c.page}_i${i}`,
+			doc: docIdx,
+			page: c.page,
+			text: c.type === 'table' ? `[表格]\n${c.text}` : c.text,
+		})),
+		tables: tables.map((t) => {
+			const rows = t.rows.filter((r) => r.some((cell) => cell.trim()))
+			return {
+				doc: docIdx,
+				page: t.page,
+				rows,
+				rowCount: rows.length,
+				colCount: rows.length > 0 ? Math.max(...rows.map((r) => r.length)) : 0,
+			}
+		}),
+		...(warning ? { warning } : {}),
+	}
 }

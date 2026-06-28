@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'bun:test'
-import type { ImageItem } from '../types.ts'
+import type { ImageItem, ImageItemSaved } from '../types.ts'
 import { compareImages, encodeImages } from './image-compare.ts'
 
 let RED_IMG_B64 = ''
@@ -35,7 +35,7 @@ print(json.dumps(fixtures))
 
 describe('encodeImages', () => {
 	it('长驻 Python 子进程能正常编码图片并返回 embedding', async () => {
-		const images: Omit<ImageItem, 'embedding'>[] = [
+		const images: ImageItemSaved[] = [
 			{
 				doc: 0,
 				page: 1,

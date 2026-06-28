@@ -15,7 +15,7 @@ import fitz
 from PIL import Image
 
 
-def extract_images(pdf_path, doc_idx, min_size=32):
+def extract_images(pdf_path, doc_idx, min_size=32, min_area=0):
     doc = fitz.open(pdf_path)
     all_imgs = []
     seen = set()
@@ -26,6 +26,8 @@ def extract_images(pdf_path, doc_idx, min_size=32):
                 b = doc.extract_image(img[0])
                 w, h = b["width"], b["height"]
                 if w < min_size or h < min_size:
+                    continue
+                if min_area > 0 and w * h < min_area:
                     continue
 
                 hsh = hashlib.md5(b["image"]).hexdigest()
@@ -63,8 +65,9 @@ def main():
     pdf_path = input_data.get('pdf_path')
     doc_idx = input_data.get('doc_idx', 0)
     min_size = input_data.get('min_size', 32)
+    min_area = input_data.get('min_area', 0)
 
-    images = extract_images(pdf_path, doc_idx, min_size)
+    images = extract_images(pdf_path, doc_idx, min_size, min_area)
     json.dump({"images": images}, sys.stdout, ensure_ascii=False)
 
 

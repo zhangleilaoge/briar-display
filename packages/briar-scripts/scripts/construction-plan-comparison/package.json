@@ -6,11 +6,12 @@
 	"type": "module",
 	"scripts": {
 		"start": "bun src/index.ts",
-		"compare": "bun src/index.ts"
+		"compare": "bun src/index.ts",
+		"benchmark": "bun src/benchmark.ts"
 	},
 	"dependencies": {
-		"commander": "^12.0.0",
-		"pdf-parse": "^1.1.1"
+		"@msgpack/msgpack": "^3.1.3",
+		"commander": "^12.0.0"
 	},
 	"devDependencies": {
 		"@types/bun": "latest"

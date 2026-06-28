@@ -1,10 +1,10 @@
 import type { SpecialParagraph, TextChunk } from '../types.ts'
+import { extractKeywords } from './keyword-utils.ts'
 
 /**
- * 低频 N-gram 非标内容筛选
+ * 低频 N-gram + 领域关键词 非标内容筛选
  */
 export function findSpecialParagraphs(chunks: TextChunk[]): SpecialParagraph[] {
-	const eqPattern = /[A-Z]+[-/]?\d+[A-Z\d/-]*|[A-Z]{2,}\d{2,}[A-Z\d/-]*/g
 	const ngramSize = 4
 
 	// 统计所有 4-gram 频次
@@ -42,17 +42,22 @@ export function findSpecialParagraphs(chunks: TextChunk[]): SpecialParagraph[] {
 		for (const g of grams) {
 			if (rareGrams.has(g)) rareCount++
 		}
-		const score = rareCount / grams.size
+		const ngramScore = rareCount / grams.size
+
+		// 领域关键词加成：包含型号/规格说明非标可能性更高
+		const keywords = extractKeywords(c.text)
+		const keywordBoost = Math.min(keywords.length * 0.03, 0.15)
+		const score = Math.min(ngramScore + keywordBoost, 1)
 
 		// 过滤目录和太短的文本
 		if (score > 0.3 && !isToc.test(c.text) && c.text.length > 30) {
-			const models = [...new Set((c.text.match(eqPattern) ?? []).filter((m) => m.length >= 3))]
+			const models = keywords.slice(0, 20)
 			const rareGramList = [...grams].filter((g) => rareGrams.has(g)).slice(0, 10)
 
 			special.push({
 				doc: c.doc,
 				page: c.page,
-				text: c.text,
+				chunkId: c.id,
 				score: Math.round(score * 10000) / 10000,
 				models,
 				rareGrams: rareGramList,

@@ -28,8 +28,18 @@ function jsEsc(text: string): string {
 /**
  * 生成完整交互式 HTML 报告
  */
-export function generateHtmlReport(result: CompareResult): string {
-	const { docNames, allChunks, imgPairs, textPairs, specialParas, config } = result
+export function generateHtmlReport(result: CompareResult, maxImgShow = 500): string {
+	const {
+		docNames,
+		allChunks,
+		allTables,
+		imgPairs,
+		imgGroups,
+		textPairs,
+		tablePairs,
+		specialParas,
+		config,
+	} = result
 	const chunkSize = config.chunkSize
 
 	// 准备数据
@@ -49,14 +59,19 @@ export function generateHtmlReport(result: CompareResult): string {
 
 	// JSON 数据
 	const textsJs = JSON.stringify(
-		allChunks.map((c) => ({ doc: c.doc, page: c.page, text: jsEsc(c.text) })),
+		allChunks.map((c) => ({ id: c.id, doc: c.doc, page: c.page, text: jsEsc(c.text) })),
+	)
+	const chunkMapJs = JSON.stringify(
+		Object.fromEntries(
+			allChunks.map((c) => [c.id, { doc: c.doc, page: c.page, text: jsEsc(c.text) }]),
+		),
 	)
 	const modelsJs = JSON.stringify(modelsSorted)
 	const spJs = JSON.stringify(
 		specialParas.map((p) => ({
 			doc: p.doc,
 			page: p.page,
-			text: jsEsc(p.text),
+			chunk_id: p.chunkId,
 			score: p.score,
 			models: p.models,
 			rare_grams: p.rareGrams,
@@ -67,25 +82,59 @@ export function generateHtmlReport(result: CompareResult): string {
 			sim: m.sim,
 			doc_a: m.docA,
 			page_a: m.pageA,
+			chunk_a_id: m.chunkAId,
 			doc_b: m.docB,
 			page_b: m.pageB,
-			text_a: jsEsc(m.textA),
-			text_b: jsEsc(m.textB),
+			chunk_b_id: m.chunkBId,
 		})),
 	)
-	const imgJs = JSON.stringify(
-		imgPairs.slice(0, 500).map((m) => ({
+	const imgGroupJs = JSON.stringify(
+		imgGroups.slice(0, maxImgShow).map((g) => ({
+			id: g.id,
+			size: g.size,
+			docs: g.docs,
+			rep_sim: g.repSim,
+			rep_a: {
+				doc: g.repA.doc,
+				page: g.repA.page,
+				w: g.repA.width,
+				h: g.repA.height,
+				img: g.repA.imgPath,
+			},
+			rep_b: {
+				doc: g.repB.doc,
+				page: g.repB.page,
+				w: g.repB.width,
+				h: g.repB.height,
+				img: g.repB.imgPath,
+			},
+			items_by_doc: g.itemsByDoc.map((d) => ({
+				doc: d.doc,
+				items: d.items.map((it) => ({
+					page: it.page,
+					w: it.width,
+					h: it.height,
+					img: it.imgPath,
+				})),
+			})),
+		})),
+	)
+	const tableJs = JSON.stringify(
+		tablePairs.map((m) => ({
 			sim: m.sim,
+			shape_sim: m.shapeSim,
+			cell_sim: m.cellSim,
 			doc_a: m.docA,
 			page_a: m.pageA,
 			doc_b: m.docB,
 			page_b: m.pageB,
-			w_a: m.wA,
-			h_a: m.hA,
-			w_b: m.wB,
-			h_b: m.hB,
-			img_a: m.imgPathA,
-			img_b: m.imgPathB,
+			rows_a: m.rowsA,
+			rows_b: m.rowsB,
+			diff_rows: m.diffRows.map((r) => ({
+				type: r.type,
+				cells_a: r.cellsA,
+				cells_b: r.cellsB,
+			})),
 		})),
 	)
 
@@ -151,6 +200,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",s
 .nav a{color:#94a3b8;text-decoration:none;padding:8px 18px;border-radius:8px;transition:all .2s;font-size:0.9em}
 .nav a:hover{color:#f8fafc;background:#1e293b}
 .nav a.active{color:#38bdf8;background:#1e293b;font-weight:600}
+.nav-badge{background:#38bdf8;color:#0f172a;padding:1px 8px;border-radius:10px;font-size:0.75em;margin-left:4px}
 .header{text-align:center;padding:30px 0;background:linear-gradient(135deg,#1e3a5f,#0f172a);border-radius:16px;margin-bottom:20px;border:1px solid #334155}
 .header h1{font-size:2.2em;color:#f8fafc;margin-bottom:8px}
 .header .sub{color:#94a3b8}
@@ -166,14 +216,42 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",s
 .drawer-content{padding:0 24px 24px}
 .tag{display:inline-block;padding:3px 12px;border-radius:20px;font-size:0.78em;font-weight:600}
 ${docTagStyles}
-.img-pair{display:grid;grid-template-columns:1fr auto 1fr;gap:15px;margin-bottom:18px;padding:15px;background:#0f172a;border-radius:12px;border:1px solid #334155;align-items:center}
-.img-pair .side{text-align:center}
-.img-pair .side img{max-width:100%;max-height:280px;object-fit:contain;background:#0a0f1a;border-radius:8px;cursor:pointer;border:1px solid #334155}
-.img-pair .side img:hover{border-color:#38bdf8}
-.img-pair .meta{color:#94a3b8;font-size:0.8em;margin-top:6px}
-.img-pair .vs{text-align:center;color:#64748b;font-weight:bold}
-.img-pair .vs .sim{font-size:1.4em;display:block;margin-bottom:4px}
+.img-group{background:#0f172a;border-radius:12px;border:1px solid #334155;margin-bottom:18px;overflow:hidden}
+.img-group-header{padding:15px}
+.img-group-rep{display:grid;grid-template-columns:1fr auto 1fr;gap:15px;align-items:center}
+.img-group-rep .side{text-align:center}
+.img-group-rep .side img{max-width:100%;max-height:260px;object-fit:contain;background:#0a0f1a;border-radius:8px;cursor:pointer;border:1px solid #334155}
+.img-group-rep .side img:hover{border-color:#38bdf8}
+.img-group-rep .meta{color:#94a3b8;font-size:0.8em;margin-top:6px}
+.img-group-rep .vs{text-align:center;color:#64748b;font-weight:bold}
+.img-group-rep .vs .sim{font-size:1.4em;display:block;margin-bottom:4px}
+.img-group-meta{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.img-group-docs{padding:0 15px 15px}
+.img-doc-group{margin-bottom:10px;background:#1e293b;border-radius:8px}
+.img-doc-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .2s;border-radius:8px}
+.img-doc-header:hover{background:#283548}
+.img-doc-header .arrow{font-size:1.1em;color:#64748b;transition:transform .3s;margin-left:auto}
+.img-doc-header.open .arrow{transform:rotate(90deg)}
+.img-doc-panel{display:none;padding:10px;gap:10px;flex-wrap:wrap}
+.img-doc-panel.open{display:flex}
+.img-thumb{text-align:center}
+.img-thumb img{max-height:90px;max-width:140px;object-fit:contain;background:#0a0f1a;border-radius:6px;cursor:pointer;border:1px solid #334155}
+.img-thumb img:hover{border-color:#38bdf8}
+.img-thumb .meta{color:#94a3b8;font-size:0.7em;margin-top:4px}
 .sim-c1{color:#ef4444}.sim-c2{color:#f97316}.sim-c3{color:#38bdf8}
+.table-pair{padding:16px;margin-bottom:16px;background:#0f172a;border-radius:12px;border:1px solid #334155}
+.table-pair-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px}
+.table-pair-header .sim{font-size:1.2em;font-weight:bold;font-family:monospace}
+.table-pair-header .source{color:#94a3b8;font-size:0.85em}
+.table-pair-body{display:grid;grid-template-columns:1fr auto 1fr;gap:15px;align-items:start}
+.table-pair-body .side{overflow-x:auto;background:#1e293b;border-radius:8px;padding:10px}
+.table-pair-body table{width:100%;border-collapse:collapse;font-size:0.82em;color:#e2e8f0}
+.table-pair-body th,.table-pair-body td{border:1px solid #334155;padding:6px 8px;text-align:left;white-space:nowrap}
+.table-pair-body th{background:#0f172a;color:#94a3b8;font-weight:600}
+.table-pair-body .row-del{background:rgba(239,68,68,0.18)}
+.table-pair-body .row-ins{background:rgba(34,197,94,0.18)}
+.table-pair-body .row-mod{background:rgba(251,191,36,0.12)}
+.table-pair-body .cell-mod{background:rgba(251,191,36,0.25)}
 .text-pair{padding:16px;margin-bottom:12px;background:#0f172a;border-radius:10px;border:1px solid #334155;position:relative}
 .text-pair-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px}
 .text-pair-header .sim{font-size:1.2em;font-weight:bold;font-family:monospace}
@@ -184,6 +262,11 @@ ${docTagStyles}
 .text-pair-body .side .content{color:#e2e8f0;font-size:0.88em;line-height:1.6;max-height:100px;overflow:hidden}
 .text-pair-body .side .fulltext{display:none;position:absolute;left:0;top:100%;width:100%;max-height:400px;overflow-y:auto;background:#1e293b;border:2px solid #38bdf8;border-radius:8px;padding:12px;z-index:50;font-size:0.85em;line-height:1.7;color:#e2e8f0;box-shadow:0 10px 40px rgba(0,0,0,0.5)}
 .text-pair-body .side:hover .fulltext{display:block}
+.text-pair-diff{margin-top:12px;padding:12px;background:#0a0f1a;border-radius:8px;border:1px solid #334155}
+.text-pair-diff .label{color:#64748b;font-size:0.78em;margin-bottom:6px}
+.text-pair-diff .diff-content{font-size:0.85em;line-height:1.7;color:#e2e8f0;white-space:pre-wrap}
+.diff-del{background:rgba(239,68,68,0.25);color:#fca5a5;text-decoration:line-through;padding:0 2px;border-radius:3px}
+.diff-ins{background:rgba(34,197,94,0.25);color:#86efac;padding:0 2px;border-radius:3px}
 .pagination{display:flex;justify-content:center;align-items:center;gap:8px;padding:15px 0;flex-wrap:wrap}
 .pagination button{padding:6px 14px;background:#334155;color:#e2e8f0;border:none;border-radius:6px;cursor:pointer;font-size:0.85em}
 .pagination button:hover{background:#475569}
@@ -238,10 +321,11 @@ footer{text-align:center;color:#64748b;padding:40px 20px;font-size:0.85em}
 ${docMapHtml}
 </div>
 <nav class="nav"><div class="nav-inner">
-<a href="#sec1" class="active" onclick="setActive(this)">图片比对</a>
-<a href="#sec2" onclick="setActive(this)">相似文本</a>
-<a href="#sec3" onclick="setActive(this)">非标内容</a>
-<a href="#sec4" onclick="setActive(this)">关键词查询</a>
+<a href="#sec1" class="active" onclick="setActive(this)">图片比对 <span class="nav-badge">${imgGroups.length}</span></a>
+<a href="#sec2" onclick="setActive(this)">表格比对 <span class="nav-badge">${tablePairs.length}</span></a>
+<a href="#sec3" onclick="setActive(this)">相似文本 <span class="nav-badge">${textPairs.length}</span></a>
+<a href="#sec4" onclick="setActive(this)">非标内容 <span class="nav-badge">${specialParas.length}</span></a>
+<a href="#sec5" onclick="setActive(this)">关键词查询</a>
 </div></nav>
 <div class="header">
 <h1>施工方案文档比对报告</h1>
@@ -249,25 +333,63 @@ ${docMapHtml}
 </div>
 <div class="drawer" id="sec1">
 <div class="drawer-header" onclick="toggleDrawer(this)">
-<h2>图片比对结果 <span class="count" id="imgResultCount">${imgPairs.length}对</span></h2>
+<h2>图片比对结果 <span class="count" id="imgResultCount">${imgGroups.length}组</span></h2>
 <span class="arrow">&#9656;</span>
 </div>
 <div class="drawer-body"><div class="drawer-content">
-<p style="color:#94a3b8;font-size:0.85em;margin-bottom:15px">仅展示相似度最高的前 ${Math.min(imgPairs.length, 500)} 对图片。</p>
-<div id="imgPairsContainer"></div>
-<div class="pagination" id="imgPairsPagination"></div>
+<p style="color:#94a3b8;font-size:0.85em;margin-bottom:15px">已将非常相似的图片聚组合并，每组展示代表性对比图，可按文档展开查看全部图片。</p>
+<div id="imgGroupsContainer"></div>
+<div class="pagination" id="imgGroupsPagination"></div>
 </div></div></div>
 <div class="drawer" id="sec2">
+<div class="drawer-header" onclick="toggleDrawer(this)">
+<h2>表格结构比对 <span class="count" id="tableResultCount">${tablePairs.length}对</span></h2>
+<span class="arrow">&#9656;</span>
+</div>
+<div class="drawer-body"><div class="drawer-content">
+<p style="color:#94a3b8;font-size:0.85em;margin-bottom:15px">基于单元格集合与行列形状相似度比对，标记增删改差异。</p>
+<div class="filter-bar">
+<label>文档筛选:</label>
+<select id="tablePairDocFilter" onchange="filterTablePairs()">
+<option value="all">全部文档</option>
+${docFilterOptions}
+</select>
+<label>最低相似度:</label>
+<select id="tablePairSimFilter" onchange="filterTablePairs()">
+<option value="0">全部</option>
+<option value="0.6" selected>≥0.6</option>
+<option value="0.8">≥0.8</option>
+<option value="0.9">≥0.9</option>
+</select>
+</div>
+<div id="tablePairsContainer"></div>
+<div class="pagination" id="tablePairsPagination"></div>
+</div></div></div>
+<div class="drawer" id="sec3">
 <div class="drawer-header" onclick="toggleDrawer(this)">
 <h2>相似文本对 <span class="count">${textPairs.length}对</span></h2>
 <span class="arrow">&#9656;</span>
 </div>
 <div class="drawer-body"><div class="drawer-content">
 <p style="color:#94a3b8;font-size:0.85em;margin-bottom:15px">文本块固定${chunkSize}字符拆分。已过滤标准化内容。鼠标悬停可查看完整内容。</p>
+<div class="filter-bar">
+<label>文档筛选:</label>
+<select id="textPairDocFilter" onchange="filterTextPairs()">
+<option value="all">全部文档</option>
+${docFilterOptions}
+</select>
+<label>最低相似度:</label>
+<select id="textPairSimFilter" onchange="filterTextPairs()">
+<option value="0">全部</option>
+<option value="0.7" selected>≥0.7</option>
+<option value="0.8">≥0.8</option>
+<option value="0.9">≥0.9</option>
+</select>
+</div>
 <div id="textPairsContainer"></div>
 <div class="pagination" id="textPairsPagination"></div>
 </div></div></div>
-<div class="drawer" id="sec3">
+<div class="drawer" id="sec4">
 <div class="drawer-header" onclick="toggleDrawer(this)">
 <h2>低频N-gram非标内容筛选 <span class="count" id="spResultCount">${specialParas.length}段</span></h2>
 <span class="arrow">&#9656;</span>
@@ -310,7 +432,7 @@ ${modelCheckboxes}
 <div class="pagination" id="spHighPagination"></div>
 </div>
 </div></div></div>
-<div class="drawer open" id="sec4">
+<div class="drawer open" id="sec5">
 <div class="drawer-header" onclick="toggleDrawer(this)">
 <h2>关键词查询 <span class="count">全文</span></h2>
 <span class="arrow">&#9656;</span>
@@ -333,10 +455,12 @@ ${docCheckboxes}<label><input type="checkbox" id="qHighlight" checked> 高亮匹
 </div>
 <script>
 const ALL_TEXTS = ${textsJs};
+const CHUNK_MAP = ${chunkMapJs};
 const TEXT_PAIRS = ${tmJs};
+const TABLE_PAIRS = ${tableJs};
 const SPECIAL_PARAS = ${spJs};
 const EQ_MODELS = ${modelsJs};
-const IMG_PAIRS = ${imgJs};
+const IMG_GROUPS = ${imgGroupJs};
 const DOC_COUNT = ${docNames.length};
 ${getJsLogic()}
 </script>
