@@ -80,6 +80,8 @@ export interface ImageItemDisplay {
 	width: number
 	height: number
 	imgPath: string
+	/** 同一 group 内与该图最相似的 Top5（用于前端“选中高亮”交互） */
+	topSimilar?: { imgPath: string; sim: number }[]
 }
 
 export interface ImageGroup {
