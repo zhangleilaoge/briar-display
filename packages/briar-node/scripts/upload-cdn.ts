@@ -37,6 +37,9 @@ const cos = new COS({
 	SecretId: secretId,
 	SecretKey: secretKey,
 	Timeout: 30000,
+	// 默认 KeepAlive: true 会复用连接，COS 服务端关闭连接后本地仍可能继续写入，
+	// 触发 TLSSocket EPIPE 且 request 库未监听该 socket error，导致进程崩溃。
+	KeepAlive: false,
 })
 
 const listFiles = (dir: string): string[] => {
