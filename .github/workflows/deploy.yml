@@ -28,6 +28,10 @@ jobs:
       - name: Build and upload to CDN
         run: make build-cdn
 
+      - name: Show runner public IP
+        run: |
+          echo "Runner public IP: $(curl -s https://api.ipify.org)"
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
