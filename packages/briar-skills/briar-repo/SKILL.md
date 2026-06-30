@@ -1,12 +1,6 @@
 ---
 name: briar-repo
-description: >
-  仓库管理工具。支持拉取仓库、更新代码、清理工作区、管理 worktree。
-  触发场景：
-  1. 用户说"帮我拉 xxx"、"克隆 xxx 仓库" → 触发【拉取仓库】
-  2. 用户说"更新 xxx 代码"、"pull 一下 xxx" → 触发【更新仓库】
-  3. 用户说"保持工作区干净"、"清理 xxx" → 触发【清理工作区】
-  4. 用户说"给 xxx 建个 worktree"、"开个 xxx 分支工作区" → 触发【创建 Worktree】
+description: 仓库管理：拉取、更新、清理、创建/删除 worktree。为 briar-fix 提供隔离修复环境。
 ---
 
 # briar-repo: 仓库管理工具

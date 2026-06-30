@@ -1,17 +1,6 @@
 ---
 name: briar-mr
-description: >
-  GitLab Merge Request（MR）全能工具入口。包含创建 MR、评论处理（fetch/review/fix/reply/comment）、Pipeline 查询、待回复评论汇总。
-  触发场景：
-  1. 用户说"提个 MR"、"创建 MR"、"提交合并请求" → 触发【创建 MR】
-  2. 用户给出 GitLab MR 链接，要求"看看评论"、"获取评论"、"列出评论" → 触发【获取评论】
-  3. 用户要求在 MR 中"发表评论"、"加一条评论" → 触发【发表评论】
-  4. 用户要求"回复这些评论"、"逐条回复"、"给评论写回复" → 触发【回复 Discussion】
-  5. 用户说"看看 pipeline"、"CI 状态"、"构建结果" → 触发【获取 Pipeline】
-  6. 用户说"review 这个 MR"、"帮我看看代码"、"code review" → 触发【Review 代码】
-  7. 用户要求"按评论修复代码"、"处理 code review"、"修掉评论里的问题" → 触发【修复评论】
-  8. 用户说"看看我最近的 MR 有哪些评论没回"、"最近 MR 评论"、"待回复评论" → 触发【列出未回复评论】
-  本 skill 不会默认执行全部能力，严格根据用户意图触发对应行为。
+description: GitLab MR 工具：创建 MR、获取/发表/回复评论、review、pipeline、待回复汇总。修复代码转 briar-fix。
 ---
 
 # briar-mr: GitLab MR 全能工具入口
