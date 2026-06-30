@@ -1,15 +1,6 @@
 ---
 name: briar-context
-description: >
-  获取 Agent 上下文信息。支持通过 URL 获取 Jira、GitLab MR/Wiki、内部文档等页面内容，
-  作为下游技能（如 briar-fix、briar-mr）的前置信息输入。
-  触发场景：
-  1. 用户给出 Jira 链接，要求"看看这个需求"、"获取 Jira 内容" → 触发【获取 Jira 内容】
-  2. 用户在 review/fix MR 前，要求"获取这个 MR 的关联需求/背景信息" → 触发【获取 MR 背景信息】（辅助 briar-mr，不独立处理 MR 业务）
-  3. 用户给出任意内网链接，要求"获取内容"、"看看这个页面" → 触发【获取页面内容】
-  4. 用户给出多个链接，要求"整理上下文"、"汇总信息" → 触发【汇总上下文】
-
-  ⚠️ **边界说明**：用户只说"MR 链接"而没有明确意图时（如只丢一个 `/-/merge_requests/932` 链接），不归本 skill 处理，由 briar-mr 默认触发【获取评论】。
+description: 获取 Jira/GitLab/内网页面内容，为 briar-mr、briar-fix 提供上下文。MR 链接无明确意图时归 briar-mr 处理。
 ---
 
 # briar-context: Agent 上下文获取
@@ -31,12 +22,12 @@ description: >
 
 ## 行为索引
 
-| 行为 | 触发关键词 | 文档 | 工具 |
-|------|-----------|------|------|
-| 获取 Jira 内容 | "看看这个需求"、"获取 Jira"、Jira 链接 | [docs/jira.md](docs/jira.md) | Linux: REST API + basic auth / macOS: AppleScript + Chrome |
-| 获取 MR 背景信息 | "获取 MR 的关联需求"、"MR 背景" | [docs/gitlab-mr.md](docs/gitlab-mr.md) | GitLab API |
-| 获取内网页面 | "获取内容"、"看看这个页面"、内网链接（含 `qima-inc`） | [docs/generic.md](docs/generic.md) | curl → AppleScript fallback |
-| 汇总上下文 | "整理上下文"、"汇总信息"、多个链接 | — | 多次调用上述能力后汇总 |
+|| 行为 | 触发关键词 | 文档 | 工具 |
+||------|-----------|------|------|
+|| 获取 Jira 内容 | "看看这个需求"、"获取 Jira"、Jira 链接 | [docs/jira.md](docs/jira.md) | Linux: REST API + basic auth / macOS: Playwright + Chrome cookie |
+|| 获取 MR 背景信息 | "获取 MR 的关联需求"、"MR 背景" | [docs/gitlab-mr.md](docs/gitlab-mr.md) | GitLab API |
+|| 获取内网页面 | "获取内容"、"看看这个页面"、内网链接（含 `qima-inc`） | [docs/generic.md](docs/generic.md) | Playwright + Chrome cookie → 密码 fallback |
+|| 汇总上下文 | "整理上下文"、"汇总信息"、多个链接 | — | 多次调用上述能力后汇总 |
 
 ---
 
@@ -61,11 +52,12 @@ chmod 600 "$HOME/.config/briar-skills/.env"
 | 变量 | 用途 | 必需 |
 |------|------|------|
 | `GITLAB_TOKEN` | GitLab API 调用 | 是（MR/GitLab 相关） |
-| `JIRA_USERNAME` | Jira REST API basic auth | 是（Linux 获取 Jira） |
-| `JIRA_PASSWORD` | Jira REST API basic auth | 是（Linux 获取 Jira） |
+| `JIRA_USERNAME` | Jira REST API basic auth / 表单登录 fallback | 否（macOS 优先用 Chrome cookie） |
+| `JIRA_PASSWORD` | Jira REST API basic auth / 表单登录 fallback | 否（macOS 优先用 Chrome cookie） |
 | `JIRA_API_TOKEN` | Jira API token（优先于密码） | 否 |
 
 > **注意**：脚本启动时自动 `source` 上述 `.env` 文件，无需手动 export。
+> **macOS 登录态**：优先从 Chrome 读取 `.qima-inc.com` 域 cookie，通过 Playwright 无头浏览器访问页面；仅当 cookie 失效时才使用 `JIRA_USERNAME`/`JIRA_PASSWORD` 表单登录。
 
 ---
 
@@ -74,7 +66,7 @@ chmod 600 "$HOME/.config/briar-skills/.env"
 | 平台 | Jira | GitLab MR | 通用内网页面 |
 |------|------|-----------|-------------|
 | **Linux** | ✅ REST API + basic auth | ✅ GitLab API | ⚠️ curl（公开页）/ 手动提供（登录页） |
-| **macOS** | ✅ AppleScript + Chrome | ✅ GitLab API | ✅ AppleScript + Chrome |
+| **macOS** | ✅ Playwright + Chrome cookie → 密码 fallback | ✅ GitLab API | ✅ Playwright + Chrome cookie → 密码 fallback |
 | **Windows** | ❌ 未实现 | ❌ 未实现 | ❌ 未实现 |
 
 ---
@@ -119,15 +111,25 @@ curl -s -u "$JIRA_USERNAME:$JIRA_PASSWORD" \
 - `.fields.assignee.displayName` — 经办人
 - `.fields.reporter.displayName` — 报告人
 
-### macOS: AppleScript + Chrome
+### macOS: Playwright + Chrome cookie
 
 **前置要求**：
-- Chrome 已安装（`/Applications/Google Chrome.app`）
-- Chrome 已开启**"允许 Apple 事件中的 JavaScript"**
+- Python 3 环境 + `playwright`、`browser-cookie3` 已安装
+- Chrome 已登录过 `.qima-inc.com` 域（如 Jira、GitLab、OPS），cookie 可用
+- `opscli login` 已执行（可刷新 OPS 统一登录态）
 
-**开启方式**：菜单栏 → **查看 → 开发者 → 允许 Apple 事件中的 JavaScript**
+**流程**：
+1. 用 `browser-cookie3` 从 Chrome 读取 `.qima-inc.com` 域 cookie
+2. 用 Playwright 启动无头 Chromium
+3. 注入 cookie 后访问目标页面
+4. 如果仍被重定向到登录页，尝试用 `JIRA_USERNAME`/`JIRA_PASSWORD` 表单登录
+5. 提取主内容区文本返回
 
-**获取脚本**（智能提取主内容区 + 轮询加载 + 自动关闭）：
+**脚本入口**：`scripts/fetch_with_playwright.py`
+
+### macOS: AppleScript + Chrome（最终 fallback）
+
+当 Playwright 方案完全失败时使用。
 ```applescript
 tell application "Google Chrome"
     activate
@@ -161,10 +163,12 @@ end tell
 
 ## 注意事项
 
-1. **AppleScript 会实际打开 Chrome 标签页**，获取完成后**自动关闭**
-2. **SPA 等待**：单页应用（Jira、GitLab 等）在 `document.readyState === 'complete'` 后仍需固定等待 **3 秒**
+1. **macOS 优先使用 Playwright 无头浏览器**，不会实际打开 Chrome 窗口
+2. **SPA 等待**：单页应用（Jira、GitLab 等）等待 `networkidle` 状态
 3. **Linux 登录态**：Linux 服务器无法复用浏览器 cookie，Jira 必须通过 REST API + basic auth 获取
-4. **Cookie 安全**：通过 AppleScript 获取的 cookie 是内存中的实时值，不要持久化到日志或文件
+4. **Cookie 安全**：从 Chrome 读取的 cookie 仅用于内存中访问页面，不要持久化到日志或文件
+5. **依赖安装**：首次使用 macOS 方案前需确保 `playwright` 和 `browser-cookie3` 已安装到当前 Python 环境
+6. **AppleScript fallback**：仅当 Playwright 和 cookie 都失败时才启用，会实际打开 Chrome 标签页并自动关闭
 
 ---
 

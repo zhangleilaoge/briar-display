@@ -171,7 +171,26 @@ if [ "$TYPE" = "jira" ]; then
 		fi
 	fi
 
-	# macOS: AppleScript + Chrome
+	# macOS: 优先 Playwright + Chrome cookie，失败再 fallback AppleScript
+	if [[ "$OSTYPE" == "darwin"* ]]; then
+		echo "[briar-context] Using Playwright + Chrome cookies (macOS)..."
+
+		PY_SCRIPT="$(cd "$(dirname "$0")" && pwd)/fetch_with_playwright.py"
+		RESULT=$(source /Users/zhanglei/.hermes/hermes-agent/venv/bin/activate && python3 "$PY_SCRIPT" "$URL" 2>&1)
+		PY_EXIT=$?
+
+		if [ $PY_EXIT -eq 0 ]; then
+			echo "$RESULT"
+			exit 0
+		fi
+
+		echo "[briar-context] Playwright approach failed (exit $PY_EXIT), falling back to AppleScript..."
+		echo "  Reason: $RESULT" | head -5 >&2
+
+		# AppleScript fallback below
+	fi
+
+	# macOS: AppleScript + Chrome (final fallback)
 	if [[ "$OSTYPE" == "darwin"* ]]; then
 		echo "[briar-context] Using AppleScript + Chrome..."
 

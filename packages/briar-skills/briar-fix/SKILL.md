@@ -1,13 +1,6 @@
 ---
 name: briar-fix
-description: >
-  在丰富的代码上下文中（MR comments、Pipeline 失败日志等），使用 Git worktree 方式安全地修复代码。
-  流程：创建 worktree → 读取上下文 → 分析修复 → 验证 → 用户确认 → 提交 → 清理 worktree。
-  触发场景：
-  1. briar-mr 的【修复评论】行为中，需要按 comments 修改代码时
-  2. briar-mr 的【获取 Pipeline】中，发现 CI 失败需要修复代码时
-  3. 任何需要"在隔离环境中修复代码并提交"的场景
-  本 skill 是 briar-mr 的子能力，通常由 briar-mr 触发，也可独立使用。
+description: 用 Git worktree 隔离修复代码：按 MR 评论或 Pipeline 失败修复，验证后提交。通常由 briar-mr 触发。
 ---
 
 # briar-fix: 代码修复工作流
@@ -69,7 +62,7 @@ briar-repo.sh worktree add <repo-name> <branch>
    git diff origin/<target_branch>..HEAD
    ```
 3. **Comments 内容**：从 briar-mr 的 fetch 结果中读取
-4. **Pipeline logs**（如果是 pipeline 场景）：从 briar-mr pipeline 的输出中读取失败原因
+4. **Pipeline logs**（如果是 pipeline 场景）：从 briar-mr pipeline 的输出中读取失败原因；如果日志不足，使用 `zan-log-query` 或 `error-log-analyzer` 进一步查询天网日志。
 
 ---
 
