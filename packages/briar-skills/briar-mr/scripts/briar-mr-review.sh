@@ -1,12 +1,14 @@
 #!/bin/bash
-# briar-mr-review.sh - MR 评论操作（fetch / comment / reply / diff / setup-worktree）
+# briar-mr-review.sh - MR 评论操作（fetch / comment / reply / diff / setup-worktree / find / post-notes）
 #
 # Usage:
 #   ./briar-mr-review.sh fetch         <domain> <project_path> <mr_iid>
 #   ./briar-mr-review.sh comment       <domain> <project_path> <mr_iid> <body>
 #   ./briar-mr-review.sh reply         <domain> <project_path> <mr_iid> <discussion_id> <body>
 #   ./briar-mr-review.sh diff          <domain> <project_path> <mr_iid>
-#   ./briar-mr-review.sh setup-worktree <domain> <project_path> <mr_iid>
+#   ./briar-mr-review.sh setup-worktree <domain> <project_path> <mr_iid> [base_dir]
+#   ./briar-mr-review.sh find          <domain> <project_path> <source_branch>
+#   ./briar-mr-review.sh post-notes    <domain> <project_path> <mr_iid> <comments.json>
 #
 # Token 加载优先级：环境变量 GITLAB_TOKEN → ~/.config/briar-skills/.env → ~/.git-credentials
 
@@ -16,6 +18,7 @@ set -e
 # 如果环境变量已有且非占位符，直接用；否则依次尝试 .env 和 git credential store
 load_gitlab_token() {
 	if [ -n "$GITLAB_TOKEN" ] && [ "$GITLAB_TOKEN" != "***" ]; then
+		export GITLAB_TOKEN
 		return
 	fi
 	# 尝试从 .env 加载
@@ -23,6 +26,7 @@ load_gitlab_token() {
 		# shellcheck disable=SC1091
 		source "$HOME/.config/briar-skills/.env" 2>/dev/null || true
 		if [ -n "$GITLAB_TOKEN" ] && [ "$GITLAB_TOKEN" != "***" ]; then
+			export GITLAB_TOKEN
 			return
 		fi
 	fi
@@ -40,6 +44,32 @@ load_gitlab_token() {
 
 load_gitlab_token
 
+# --- 根据域名推断本地父目录（优先复用 briar-repo） ---
+infer_base_dir() {
+	local domain="${1:-$DOMAIN}"
+	REPO_SCRIPT="$(cd "$(dirname "$0")/../../briar-repo/scripts" && pwd)/briar-repo.sh"
+	if [ -f "$REPO_SCRIPT" ]; then
+		local repo_dir
+		repo_dir=$("$REPO_SCRIPT" base-dir "$domain" 2>/dev/null)
+		if [ -n "$repo_dir" ]; then
+			echo "$repo_dir"
+			return
+		fi
+	fi
+	# 兜底：与 briar-repo 保持一致
+	case "$domain" in
+		gitlab.qima-inc.com | gitlab.com)
+			echo "$HOME/Documents/gitlab"
+			;;
+		github.com)
+			echo "$HOME/Documents/github"
+			;;
+		*)
+			echo "$HOME/projects"
+			;;
+	esac
+}
+
 ACTION="${1}"
 DOMAIN="${2:-gitlab.qima-inc.com}"
 PROJECT_PATH="${3}"
@@ -50,7 +80,9 @@ if [ -z "$PROJECT_PATH" ]; then
 	echo "  $0 comment       <domain> <project_path> <mr_iid> <comment_body>"
 	echo "  $0 reply         <domain> <project_path> <mr_iid> <discussion_id> <reply_body>"
 	echo "  $0 diff          <domain> <project_path> <mr_iid>"
-	echo "  $0 setup-worktree <domain> <project_path> <mr_iid>"
+	echo "  $0 setup-worktree <domain> <project_path> <mr_iid> [base_dir]"
+	echo "  $0 find          <domain> <project_path> <source_branch>"
+	echo "  $0 post-notes    <domain> <project_path> <mr_iid> <comments.json>"
 	exit 1
 fi
 
@@ -152,10 +184,16 @@ elif [ "$ACTION" = "setup-worktree" ]; then
 	fi
 
 	REPO_NAME=$(echo "$PROJECT_PATH" | sed 's/.*\///')
-	LOCAL_REPO="$HOME/projects/$REPO_NAME"
+	BASE_DIR="${5:-${BRIAR_REPO_BASE_DIR:-$(infer_base_dir)}}"
+	LOCAL_REPO="$BASE_DIR/$REPO_NAME"
+
+	# 兜底：如果推断目录不存在，尝试旧默认
+	if [ ! -d "$LOCAL_REPO/.git" ]; then
+		LOCAL_REPO="$HOME/projects/$REPO_NAME"
+	fi
 
 	if [ ! -d "$LOCAL_REPO/.git" ]; then
-		echo "Error: Local repository not found at $LOCAL_REPO"
+		echo "Error: Local repository not found at $BASE_DIR/$REPO_NAME or $HOME/projects/$REPO_NAME"
 		echo "Please clone it first using briar-repo."
 		exit 1
 	fi
@@ -179,8 +217,94 @@ elif [ "$ACTION" = "setup-worktree" ]; then
 	echo "  View file:       cd \"$WORKTREE_PATH\" && cat <file>"
 	echo "  Cleanup:         $FIX_SCRIPT cleanup \"$LOCAL_REPO\" \"$WORKTREE_PATH\""
 
+elif [ "$ACTION" = "find" ]; then
+	SOURCE_BRANCH="${4}"
+	if [ -z "$SOURCE_BRANCH" ]; then
+		echo "Error: source_branch is required for 'find' action."
+		exit 1
+	fi
+
+	URL="https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/merge_requests?state=all&source_branch=${SOURCE_BRANCH}"
+	MR_JSON=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$URL" | jq '.[0]')
+
+	if [ -z "$MR_JSON" ] || [ "$MR_JSON" = "null" ]; then
+		echo "Error: No MR found for ${PROJECT_PATH} branch ${SOURCE_BRANCH}."
+		exit 1
+	fi
+
+	echo "$MR_JSON" | jq '{
+		iid,
+		title,
+		source_branch,
+		target_branch,
+		web_url,
+		state
+	}'
+
+elif [ "$ACTION" = "post-notes" ]; then
+	MR_IID="${4}"
+	COMMENTS_FILE="${5}"
+	if [ -z "$MR_IID" ] || [ -z "$COMMENTS_FILE" ]; then
+		echo "Error: mr_iid and comments.json are required for 'post-notes' action."
+		exit 1
+	fi
+	if [ ! -f "$COMMENTS_FILE" ]; then
+		echo "Error: Comments file not found: $COMMENTS_FILE"
+		exit 1
+	fi
+
+	BASE_URL="https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/merge_requests/${MR_IID}"
+	DIFF_REFS=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$BASE_URL" | jq '.diff_refs')
+	BASE_SHA=$(echo "$DIFF_REFS" | jq -r '.base_sha')
+	HEAD_SHA=$(echo "$DIFF_REFS" | jq -r '.head_sha')
+	START_SHA=$(echo "$DIFF_REFS" | jq -r '.start_sha')
+
+	if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "null" ]; then
+		echo "Error: Failed to get diff_refs for MR ${MR_IID}."
+		exit 1
+	fi
+
+	python3 - "${BASE_URL}/discussions" "$BASE_SHA" "$HEAD_SHA" "$START_SHA" "$COMMENTS_FILE" <<'PYEOF'
+import json, os, sys, urllib.request, urllib.error
+
+api_url = sys.argv[1]
+base_sha = sys.argv[2]
+head_sha = sys.argv[3]
+start_sha = sys.argv[4]
+comments_file = sys.argv[5]
+token = os.environ.get('GITLAB_TOKEN')
+
+with open(comments_file, 'r', encoding='utf-8') as f:
+    comments = json.load(f)
+
+for c in comments:
+    payload = json.dumps({
+        'body': c['body'],
+        'position': {
+            'base_sha': base_sha,
+            'head_sha': head_sha,
+            'start_sha': start_sha,
+            'position_type': 'text',
+            'new_path': c['path'],
+            'new_line': c['line'],
+        }
+    }).encode('utf-8')
+    req = urllib.request.Request(
+        api_url,
+        data=payload,
+        headers={'PRIVATE-TOKEN': token, 'Content-Type': 'application/json'},
+        method='POST'
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            resp.read()
+            print(f"OK: {c['path']}:{c['line']}")
+    except urllib.error.HTTPError as e:
+        print(f"FAIL: {c['path']}:{c['line']} HTTP {e.code}: {e.read().decode('utf-8', errors='replace')[:200]}")
+PYEOF
+
 else
 	echo "Unknown action: $ACTION"
-	echo "Supported actions: fetch, comment, reply, diff, setup-worktree"
+	echo "Supported actions: fetch, comment, reply, diff, setup-worktree, find, post-notes"
 	exit 1
 fi

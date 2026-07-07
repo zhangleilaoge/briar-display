@@ -45,14 +45,14 @@ if [ "$CMD" = "setup" ]; then
 	fi
 
 	REPO_NAME=$(basename "$REPO_PATH")
-	REPO_SCRIPT="$(cd "$(dirname "$0")/../briar-repo/scripts" && pwd)/briar-repo.sh"
+	REPO_SCRIPT="$(cd "$(dirname "$0")/../../briar-repo/scripts" && pwd)/briar-repo.sh"
 	if [ ! -f "$REPO_SCRIPT" ]; then
 		echo "Error: briar-repo.sh not found at $REPO_SCRIPT"
 		exit 1
 	fi
 
 	BASE_DIR=$(cd "$REPO_PATH/.." && pwd)
-	WORKTREE_PATH=$("$REPO_SCRIPT" worktree add "$REPO_NAME" "$BRANCH" "$BASE_DIR")
+	WORKTREE_PATH=$("$REPO_SCRIPT" worktree add "$REPO_NAME" "$BRANCH" "$BASE_DIR" | tail -1)
 	echo "$WORKTREE_PATH"
 
 # --- verify: 运行项目验证 ---
@@ -165,7 +165,7 @@ elif [ "$CMD" = "cleanup" ]; then
 		exit 1
 	fi
 
-	REPO_SCRIPT="$(cd "$(dirname "$0")/../briar-repo/scripts" && pwd)/briar-repo.sh"
+	REPO_SCRIPT="$(cd "$(dirname "$0")/../../briar-repo/scripts" && pwd)/briar-repo.sh"
 	if [ ! -f "$REPO_SCRIPT" ]; then
 		echo "Error: briar-repo.sh not found at $REPO_SCRIPT"
 		exit 1

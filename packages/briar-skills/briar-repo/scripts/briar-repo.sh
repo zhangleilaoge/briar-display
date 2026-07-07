@@ -69,6 +69,7 @@ show_usage() {
 	echo "  $0 worktree remove  <repo-name> <branch> [base_dir]"
 	echo "  $0 worktree list    <repo-name> [base_dir]"
 	echo "  $0 worktree clean   <repo-name> [base_dir]"
+	echo "  $0 base-dir      [domain]"
 	echo ""
 	echo "Examples:"
 	echo "  $0 pull retail-app-member"
@@ -101,9 +102,23 @@ if [ "$ACTION" = "worktree" ]; then
 	else
 		BASE_DIR="${4:-${BRIAR_REPO_BASE_DIR:-}}"
 	fi
-	# worktree 必须有已存在的仓库，这里无法推断 domain，沿用旧默认
+	# worktree 必须有已存在的仓库。若未指定 base_dir，先从现有仓库 remote 推断 domain，再回退旧默认
 	if [ -z "$BASE_DIR" ]; then
-		BASE_DIR="$HOME/projects"
+		CANDIDATE_DIR="$HOME/projects"
+		if [ -d "$CANDIDATE_DIR/$REPO_NAME/.git" ]; then
+			BASE_DIR="$CANDIDATE_DIR"
+		else
+			for try_domain in gitlab.qima-inc.com github.com; do
+				try_dir=$(get_default_base_dir "$try_domain")
+				if [ -d "$try_dir/$REPO_NAME/.git" ]; then
+					BASE_DIR="$try_dir"
+					break
+				fi
+			done
+		fi
+		if [ -z "$BASE_DIR" ]; then
+			BASE_DIR="$CANDIDATE_DIR"
+		fi
 	fi
 else
 	REPO_NAME="${2}"
@@ -124,6 +139,13 @@ else
 fi
 
 LOCAL_PATH="${BASE_DIR}/${REPO_NAME}"
+
+# --- base-dir: 输出默认本地父目录 ---
+if [ "$ACTION" = "base-dir" ]; then
+	DOMAIN="${2:-gitlab.qima-inc.com}"
+	get_default_base_dir "$DOMAIN"
+	exit 0
+fi
 
 if [ -z "$REPO_NAME" ]; then
 	show_usage
