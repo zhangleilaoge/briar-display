@@ -174,7 +174,18 @@ curl -s -X PUT \
 
 ### 流程
 
-1. **获取 diff 并评估复杂度**
+1. **（如只有分支名）先反查 MR iid**
+
+   如果用户给的是 Ungoro 等内部 CR 平台链接，或只说了分支名，先用 `find` action 查到 iid：
+
+   ```bash
+   ../scripts/briar-mr-review.sh find <domain> <project_path> <source_branch>
+   # 输出 iid, title, web_url 等
+   ```
+
+   拿到 `iid` 后再继续后续步骤。
+
+2. **获取 diff 并评估复杂度**
 
    先通过 API 获取 MR 的变更概览，判断是否需要切 worktree：
 
@@ -209,20 +220,21 @@ curl -s -X PUT \
    当判断需要完整代码上下文时，创建隔离的 review worktree：
 
    ```bash
-   # 从 project_path 推断仓库名（如 wsc-node/wsc-pc-channel → wsc-pc-channel）
-   REPO_NAME=$(echo "$PROJECT_PATH" | sed 's/.*\///')
-   LOCAL_REPO="$HOME/projects/$REPO_NAME"
-
-   # 检查本地是否已有该仓库
-   if [ ! -d "$LOCAL_REPO/.git" ]; then
-       # 没有则拉取（复用 briar-repo）
-       ../../briar-repo/scripts/briar-repo.sh pull "$REPO_NAME"
-   fi
-
-   # 创建 review worktree（自动获取 MR 分支信息）
+   # 创建 review worktree（自动推断本地仓库路径、获取 MR 分支信息）
    ../scripts/briar-mr-review.sh \
        setup-worktree <domain> <project_path> <mr_iid>
+
+   # 如本地仓库不在默认位置，可显式指定 base_dir
+   ../scripts/briar-mr-review.sh \
+       setup-worktree <domain> <project_path> <mr_iid> /Users/zhanglei/Documents/gitlab
    ```
+
+   `setup-worktree` 会按域名推断本地父目录（与 `briar-repo` 一致）：
+   - `gitlab.qima-inc.com` / `gitlab.com` → `$HOME/Documents/gitlab`
+   - `github.com` → `$HOME/Documents/github`
+   - 其他 → `$HOME/projects`
+
+   也可通过环境变量 `BRIAR_REPO_BASE_DIR` 覆盖。
 
    输出示例：
    ```
@@ -397,58 +409,39 @@ cd "$WORKTREE_PATH" && cat -n path/to/file.ts | head -80 | tail -20
 
 不要凭猜测填写 `new_line`，400 错误会浪费调用次数。
 
-### 批量添加 DiffNote 脚本模板
+#### DiffNote 定位失败排查
 
-当 review 意见较多时，可用以下 Python 脚本批量添加（避免手敲 8 条 curl）：
+如果批量添加时返回 `400 Bad request - Note {:line_code=>["can't be blank", "must be a valid line code"]}`，常见原因：
+
+| 原因 | 说明 | 解决方法 |
+|------|------|---------|
+| 行号指向上下文行 | `new_line` 必须是本次新增/修改的行，不能是未变更的上下文行 | 换到 `+` 开头的行或修改后的行 |
+| 行号超出 diff hunk | 目标行不在 GitLab 返回的 diff hunk 范围内 | 先用 `changes` API 确认 diff 中是否包含该行 |
+| diff 被截断 | 大 diff 的某些 hunks 在 API 返回中被截断 | 换到可定位的 hunk，或降级为顶层 Note |
+| `diff_refs` 错误 | `base_sha` / `head_sha` / `start_sha` 必须与 MR 当前状态匹配 | 从 GitLab MR API 重新获取 `.diff_refs`，不要假设 `start_sha == base_sha` |
+
+**降级方案**：当 DiffNote 无法定位时，改为发表顶层 Note，并在 body 中写明文件和行号：
 
 ```bash
-export GITLAB_TOKEN="..."
-DOMAIN="gitlab.qima-inc.com"
-PROJECT_PATH="group/project"
-MR_IID="932"
-ENCODED_PATH=$(echo "$PROJECT_PATH" | sed 's/\//%2F/g')
-API_URL="https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID/discussions"
-
-# 先获取 diff_refs
-DIFF_REFS=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  "https://$DOMAIN/api/v4/projects/$ENCODED_PATH/merge_requests/$MR_IID" | jq '.diff_refs')
-BASE_SHA=$(echo "$DIFF_REFS" | jq -r '.base_sha')
-HEAD_SHA=$(echo "$DIFF_REFS" | jq -r '.head_sha')
-START_SHA=$(echo "$DIFF_REFS" | jq -r '.start_sha')
-
-python3 -c "
-import json, urllib.request, os
-
-comments = [
-  {'path': 'src/Foo.ts', 'line': 42, 'body': '🔴 严重：...'},
-  # 更多评论...
-]
-
-for c in comments:
-    payload = json.dumps({
-        'body': c['body'],
-        'position': {
-            'base_sha': '$BASE_SHA',
-            'head_sha': '$HEAD_SHA',
-            'start_sha': '$START_SHA',
-            'position_type': 'text',
-            'new_path': c['path'],
-            'new_line': c['line']
-        }
-    })
-    req = urllib.request.Request(
-        '$API_URL',
-        data=payload.encode('utf-8'),
-        headers={'PRIVATE-TOKEN': os.environ['GITLAB_TOKEN'], 'Content-Type': 'application/json'},
-        method='POST'
-    )
-    try:
-        with urllib.request.urlopen(req) as resp:
-            print(f'OK: {c[\"path\"]}:{c[\"line\"]}')
-    except urllib.error.HTTPError as e:
-        print(f'Fail: {c[\"path\"]}:{c[\"line\"]} HTTP {e.code}')
-"
+../scripts/briar-mr-review.sh comment <domain> <project_path> <mr_iid> "[AI Review] app/foo.ts:42 ..."
 ```
+
+### 批量添加 DiffNote
+
+当 review 意见较多时，先把评论整理成 JSON 文件，再用 `post-notes` action 批量提交：
+
+```bash
+cat > /tmp/comments.json << 'EOF'
+[
+  {"path": "src/Foo.ts", "line": 42, "body": "[AI Review] 🔴 严重：..."},
+  {"path": "src/Bar.ts", "line": 88, "body": "[AI Review] 🟡 建议：..."}
+]
+EOF
+
+../scripts/briar-mr-review.sh post-notes <domain> <project_path> <mr_iid> /tmp/comments.json
+```
+
+脚本会自动获取 `diff_refs`、逐条提交，并输出每行的成功/失败结果。
 
 ---
 
@@ -528,3 +521,66 @@ for c in comments:
 | 1 | 移除 `parentComponent: this` | ✅ | 已修复 | - |
 | 2 | `channelId` 语义不一致 | ✅ | 已修复 | - |
 | 3 | 静默过滤建议加错误提示 | ❌ | 跳过 | 异常场景极少，属防御性建议 |
+
+---
+
+## 六、批量/并行 Review 工作流
+
+当用户一次给出多个 MR（如 4 个端各一个 MR）时，可并行 review，但主 Agent 必须做最终过滤和评论发布。
+
+### 推荐流程
+
+```
+用户给出 N 个 MR 链接/分支
+  ↓
+反查每个 MR 的 iid（briar-mr-review.sh find）
+  ↓
+并行创建 worktree 并生成报告（子 Agent）
+  ↓
+主 Agent 汇总报告，过滤评论
+  ↓
+批量发布 DiffNote（briar-mr-review.sh post-notes）
+  ↓
+对定位失败的评论降级为顶层 Note
+```
+
+### 子 Agent 输入格式
+
+给每个子 Agent 传递一个结构化字符串，避免解析歧义：
+
+```
+repo_name|gitlab_project_path|mr_iid|local_repo_path|source_branch
+```
+
+示例：
+
+```
+wsc-pc-shop|wsc-node/wsc-pc-shop|3866|/Users/zhanglei/Documents/gitlab/wsc-pc-shop|hotfix/20260625-customer-sales-name
+```
+
+### 子 Agent 输出要求
+
+子 Agent 完成 review 后必须返回：
+1. 报告文件路径：`/Users/zhanglei/Desktop/review-report-<repo>-<iid>.md`
+2. 建议评论 JSON 数组（最多 5 条）：
+   ```json
+   [
+     {"path": "src/Foo.ts", "line": 42, "body": "[AI Review] ..."}
+   ]
+   ```
+
+### 主 Agent 过滤规则
+
+批量发布前，主 Agent 必须：
+1. 获取每个 MR 的 `changes` 文件白名单；
+2. 丢弃不在白名单中的评论；
+3. 验证关键评论行号是否在 diff 中可见；
+4. 对无法定位的评论改用顶层 Note。
+
+### 报告命名
+
+统一命名避免并发覆盖：
+
+```
+review-report-<repo_name>-<mr_iid>.md
+```
