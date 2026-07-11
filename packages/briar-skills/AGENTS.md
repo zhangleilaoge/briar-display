@@ -63,10 +63,13 @@ chmod 600 "$HOME/.config/briar-skills/.env"
 
 ### 本地仓库默认目录
 
-`briar-repo` 和 `briar-mr` 默认把代码 clone 到 `$HOME/projects/`。可通过参数覆盖：
+`zan-gitlab` 拉取仓库后默认放在 `$HOME/.gitlab-repos/`；`briar-mr` 查找本地仓库时优先按域名推断（GitLab → `$HOME/Documents/gitlab`，GitHub → `$HOME/Documents/github`，兜底 `$HOME/projects/`）。
+
+拉取/定位仓库请使用 `zan-gitlab` skill：
 
 ```bash
-briar-repo.sh pull wsc-pc-channel "$HOME/work"
+# 由 zan-gitlab skill 处理
+python3 /Users/zhanglei/.kimi-code/user-skills/zan-gitlab/scripts/zan_gitlab.py '<repo-or-keyword>'
 ```
 
 ---

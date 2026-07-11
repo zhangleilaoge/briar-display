@@ -143,13 +143,13 @@ briar-mr-review.sh find gitlab.qima-inc.com wsc-node/wsc-pc-shop hotfix/20260625
 # 输出 iid、title、web_url 等
 ```
 
-拿到 `iid` 后再走 `fetch` / `diff` / `setup-worktree` / `post-notes` 流程。
+拿到 `iid` 后再走 `fetch` / `diff` / `post-notes` 流程。如需完整代码上下文，调用 `using-git-worktrees` skill 创建 review worktree。
 
 ---
 
 ## 本地仓库路径
 
-`briar-mr-review.sh setup-worktree` 需要定位本地仓库。默认按域名推断父目录（与 `briar-repo` 一致）：
+`briar-mr` 操作需要定位本地仓库。默认按域名推断父目录：
 
 | 域名 | 默认本地父目录 |
 |------|---------------|
@@ -157,16 +157,7 @@ briar-mr-review.sh find gitlab.qima-inc.com wsc-node/wsc-pc-shop hotfix/20260625
 | `github.com` | `$HOME/Documents/github` |
 | 其他 | `$HOME/projects` |
 
-可通过以下方式覆盖：
-
-```bash
-# 方式一：环境变量
-export BRIAR_REPO_BASE_DIR=/Users/zhanglei/Documents/gitlab
-briar-mr-review.sh setup-worktree gitlab.qima-inc.com wsc-node/wsc-pc-shop 932
-
-# 方式二：第 5 个参数
-briar-mr-review.sh setup-worktree gitlab.qima-inc.com wsc-node/wsc-pc-shop 932 /Users/zhanglei/Documents/gitlab
-```
+如本地仓库不存在，先使用 `zan-gitlab` skill 拉取。
 
 ---
 
