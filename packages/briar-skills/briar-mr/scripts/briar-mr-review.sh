@@ -1,14 +1,15 @@
 #!/bin/bash
-# briar-mr-review.sh - MR 评论操作（fetch / comment / reply / diff / setup-worktree / find / post-notes）
+# briar-mr-review.sh - MR 评论操作（fetch / comment / reply / diff / find / post-notes）
 #
 # Usage:
 #   ./briar-mr-review.sh fetch         <domain> <project_path> <mr_iid>
 #   ./briar-mr-review.sh comment       <domain> <project_path> <mr_iid> <body>
 #   ./briar-mr-review.sh reply         <domain> <project_path> <mr_iid> <discussion_id> <body>
 #   ./briar-mr-review.sh diff          <domain> <project_path> <mr_iid>
-#   ./briar-mr-review.sh setup-worktree <domain> <project_path> <mr_iid> [base_dir]
 #   ./briar-mr-review.sh find          <domain> <project_path> <source_branch>
 #   ./briar-mr-review.sh post-notes    <domain> <project_path> <mr_iid> <comments.json>
+#
+# 注意：review 所需 worktree 由 using-git-worktrees skill 负责创建/清理，本脚本不再提供 setup-worktree。
 #
 # Token 加载优先级：环境变量 GITLAB_TOKEN → ~/.config/briar-skills/.env → ~/.git-credentials
 
@@ -44,7 +45,7 @@ load_gitlab_token() {
 
 load_gitlab_token
 
-# --- 根据域名推断本地父目录（优先复用 briar-repo） ---
+# --- 根据域名推断本地父目录 ---
 infer_base_dir() {
 	local domain="${1:-$DOMAIN}"
 	REPO_SCRIPT="$(cd "$(dirname "$0")/../../briar-repo/scripts" && pwd)/briar-repo.sh"
@@ -56,7 +57,7 @@ infer_base_dir() {
 			return
 		fi
 	fi
-	# 兜底：与 briar-repo 保持一致
+	# 兜底默认
 	case "$domain" in
 		gitlab.qima-inc.com | gitlab.com)
 			echo "$HOME/Documents/gitlab"
@@ -80,7 +81,6 @@ if [ -z "$PROJECT_PATH" ]; then
 	echo "  $0 comment       <domain> <project_path> <mr_iid> <comment_body>"
 	echo "  $0 reply         <domain> <project_path> <mr_iid> <discussion_id> <reply_body>"
 	echo "  $0 diff          <domain> <project_path> <mr_iid>"
-	echo "  $0 setup-worktree <domain> <project_path> <mr_iid> [base_dir]"
 	echo "  $0 find          <domain> <project_path> <source_branch>"
 	echo "  $0 post-notes    <domain> <project_path> <mr_iid> <comments.json>"
 	exit 1
@@ -165,57 +165,6 @@ elif [ "$ACTION" = "diff" ]; then
 				diff
 			}]
 		}'
-
-elif [ "$ACTION" = "setup-worktree" ]; then
-	MR_IID="${4}"
-	if [ -z "$MR_IID" ]; then
-		echo "Error: mr_iid is required for 'setup-worktree' action."
-		exit 1
-	fi
-
-	BASE_URL="https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/merge_requests/${MR_IID}"
-	MR_INFO=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "${BASE_URL}")
-	SOURCE_BRANCH=$(echo "$MR_INFO" | jq -r '.source_branch')
-	TARGET_BRANCH=$(echo "$MR_INFO" | jq -r '.target_branch')
-
-	if [ -z "$SOURCE_BRANCH" ] || [ "$SOURCE_BRANCH" = "null" ]; then
-		echo "Error: Failed to get source_branch from MR ${MR_IID}."
-		exit 1
-	fi
-
-	REPO_NAME=$(echo "$PROJECT_PATH" | sed 's/.*\///')
-	BASE_DIR="${5:-${BRIAR_REPO_BASE_DIR:-$(infer_base_dir)}}"
-	LOCAL_REPO="$BASE_DIR/$REPO_NAME"
-
-	# 兜底：如果推断目录不存在，尝试旧默认
-	if [ ! -d "$LOCAL_REPO/.git" ]; then
-		LOCAL_REPO="$HOME/projects/$REPO_NAME"
-	fi
-
-	if [ ! -d "$LOCAL_REPO/.git" ]; then
-		echo "Error: Local repository not found at $BASE_DIR/$REPO_NAME or $HOME/projects/$REPO_NAME"
-		echo "Please clone it first using briar-repo."
-		exit 1
-	fi
-
-	FIX_SCRIPT="$(cd "$(dirname "$0")/../../briar-fix/scripts" && pwd)/briar-fix.sh"
-	if [ ! -f "$FIX_SCRIPT" ]; then
-		echo "Error: briar-fix.sh not found at $FIX_SCRIPT"
-		exit 1
-	fi
-
-	WORKTREE_PATH=$("$FIX_SCRIPT" setup "$LOCAL_REPO" "$SOURCE_BRANCH" "review-${MR_IID}")
-
-	echo ""
-	echo "=== Review Worktree ==="
-	echo "Path: $WORKTREE_PATH"
-	echo "Branch: $SOURCE_BRANCH"
-	echo "Target: $TARGET_BRANCH"
-	echo ""
-	echo "Commands:"
-	echo "  View diff:       cd \"$WORKTREE_PATH\" && git diff origin/$TARGET_BRANCH..HEAD"
-	echo "  View file:       cd \"$WORKTREE_PATH\" && cat <file>"
-	echo "  Cleanup:         $FIX_SCRIPT cleanup \"$LOCAL_REPO\" \"$WORKTREE_PATH\""
 
 elif [ "$ACTION" = "find" ]; then
 	SOURCE_BRANCH="${4}"
@@ -305,6 +254,6 @@ PYEOF
 
 else
 	echo "Unknown action: $ACTION"
-	echo "Supported actions: fetch, comment, reply, diff, setup-worktree, find, post-notes"
+	echo "Supported actions: fetch, comment, reply, diff, find, post-notes"
 	exit 1
 fi

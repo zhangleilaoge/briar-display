@@ -217,37 +217,17 @@ curl -s -X PUT \
 
 2. **（如需要）创建 Review Worktree 查看完整上下文**
 
-   当判断需要完整代码上下文时，创建隔离的 review worktree：
+   当判断需要完整代码上下文时，调用 `using-git-worktrees` skill 创建隔离的 review worktree。
 
+   创建前先从 MR 获取源分支和目标分支：
    ```bash
-   # 创建 review worktree（自动推断本地仓库路径、获取 MR 分支信息）
-   ../scripts/briar-mr-review.sh \
-       setup-worktree <domain> <project_path> <mr_iid>
-
-   # 如本地仓库不在默认位置，可显式指定 base_dir
-   ../scripts/briar-mr-review.sh \
-       setup-worktree <domain> <project_path> <mr_iid> /Users/zhanglei/Documents/gitlab
+   BASE_URL="https://<domain>/api/v4/projects/<encoded_path>/merge_requests/<mr_iid>"
+   MR_INFO=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$BASE_URL")
+   SOURCE_BRANCH=$(echo "$MR_INFO" | jq -r '.source_branch')
+   TARGET_BRANCH=$(echo "$MR_INFO" | jq -r '.target_branch')
    ```
 
-   `setup-worktree` 会按域名推断本地父目录（与 `briar-repo` 一致）：
-   - `gitlab.qima-inc.com` / `gitlab.com` → `$HOME/Documents/gitlab`
-   - `github.com` → `$HOME/Documents/github`
-   - 其他 → `$HOME/projects`
-
-   也可通过环境变量 `BRIAR_REPO_BASE_DIR` 覆盖。
-
-   输出示例：
-   ```
-   === Review Worktree ===
-   Path: $HOME/projects/wsc-pc-channel-review-932
-   Branch: feat/channel-refactor
-   Target: master
-
-   Commands:
-     View diff:       cd "..." && git diff origin/master..HEAD
-     View file:       cd "..." && cat <file>
-     Cleanup:         /.../briar-fix.sh cleanup "<repo>" "<worktree>"
-   ```
+   然后调用 `using-git-worktrees` skill，在本地仓库基础上创建基于 `$SOURCE_BRANCH` 的 worktree。
 
    在 worktree 中查看代码：
    ```bash
@@ -299,23 +279,9 @@ curl -s -X PUT \
 
 6. **（如切了 worktree）清理 Worktree**
 
-   如果第 2 步创建了 worktree，review 完成后（无论是否发表了评论）**立即清理**：
+   如果第 2 步创建了 worktree，review 完成后（无论是否发表了评论）**立即调用 `using-git-worktrees` skill 清理**。
 
-   ```bash
-   # 方式一：通过 briar-fix 脚本（自动处理分支和目录）
-   ../../briar-fix/scripts/briar-fix.sh cleanup \
-       "$LOCAL_REPO" \
-       "$WORKTREE_PATH"
-
-   # 方式二：手动清理（如果脚本不可用）
-   cd "$LOCAL_REPO" && git worktree remove "$WORKTREE_PATH" --force
-   rm -rf "$WORKTREE_PATH"
-   ```
-
-   > 如果用户说"先不清理，我还要看看"，则推迟清理，但**必须提醒**用户后续手动清理：
-   > ```bash
-   > cd "$LOCAL_REPO" && git worktree remove "$WORKTREE_PATH" --force
-   > ```
+   > 如果用户说"先不清理，我还要看看"，则推迟清理，但**必须提醒**用户后续手动清理。
 
 ### 添加行级评论（DiffNote）
 
@@ -496,9 +462,8 @@ EOF
 ### 修复脚本速查
 
 ```bash
-# 创建 worktree
-../../briar-fix/scripts/briar-fix.sh setup \
-  "$HOME/projects/<repo>" <branch> fix-<mr_iid>
+# 创建 worktree：调用 using-git-worktrees skill
+# 清理 worktree：调用 using-git-worktrees skill
 
 # 验证
 ../../briar-fix/scripts/briar-fix.sh verify <worktree_path>
@@ -509,9 +474,6 @@ EOF
 # 用户确认后提交
 ../../briar-fix/scripts/briar-fix.sh commit <worktree_path> "fix: 按 review 修复"
 ../../briar-fix/scripts/briar-fix.sh push <worktree_path>
-
-# 清理
-../../briar-fix/scripts/briar-fix.sh cleanup <repo_path> <worktree_path>
 ```
 
 ### 输出总结

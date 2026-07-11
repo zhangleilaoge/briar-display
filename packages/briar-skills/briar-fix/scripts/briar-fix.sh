@@ -1,14 +1,12 @@
 #!/bin/bash
-# briar-fix.sh - 代码修复基础设施
+# briar-fix.sh - 代码修复工作流脚本
 # Usage:
-#   ./briar-fix.sh setup   <repo_path> <branch>
 #   ./briar-fix.sh verify  <worktree_path>
 #   ./briar-fix.sh diff    <worktree_path>
 #   ./briar-fix.sh commit  <worktree_path> <message>
 #   ./briar-fix.sh push    <worktree_path>
-#   ./briar-fix.sh cleanup <repo_path> <worktree_path>
 #
-# worktree 管理由 briar-repo 提供，本脚本只做修复相关操作。
+# worktree 的创建/删除由 using-git-worktrees skill 负责，本脚本只负责 worktree 内的修复操作。
 
 set -e
 
@@ -16,12 +14,10 @@ CMD="${1}"
 
 show_usage() {
 	echo "Usage:"
-	echo "  $0 setup   <repo_path> <branch>"
 	echo "  $0 verify  <worktree_path>"
 	echo "  $0 diff    <worktree_path>"
 	echo "  $0 commit  <worktree_path> <message>"
 	echo "  $0 push    <worktree_path>"
-	echo "  $0 cleanup <repo_path> <worktree_path>"
 }
 
 if [ -z "$CMD" ] || [ "$CMD" = "-h" ] || [ "$CMD" = "--help" ]; then
@@ -29,34 +25,8 @@ if [ -z "$CMD" ] || [ "$CMD" = "-h" ] || [ "$CMD" = "--help" ]; then
 	exit 0
 fi
 
-# --- setup: 创建 worktree（委托给 briar-repo） ---
-if [ "$CMD" = "setup" ]; then
-	REPO_PATH="${2}"
-	BRANCH="${3}"
-
-	if [ -z "$REPO_PATH" ] || [ -z "$BRANCH" ]; then
-		show_usage
-		exit 1
-	fi
-
-	if [ ! -d "$REPO_PATH/.git" ]; then
-		echo "Error: $REPO_PATH is not a git repository."
-		exit 1
-	fi
-
-	REPO_NAME=$(basename "$REPO_PATH")
-	REPO_SCRIPT="$(cd "$(dirname "$0")/../../briar-repo/scripts" && pwd)/briar-repo.sh"
-	if [ ! -f "$REPO_SCRIPT" ]; then
-		echo "Error: briar-repo.sh not found at $REPO_SCRIPT"
-		exit 1
-	fi
-
-	BASE_DIR=$(cd "$REPO_PATH/.." && pwd)
-	WORKTREE_PATH=$("$REPO_SCRIPT" worktree add "$REPO_NAME" "$BRANCH" "$BASE_DIR" | tail -1)
-	echo "$WORKTREE_PATH"
-
 # --- verify: 运行项目验证 ---
-elif [ "$CMD" = "verify" ]; then
+if [ "$CMD" = "verify" ]; then
 	WT_PATH="${2}"
 
 	if [ -z "$WT_PATH" ] || [ ! -d "$WT_PATH" ]; then
@@ -143,36 +113,6 @@ elif [ "$CMD" = "push" ]; then
 	BRANCH=$(git rev-parse --abbrev-ref HEAD)
 	git push origin "$BRANCH"
 	echo "Pushed $BRANCH to origin"
-
-# --- cleanup: 清理 worktree（委托给 briar-repo） ---
-elif [ "$CMD" = "cleanup" ]; then
-	REPO_PATH="${2}"
-	WT_PATH="${3}"
-
-	if [ -z "$REPO_PATH" ] || [ -z "$WT_PATH" ]; then
-		show_usage
-		exit 1
-	fi
-
-	REPO_NAME=$(basename "$REPO_PATH")
-	WT_BASENAME=$(basename "$WT_PATH")
-	# 从 worktree 名称中提取分支：wsc-pc-channel-feat-foo → feat-foo
-	BRANCH="${WT_BASENAME#${REPO_NAME}-}"
-
-	if [ -z "$BRANCH" ] || [ "$BRANCH" = "$WT_BASENAME" ]; then
-		echo "Error: Cannot extract branch from worktree path: $WT_PATH"
-		echo "Expected format: <repo-name>-<branch>"
-		exit 1
-	fi
-
-	REPO_SCRIPT="$(cd "$(dirname "$0")/../../briar-repo/scripts" && pwd)/briar-repo.sh"
-	if [ ! -f "$REPO_SCRIPT" ]; then
-		echo "Error: briar-repo.sh not found at $REPO_SCRIPT"
-		exit 1
-	fi
-
-	BASE_DIR=$(cd "$REPO_PATH/.." && pwd)
-	"$REPO_SCRIPT" worktree remove "$REPO_NAME" "$BRANCH" "$BASE_DIR"
 
 else
 	echo "Unknown command: $CMD"

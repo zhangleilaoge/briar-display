@@ -9,7 +9,7 @@ description: 用 Git worktree 隔离修复代码：按 MR 评论或 Pipeline 失
 
 **不要直接在主工作区修改代码**——可能当前工作区有未提交的改动、或者正在错误的分支上。使用 **worktree** 创建一个隔离的修复环境：
 
-> Worktree 的创建/删除由 [briar-repo](../briar-repo/SKILL.md) 管理，本 skill 只负责 worktree 内的修复操作。
+> Worktree 的创建/删除由 `using-git-worktrees` skill 负责，本 skill 只负责 worktree 内的修复操作（读取上下文、改代码、验证、提交）。
 
 ```
 原工作区（feat/xxx，可能有未提交改动）
@@ -43,11 +43,9 @@ description: 用 Git worktree 隔离修复代码：按 MR 评论或 Pipeline 失
 
 ### Step 1: 创建 Worktree
 
-使用 `using-git-worktrees` 创建隔离修复环境，或调用：
+**调用 `using-git-worktrees` skill** 创建隔离修复环境。由它负责检测当前是否已在隔离空间、选择 native worktree 工具或 `git worktree` fallback、以及目录选择和基线验证。
 
-```bash
-briar-repo.sh worktree add <repo-name> <branch>
-```
+完成后进入该 worktree，再继续后续步骤。
 
 ---
 
@@ -159,11 +157,7 @@ briar-repo.sh worktree add <repo-name> <branch>
 
 ### Step 7: 清理 Worktree
 
-提交完成后，立即清理：
-
-```bash
-briar-repo.sh worktree remove <repo-name> <branch>
-```
+提交完成后，**调用 `using-git-worktrees` skill** 清理 worktree。
 
 > 如果用户说"先不清理，我还要看看"，则推迟清理，但**必须提醒**用户后续手动清理。
 
@@ -179,13 +173,13 @@ briar-mr fetch（获取 comments）
 逐条分析合理性
   ↓
 需要修复的 → 调用 briar-fix
-  │   1. setup worktree（via using-git-worktrees / briar-repo）
+  │   1. setup worktree（via using-git-worktrees）
   │   2. 读取 comments + diff 上下文
   │   3. 修复代码
   │   4. verify
   │   5. 展示 diff，等用户确认
   │   6. commit + push
-  │   7. cleanup（via using-git-worktrees / briar-repo）
+  │   7. cleanup（via using-git-worktrees）
   ↓
 输出修复总结表格
 ```
@@ -198,24 +192,24 @@ briar-mr pipeline（获取 pipeline jobs）
 发现 lint/test/build 失败
   ↓
 调用 briar-fix
-  │   1. setup worktree（via using-git-worktrees / briar-repo）
+  │   1. setup worktree（via using-git-worktrees）
   │   2. 读取失败日志，定位问题
   │   3. 修复代码
   │   4. verify（重点验证失败的 job）
   │   5. 展示 diff，等用户确认
   │   6. commit + push
-  │   7. cleanup（via using-git-worktrees / briar-repo）
+  │   7. cleanup（via using-git-worktrees）
 ```
 
 ---
 
 ## 速查
 
-| 阶段 | 脚本命令 |
-|------|---------|
-| 创建 worktree | `briar-repo.sh worktree add <repo> <branch>` |
-| 验证修复 | `briar-fix.sh verify <worktree_path>` |
-| 展示 diff | `briar-fix.sh diff <worktree_path>` |
-| 提交 | `briar-fix.sh commit <worktree_path> "<msg>"` |
-| push | `briar-fix.sh push <worktree_path>` |
-| 清理 worktree | `briar-repo.sh worktree remove <repo> <branch>` |
+| 阶段 | 负责方 | 命令/操作 |
+|------|--------|----------|
+| 创建 worktree | `using-git-worktrees` skill | 调用 skill，获取 worktree 路径 |
+| 验证修复 | `briar-fix` | `briar-fix.sh verify <worktree_path>` |
+| 展示 diff | `briar-fix` | `briar-fix.sh diff <worktree_path>` |
+| 提交 | `briar-fix` | `briar-fix.sh commit <worktree_path> "<msg>"` |
+| push | `briar-fix` | `briar-fix.sh push <worktree_path>` |
+| 清理 worktree | `using-git-worktrees` skill | 调用 skill 清理 |

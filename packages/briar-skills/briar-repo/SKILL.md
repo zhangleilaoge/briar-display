@@ -7,19 +7,21 @@ description: 仓库管理：拉取、更新、清理、创建/删除 worktree。
 
 ## 概述
 
-本 skill 负责仓库的**全生命周期管理**：
+本 skill 负责仓库的**本地维护**：
 
 | 能力 | 说明 |
 |------|------|
-| **拉取仓库** | 从 GitLab / GitHub 搜索并克隆到本地 |
 | **更新仓库** | stash 当前改动 → fetch --all → pull 所有跟踪分支 |
 | **清理工作区** | 删除所有 worktree → update（保持主仓库干净最新） |
-| **Worktree 管理** | 创建/删除/列出/清理 worktree |
+
+**拉取仓库**：统一由 `zan-gitlab` skill 处理，它支持通过应用名、URL、Dubbo 服务、npm 包等业务线索定位仓库并同步到本地。`briar-repo` 不再自行实现 pull。
+
+**Worktree 管理**：统一由 `using-git-worktrees` skill 处理。`briar-repo` 不再提供 worktree 命令；`briar-fix` 创建/清理 worktree 时调用 `using-git-worktrees`。
 
 **与 briar-fix 的关系**：
-- `briar-repo` 负责 worktree 的**创建和删除**
+- `using-git-worktrees` 负责创建/清理 worktree
 - `briar-fix` 负责 worktree 内的**代码修复**（verify、diff、commit、push）
-- `briar-fix` 的 `setup`/`cleanup` 委托给 `briar-repo` 执行
+- `briar-repo` 负责仓库本地更新和清理
 
 ---
 
@@ -54,75 +56,20 @@ fi
 
 ## 行为索引
 
-| 行为 | 触发关键词 | 命令 |
-|------|-----------|------|
-| 拉取仓库 | "帮我拉 xxx"、"克隆 xxx" | `briar-repo.sh pull <repo> [base_dir] [domain]` |
-| 更新仓库 | "更新 xxx"、"pull 一下" | `briar-repo.sh update <repo> [base_dir]` |
-| 清理工作区 | "保持干净"、"清理 xxx" | `briar-repo.sh clean <repo> [base_dir]` |
-| 创建 Worktree | "建 worktree"、"开分支工作区" | `briar-repo.sh worktree add <repo> <branch> [base_dir]` |
-| 删除 Worktree | "删 worktree" | `briar-repo.sh worktree remove <repo> <branch> [base_dir]` |
-| 列出 Worktree | "看看 worktree" | `briar-repo.sh worktree list <repo> [base_dir]` |
-| 清理所有 Worktree | "删掉所有 worktree" | `briar-repo.sh worktree clean <repo> [base_dir]` |
+| 行为 | 触发关键词 | 负责方 | 命令 |
+|------|-----------|--------|------|
+| 拉取/定位仓库 | "帮我拉 xxx"、"克隆 xxx"、"这个应用在哪个仓库" | `zan-gitlab` skill | 调用 `zan-gitlab` |
+| 更新仓库 | "更新 xxx"、"pull 一下" | `briar-repo` | `briar-repo.sh update <repo> [base_dir]` |
+| 清理工作区 | "保持干净"、"清理 xxx" | `briar-repo` | `briar-repo.sh clean <repo> [base_dir]` |
+| 创建/删除 Worktree | "建 worktree"、"删 worktree" | `using-git-worktrees` skill | 调用 `using-git-worktrees` |
 
 **参数说明**：
 - `<repo>`: 仓库名称（脚本默认在 `base_dir` 下查找 `base_dir/<repo>`）
-- `[base_dir]`: 可选，仓库所在的父目录。未指定时按 `domain` 自动选择：
-  - GitLab（`gitlab.qima-inc.com` / `gitlab.com`）→ `$HOME/Documents/gitlab`
-  - GitHub（`github.com`）→ `$HOME/Documents/github`
-  - 其他 → `$HOME/projects`
-- `[domain]`: 可选，仅在 `pull` 时有效，**默认为 `gitlab.qima-inc.com`**。可指定 `github.com` 拉取 GitHub 仓库。
+- `[base_dir]`: 可选，仓库所在的父目录。未指定时回退到 `$HOME/projects`，建议显式传入。
 
 ---
 
-## 一、拉取仓库（pull）
-
-**触发条件**：用户说"帮我拉 xxx"、"克隆 xxx 仓库"。
-
-### 流程
-
-1. **检查本地是否已存在**
-   ```bash
-   LOCAL_PATH="<base-dir>/<repo-name>"
-   if [ -d "$LOCAL_PATH/.git" ]; then
-       echo "本地已有该仓库"
-   fi
-   ```
-
-2. **搜索项目**
-   - GitLab：
-     ```bash
-     curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-       "https://<domain>/api/v4/projects?search=<repo-name>&per_page=20"
-     ```
-   - GitHub：
-     ```bash
-     curl -s -H "Authorization: token $GITHUB_TOKEN" \
-       "https://api.github.com/search/repositories?q=<repo-name>&per_page=20"
-     ```
-
-3. **选择仓库**
-   - 只有一个结果：直接使用
-   - 有多个结果：GitLab 优先选择 `wsc-node/` 前缀的正式仓库；无法自动选择时，展示列表让用户确认
-
-4. **执行克隆**
-   ```bash
-   git clone <ssh_url> "<base-dir>/<repo-name>"
-   ```
-
-### 脚本
-
-```bash
-# GitLab（默认）
-./scripts/briar-repo.sh pull <repo-name> [base_dir]
-briar-repo.sh pull <repo-name> [base_dir]
-
-# GitHub
-briar-repo.sh pull <repo-name> [base_dir] github.com
-```
-
----
-
-## 二、更新仓库（update）
+## 一、更新仓库（update）
 
 **触发条件**：用户说"更新 xxx 代码"、"pull 一下 xxx"。
 
@@ -160,7 +107,7 @@ briar-repo.sh update <repo-name> [base_dir]
 
 ---
 
-## 三、清理工作区（clean）
+## 二、清理工作区（clean）
 
 **触发条件**：用户说"保持工作区干净"、"清理 xxx"。
 
@@ -192,75 +139,30 @@ briar-repo.sh clean <repo-name> [base_dir]
 
 ---
 
-## 四、Worktree 管理
-
-> 通用 worktree 使用方法已由 `using-git-worktrees` 覆盖。本节仅保留 briar 项目的**命名约定**和**快捷命令**。
-
-**触发条件**：用户说"给 xxx 建个 worktree"、"开个 xxx 分支工作区"、"删 worktree"。
-
-### 命名规则
-
-| 项目 | 约定 |
-|------|------|
-| 名称格式 | `仓库名-分支名`（`/` 替换为 `-`） |
-| 存放位置 | 仓库**同级目录** |
-
-示例：仓库 `~/projects/wsc-pc-channel` + 分支 `feat/foo` → Worktree `~/projects/wsc-pc-channel-feat-foo`
-
-### 快捷命令
-
-```bash
-briar-repo.sh worktree add    <repo> <branch> [base_dir]  # 创建（存在则复用+stash）
-briar-repo.sh worktree remove <repo> <branch> [base_dir]  # 删除（先 stash）
-briar-repo.sh worktree list   <repo> [base_dir]           # 列出
-briar-repo.sh worktree clean  <repo> [base_dir]           # 清理全部
-```
-
----
-
 ## 已知陷阱
 
-### 1. 脚本默认 `BASE_DIR` 按仓库来源自动选择
+### 1. 脚本默认 `BASE_DIR` 已简化
 
-当前默认规则：
+`pull` 移除后，`briar-repo` 只操作本地已有仓库。`update`/`clean` 默认在 `$HOME/projects/<repo>` 查找，若仓库在其他位置，请显式传入 `base_dir`：
 
-| 来源 | 默认目录 |
-|------|---------|
-| GitLab（`gitlab.qima-inc.com` / `gitlab.com`） | `$HOME/Documents/gitlab` |
-| GitHub（`github.com`） | `$HOME/Documents/github` |
-| 其他 | `$HOME/projects` |
-
-**错误示例**（仓库实际在 `~/work/briar-display`，不在默认目录下）：
-```bash
-./briar-repo.sh clean briar-display
-# Error: $HOME/projects/briar-display is not a git repository.
-```
-
-**正确做法**：显式传入 `base_dir` 参数：
 ```bash
 ./briar-repo.sh clean briar-display "$HOME/work"
-./briar-repo.sh worktree add briar-display test/20260522 "$HOME/work"
 ```
 
 > 当不确定仓库路径时，优先使用 `pwd` 或向用户确认，而不是依赖默认值。
-
-### 2. 手动 `git worktree add` 与脚本行为不一致
-
-手动执行 `git worktree add .worktrees/test-20260522 test/20260522` 会把 worktree 放在仓库**子目录**下，而 briar 约定放在**同级目录**。清理工作区时脚本可能找不到手动创建的 worktree，此时直接用 `git worktree list` 查看实际路径后删除。
 
 ---
 
 ## 与 briar-fix 的配合
 
-`briar-fix` 的 `setup` 和 `cleanup` 委托给 `briar-repo`：
+`briar-fix` 的工作流：
 
-```bash
-# briar-fix setup → 实际调用 briar-repo worktree add
-briar-repo.sh worktree add <repo-name> <branch>
+1. **创建 worktree**：调用 `using-git-worktrees` skill
+2. **修复代码**：在 worktree 内执行
+3. **验证/展示 diff/提交/push**：调用 `briar-fix.sh`
+4. **清理 worktree**：调用 `using-git-worktrees` skill
 
-# briar-fix cleanup → 实际调用 briar-repo worktree remove
-briar-repo.sh worktree remove <repo-name> <branch>
-```
+`briar-repo` 仅负责本地仓库的更新和清理，不直接参与 worktree 管理。
 
 `briar-fix` 保留的能力：
 - `verify`：运行 typecheck/lint

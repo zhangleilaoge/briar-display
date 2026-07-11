@@ -42,3 +42,4 @@ construction_comparison_report/
 
 # agent skills symlinks
 .agents/skills/
+.trae/*

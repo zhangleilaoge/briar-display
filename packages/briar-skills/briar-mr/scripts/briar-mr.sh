@@ -8,11 +8,12 @@
 #   ./briar-mr.sh comment       <domain> <project_path> <mr_iid> <body>
 #   ./briar-mr.sh reply         <domain> <project_path> <mr_iid> <discussion_id> <body>
 #   ./briar-mr.sh diff          <domain> <project_path> <mr_iid>
-#   ./briar-mr.sh setup-worktree <domain> <project_path> <mr_iid> [base_dir]
 #   ./briar-mr.sh find          <domain> <project_path> <source_branch>
 #   ./briar-mr.sh post-notes    <domain> <project_path> <mr_iid> <comments.json>
 #   ./briar-mr.sh pipeline      <domain> <project_path> <mr_iid>
 #   ./briar-mr.sh pending       [domain] [days]
+#
+# 注意：review/pipeline 所需 worktree 由 using-git-worktrees skill 负责创建/清理。
 #
 # 也可以直接调用原子脚本：
 #   ./briar-mr-create.sh   ...
@@ -58,7 +59,6 @@ show_usage() {
 	echo "  $0 comment       <domain> <project_path> <mr_iid> <comment_body>"
 	echo "  $0 reply         <domain> <project_path> <mr_iid> <discussion_id> <reply_body>"
 	echo "  $0 diff          <domain> <project_path> <mr_iid>"
-	echo "  $0 setup-worktree <domain> <project_path> <mr_iid> [base_dir]"
 	echo "  $0 find          <domain> <project_path> <source_branch>"
 	echo "  $0 post-notes    <domain> <project_path> <mr_iid> <comments.json>"
 	echo "  $0 pipeline      <domain> <project_path> <mr_iid>"
@@ -69,7 +69,6 @@ show_usage() {
 	echo "  $0 fetch         gitlab.qima-inc.com wsc-node/wsc-pc-channel 932"
 	echo "  $0 comment       gitlab.qima-inc.com wsc-node/wsc-pc-channel 932 'LGTM!'"
 	echo "  $0 reply         gitlab.qima-inc.com wsc-node/wsc-pc-channel 932 abc123 '已修复 ✅'"
-	echo "  $0 setup-worktree gitlab.qima-inc.com wsc-node/wsc-pc-channel 932"
 	echo "  $0 find          gitlab.qima-inc.com wsc-node/wsc-pc-channel feat/foo"
 	echo "  $0 post-notes    gitlab.qima-inc.com wsc-node/wsc-pc-channel 932 comments.json"
 	echo "  $0 pipeline      gitlab.qima-inc.com fe/scrm-mono 4849"
@@ -102,7 +101,7 @@ case "$ACTION" in
 	create)
 		exec "${SCRIPT_DIR}/briar-mr-create.sh" "$DOMAIN" "$PROJECT_PATH" "$@"
 		;;
-	fetch|comment|reply|diff|setup-worktree|find|post-notes)
+	fetch|comment|reply|diff|find|post-notes)
 		exec "${SCRIPT_DIR}/briar-mr-review.sh" "$ACTION" "$DOMAIN" "$PROJECT_PATH" "$@"
 		;;
 	pipeline)
