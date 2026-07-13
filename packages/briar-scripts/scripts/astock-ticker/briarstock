@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# briarstock - A 股终端行情看板全局入口
+set -euo pipefail
+
+PROJECT_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" && pwd)"
+MAIN_SCRIPT="${PROJECT_DIR}/main_fixed.py"
+
+if [[ ! -f "${MAIN_SCRIPT}" ]]; then
+    echo "错误：找不到 ${MAIN_SCRIPT}" >&2
+    exit 1
+fi
+
+# 检查依赖
+check_dep() {
+    python3 -c "import $1" 2>/dev/null
+}
+
+if ! check_dep urwid || ! check_dep requests || ! check_dep wcwidth; then
+    echo "正在安装依赖 (urwid, requests, wcwidth)..."
+    python3 -m pip install urwid requests wcwidth -q
+fi
+
+# 默认运行 TUI；传入 --demo 则运行演示版
+if [[ "${1:-}" == "--demo" ]]; then
+    exec python3 "${PROJECT_DIR}/demo.py" "${@:2}"
+else
+    exec python3 "${MAIN_SCRIPT}" "$@"
+fi
