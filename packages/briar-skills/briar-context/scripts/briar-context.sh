@@ -43,6 +43,8 @@ elif echo "$URL" | grep -qE 'gitlab\..*/-/merge_requests/'; then
 	TYPE="gitlab-mr"
 elif echo "$URL" | grep -qE 'gitlab\..*/-/wikis/'; then
 	TYPE="gitlab-wiki"
+elif echo "$URL" | grep -qE 'xiaolv\..*/#/demand/search'; then
+	TYPE="xiaolv-demand"
 elif echo "$URL" | grep -qE 'qima-inc'; then
 	TYPE="intranet"
 else
@@ -53,6 +55,48 @@ fi
 echo "[briar-context] Detected type: $TYPE"
 echo "[briar-context] URL: $URL"
 echo ""
+
+# --- Xiaolv 需求: 使用 zan-skills/xiaolv-skill 内置凭证调用 API ---
+if [ "$TYPE" = "xiaolv-demand" ]; then
+	DEMAND_ID=$(echo "$URL" | grep -oE 'ids=[0-9]+' | head -1 | cut -d= -f2)
+	if [ -z "$DEMAND_ID" ]; then
+		echo "[briar-context] 无法从 URL 中提取 Xiaolv 需求 ID。"
+		exit 1
+	fi
+
+	echo "[briar-context] 使用 zan-skills/xiaolv-skill 查询需求详情..."
+	# xiaolv-skill 内置默认凭证，见 ~/.kimi-code/user-skills/xiaolv-skill/SKILL.md
+	RESPONSE=$(curl -s -H "app: edp" -H "secret: gca8160ccb0b7176" \
+		-H "Content-Type: application/json" \
+		"http://xiaolv-api.qima-inc.com/api/v1/demand/id/$DEMAND_ID" 2>/dev/null)
+
+	if ! echo "$RESPONSE" | jq -e '.code == 0' >/dev/null 2>&1; then
+		MSG=$(echo "$RESPONSE" | jq -r '.msg // "未知错误"')
+		echo "[briar-context] Xiaolv API 查询失败: $MSG"
+		exit 1
+	fi
+
+	NAME=$(echo "$RESPONSE" | jq -r '.data.name // empty')
+	DESC=$(echo "$RESPONSE" | jq -r '.data.description // empty')
+	PRIORITY=$(echo "$RESPONSE" | jq -r '.data.priorityName // empty')
+	STATUS=$(echo "$RESPONSE" | jq -r '.data.statusName // empty')
+	CREATOR=$(echo "$RESPONSE" | jq -r '.data.creator.realName // empty')
+	OWNER=$(echo "$RESPONSE" | jq -r '.data.owner.realName // empty')
+	DEVS=$(echo "$RESPONSE" | jq -r '.data.developers | map(.realName) | join("、") // empty')
+
+	echo "【Xiaolv 需求上下文】$DEMAND_ID"
+	echo "- 标题: $NAME"
+	echo "- 优先级: $PRIORITY"
+	echo "- 状态: $STATUS"
+	echo "- 创建人: $CREATOR"
+	echo "- 负责人: $OWNER"
+	echo "- 开发人员: $DEVS"
+	echo "- 描述: $DESC"
+	echo ""
+	echo "如需富文本详情（含图片），请使用 zan-skills/xiaolv-skill 的 Cookie 认证接口："
+	echo "  GET https://xiaolv-api.qima-inc.com/demand/get?id=$DEMAND_ID"
+	exit 0
+fi
 
 # --- GitLab MR: 优先用 API ---
 if [ "$TYPE" = "gitlab-mr" ]; then
