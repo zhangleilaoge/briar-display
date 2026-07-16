@@ -88,6 +88,9 @@ fi
 
 ENCODED_PATH=$(echo "$PROJECT_PATH" | sed 's/\//%2F/g')
 
+# --- AI 标识：所有发表的评论（comment / reply / post-notes）自动在末尾追加 AI 标记 ---
+AI_COMMENT_MARKER=$'\n\n---\n> 🤖 *本评论由 AI 发布*'
+
 if [ "$ACTION" = "fetch" ]; then
 	MR_IID="${4}"
 	if [ -z "$MR_IID" ]; then
@@ -112,6 +115,7 @@ elif [ "$ACTION" = "comment" ]; then
 		echo "Error: mr_iid and comment body are required for 'comment' action."
 		exit 1
 	fi
+	BODY="${BODY}${AI_COMMENT_MARKER}"
 	BASE_URL="https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/merge_requests/${MR_IID}"
 	JSON_PAYLOAD=$(jq -n --arg body "$BODY" '{body: $body}')
 	curl -s -X POST \
@@ -130,6 +134,7 @@ elif [ "$ACTION" = "reply" ]; then
 		echo "Error: mr_iid, discussion_id and reply body are required for 'reply' action."
 		exit 1
 	fi
+	BODY="${BODY}${AI_COMMENT_MARKER}"
 	BASE_URL="https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/merge_requests/${MR_IID}"
 	JSON_PAYLOAD=$(jq -n --arg body "$BODY" '{body: $body}')
 	curl -s -X POST \
@@ -213,7 +218,7 @@ elif [ "$ACTION" = "post-notes" ]; then
 		exit 1
 	fi
 
-	python3 - "${BASE_URL}/discussions" "$BASE_SHA" "$HEAD_SHA" "$START_SHA" "$COMMENTS_FILE" <<'PYEOF'
+	python3 - "${BASE_URL}/discussions" "$BASE_SHA" "$HEAD_SHA" "$START_SHA" "$COMMENTS_FILE" "$AI_COMMENT_MARKER" <<'PYEOF'
 import json, os, sys, urllib.request, urllib.error
 
 api_url = sys.argv[1]
@@ -221,6 +226,7 @@ base_sha = sys.argv[2]
 head_sha = sys.argv[3]
 start_sha = sys.argv[4]
 comments_file = sys.argv[5]
+ai_marker = sys.argv[6]
 token = os.environ.get('GITLAB_TOKEN')
 
 with open(comments_file, 'r', encoding='utf-8') as f:
@@ -228,7 +234,7 @@ with open(comments_file, 'r', encoding='utf-8') as f:
 
 for c in comments:
     payload = json.dumps({
-        'body': c['body'],
+        'body': c['body'] + ai_marker,
         'position': {
             'base_sha': base_sha,
             'head_sha': head_sha,
