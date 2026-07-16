@@ -45,6 +45,8 @@ elif echo "$URL" | grep -qE 'gitlab\..*/-/wikis/'; then
 	TYPE="gitlab-wiki"
 elif echo "$URL" | grep -qE 'xiaolv\..*/#/demand/search'; then
 	TYPE="xiaolv-demand"
+elif echo "$URL" | grep -qE 'fastbuild\..*/webui/task/[0-9]+'; then
+	TYPE="fastbuild"
 elif echo "$URL" | grep -qE 'qima-inc'; then
 	TYPE="intranet"
 else
@@ -55,6 +57,47 @@ fi
 echo "[briar-context] Detected type: $TYPE"
 echo "[briar-context] URL: $URL"
 echo ""
+
+# --- Fastbuild 任务: 优先用 opscli，失败降级为内网页面抓取 ---
+if [ "$TYPE" = "fastbuild" ]; then
+	TASK_ID=$(echo "$URL" | grep -oE '/task/[0-9]+' | head -1 | grep -oE '[0-9]+')
+	if [ -z "$TASK_ID" ]; then
+		echo "[briar-context] 无法从 URL 中提取 fastbuild 任务 ID。"
+		exit 1
+	fi
+
+	OPSCLI_OK=0
+	if command -v opscli >/dev/null 2>&1; then
+		echo "[briar-context] 使用 opscli 获取 fastbuild 任务 $TASK_ID..."
+		STATUS_OUTPUT=$(opscli fastbuild status "$TASK_ID" 2>&1) && OPSCLI_OK=1
+	fi
+
+	if [ "$OPSCLI_OK" = "1" ]; then
+		# 完整日志先落盘，避免大日志撑爆上下文
+		LOG_FILE="${TMPDIR:-/tmp}/briar-context-fastbuild-${TASK_ID}.log"
+		opscli fastbuild log "$TASK_ID" >"$LOG_FILE" 2>&1 || true
+		TOTAL_LINES=$(wc -l <"$LOG_FILE" | tr -d ' ')
+
+		echo "【Fastbuild 任务上下文】$TASK_ID"
+		echo ""
+		echo "--- 任务状态 ---"
+		echo "$STATUS_OUTPUT"
+		echo ""
+		echo "--- 构建日志 ---"
+		echo "完整日志已保存: ${LOG_FILE}（共 ${TOTAL_LINES} 行）"
+		if [ "$TOTAL_LINES" -le 300 ]; then
+			cat "$LOG_FILE"
+		else
+			echo "日志过长，以下为末尾 80 行；需要更多时请用 Read 工具读取上述文件（可用 offset 翻页）。"
+			echo ""
+			tail -80 "$LOG_FILE"
+		fi
+		exit 0
+	fi
+
+	echo "[briar-context] opscli 不可用或查询失败（可先执行 opscli login），降级为内网页面抓取..."
+	TYPE="intranet"
+fi
 
 # --- Xiaolv 需求: 使用 zan-skills/xiaolv-skill 内置凭证调用 API ---
 if [ "$TYPE" = "xiaolv-demand" ]; then
