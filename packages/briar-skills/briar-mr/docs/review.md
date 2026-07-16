@@ -2,6 +2,8 @@
 
 所有围绕"MR 评论"的操作。用户意图通常是"我要处理这个 MR 的 review"。
 
+> **AI 标识（强制）**：所有发表的评论必须带 AI 标识。通过 `briar-mr-review.sh` 的 `comment` / `reply` / `post-notes` 发表时，脚本会自动在评论末尾追加 `> 🤖 *本评论由 AI 发布*`，body 中**不要**手动重复添加。若绕过原子脚本用临时 curl 脚本发表，必须手动在 body 末尾追加同样的标识。
+
 ---
 
 ## 一、获取评论（fetch）
@@ -407,7 +409,7 @@ EOF
 ../scripts/briar-mr-review.sh post-notes <domain> <project_path> <mr_iid> /tmp/comments.json
 ```
 
-脚本会自动获取 `diff_refs`、逐条提交，并输出每行的成功/失败结果。
+脚本会自动获取 `diff_refs`、逐条提交，并输出每行的成功/失败结果。每条评论会由脚本自动追加 AI 标识，`comments.json` 的 `body` 中无需（也不要）手动添加。
 
 ---
 
