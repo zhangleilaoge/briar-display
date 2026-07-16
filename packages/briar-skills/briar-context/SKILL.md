@@ -27,6 +27,7 @@ description: 获取 Jira/GitLab/内网页面内容，为 briar-mr、briar-fix �
 || 获取 Jira 内容 | "看看这个需求"、"获取 Jira"、Jira 链接 | [docs/jira.md](docs/jira.md) | Linux: REST API + basic auth / macOS: Playwright + Chrome cookie |
 || 获取 MR 背景信息 | "获取 MR 的关联需求"、"MR 背景" | [docs/gitlab-mr.md](docs/gitlab-mr.md) | GitLab API |
 || 获取内网页面 | "获取内容"、"看看这个页面"、内网链接（含 `qima-inc`） | [docs/generic.md](docs/generic.md) | Playwright + Chrome cookie → 密码 fallback |
+|| 获取 Fastbuild 打包现场 | "看看打包结果"、"构建为什么失败"、fastbuild 任务链接（`fastbuild..*/webui/task/<id>`） | [docs/fastbuild.md](docs/fastbuild.md) | opscli（直连，无需浏览器）→ 内网页面 fallback |
 || 汇总上下文 | "整理上下文"、"汇总信息"、多个链接 | — | 多次调用上述能力后汇总 |
 
 ---
@@ -63,11 +64,13 @@ chmod 600 "$HOME/.config/briar-skills/.env"
 
 ## 平台支持矩阵
 
-| 平台 | Jira | GitLab MR | 通用内网页面 |
-|------|------|-----------|-------------|
-| **Linux** | ✅ REST API + basic auth | ✅ GitLab API | ⚠️ curl（公开页）/ 手动提供（登录页） |
-| **macOS** | ✅ Playwright + Chrome cookie → 密码 fallback | ✅ GitLab API | ✅ Playwright + Chrome cookie → 密码 fallback |
-| **Windows** | ❌ 未实现 | ❌ 未实现 | ❌ 未实现 |
+| 平台 | Jira | GitLab MR | 通用内网页面 | Fastbuild 任务 |
+|------|------|-----------|-------------|---------------|
+| **Linux** | ✅ REST API + basic auth | ✅ GitLab API | ⚠️ curl（公开页）/ 手动提供（登录页） | ✅ opscli |
+| **macOS** | ✅ Playwright + Chrome cookie → 密码 fallback | ✅ GitLab API | ✅ Playwright + Chrome cookie → 密码 fallback | ✅ opscli |
+| **Windows** | ❌ 未实现 | ❌ 未实现 | ❌ 未实现 | ❌ 未实现 |
+
+> **Fastbuild 说明**：fastbuild 任务链接（`fastbuild.qima-inc.com/webui/task/<id>`）优先走 `opscli fastbuild status/log` 直连获取，不依赖浏览器登录态；opscli 不可用（未安装或未 `opscli login`）时自动降级为通用内网页面抓取。
 
 ---
 
@@ -86,6 +89,8 @@ elif echo "$URL" | grep -qE 'gitlab\..*/-/merge_requests/'; then
     TYPE="gitlab-mr-bg"
 elif echo "$URL" | grep -qE 'gitlab\..*/-/wikis/'; then
     TYPE="gitlab-wiki"
+elif echo "$URL" | grep -qE 'fastbuild\..*/webui/task/[0-9]+'; then
+    TYPE="fastbuild"
 elif echo "$URL" | grep -qE 'qima-inc'; then
     TYPE="intranet"
 else
