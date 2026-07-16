@@ -154,16 +154,18 @@ def get_update():
             continue
 
         try:
-            change = round(float(cur) - float(pre_close), 2)
-            change_pct = round((float(cur) - float(pre_close)) / float(pre_close) * 100, 2)
+            raw_change = float(cur) - float(pre_close)
+            change = round(raw_change, 2)
+            change_pct = round(raw_change / float(pre_close) * 100, 2)
         except ValueError:
+            raw_change = 0
             change = 0
             change_pct = 0
 
         color = 'change flat'
-        if change > 0:
+        if raw_change > 0:
             color = 'change up'
-        elif change < 0:
+        elif raw_change < 0:
             color = 'change down'
 
         success_rows.append((change_pct, name, cur, pre_close, change, change_pct, color))
