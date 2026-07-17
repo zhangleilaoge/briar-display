@@ -140,11 +140,12 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 				{/* 头部：用户信息 */}
 				<div
 					className={cn(
-						'flex items-center justify-between gap-2 border-b px-3 py-2 mb-1',
+						'border-b px-3 py-2 mb-1',
 						isLight ? 'border-border' : 'border-wiki-border-light',
 					)}
 				>
-					<div className="min-w-0 flex-1">
+					{/* 名字与角色 */}
+					<div className="flex items-center justify-between gap-2">
 						<p
 							className={cn(
 								'truncate text-sm font-medium',
@@ -153,28 +154,30 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 						>
 							{user?.name || '用户'}
 						</p>
-						{user?.email && (
-							<p
+						{roleDisplay && (
+							<span
 								className={cn(
-									'mt-0.5 truncate text-[11px]',
-									isLight ? 'text-muted-foreground' : 'text-wiki-text-muted',
+									'inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px]',
+									isLight ? 'bg-primary/10 text-primary' : 'bg-wiki-link/10 text-wiki-link',
 								)}
+								title={roleDisplay}
 							>
-								{user.email}
-							</p>
+								<Shield className="h-3 w-3" />
+								{roleDisplay}
+							</span>
 						)}
 					</div>
-					{roleDisplay && (
-						<span
+
+					{/* 邮箱独占一行，避免被角色压缩 */}
+					{user?.email && (
+						<p
 							className={cn(
-								'inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px]',
-								isLight ? 'bg-primary/10 text-primary' : 'bg-wiki-link/10 text-wiki-link',
+								'mt-0.5 truncate text-[11px]',
+								isLight ? 'text-muted-foreground' : 'text-wiki-text-muted',
 							)}
-							title={roleDisplay}
 						>
-							<Shield className="h-3 w-3" />
-							{roleDisplay}
-						</span>
+							{user.email}
+						</p>
 					)}
 				</div>
 
