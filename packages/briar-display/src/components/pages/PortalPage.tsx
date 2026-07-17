@@ -1,10 +1,10 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
+import UserMenu from '@/components/common/UserMenu'
 import { Card, CardContent } from '@/components/ui/card'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { BookOpen, FileDiff, ImageIcon, LogIn, LogOut, Shield, Wrench } from 'lucide-react'
+import { BookOpen, ImageIcon, Shield, Wrench } from 'lucide-react'
 
 interface EntryCardProps {
 	icon: React.ReactNode
@@ -40,14 +40,7 @@ function EntryCard({ icon, title, description, href, gradient }: EntryCardProps)
 }
 
 function PortalPageInner() {
-	const { isLoggedIn, isAdmin, user, loading } = usePermissions()
-
-	const handleLogout = () => {
-		localStorage.removeItem('briar_token')
-		localStorage.removeItem('briar_user')
-		localStorage.removeItem('briar_permissions')
-		window.location.reload()
-	}
+	const { isAdmin, loading } = usePermissions()
 
 	return (
 		<div className="relative flex min-h-screen flex-col overflow-hidden">
@@ -75,26 +68,8 @@ function PortalPageInner() {
 				<div className="flex items-center gap-3">
 					{loading ? (
 						<div className="h-4 w-16 animate-pulse rounded bg-muted" />
-					) : isLoggedIn ? (
-						<>
-							<div className="flex items-center gap-2">
-								<div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-xs font-medium text-white">
-									{user?.name?.charAt(0)?.toUpperCase() || 'U'}
-								</div>
-								<span className="text-sm text-muted-foreground">{user?.name}</span>
-							</div>
-							<Button variant="ghost" size="sm" onClick={handleLogout} className="gap-1.5">
-								<LogOut className="h-4 w-4" />
-								退出
-							</Button>
-						</>
 					) : (
-						<a href="/briar-display/login">
-							<Button variant="outline" size="sm" className="gap-1.5">
-								<LogIn className="h-4 w-4" />
-								登录
-							</Button>
-						</a>
+						<UserMenu variant="light" />
 					)}
 				</div>
 			</header>

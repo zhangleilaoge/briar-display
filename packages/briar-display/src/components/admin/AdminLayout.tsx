@@ -1,5 +1,7 @@
 'use client'
 
+import UserMenu from '@/components/common/UserMenu'
+import { PermissionProvider } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
 import { Radio, Shield, Users } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -35,45 +37,52 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children, currentPath }: AdminLayoutProps) {
 	return (
-		<div className="flex min-h-screen">
-			{/* 深色侧栏 */}
-			<aside className="hidden w-[220px] shrink-0 flex-col bg-foreground p-4 md:flex">
-				<p className="mb-3 px-2 text-[11px] font-medium uppercase tracking-wider text-background/40">
-					管理后台
-				</p>
-				<nav className="space-y-0.5">
-					{NAV_ITEMS.map((item) => {
-						const isActive = currentPath === item.href
-						return (
-							<a key={item.href} href={item.href} className="block">
-								<div
-									className={cn(
-										'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
-										isActive
-											? 'bg-background/15 font-medium text-background'
-											: 'text-background/60 hover:bg-background/10 hover:text-background/90',
-									)}
-								>
-									{item.icon}
-									{item.label}
-								</div>
-							</a>
-						)
-					})}
-				</nav>
-			</aside>
+		<PermissionProvider>
+			<div className="flex min-h-screen">
+				{/* 深色侧栏 */}
+				<aside className="hidden w-[220px] shrink-0 flex-col bg-foreground p-4 md:flex">
+					<a
+						href="/briar-display/"
+						className="mb-3 block px-2 text-[11px] font-medium uppercase tracking-wider text-background/40 no-underline hover:text-background/60"
+					>
+						Briar / 管理后台
+					</a>
+					<nav className="space-y-0.5">
+						{NAV_ITEMS.map((item) => {
+							const isActive = currentPath === item.href
+							return (
+								<a key={item.href} href={item.href} className="block">
+									<div
+										className={cn(
+											'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
+											isActive
+												? 'bg-background/15 font-medium text-background'
+												: 'text-background/60 hover:bg-background/10 hover:text-background/90',
+										)}
+									>
+										{item.icon}
+										{item.label}
+									</div>
+								</a>
+							)
+						})}
+					</nav>
+				</aside>
 
-			{/* 内容区 */}
-			<div className="flex min-w-0 flex-1 flex-col">
-				{/* 移动端顶栏 */}
-				<header className="flex h-12 items-center gap-3 border-b px-4 md:hidden">
-					<span className="text-sm font-semibold">管理后台</span>
-				</header>
+				{/* 内容区 */}
+				<div className="flex min-w-0 flex-1 flex-col">
+					{/* 顶栏 */}
+					<header className="flex h-12 items-center justify-between gap-3 border-b bg-background px-4">
+						<span className="text-sm font-semibold md:hidden">管理后台</span>
+						<div className="hidden md:block" />
+						<UserMenu variant="light" />
+					</header>
 
-				<main className="flex-1 bg-muted/30 p-6">
-					<div className="mx-auto max-w-[1200px]">{children}</div>
-				</main>
+					<main className="flex-1 bg-muted/30 p-6">
+						<div className="mx-auto max-w-[1200px]">{children}</div>
+					</main>
+				</div>
 			</div>
-		</div>
+		</PermissionProvider>
 	)
 }
