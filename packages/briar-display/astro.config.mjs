@@ -80,10 +80,12 @@ export default defineConfig({
 							if (id.includes('node_modules/react/')) return 'react-vendor'
 							if (id.includes('node_modules/react-markdown')) return 'markdown-vendor'
 							if (id.includes('tiptap') || id.includes('prosemirror')) return 'tiptap-vendor'
+							if (id.includes('@blocknote') || id.includes('@mantine')) return 'wiki-editor-vendor'
 						}
-						// Wiki 相关组件合并（避免循环 chunk 依赖）
-						if (id.includes('/components/wiki/editor/') || id.includes('/components/wiki/pages/'))
-							return 'wiki'
+						// Wiki editor（依赖 @blocknote，体积大，按需加载）
+						if (id.includes('/components/wiki/editor/')) return 'wiki-editor'
+						// Wiki pages（20 个页面组件）
+						if (id.includes('/components/wiki/pages/')) return 'wiki-pages'
 					},
 				},
 			},

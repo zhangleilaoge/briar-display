@@ -33,14 +33,29 @@ if (!region || !secretId || !secretKey || !bucket) {
 	process.exit(1)
 }
 
-const cos = new COS({
-	SecretId: secretId,
-	SecretKey: secretKey,
-	Timeout: 30000,
-	// 默认 KeepAlive: true 会复用连接，COS 服务端关闭连接后本地仍可能继续写入，
-	// 触发 TLSSocket EPIPE 且 request 库未监听该 socket error，导致进程崩溃。
-	KeepAlive: false,
+// 捕获未处理的 EPIPE 等 socket 错误，防止进程崩溃
+process.on('uncaughtException', (err) => {
+	if (
+		err &&
+		typeof err === 'object' &&
+		'code' in err &&
+		(err as NodeJS.ErrnoException).code === 'EPIPE'
+	) {
+		console.warn('[uncaughtException] Suppressed EPIPE, continuing...')
+		return
+	}
+	console.error('[uncaughtException]', err)
+	process.exit(1)
 })
+
+// 每次创建新的 COS 实例，避免连接复用导致 EPIPE
+const createCOS = () =>
+	new COS({
+		SecretId: secretId,
+		SecretKey: secretKey,
+		Timeout: 60000,
+		KeepAlive: false,
+	})
 
 const listFiles = (dir: string): string[] => {
 	const entries = fs.readdirSync(dir, { withFileTypes: true })
@@ -58,9 +73,13 @@ const listFiles = (dir: string): string[] => {
 	return files
 }
 
-const uploadFile = (filePath: string, key: string, retries = 3) =>
-	new Promise<void>((resolve, reject) => {
-		const fileBuffer = fs.readFileSync(filePath)
+const uploadFile = (filePath: string, key: string, retries = 3): Promise<void> => {
+	const fileBuffer = fs.readFileSync(filePath)
+	const fileSize = (fileBuffer.length / 1024 / 1024).toFixed(2)
+
+	return new Promise<void>((resolve, reject) => {
+		const cos = createCOS()
+
 		cos.putObject(
 			{
 				Bucket: bucket,
@@ -71,13 +90,16 @@ const uploadFile = (filePath: string, key: string, retries = 3) =>
 			},
 			(err, data) => {
 				if (err) {
+					console.warn(`Upload error for ${key} (${fileSize}MB):`, err.message || err)
 					if (retries > 0) {
-						console.log(`Retrying ${filePath} (${retries} retries left) ...`)
+						console.log(`Retrying ${key} (${retries} retries left) ...`)
+						// 递增等待时间，给大文件更多缓冲
+						const delay = 3000 + (3 - retries) * 5000
 						setTimeout(() => {
 							uploadFile(filePath, key, retries - 1)
 								.then(resolve)
 								.catch(reject)
-						}, 3000)
+						}, delay)
 						return
 					}
 					reject(err)
@@ -85,7 +107,7 @@ const uploadFile = (filePath: string, key: string, retries = 3) =>
 				}
 
 				if (data?.statusCode === 200) {
-					console.log(`Uploaded: ${key}`)
+					console.log(`Uploaded: ${key} (${fileSize}MB)`)
 					resolve()
 				} else {
 					reject(new Error(`Upload ${key} failed with status: ${data?.statusCode}`))
@@ -93,8 +115,9 @@ const uploadFile = (filePath: string, key: string, retries = 3) =>
 			},
 		)
 	})
+}
 
-const CONCURRENCY = 5
+const CONCURRENCY = 3
 
 const main = async () => {
 	const distDir = path.join(repoRoot, 'packages/briar-display/dist')
