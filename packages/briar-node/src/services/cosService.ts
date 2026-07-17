@@ -25,6 +25,11 @@ export const cosService = {
 					StorageClass: 'STANDARD',
 					Body: buffer,
 					ContentType: mimeType,
+					// 强制内联展示，避免 COS 在 GET 时按 Accept 动态注入
+					// Content-Disposition: attachment 导致"新窗口打开"变成下载
+					Headers: {
+						'Content-Disposition': 'inline',
+					},
 				},
 				(err, data) => {
 					if (err) return reject(err)

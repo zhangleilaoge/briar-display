@@ -3,6 +3,7 @@ import { getCookie } from 'hono/cookie'
 import { cors } from 'hono/cors'
 import { isApiPublicPath } from '../config/routes'
 import { logDal } from '../dal/logDal'
+import { authService } from '../services/authService'
 import { authMiddleware } from './authMiddleware'
 import { errorHandler } from './errorHandler'
 
@@ -175,13 +176,31 @@ export const corsMiddleware = (): MiddlewareHandler =>
 
 /**
  * 前端页面认证中间件
- * 检查 cookie 中的 token，未登录则重定向到登录页
+ * 检查 cookie 中的 token，并验证其有效性（防伪造 cookie）。
+ * 未登录或 token 无效/过期 → 重定向到登录页。
+ *
+ * 注意：浏览器直接导航 GET HTML 时不带 Authorization header，
+ * 只能依赖 cookie（登录时由前端 setAuthToken 写入）。
+ * API 请求由 authMiddleware 单独校验（Authorization header 或 cookie 都可）。
  */
 export const pageAuthMiddleware = (): MiddlewareHandler => {
 	return async (c, next) => {
-		// 检查 token
 		const token = getCookie(c, 'briar_token')
 		if (!token) {
+			return c.redirect('/briar-display/login')
+		}
+
+		// 真正校验 token 签名 + 过期时间，防止伪造 cookie
+		try {
+			const payload = authService.verifyToken(token)
+			// 可选：进一步校验用户是否仍存在
+			const user = await authService.getUserById(payload.sub)
+			if (!user) {
+				return c.redirect('/briar-display/login')
+			}
+		} catch {
+			// token 无效/过期/签名错误 → 清掉 cookie 并重定向
+			c.header('Set-Cookie', 'briar_token=; Path=/; Max-Age=0')
 			return c.redirect('/briar-display/login')
 		}
 

@@ -88,8 +88,8 @@ fi
 
 ENCODED_PATH=$(echo "$PROJECT_PATH" | sed 's/\//%2F/g')
 
-# --- AI 标识：所有发表的评论（comment / reply / post-notes）自动在末尾追加 AI 标记 ---
-AI_COMMENT_MARKER=$'\n\n---\n> 🤖 *本评论由 AI 发布*'
+# --- AI 标识：所有发表的评论（comment / reply / post-notes）自动在评论开头加上 AI 标记 ---
+AI_COMMENT_MARKER=$'> 🤖 *本评论由 AI 发布*\n\n'
 
 if [ "$ACTION" = "fetch" ]; then
 	MR_IID="${4}"
@@ -115,7 +115,7 @@ elif [ "$ACTION" = "comment" ]; then
 		echo "Error: mr_iid and comment body are required for 'comment' action."
 		exit 1
 	fi
-	BODY="${BODY}${AI_COMMENT_MARKER}"
+	BODY="${AI_COMMENT_MARKER}${BODY}"
 	BASE_URL="https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/merge_requests/${MR_IID}"
 	JSON_PAYLOAD=$(jq -n --arg body "$BODY" '{body: $body}')
 	curl -s -X POST \
@@ -134,7 +134,7 @@ elif [ "$ACTION" = "reply" ]; then
 		echo "Error: mr_iid, discussion_id and reply body are required for 'reply' action."
 		exit 1
 	fi
-	BODY="${BODY}${AI_COMMENT_MARKER}"
+	BODY="${AI_COMMENT_MARKER}${BODY}"
 	BASE_URL="https://${DOMAIN}/api/v4/projects/${ENCODED_PATH}/merge_requests/${MR_IID}"
 	JSON_PAYLOAD=$(jq -n --arg body "$BODY" '{body: $body}')
 	curl -s -X POST \
@@ -234,7 +234,7 @@ with open(comments_file, 'r', encoding='utf-8') as f:
 
 for c in comments:
     payload = json.dumps({
-        'body': c['body'] + ai_marker,
+        'body': ai_marker + c['body'],
         'position': {
             'base_sha': base_sha,
             'head_sha': head_sha,

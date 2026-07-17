@@ -68,7 +68,7 @@ export default function ImageDetailModal({ image, onClose, onDelete }: Props) {
 
 				<div className="p-6">
 					{/* Preview */}
-					<div className="mb-6 flex justify-center rounded-lg bg-muted/30 p-4">
+					<div className="mb-6 flex justify-center rounded-lg bg-muted p-4">
 						<img
 							src={image.cdnUrl}
 							alt={image.originalName}
