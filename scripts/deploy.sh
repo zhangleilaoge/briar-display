@@ -9,6 +9,12 @@
 
 set -e
 
+# 非交互式 SSH（CI 触发）下加载 bun / nvm 到 PATH，否则 check_command bun 会失败
+export PATH="$HOME/.bun/bin:$PATH"
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null || true
+nvm use --silent 2>/dev/null || true
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
