@@ -64,8 +64,10 @@ jobs:
           SSH_OPTS="-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3"
           PROJECT_DIR="${PROJECT_DIR:-/home/ubuntu/github/briar-display}"
           echo "部署后端到 $PROJECT_DIR，commit=${{ github.sha }}"
+          # 先把服务器代码更新到目标 commit，确保执行的是新版 deploy.sh
+          # （否则跑的是上次部署遗留的旧脚本，中途 git pull 不会重载当前进程）
           ssh $SSH_OPTS ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
-            "cd $PROJECT_DIR && DEPLOY_COMMIT=${{ github.sha }} bash scripts/deploy.sh"
+            "cd $PROJECT_DIR && git fetch origin && (git checkout master 2>/dev/null || true) && git reset --hard origin/master && bash scripts/deploy.sh"
 
       # ============ 健康检查 ============
       - name: Health check
