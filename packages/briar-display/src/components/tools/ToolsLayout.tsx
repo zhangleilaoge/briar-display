@@ -4,7 +4,7 @@ import UserMenu from '@/components/common/UserMenu'
 import { Button } from '@/components/ui/button'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { FileDiff, ImageIcon } from 'lucide-react'
+import { Braces, FileDiff, ImageIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 interface NavItem {
@@ -23,6 +23,11 @@ const NAV_ITEMS: NavItem[] = [
 		label: '图片压缩',
 		href: '/briar-display/tools/compress',
 		icon: <ImageIcon className="h-4 w-4" />,
+	},
+	{
+		label: 'JSON 格式化',
+		href: '/briar-display/tools/json',
+		icon: <Braces className="h-4 w-4" />,
 	},
 ]
 
