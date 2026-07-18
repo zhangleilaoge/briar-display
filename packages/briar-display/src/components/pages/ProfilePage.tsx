@@ -1,20 +1,22 @@
 'use client'
 
+import { uploadAvatar } from '@/api/users'
 import UserMenu from '@/components/common/UserMenu'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
+import { PermissionProvider, syncUserToStorage, usePermissions } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import { PERMISSIONS } from '@briar/shared'
 import {
 	AlertCircle,
 	Calendar,
+	Camera,
 	KeyRound,
 	Loader2,
 	Mail,
 	Shield,
 	User as UserIcon,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
 
 export default function ProfilePage() {
 	return (
@@ -33,7 +35,10 @@ function ProfilePageInner() {
 		PERMISSIONS.PAGE_BUSINESS,
 		PERMISSIONS.PAGE_ADMIN,
 	])
-	const { user, roles, permissions, isAdmin, loading: permsLoading } = usePermissions()
+	const { user, roles, permissions, isAdmin, loading: permsLoading, refresh } = usePermissions()
+	const [uploading, setUploading] = useState(false)
+	const [uploadError, setUploadError] = useState<string | null>(null)
+	const fileInputRef = useRef<HTMLInputElement>(null)
 
 	if (permLoading || permsLoading) {
 		return (
@@ -52,6 +57,37 @@ function ProfilePageInner() {
 		)
 	}
 
+	const handleAvatarClick = () => {
+		fileInputRef.current?.click()
+	}
+
+	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0]
+		if (!file) return
+		setUploading(true)
+		setUploadError(null)
+		try {
+			const res = await uploadAvatar(file)
+			if (res.success && res.data) {
+				// 刷新 PermissionContext 并同步本地缓存
+				await refresh()
+				if (user) {
+					syncUserToStorage({ ...user, ...res.data, roles, permissions })
+				}
+			} else {
+				setUploadError(res.message || '上传失败')
+			}
+		} catch (err: any) {
+			setUploadError(err?.response?.data?.message || err?.message || '上传失败')
+		} finally {
+			setUploading(false)
+			if (fileInputRef.current) fileInputRef.current.value = ''
+		}
+	}
+
+	const avatarUrl = user?.avatar
+	const initial = user?.name?.charAt(0)?.toUpperCase() || 'U'
+
 	return (
 		<div className="min-h-screen bg-background">
 			{/* 顶部导航 */}
@@ -67,6 +103,54 @@ function ProfilePageInner() {
 					<h1 className="text-2xl font-semibold tracking-tight">个人中心</h1>
 					<p className="mt-1 text-sm text-muted-foreground">管理你的账号信息、角色与权限</p>
 				</div>
+
+				{/* 头像 */}
+				<Card>
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2 text-base">
+							<UserIcon className="h-4 w-4" />
+							头像
+						</CardTitle>
+						<CardDescription>点击头像可更换</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div className="flex items-center gap-4">
+							<button
+								type="button"
+								onClick={handleAvatarClick}
+								disabled={uploading}
+								className="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+							>
+								{avatarUrl ? (
+									<img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+								) : (
+									<span className="text-2xl font-semibold text-muted-foreground">{initial}</span>
+								)}
+								<span className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
+									{uploading ? (
+										<Loader2 className="h-6 w-6 animate-spin" />
+									) : (
+										<Camera className="h-6 w-6" />
+									)}
+								</span>
+							</button>
+							<div className="space-y-1">
+								<p className="text-sm font-medium">{user?.name || '用户'}</p>
+								<p className="text-xs text-muted-foreground">
+									支持 JPG、PNG、GIF、WebP、AVIF，最大 2MB
+								</p>
+								{uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+							</div>
+						</div>
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
+							className="hidden"
+							onChange={handleFileChange}
+						/>
+					</CardContent>
+				</Card>
 
 				{/* 基本信息 */}
 				<Card>

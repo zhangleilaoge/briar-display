@@ -20,6 +20,16 @@ const PermissionContext = createContext<PermissionContextValue | null>(null)
 
 const isBrowser = () => typeof window !== 'undefined'
 
+export function syncUserToStorage(user: UserWithRoles | null) {
+	if (!isBrowser()) return
+	if (user) {
+		localStorage.setItem(
+			'briar_user',
+			JSON.stringify({ name: user.name, email: user.email, avatar: user.avatar, id: user.id }),
+		)
+	}
+}
+
 export function PermissionProvider({ children }: { children: ReactNode }) {
 	const [permissions, setPermissions] = useState<string[]>([])
 	const [roles, setRoles] = useState<Role[]>([])
@@ -51,6 +61,7 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
 				setPermissions(res.data.permissions)
 				setRoles(res.data.roles)
 				setUser(res.data)
+				syncUserToStorage(res.data)
 			}
 		} catch (err) {
 			console.error('Failed to fetch permissions:', err)

@@ -94,6 +94,7 @@ export const permissionService = {
 			id: user.id,
 			name: user.name,
 			email: user.email,
+			avatar: user.avatar ?? undefined,
 			createdAt: user.createdAt,
 			roles,
 			permissions,
