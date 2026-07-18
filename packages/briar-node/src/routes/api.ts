@@ -6,6 +6,7 @@ import imageRoutes from './images'
 import logRoutes from './log'
 import readmeAiRoutes from './readmeAi'
 import userRoutes from './users'
+import versionRoutes from './version'
 import wikiRoutes from './wiki'
 
 const api = new Hono()
@@ -19,6 +20,7 @@ api.route('/readme-ai', readmeAiRoutes)
 api.route('/logs', logRoutes)
 api.route('/images', imageRoutes)
 api.route('/users', userRoutes)
+api.route('/version', versionRoutes)
 
 // 在此添加其他 API 路由...
 

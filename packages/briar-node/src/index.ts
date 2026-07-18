@@ -23,6 +23,24 @@ const fs = await import('fs')
 const isDev = process.env.NODE_ENV !== 'production'
 const STATIC_PATH = isDev ? DIST_PATH : fs.existsSync(WEB_PATH) ? WEB_PATH : DIST_PATH
 
+// 启动时校验前端资源目录，避免 CI 同步错路径后静默读旧文件
+const validateStaticPath = () => {
+	if (isDev) return
+	const indexHtml = path.join(STATIC_PATH, 'index.html')
+	if (!fs.existsSync(STATIC_PATH)) {
+		console.warn(
+			`⚠️  前端资源目录不存在: ${STATIC_PATH}\n   生产环境应由 CI 同步到 packages/briar-display/web\n   当前将 fallback 到 dist（可能是旧构建）`,
+		)
+	} else if (!fs.existsSync(indexHtml)) {
+		console.warn(
+			`⚠️  前端资源目录缺少 index.html: ${STATIC_PATH}\n   可能是同步中断或路径错误，前端页面将无法访问`,
+		)
+	} else {
+		console.log(`✅ 前端资源目录就绪: ${STATIC_PATH}`)
+	}
+}
+validateStaticPath()
+
 const app = new Hono()
 
 // 全局中间件

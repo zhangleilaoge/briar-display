@@ -7,7 +7,7 @@ module.exports = {
 		{
 			name: 'briar-node',
 			script: './dist/index.js',
-			cwd: './packages/briar-node',
+			cwd: path.resolve(__dirname, 'packages/briar-node'),
 			instances: 1,
 			exec_mode: 'cluster',
 			autorestart: true,
