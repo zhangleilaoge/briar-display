@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { type Change, diffLines } from 'diff'
 import { FileDiff, FileUp, RotateCcw, Rows3, SplitSquareHorizontal } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import ToolsLayout from './ToolsLayout'
 
 type ViewMode = 'split' | 'unified'
@@ -136,6 +136,38 @@ export default function ToolDiffPage() {
 
 	const leftRef = useRef<HTMLTextAreaElement>(null)
 	const rightRef = useRef<HTMLTextAreaElement>(null)
+	const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+	// 浏览器本地缓存：恢复上次的原始/修改文本
+	useEffect(() => {
+		try {
+			const raw = localStorage.getItem('briar:diff-cache')
+			if (raw) {
+				const parsed = JSON.parse(raw)
+				if (parsed.leftText) setLeftText(String(parsed.leftText))
+				if (parsed.rightText) setRightText(String(parsed.rightText))
+			}
+		} catch {
+			// 忽略损坏的缓存
+		}
+	}, [])
+
+	useEffect(() => {
+		if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+		saveTimerRef.current = setTimeout(() => {
+			try {
+				localStorage.setItem(
+					'briar:diff-cache',
+					JSON.stringify({ leftText, rightText, updatedAt: Date.now() }),
+				)
+			} catch {
+				// localStorage 可能已满或不可用
+			}
+		}, 500)
+		return () => {
+			if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+		}
+	}, [leftText, rightText])
 
 	const handleCompare = useCallback(() => {
 		if (!leftText && !rightText) return
@@ -149,6 +181,11 @@ export default function ToolDiffPage() {
 		setRightText('')
 		setChanges(null)
 		setStats(null)
+		try {
+			localStorage.removeItem('briar:diff-cache')
+		} catch {
+			// ignore
+		}
 	}, [])
 
 	const handleFileDrop = useCallback(
