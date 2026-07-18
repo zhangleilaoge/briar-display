@@ -9,6 +9,8 @@ import { useCallback, useEffect, useState } from 'react'
 interface StoredUser {
 	name: string
 	email?: string
+	avatar?: string
+	id?: string
 }
 
 function getStoredUser(): StoredUser | null {
@@ -34,6 +36,32 @@ interface UserMenuProps {
 	variant?: 'light' | 'wiki'
 }
 
+function Avatar({
+	url,
+	initial,
+	className,
+	alt,
+}: {
+	url?: string
+	initial: string
+	className: string
+	alt?: string
+}) {
+	const [failed, setFailed] = useState(false)
+
+	if (url && !failed) {
+		return (
+			<img
+				src={url}
+				alt={alt || 'avatar'}
+				className={`${className} object-cover`}
+				onError={() => setFailed(true)}
+			/>
+		)
+	}
+	return <span className={className}>{initial}</span>
+}
+
 export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 	const [open, setOpen] = useState(false)
 	const [user, setUser] = useState<StoredUser | null>(null)
@@ -53,6 +81,9 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 				const t = getToken()
 				setToken(t)
 				setUser(t ? getStoredUser() : null)
+			}
+			if (e.key === 'briar_user') {
+				setUser(getStoredUser())
 			}
 		}
 		window.addEventListener('storage', onStorage)
@@ -127,7 +158,7 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
 				<button type="button" className={triggerClass} aria-label="用户菜单">
-					<span className={avatarClass}>{initial}</span>
+					<Avatar url={user?.avatar} initial={initial} className={avatarClass} />
 					<span className={nameClass}>{user?.name || '用户'}</span>
 					<ChevronDown className={chevronClass} />
 				</button>

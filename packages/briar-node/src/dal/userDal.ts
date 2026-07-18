@@ -5,6 +5,7 @@ export interface UserRecord {
 	id: string
 	name: string
 	email: string
+	avatar: string | null
 	passwordHash: string
 	createdAt: Date
 	updatedAt?: Date
@@ -14,6 +15,7 @@ interface UserRow {
 	id: string
 	name: string
 	email: string
+	avatar: string | null
 	password_hash: string
 	created_at: Date
 	updated_at: Date
@@ -23,6 +25,7 @@ const mapRowToRecord = (row: UserRow): UserRecord => ({
 	id: row.id,
 	name: row.name,
 	email: row.email,
+	avatar: row.avatar,
 	passwordHash: row.password_hash,
 	createdAt: row.created_at,
 	updatedAt: row.updated_at,
@@ -31,7 +34,7 @@ const mapRowToRecord = (row: UserRow): UserRecord => ({
 export const userDal = {
 	async list(): Promise<UserRecord[]> {
 		const rows = await query<UserRow>(
-			'SELECT id, name, email, password_hash, created_at, updated_at FROM users ORDER BY created_at DESC',
+			'SELECT id, name, email, avatar, password_hash, created_at, updated_at FROM users ORDER BY created_at DESC',
 		)
 		return rows.map(mapRowToRecord)
 	},
@@ -59,7 +62,7 @@ export const userDal = {
 		const total = countRow?.cnt ?? 0
 
 		const rows = await query<UserRow>(
-			`SELECT u.id, u.name, u.email, u.password_hash, u.created_at, u.updated_at
+			`SELECT u.id, u.name, u.email, u.avatar, u.password_hash, u.created_at, u.updated_at
 			 FROM users u ${where} ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
 			[...values, params.limit, params.offset],
 		)
@@ -69,7 +72,7 @@ export const userDal = {
 
 	async findByEmail(email: string): Promise<UserRecord | null> {
 		const row = await queryOne<UserRow>(
-			'SELECT id, name, email, password_hash, created_at, updated_at FROM users WHERE email = ?',
+			'SELECT id, name, email, avatar, password_hash, created_at, updated_at FROM users WHERE email = ?',
 			[email],
 		)
 		return row ? mapRowToRecord(row) : null
@@ -77,7 +80,7 @@ export const userDal = {
 
 	async findById(id: string): Promise<UserRecord | null> {
 		const row = await queryOne<UserRow>(
-			'SELECT id, name, email, password_hash, created_at, updated_at FROM users WHERE id = ?',
+			'SELECT id, name, email, avatar, password_hash, created_at, updated_at FROM users WHERE id = ?',
 			[id],
 		)
 		return row ? mapRowToRecord(row) : null
@@ -85,12 +88,10 @@ export const userDal = {
 
 	async create(data: Omit<UserRecord, 'id' | 'createdAt'>): Promise<UserRecord> {
 		const id = generateId()
-		await execute('INSERT INTO users (id, name, email, password_hash) VALUES (?, ?, ?, ?)', [
-			id,
-			data.name,
-			data.email,
-			data.passwordHash,
-		])
+		await execute(
+			'INSERT INTO users (id, name, email, password_hash, avatar) VALUES (?, ?, ?, ?, ?)',
+			[id, data.name, data.email, data.passwordHash, data.avatar ?? null],
+		)
 
 		const record = await userDal.findById(id)
 		if (!record) {
@@ -117,6 +118,10 @@ export const userDal = {
 		if (data.passwordHash !== undefined) {
 			updates.push('password_hash = ?')
 			values.push(data.passwordHash)
+		}
+		if (data.avatar !== undefined) {
+			updates.push('avatar = ?')
+			values.push(data.avatar)
 		}
 
 		if (updates.length === 0) {

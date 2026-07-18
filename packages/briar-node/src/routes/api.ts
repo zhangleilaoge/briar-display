@@ -5,6 +5,7 @@ import certRoutes from './cert'
 import imageRoutes from './images'
 import logRoutes from './log'
 import readmeAiRoutes from './readmeAi'
+import userRoutes from './users'
 import wikiRoutes from './wiki'
 
 const api = new Hono()
@@ -17,9 +18,8 @@ api.route('/wiki', wikiRoutes)
 api.route('/readme-ai', readmeAiRoutes)
 api.route('/logs', logRoutes)
 api.route('/images', imageRoutes)
+api.route('/users', userRoutes)
 
 // 在此添加其他 API 路由...
-// api.route("/users", userRoutes)
-// api.route("/posts", postRoutes)
 
 export default api

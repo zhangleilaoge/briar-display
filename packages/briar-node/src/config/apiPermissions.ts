@@ -46,6 +46,10 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	'POST /api/readme-ai/rewrite': PERMISSIONS.ADMIN_ROLE_MANAGE,
 	'DELETE /api/readme-ai': PERMISSIONS.ADMIN_ROLE_MANAGE,
 
+	// ==================== Users ====================
+	'PUT /api/users/me': null,
+	'POST /api/users/me/avatar': null,
+
 	// ==================== Wiki: Pages ====================
 	'POST /api/wiki/pages': PERMISSIONS.WIKI_PAGE_CREATE,
 	'PUT /api/wiki/pages/:slug': PERMISSIONS.WIKI_PAGE_UPDATE,

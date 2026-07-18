@@ -17,6 +17,7 @@ const toPublicUser = (record: UserRecord): User => ({
 	id: record.id,
 	name: record.name,
 	email: record.email,
+	avatar: record.avatar ?? undefined,
 	createdAt: record.createdAt,
 })
 
@@ -73,7 +74,7 @@ export const authService = {
 		}
 
 		const passwordHash = await bcrypt.hash(password, 10)
-		const record = await userDal.create({ name, email, passwordHash })
+		const record = await userDal.create({ name, email, passwordHash, avatar: null })
 		const token = authService.createToken(record)
 		const permissions = await permissionService.getUserPermissions(record.id)
 		return { user: toPublicUser(record), token, permissions }

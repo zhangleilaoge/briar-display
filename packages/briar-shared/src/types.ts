@@ -38,15 +38,21 @@ export interface User {
 	id: string
 	name: string
 	email: string
+	avatar?: string
 	createdAt: Date
 }
 
-/**
- * Auth session payload
- */
 export interface AuthSession {
 	token: string
 	user: User
+}
+
+/**
+ * 带角色的用户信息
+ */
+export interface UserWithRoles extends User {
+	roles: Role[]
+	permissions: string[]
 }
 
 /**
@@ -78,12 +84,4 @@ export interface Permission {
  */
 export interface RoleWithPermissions extends Role {
 	permissions: Permission[]
-}
-
-/**
- * 带角色的用户信息
- */
-export interface UserWithRoles extends User {
-	roles: Role[]
-	permissions: string[]
 }

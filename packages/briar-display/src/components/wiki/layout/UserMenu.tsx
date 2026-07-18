@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from 'react'
 interface UserInfo {
 	name: string
 	id?: string
+	avatar?: string
 }
 
 function getUser(): UserInfo | null {
@@ -30,6 +31,25 @@ function getToken(): string | null {
 	}
 }
 
+function Avatar({ url, initial }: { url?: string; initial: string }) {
+	const [failed, setFailed] = useState(false)
+	if (url && !failed) {
+		return (
+			<img
+				src={url}
+				alt="avatar"
+				className="flex h-7 w-7 items-center justify-center rounded-full bg-wiki-link object-cover text-[12px] font-semibold text-white"
+				onError={() => setFailed(true)}
+			/>
+		)
+	}
+	return (
+		<span className="flex h-7 w-7 items-center justify-center rounded-full bg-wiki-link text-[12px] font-semibold text-white">
+			{initial}
+		</span>
+	)
+}
+
 export default function UserMenu() {
 	const [open, setOpen] = useState(false)
 	const [user, setUser] = useState<UserInfo | null>(null)
@@ -42,6 +62,21 @@ export default function UserMenu() {
 		if (t) {
 			setUser(getUser())
 		}
+	}, [])
+
+	useEffect(() => {
+		const onStorage = (e: StorageEvent) => {
+			if (e.key === 'briar_token') {
+				const t = getToken()
+				setToken(t)
+				setUser(t ? getUser() : null)
+			}
+			if (e.key === 'briar_user') {
+				setUser(getUser())
+			}
+		}
+		window.addEventListener('storage', onStorage)
+		return () => window.removeEventListener('storage', onStorage)
 	}, [])
 
 	const handleLogout = useCallback(() => {
@@ -74,9 +109,7 @@ export default function UserMenu() {
 					type="button"
 					className="inline-flex items-center gap-1.5 rounded px-2 py-1.5 text-[13px] transition-colors hover:bg-wiki-bg-tertiary"
 				>
-					<span className="flex h-7 w-7 items-center justify-center rounded-full bg-wiki-link text-[12px] font-semibold text-white">
-						{initial}
-					</span>
+					<Avatar url={user?.avatar} initial={initial} />
 					<span className="hidden max-w-[80px] truncate text-wiki-text sm:inline">
 						{user?.name || '用户'}
 					</span>
