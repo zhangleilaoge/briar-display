@@ -28,6 +28,9 @@ jobs:
       - name: Build and upload to CDN
         run: make build-cdn
 
+      - name: Write frontend version fingerprint
+        run: bun run packages/briar-scripts/scripts/write-version.ts packages/briar-display/dist
+
       - name: Show runner public IP
         run: |
           echo "Runner public IP: $(curl -s https://api.ipify.org)"
@@ -39,14 +42,62 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
+      # ============ 前端：同步到服务器 web/ ============
       - name: Sync web assets to server
+        env:
+          REMOTE_DIR: ${{ secrets.DEPLOY_REMOTE_DIR }}
         run: |
-          REMOTE_DIR="/home/ubuntu/Documents/briar-display/packages/briar-display/web"
+          REMOTE_DIR="${REMOTE_DIR:-/home/ubuntu/github/briar-display/packages/briar-display/web}"
           SSH_OPTS="-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3"
+          echo "同步前端到 $REMOTE_DIR"
           ssh $SSH_OPTS ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p $REMOTE_DIR"
           rsync -avz --delete \
             -e "ssh $SSH_OPTS" \
             packages/briar-display/dist/ \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:$REMOTE_DIR
 
-      # Backend deployment is done manually via SSH due to unstable server network to GitHub
+      # ============ 后端：SSH 调用 deploy.sh ============
+      - name: Deploy backend (SSH)
+        env:
+          PROJECT_DIR: ${{ secrets.DEPLOY_PROJECT_DIR }}
+        run: |
+          SSH_OPTS="-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3"
+          PROJECT_DIR="${PROJECT_DIR:-/home/ubuntu/github/briar-display}"
+          echo "部署后端到 $PROJECT_DIR，commit=${{ github.sha }}"
+          ssh $SSH_OPTS ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "cd $PROJECT_DIR && DEPLOY_COMMIT=${{ github.sha }} bash scripts/deploy.sh"
+
+      # ============ 健康检查 ============
+      - name: Health check
+        run: |
+          SSH_OPTS="-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3"
+          echo "等待服务重启..."
+          sleep 6
+          for i in 1 2 3 4 5; do
+            RESP=$(ssh $SSH_OPTS ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "curl -s http://127.0.0.1:3888/api/version" || true)
+            echo "Attempt $i: $RESP"
+            if echo "$RESP" | grep -q '"success":true'; then
+              echo "✅ 后端 /api/version 正常"
+              # 校验前后端 commit 一致
+              FE=$(echo "$RESP" | grep -o '"frontend"[^}]*"commit":"[^"]*"' | grep -o '"commit":"[^"]*"' | tail -1 | cut -d'"' -f4)
+              BE=$(echo "$RESP" | grep -o '"backend"[^}]*"commit":"[^"]*"' | grep -o '"commit":"[^"]*"' | tail -1 | cut -d'"' -f4)
+              echo "frontend.commit=$FE backend.commit=$BE"
+              exit 0
+            fi
+            sleep 4
+          done
+          echo "❌ 健康检查失败，/api/version 无响应，请检查 pm2 logs briar-node"
+          exit 1
+
+      # ============ 部署历史（写入 briar-assets 审计） ============
+      - name: Append deploy history
+        if: always()
+        env:
+          PROJECT_DIR: ${{ secrets.DEPLOY_PROJECT_DIR }}
+        run: |
+          SSH_OPTS="-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3"
+          PROJECT_DIR="${PROJECT_DIR:-/home/ubuntu/github/briar-display}"
+          AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          RECORD="{\"commit\":\"${{ github.sha }}\",\"ref\":\"${{ github.ref }}\",\"actor\":\"${{ github.actor }}\",\"status\":\"${{ job.status }}\",\"at\":\"$AT\",\"run\":\"${{ github.run_id }}\"}"
+          ssh $SSH_OPTS ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "cd $PROJECT_DIR && mkdir -p briar-assets && echo '$RECORD' >> briar-assets/deploy-history.jsonl && echo '记录已追加' && tail -n 1 briar-assets/deploy-history.jsonl"

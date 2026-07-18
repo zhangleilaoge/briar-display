@@ -26,13 +26,16 @@ SKIP_INSTALL=false
 SKIP_BUILD=false
 FULL_BUILD=false
 
-# 确保 nginx 服务已启动
-if ! systemctl is-active --quiet nginx; then
-    echo "Starting nginx..."
-    sudo systemctl start nginx
+# CI 通过环境变量传入：精确 commit、项目根路径
+DEPLOY_COMMIT="${DEPLOY_COMMIT:-}"
+
+# 确保 nginx 服务已启动（CI 触发时可能无 sudo 权限，失败不致命）
+if ! systemctl is-active --quiet nginx 2>/dev/null; then
+    echo "[INFO] Starting nginx..."
+    sudo systemctl start nginx 2>/dev/null || echo "[WARN] 无法启动 nginx（可能需要手动处理）"
 else
-    echo "nginx already running, reloading configuration..."
-    sudo systemctl reload nginx
+    echo "[INFO] nginx already running, reloading configuration..."
+    sudo systemctl reload nginx 2>/dev/null || echo "[WARN] nginx reload 失败（忽略，配置未变更）"
 fi
 
 for arg in "$@"; do
@@ -111,6 +114,71 @@ restore_backup() {
   fi
 }
 
+# 同步代码：支持 DEPLOY_COMMIT 精确部署，否则 git pull（重试 3 次应对网络抖动）
+sync_code() {
+  if [ -n "$DEPLOY_COMMIT" ]; then
+    log_info "拉取指定 commit: $DEPLOY_COMMIT"
+    if ! git fetch origin; then
+      log_error "git fetch 失败，请检查服务器到 GitHub 的网络"
+      exit 1
+    fi
+    if ! git checkout "$DEPLOY_COMMIT"; then
+      log_error "git checkout $DEPLOY_COMMIT 失败"
+      exit 1
+    fi
+    return
+  fi
+
+  log_info "拉取最新代码..."
+  local pulled=false
+  for i in 1 2 3; do
+    if git pull origin master 2>/dev/null || git pull origin main 2>/dev/null; then
+      pulled=true
+      break
+    fi
+    log_warn "git pull 第 $i 次失败，重试..."
+    sleep 3
+  done
+  if [ "$pulled" = false ]; then
+    log_error "git pull 多次失败，请检查服务器到 GitHub 的网络（或通过 DEPLOY_COMMIT 部署）"
+    exit 1
+  fi
+}
+
+# 数据库迁移：从 .env 读凭证，不硬编码
+run_migrate() {
+  log_info "执行数据库迁移..."
+  if [ ! -f "packages/briar-node/src/db/migrate.sql" ]; then
+    log_warn "migrate.sql 不存在，跳过迁移"
+    return
+  fi
+
+  if [ ! -f ".env" ]; then
+    log_error ".env 不存在，无法获取数据库凭证"
+    exit 1
+  fi
+
+  # 子 shell 加载 .env 执行 migrate，避免污染当前 shell 环境
+  (
+    set -a
+    . ./.env
+    set +a
+
+    if [ -z "$BRIAR_DATABASE_USER" ] || [ -z "$BRIAR_DATABASE_PASSWORD" ]; then
+      echo "${RED}[ERROR]${NC} .env 缺少 BRIAR_DATABASE_USER / BRIAR_DATABASE_PASSWORD" >&2
+      exit 1
+    fi
+
+    mysql -h"${BRIAR_DATABASE_HOST:-127.0.0.1}" -P"${BRIAR_DATABASE_PORT:-3306}" \
+      -u"$BRIAR_DATABASE_USER" --password="$BRIAR_DATABASE_PASSWORD" \
+      briar_display < packages/briar-node/src/db/migrate.sql
+  ) || {
+    log_error "数据库迁移失败"
+    exit 1
+  }
+  log_info "数据库迁移完成"
+}
+
 # 主流程
 main() {
   log_info "开始部署 $PROJECT_NAME..."
@@ -126,9 +194,8 @@ main() {
     exit 1
   fi
   
-  # 拉取最新代码
-  log_info "拉取最新代码..."
-  git pull origin master || git pull origin main
+  # 同步代码（支持 DEPLOY_COMMIT 精确部署 + 重试）
+  sync_code
   
   # 更新子模块
   log_info "更新子模块..."
@@ -168,6 +235,15 @@ main() {
   else
     log_warn "跳过构建"
   fi
+  
+  # 写入版本指纹（构建产物 dist/version.json，供 /api/version 读取）
+  if [ "$SKIP_BUILD" = false ]; then
+    log_info "写入版本指纹..."
+    bun run packages/briar-scripts/scripts/write-version.ts packages/briar-node/dist || log_warn "version 写入失败（不阻塞部署）"
+  fi
+  
+  # 数据库迁移（从 .env 读凭证）
+  run_migrate
   
   # 重启 PM2 应用
   log_info "重启应用..."
