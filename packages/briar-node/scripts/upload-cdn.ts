@@ -1,4 +1,5 @@
 import fs from 'fs'
+import { gzipSync } from 'node:zlib'
 import path from 'path'
 import COS from 'cos-nodejs-sdk-v5'
 import dotenv from 'dotenv'
@@ -73,9 +74,56 @@ const listFiles = (dir: string): string[] => {
 	return files
 }
 
+// 适合 gzip 的文本资源（压缩收益大）
+const GZIP_EXTENSIONS = new Set([
+	'.js',
+	'.mjs',
+	'.css',
+	'.html',
+	'.htm',
+	'.svg',
+	'.json',
+	'.xml',
+	'.txt',
+	'.map',
+])
+
+// 扩展名 → Content-Type 映射
+const CONTENT_TYPES: Record<string, string> = {
+	'.js': 'application/javascript; charset=utf-8',
+	'.mjs': 'application/javascript; charset=utf-8',
+	'.css': 'text/css; charset=utf-8',
+	'.html': 'text/html; charset=utf-8',
+	'.htm': 'text/html; charset=utf-8',
+	'.svg': 'image/svg+xml',
+	'.json': 'application/json; charset=utf-8',
+	'.xml': 'application/xml; charset=utf-8',
+	'.txt': 'text/plain; charset=utf-8',
+	'.map': 'application/json; charset=utf-8',
+	'.png': 'image/png',
+	'.jpg': 'image/jpeg',
+	'.jpeg': 'image/jpeg',
+	'.gif': 'image/gif',
+	'.webp': 'image/webp',
+	'.avif': 'image/avif',
+	'.woff': 'font/woff',
+	'.woff2': 'font/woff2',
+	'.ico': 'image/x-icon',
+}
+
+// vite 产物带 hash 可永久缓存；HTML 走协商缓存
+const buildCacheControl = (ext: string): string => {
+	if (ext === '.html' || ext === '.htm') return 'public, max-age=0, must-revalidate'
+	return 'public, max-age=31536000, immutable'
+}
+
 const uploadFile = (filePath: string, key: string, retries = 3): Promise<void> => {
-	const fileBuffer = fs.readFileSync(filePath)
-	const fileSize = (fileBuffer.length / 1024 / 1024).toFixed(2)
+	const rawBuffer = fs.readFileSync(filePath)
+	const ext = path.extname(filePath).toLowerCase()
+	const shouldGzip = GZIP_EXTENSIONS.has(ext)
+	const body = shouldGzip ? gzipSync(rawBuffer) : rawBuffer
+	const rawKB = (rawBuffer.length / 1024).toFixed(2)
+	const sentKB = (body.length / 1024).toFixed(2)
 
 	return new Promise<void>((resolve, reject) => {
 		const cos = createCOS()
@@ -86,11 +134,17 @@ const uploadFile = (filePath: string, key: string, retries = 3): Promise<void> =
 				Region: region,
 				Key: key,
 				StorageClass: 'STANDARD',
-				Body: fileBuffer,
+				Body: body,
+				ContentType: CONTENT_TYPES[ext] || 'application/octet-stream',
+				CacheControl: buildCacheControl(ext),
+				...(shouldGzip ? { ContentEncoding: 'gzip' } : {}),
 			},
 			(err, data) => {
 				if (err) {
-					console.warn(`Upload error for ${key} (${fileSize}MB):`, err.message || err)
+					console.warn(
+						`Upload error for ${key} (${rawKB}KB raw, ${sentKB}KB sent):`,
+						err.message || err,
+					)
 					if (retries > 0) {
 						console.log(`Retrying ${key} (${retries} retries left) ...`)
 						// 递增等待时间，给大文件更多缓冲
@@ -107,7 +161,8 @@ const uploadFile = (filePath: string, key: string, retries = 3): Promise<void> =
 				}
 
 				if (data?.statusCode === 200) {
-					console.log(`Uploaded: ${key} (${fileSize}MB)`)
+					const tag = shouldGzip ? ` ${rawKB}KB→${sentKB}KB gzip` : ` ${sentKB}KB`
+					console.log(`Uploaded: ${key}${tag}`)
 					resolve()
 				} else {
 					reject(new Error(`Upload ${key} failed with status: ${data?.statusCode}`))
