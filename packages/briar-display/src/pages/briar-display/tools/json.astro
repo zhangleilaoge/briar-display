@@ -1,5 +1,8 @@
 ---
-import ToolJsonPage from '@/components/tools/ToolJsonPage'
+import ToolJsonPage from '../../../components/tools/ToolJsonPage'
+import Layout from '../../../layouts/Layout.astro'
 ---
 
-<ToolJsonPage />
+<Layout title="JSON 格式化 - 工具箱">
+	<ToolJsonPage client:load />
+</Layout>
