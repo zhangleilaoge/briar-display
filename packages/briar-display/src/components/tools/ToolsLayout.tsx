@@ -39,10 +39,10 @@ interface ToolsLayoutProps {
 export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps) {
 	return (
 		<PermissionProvider>
-			<div className="flex min-h-screen flex-col bg-background">
+			<div className="flex h-screen flex-col overflow-hidden bg-background">
 				{/* 顶部导航栏 */}
 				<header className="sticky top-0 z-50 border-b bg-background">
-					<div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between px-6">
+					<div className="flex h-14 items-center justify-between px-6">
 						<div className="flex items-center gap-6">
 							<a
 								href="/briar-display/"
@@ -74,8 +74,8 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 				</header>
 
 				{/* 内容区 */}
-				<main className="flex-1 p-6">
-					<div className="mx-auto max-w-[1200px]">{children}</div>
+				<main className="flex min-h-0 flex-1 flex-col p-6">
+					<div className="flex w-full flex-1 flex-col min-h-0">{children}</div>
 				</main>
 			</div>
 		</PermissionProvider>
