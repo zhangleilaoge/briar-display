@@ -48,8 +48,11 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 | `packages/briar-shared/src/constants.ts` | 共享常量（`API_BASE_PATH`、`NODE_PORT`） |
 | `packages/briar-shared/src/permissions.ts` | 权限编码常量和分组 |
 | `packages/briar-display/src/api/request.ts` | 前端 axios 实例，baseURL 自动计算 |
+| `packages/briar-node/src/routes/version.ts` | `/api/version` 版本指纹接口（前后端一致性校验） |
+| `packages/briar-scripts/scripts/write-version.ts` | 构建时写入 `version.json` 的脚本 |
+| `.github/workflows/deploy.yml` | CI：构建前端 + 上传 CDN + SSH 部署后端 + 健康检查 |
 | `default.conf` | Nginx 配置 |
-| `ecosystem.config.cjs` | PM2 配置 |
+| `ecosystem.config.cjs` | PM2 配置（cwd 为绝对路径） |
 
 ## 路由架构
 
@@ -127,15 +130,22 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 
 ## 部署
 
-**自动部署**：`git push` 到 master/main → GitHub Actions 构建前端上传 CDN → rsync 到服务器 → SSH 构建 node → PM2 重启。
+**自动部署**：`git push` 到 master/main → GitHub Actions 一条流水线完成：
+构建前端 + 上传 CDN → rsync 到服务器 `web/` → SSH 调用 `deploy.sh`（更新代码、build shared+node、migrate、写 version、PM2 重启）→ 健康检查 `GET /api/version` → 记录到 `briar-assets/deploy-history.jsonl`。
 
 | 修改内容 | 执行 |
 | :--- | :--- |
-| `packages/briar-node/src/**/*.ts` | `./scripts/deploy.sh` |
-| `packages/briar-display/src/**/*.tsx` | git push，由 Actions 自动同步 |
-| `default.conf` | `./scripts/deploy-nginx.sh` |
-| `.env` | `pm2 restart briar-node` |
-| `packages/briar-shared/src/**/*.ts` | `./scripts/deploy.sh --full-build` |
+| `packages/briar-node/src/**/*.ts` | git push，CI 自动部署（含 migrate） |
+| `packages/briar-display/src/**/*.{tsx,astro}` | git push，CI 自动同步 |
+| `packages/briar-shared/src/**/*.ts` | git push，CI 自动（deploy.sh 默认 build shared+node） |
+| `default.conf` | `./scripts/deploy-nginx.sh`（手动） |
+| `.env` | `pm2 restart briar-node`（手动，.env 不在 git） |
+
+**手动兜底**：服务器上 `./scripts/deploy.sh`（支持 `--skip-install`/`--skip-build`/`--full-build`，支持 `DEPLOY_COMMIT=<sha>` 精确部署）。
+
+**版本校验**：访问 `https://stardew.site/api/version` 查看 `backend.commit` 与 `frontend.commit` 是否一致。
+
+**所需 GitHub Secrets**：`DOCKER_GITHUB_TOKEN`、`DEPLOY_KEY`、`DEPLOY_HOST`、`DEPLOY_USER`、`DEPLOY_REMOTE_DIR`（默认 `~/github/briar-display/packages/briar-display/web`）、`DEPLOY_PROJECT_DIR`（默认 `~/github/briar-display`）、`BRIAR_TX_*`（CDN）。
 
 ## AI 排查日志
 

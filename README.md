@@ -153,10 +153,15 @@ pm2 start ecosystem.config.cjs
 
 ### 日常部署
 
+**默认**：直接 `git push`，CI 自动完成前后端部署（见下方 CI 章节）。
+
+**手动兜底**（服务器上执行）：
+
 ```bash
-./scripts/deploy.sh                # 完整部署（拉代码、装依赖、构建、重启）
+./scripts/deploy.sh                # 完整部署（拉代码、装依赖、构建、migrate、重启）
 ./scripts/deploy.sh --skip-install # 跳过依赖安装
-./scripts/deploy.sh --skip-build   # 仅重启 PM2 进程
+./scripts/deploy.sh --skip-build   # 仅 migrate + 重启 PM2
+DEPLOY_COMMIT=<sha> ./scripts/deploy.sh  # 精确部署某次 commit
 ```
 
 ### Nginx 配置
@@ -183,16 +188,23 @@ pm2 reload briar-node       # 重启服务
 pm2 stop briar-node         # 停止服务
 ```
 
-### CI / CDN 自动构建
+### CI 自动部署
 
-`.github/workflows/deploy.yml`：推送到 `master` / `main` 时自动构建并上传到腾讯云 CDN。
+`.github/workflows/deploy.yml`：推送到 `master` / `main` 时一条流水线完成前端构建 + CDN 上传 + 后端 SSH 部署 + 健康检查：
+
+1. 构建前端并上传腾讯云 CDN
+2. 写入 `version.json` 版本指纹
+3. rsync 前端产物到服务器 `web/`
+4. SSH 调用 `deploy.sh`：更新代码、build shared+node、执行 migrate、PM2 重启
+5. 健康检查 `GET /api/version`（重试 5 次）
+6. 记录部署历史到 `briar-assets/deploy-history.jsonl`
 
 需要的 GitHub Secrets：
 
-- `DOCKER_GITHUB_TOKEN`（用于拉取子模块）
-- `BRIAR_TX_BUCKET_REGION`
-- `BRIAR_TX_SEC_ID`
-- `BRIAR_TX_SEC_KEY`
-- `BRIAR_TX_BUCKET_NAME`
+- `DOCKER_GITHUB_TOKEN`（拉取子模块）
+- `DEPLOY_KEY` / `DEPLOY_HOST` / `DEPLOY_USER`（SSH 部署）
+- `DEPLOY_REMOTE_DIR`（可选，默认 `~/github/briar-display/packages/briar-display/web`）
+- `DEPLOY_PROJECT_DIR`（可选，默认 `~/github/briar-display`）
+- `BRIAR_TX_BUCKET_REGION` / `BRIAR_TX_SEC_ID` / `BRIAR_TX_SEC_KEY` / `BRIAR_TX_BUCKET_NAME`（CDN）
 
-> GitHub Actions 不会自动部署到服务器，仅负责构建和 CDN 上传。
+> 部署后访问 `https://stardew.site/api/version` 可校验前后端 commit 是否一致。

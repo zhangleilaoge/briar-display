@@ -230,9 +230,9 @@ main() {
         exit 1
       fi
     else
-      log_info "构建后端（node）..."
+      log_info "构建 shared + node..."
       log_warn "前端资源由 GitHub Actions 同步到 web/ 目录，如需服务器构建请使用 --full-build"
-      if ! bun run --filter @briar/node build; then
+      if ! (bun run --filter @briar/shared build && bun run --filter @briar/node build); then
         log_error "构建失败，正在恢复备份..."
         restore_backup
         exit 1
