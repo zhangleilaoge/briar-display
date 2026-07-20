@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'bun:test'
 import {
 	computeTags,
+	flattenJsonObject,
 	isObjectLiteral,
 	parseForPreview,
+	parsePathToNamespace,
 	quoteUnquotedKeys,
 	tryParseJson,
 } from './toolJsonUtils'
@@ -227,5 +229,79 @@ describe('tryParseJson', () => {
 		const result = tryParseJson('not json')
 		expect(result.valid).toBe(false)
 		expect(result.error).toBeDefined()
+	})
+})
+
+describe('flattenJsonObject', () => {
+	it('should flatten a simple object', () => {
+		const result = flattenJsonObject({ a: 1, b: 'hello' })
+		expect(result).toEqual([
+			{ path: 'a', key: 'a', value: '1' },
+			{ path: 'b', key: 'b', value: 'hello' },
+		])
+	})
+
+	it('should flatten nested objects', () => {
+		const result = flattenJsonObject({ outer: { inner: 42 } })
+		expect(result).toEqual([{ path: 'outer.inner', key: 'inner', value: '42' }])
+	})
+
+	it('should flatten arrays', () => {
+		const result = flattenJsonObject([1, 2, 3])
+		expect(result).toEqual([
+			{ path: '[0]', key: '0', value: '1' },
+			{ path: '[1]', key: '1', value: '2' },
+			{ path: '[2]', key: '2', value: '3' },
+		])
+	})
+
+	it('should flatten arrays of objects', () => {
+		const result = flattenJsonObject([{ name: 'a' }, { name: 'b' }])
+		expect(result).toEqual([
+			{ path: '[0].name', key: 'name', value: 'a' },
+			{ path: '[1].name', key: 'name', value: 'b' },
+		])
+	})
+
+	it('should return empty array for null/undefined', () => {
+		expect(flattenJsonObject(null)).toEqual([])
+		expect(flattenJsonObject(undefined)).toEqual([])
+	})
+
+	it('should handle boolean values', () => {
+		const result = flattenJsonObject({ active: true })
+		expect(result).toEqual([{ path: 'active', key: 'active', value: 'true' }])
+	})
+})
+
+describe('parsePathToNamespace', () => {
+	it('should parse simple key path', () => {
+		expect(parsePathToNamespace('a')).toEqual(['a'])
+	})
+
+	it('should parse nested key path', () => {
+		expect(parsePathToNamespace('outer.inner')).toEqual(['outer', 'inner'])
+	})
+
+	it('should parse array index path', () => {
+		expect(parsePathToNamespace('[0]')).toEqual([0])
+	})
+
+	it('should parse array index with nested keys', () => {
+		expect(parsePathToNamespace('[0].ump_type')).toEqual([0, 'ump_type'])
+	})
+
+	it('should parse complex path with multiple array indices', () => {
+		expect(parsePathToNamespace('[0].activity.skus[1].id')).toEqual([
+			0,
+			'activity',
+			'skus',
+			1,
+			'id',
+		])
+	})
+
+	it('should handle empty path', () => {
+		expect(parsePathToNamespace('')).toEqual([])
 	})
 })
