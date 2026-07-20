@@ -3,38 +3,23 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import {
-	Braces,
-	Check,
-	ChevronLeft,
-	ChevronRight,
-	Clock,
-	Code,
-	Copy,
-	Download,
-	Eraser,
-	FileJson,
-	FileUp,
-	Minus,
-	RotateCcw,
-	Shield,
-	Trash2,
-	WrapText,
-} from 'lucide-react'
+import { Braces, Check, Copy, Download, FileUp, RotateCcw } from 'lucide-react'
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import JsonHistorySidebar from './JsonHistorySidebar'
+import JsonSearchDropdown from './JsonSearchDropdown'
 import ToolsLayout from './ToolsLayout'
 import {
 	ACTIONS,
 	type ActionKey,
+	type FlatJsonEntry,
 	type HistoryEntry,
 	computeTags,
 	executeAction,
-	formatFullTime,
-	formatRelativeTime,
-	formatSize,
+	flattenJsonObject,
 	isObjectLiteral,
 	loadHistory,
 	parseForPreview,
+	parsePathToNamespace,
 	saveHistory,
 } from './toolJsonUtils'
 
@@ -49,6 +34,7 @@ export default function ToolJsonPage() {
 	const [treeKey, setTreeKey] = useState(0)
 	const [treeCollapsed, setTreeCollapsed] = useState<boolean | number>(1)
 	const [now, setNow] = useState(0)
+	const [targetPath, setTargetPath] = useState<(string | number)[] | null>(null)
 	const inputRef = useRef<HTMLTextAreaElement>(null)
 
 	// 客户端加载历史记录（避免 SSR hydration 不匹配）
@@ -65,6 +51,11 @@ export default function ToolJsonPage() {
 
 	const { parsedValue, isObjectInput } = useMemo(() => parseForPreview(input), [input])
 	const objLiteral = useMemo(() => isObjectLiteral(input), [input])
+
+	const flatEntries = useMemo<FlatJsonEntry[]>(
+		() => (parsedValue ? flattenJsonObject(parsedValue) : []),
+		[parsedValue],
+	)
 
 	const pushHistory = useCallback((prevInput: string, action: ActionKey) => {
 		setHistory((h) =>
@@ -86,7 +77,6 @@ export default function ToolJsonPage() {
 			setError(null)
 			setCopied(false)
 			if (!input.trim()) return
-
 			try {
 				const result = executeAction(key, input)
 				setInput(result)
@@ -163,6 +153,59 @@ export default function ToolJsonPage() {
 		setTreeKey((k) => k + 1)
 	}, [])
 
+	const handleSelectSearchResult = useCallback((entry: FlatJsonEntry) => {
+		const ns = parsePathToNamespace(entry.path)
+		setTargetPath(ns)
+		setTreeKey((k) => k + 1)
+		// 等 DOM 渲染后定位并高亮
+		requestAnimationFrame(() => {
+			setTimeout(() => {
+				const treeContainer = document.querySelector('.json-tree-container')
+				if (!treeContainer) return
+				const spans = treeContainer.querySelectorAll('span')
+				const targetValue = entry.value
+				const targetKey = entry.key
+				for (const span of spans) {
+					const text = span.textContent?.trim()
+					if (text === `"${targetValue}"` || text === targetValue || text === `${targetValue},`) {
+						span.scrollIntoView({ behavior: 'smooth', block: 'center' })
+						span.style.backgroundColor = '#fde047'
+						span.style.transition = 'background-color 0.5s ease-out'
+						setTimeout(() => {
+							span.style.backgroundColor = 'transparent'
+							setTimeout(() => {
+								span.style.transition = ''
+								span.style.backgroundColor = ''
+							}, 600)
+						}, 1500)
+						return
+					}
+				}
+				for (const span of spans) {
+					const text = span.textContent?.trim()
+					if (text === `"${targetKey}"` || text === targetKey || text === `${targetKey}:`) {
+						span.scrollIntoView({ behavior: 'smooth', block: 'center' })
+						span.style.backgroundColor = '#fde047'
+						span.style.transition = 'background-color 0.5s ease-out'
+						setTimeout(() => {
+							span.style.backgroundColor = 'transparent'
+							setTimeout(() => {
+								span.style.transition = ''
+								span.style.backgroundColor = ''
+							}, 600)
+						}, 1500)
+						return
+					}
+				}
+				// 高亮结束后清除目标路径，恢复正常折叠状态
+				setTimeout(() => {
+					setTargetPath(null)
+					setTreeKey((k) => k + 1)
+				}, 2500)
+			}, 300)
+		})
+	}, [])
+
 	const handleRestore = useCallback((entry: HistoryEntry) => {
 		setInput(entry.input)
 		setError(null)
@@ -199,113 +242,21 @@ export default function ToolJsonPage() {
 				</CardHeader>
 				<CardContent className="flex min-h-0 flex-1 flex-col">
 					<div className="flex min-h-0 flex-1 gap-4">
-						{/* 历史侧边栏 */}
-						{sidebarCollapsed ? (
-							<div className="flex w-8 shrink-0 flex-col items-center rounded-md border bg-muted/20">
-								<button
-									onClick={() => setSidebarCollapsed(false)}
-									className="mt-2 flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-									title="展开历史记录"
-								>
-									<ChevronRight className="h-4 w-4" />
-								</button>
-								{history.length > 0 && (
-									<span className="mt-1 text-[10px] font-medium text-muted-foreground">
-										{history.length}
-									</span>
-								)}
-							</div>
-						) : (
-							<div className="flex w-[220px] shrink-0 flex-col rounded-md border bg-muted/20">
-								<div className="flex items-center justify-between border-b px-3 py-2">
-									<span className="text-sm font-medium">历史记录</span>
-									<div className="flex items-center gap-1">
-										{history.length > 0 && (
-											<Button
-												variant="ghost"
-												size="sm"
-												onClick={handleClearHistory}
-												className="h-auto p-1 text-xs text-muted-foreground hover:text-destructive"
-											>
-												<Trash2 className="h-3.5 w-3.5" />
-											</Button>
-										)}
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={() => setSidebarCollapsed(true)}
-											className="h-auto p-1 text-muted-foreground hover:text-foreground"
-											title="收起历史记录"
-										>
-											<ChevronLeft className="h-4 w-4" />
-										</Button>
-									</div>
-								</div>
-								<div className="flex-1 overflow-y-auto">
-									{history.length === 0 ? (
-										<div className="flex flex-col items-center justify-center py-8 text-xs text-muted-foreground">
-											<Clock className="mb-2 h-6 w-6 opacity-40" />
-											暂无历史记录
-										</div>
-									) : (
-										history.map((entry) => (
-											<div
-												key={entry.id}
-												onClick={() => handleRestore(entry)}
-												className="group flex w-full flex-col border-b px-3 py-2.5 text-left transition-colors hover:bg-accent"
-											>
-												<div className="flex items-center justify-between">
-													<span className="text-xs font-medium text-foreground">
-														{formatRelativeTime(entry.timestamp, now)}
-													</span>
-													<Button
-														variant="ghost"
-														size="sm"
-														onClick={(e) => {
-															e.stopPropagation()
-															handleDeleteHistory(entry.id)
-														}}
-														className="h-auto p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
-													>
-														<Trash2 className="h-3 w-3" />
-													</Button>
-												</div>
-												<span className="mt-0.5 text-[11px] text-muted-foreground">
-													{formatFullTime(entry.timestamp)} · {formatSize(entry.input)}
-												</span>
-												{(entry.tags ?? []).length > 0 && (
-													<div className="mt-1 flex flex-wrap gap-1">
-														{(entry.tags ?? []).map((tag) => (
-															<span
-																key={tag}
-																className={
-																	tag === '非法'
-																		? 'rounded bg-red-100 px-1.5 py-0.5 text-[10px] text-red-700'
-																		: tag === '对象'
-																			? 'rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700'
-																			: tag === 'JSON'
-																				? 'rounded bg-blue-100 px-1.5 py-0.5 text-[10px] text-blue-700'
-																				: 'rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600'
-																}
-															>
-																{tag}
-															</span>
-														))}
-													</div>
-												)}
-											</div>
-										))
-									)}
-								</div>
-							</div>
-						)}
+						<JsonHistorySidebar
+							collapsed={sidebarCollapsed}
+							onToggle={() => setSidebarCollapsed((v) => !v)}
+							entries={history}
+							onRestore={handleRestore}
+							onDelete={handleDeleteHistory}
+							onClear={handleClearHistory}
+							now={now}
+						/>
 
 						{/* 主内容区 */}
 						<div className="flex min-h-0 flex-1 flex-col space-y-4">
 							{/* 操作按钮 */}
 							<div className="flex flex-wrap gap-2">
 								{ACTIONS.map((action) => {
-									// 已是 JSON 对象时隐藏「转 JSON」，已是对象字面量时隐藏「转对象」
 									if (action.key === 'toJson' && isObjectInput) return null
 									if (action.key === 'toObject' && objLiteral) return null
 									return (
@@ -384,6 +335,10 @@ export default function ToolJsonPage() {
 													>
 														收起全部
 													</Button>
+													<JsonSearchDropdown
+														flatEntries={flatEntries}
+														onSelect={handleSelectSearchResult}
+													/>
 													<Button
 														variant="ghost"
 														size="sm"
@@ -398,7 +353,7 @@ export default function ToolJsonPage() {
 										</div>
 									</div>
 									{parsedValue ? (
-										<div className="min-h-0 flex-1 overflow-auto rounded-md border bg-muted/30 p-4">
+										<div className="json-tree-container min-h-0 flex-1 overflow-auto rounded-md border bg-muted/30 p-4">
 											<Suspense
 												fallback={<div className="text-sm text-muted-foreground">加载中...</div>}
 											>
@@ -408,7 +363,23 @@ export default function ToolJsonPage() {
 													theme="rjv-default"
 													collapseStringsAfterLength={80}
 													indentWidth={2}
-													collapsed={treeCollapsed}
+													collapsed={targetPath ? false : treeCollapsed}
+													shouldCollapse={
+														targetPath
+															? (field) => {
+																	const ns = field.namespace as (string | number)[]
+																	if (ns.length <= 1) return false
+																	for (let i = 1; i < ns.length; i++) {
+																		const pathIndex = i - 1
+																		if (pathIndex >= targetPath.length) return true
+																		const t = targetPath[pathIndex]
+																		const n = ns[i]
+																		if (String(n) !== String(t)) return true
+																	}
+																	return false
+																}
+															: undefined
+													}
 													enableClipboard={false}
 													displayDataTypes={false}
 													displayObjectSize={false}

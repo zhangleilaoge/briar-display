@@ -396,3 +396,50 @@ export function parseForPreview(input: string): { parsedValue: unknown; isObject
 		}
 	}
 }
+
+// ─── 搜索展平 ───
+
+export interface FlatJsonEntry {
+	path: string
+	key: string
+	value: string
+}
+
+export function flattenJsonObject(obj: unknown, prefix = ''): FlatJsonEntry[] {
+	const result: FlatJsonEntry[] = []
+	if (obj === null || obj === undefined) return result
+	if (Array.isArray(obj)) {
+		for (let i = 0; i < obj.length; i++) {
+			const path = `${prefix}[${i}]`
+			const item = obj[i]
+			if (typeof item === 'object' && item !== null) {
+				result.push(...flattenJsonObject(item, path))
+			} else {
+				result.push({ path, key: `${i}`, value: String(item) })
+			}
+		}
+	} else if (typeof obj === 'object') {
+		for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+			const path = prefix ? `${prefix}.${k}` : k
+			if (typeof v === 'object' && v !== null) {
+				result.push(...flattenJsonObject(v, path))
+			} else {
+				result.push({ path, key: k, value: String(v) })
+			}
+		}
+	}
+	return result
+}
+
+export function parsePathToNamespace(path: string): (string | number)[] {
+	const parts: (string | number)[] = []
+	const regex = /\[(\d+)\]|([^.\[\]]+)/g
+	for (const match of path.matchAll(regex)) {
+		if (match[1]) {
+			parts.push(Number(match[1]))
+		} else if (match[2]) {
+			parts.push(match[2])
+		}
+	}
+	return parts
+}

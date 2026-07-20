@@ -368,13 +368,13 @@ export default function ToolDiffPage() {
 						)}
 
 						{/* 主内容区 */}
-						<div className="flex min-h-0 flex-1 flex-col space-y-4">
+						<div className="flex min-h-0 flex-1 flex-col space-y-4 overflow-y-auto">
 							{/* 编辑区 */}
-							<div className="grid min-h-0 flex-1 grid-cols-2 gap-4">
+							<div className="grid h-[40vh] shrink-0 grid-cols-2 gap-4">
 								<div
 									onDrop={handleFileDrop('left')}
 									onDragOver={(e) => e.preventDefault()}
-									className="relative flex min-h-0 flex-col"
+									className="relative flex flex-col"
 								>
 									<div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
 										<span>原始文本</span>
@@ -393,13 +393,13 @@ export default function ToolDiffPage() {
 										value={leftText}
 										onChange={(e) => setLeftText(e.target.value)}
 										placeholder="粘贴原始文本，或拖拽文件到此处..."
-										className="min-h-0 flex-1 resize-none font-mono text-sm"
+										className="h-full resize-none font-mono text-sm"
 									/>
 								</div>
 								<div
 									onDrop={handleFileDrop('right')}
 									onDragOver={(e) => e.preventDefault()}
-									className="relative flex min-h-0 flex-col"
+									className="relative flex flex-col"
 								>
 									<div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
 										<span>修改后文本</span>
@@ -418,7 +418,7 @@ export default function ToolDiffPage() {
 										value={rightText}
 										onChange={(e) => setRightText(e.target.value)}
 										placeholder="粘贴修改后文本，或拖拽文件到此处..."
-										className="min-h-0 flex-1 resize-none font-mono text-sm"
+										className="h-full resize-none font-mono text-sm"
 									/>
 								</div>
 							</div>
@@ -438,7 +438,7 @@ export default function ToolDiffPage() {
 
 							{/* Diff 结果 */}
 							{changes && (
-								<div>
+								<div className="shrink-0">
 									{viewMode === 'split' ? (
 										<SplitView changes={changes} />
 									) : (
