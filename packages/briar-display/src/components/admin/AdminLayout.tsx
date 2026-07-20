@@ -1,6 +1,14 @@
 'use client'
 
 import UserMenu from '@/components/common/UserMenu'
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbLink,
+	BreadcrumbList,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
 import { Radio, Shield, Users } from 'lucide-react'
@@ -41,12 +49,24 @@ export default function AdminLayout({ children, currentPath }: AdminLayoutProps)
 			<div className="flex min-h-screen">
 				{/* 深色侧栏 */}
 				<aside className="hidden w-[220px] shrink-0 flex-col bg-foreground p-4 md:flex">
-					<a
-						href="/briar-display/"
-						className="mb-3 block px-2 text-[11px] font-medium uppercase tracking-wider text-background/40 no-underline hover:text-background/60"
-					>
-						Briar / 管理后台
-					</a>
+					<div className="mb-3 px-2 text-[11px] uppercase tracking-wider">
+						<Breadcrumb>
+							<BreadcrumbList className="text-background/40">
+								<BreadcrumbItem>
+									<BreadcrumbLink
+										href="/briar-display/"
+										className="text-background/40 hover:text-background/60"
+									>
+										Briar
+									</BreadcrumbLink>
+								</BreadcrumbItem>
+								<BreadcrumbSeparator className="text-background/20" />
+								<BreadcrumbItem>
+									<BreadcrumbPage className="text-background/60">管理后台</BreadcrumbPage>
+								</BreadcrumbItem>
+							</BreadcrumbList>
+						</Breadcrumb>
+					</div>
 					<nav className="space-y-0.5">
 						{NAV_ITEMS.map((item) => {
 							const isActive = currentPath === item.href
