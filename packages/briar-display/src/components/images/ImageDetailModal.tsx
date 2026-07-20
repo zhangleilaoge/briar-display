@@ -129,7 +129,15 @@ export default function ImageDetailModal({ image, onClose, onDelete }: Props) {
 							variant="outline"
 							size="sm"
 							className="gap-1.5"
-							onClick={() => window.open(image.cdnUrl, '_blank')}
+							onClick={() => {
+								const win = window.open('', '_blank')
+								if (win) {
+									win.document.write(
+										`<!DOCTYPE html><html><head><title>${image.originalName}</title><style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#1a1a1a}img{max-width:100%;max-height:100vh;object-fit:contain}</style></head><body><img src="${image.cdnUrl}" alt="${image.originalName}" /></body></html>`,
+									)
+									win.document.close()
+								}
+							}}
 						>
 							<ExternalLink className="h-4 w-4" /> 新窗口打开
 						</Button>
