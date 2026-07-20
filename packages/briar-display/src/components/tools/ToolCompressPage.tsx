@@ -254,13 +254,20 @@ export default function ToolCompressPage() {
 
 	/** 从历史记录下载 */
 	const handleHistoryDownload = (entry: CompressHistoryEntry) => {
-		const url = URL.createObjectURL(entry.blob)
-		const a = document.createElement('a')
-		a.href = url
-		const baseName = entry.name.replace(/\.[^.]+$/, '')
-		a.download = `${baseName}_compressed${getExtFromFormat(entry.format)}`
-		a.click()
-		URL.revokeObjectURL(url)
+		try {
+			const url = URL.createObjectURL(entry.blob)
+			const a = document.createElement('a')
+			a.href = url
+			const baseName = entry.name.replace(/\.[^.]+$/, '')
+			a.download = `${baseName}_compressed${getExtFromFormat(entry.format)}`
+			document.body.appendChild(a)
+			a.click()
+			document.body.removeChild(a)
+			setTimeout(() => URL.revokeObjectURL(url), 1000)
+		} catch (e) {
+			console.error('下载失败:', e)
+			toast.error('下载失败，请重试')
+		}
 	}
 
 	/** 上传到图床 */

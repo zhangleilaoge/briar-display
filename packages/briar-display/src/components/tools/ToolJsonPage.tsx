@@ -52,6 +52,11 @@ export default function ToolJsonPage() {
 	const { parsedValue, isObjectInput } = useMemo(() => parseForPreview(input), [input])
 	const objLiteral = useMemo(() => isObjectLiteral(input), [input])
 
+	// DEBUG: 监听 treeKey 和 treeCollapsed 变化
+	useEffect(() => {
+		console.log('[DEBUG] Tree render:', { treeKey, treeCollapsed, targetPath })
+	}, [treeKey, treeCollapsed, targetPath])
+
 	const flatEntries = useMemo<FlatJsonEntry[]>(
 		() => (parsedValue ? flattenJsonObject(parsedValue) : []),
 		[parsedValue],
@@ -144,14 +149,16 @@ export default function ToolJsonPage() {
 	}, [])
 
 	const handleExpandAll = useCallback(() => {
+		console.log('[DEBUG] Expand All clicked', { treeKey, treeCollapsed })
 		setTreeCollapsed(false)
 		setTreeKey((k) => k + 1)
-	}, [])
+	}, [treeKey, treeCollapsed])
 
 	const handleCollapseAll = useCallback(() => {
+		console.log('[DEBUG] Collapse All clicked', { treeKey, treeCollapsed })
 		setTreeCollapsed(true)
 		setTreeKey((k) => k + 1)
-	}, [])
+	}, [treeKey, treeCollapsed])
 
 	const handleSelectSearchResult = useCallback((entry: FlatJsonEntry) => {
 		const ns = parsePathToNamespace(entry.path)
@@ -360,6 +367,7 @@ export default function ToolJsonPage() {
 												<ReactJson
 													key={treeKey}
 													src={parsedValue as Record<string, unknown>}
+													name={false}
 													theme="rjv-default"
 													collapseStringsAfterLength={80}
 													indentWidth={2}
