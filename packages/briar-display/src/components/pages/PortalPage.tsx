@@ -105,7 +105,7 @@ function PortalPageInner() {
 							icon={<ImageIcon className="h-5 w-5" />}
 							title="图床"
 							description="图片上传与相册管理"
-							href="/briar-display/images/upload"
+							href="/briar-display/images/gallery"
 							gradient="from-pink-500 to-rose-500"
 						/>
 						{!loading && isAdmin && (

@@ -1,18 +1,37 @@
 'use client'
 
-import { type ImageItem, deleteImage, getImages } from '@/api/images'
+import { type ImageItem, deleteImage, getImages, uploadImages } from '@/api/images'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import { PERMISSIONS } from '@briar/shared'
-import { AlertCircle, Loader2, Search, Trash2 } from 'lucide-react'
+import { AlertCircle, Loader2, Search, Trash2, Upload } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import ImageDetailModal from './ImageDetailModal'
 import ImageHostingLayout from './ImageHostingLayout'
 
 const PAGE_SIZE = 24
+
+function formatSize(bytes: number): string {
+	if (bytes < 1024) return `${bytes} B`
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function formatDate(dateStr: string): string {
+	const d = new Date(dateStr)
+	return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`
+}
 
 export default function ImageGalleryPage() {
 	return (
@@ -26,7 +45,6 @@ function ImageGalleryPageInner() {
 	const { loading: permLoading, denied } = useRequirePermission(PERMISSIONS.PAGE_BUSINESS)
 	const [images, setImages] = useState<ImageItem[]>([])
 	const [total, setTotal] = useState(0)
-	const [page, setPage] = useState(1)
 	const [hasMore, setHasMore] = useState(false)
 	const [loading, setLoading] = useState(true)
 	const [loadingMore, setLoadingMore] = useState(false)
@@ -34,13 +52,16 @@ function ImageGalleryPageInner() {
 	const [keyword, setKeyword] = useState('')
 	const [selected, setSelected] = useState<Set<string>>(new Set())
 	const [detailImage, setDetailImage] = useState<ImageItem | null>(null)
-	const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+	const [uploadOpen, setUploadOpen] = useState(false)
+	const [uploading, setUploading] = useState(false)
+	const [dragging, setDragging] = useState(false)
+	const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 	const sentinelRef = useRef<HTMLDivElement>(null)
-	// 用 ref 记录当前页码，避免回调闭包拿到旧值
 	const pageRef = useRef(1)
 	const hasMoreRef = useRef(false)
 	const loadingMoreRef = useRef(false)
 	const keywordRef = useRef('')
+	const fileInputRef = useRef<HTMLInputElement>(null)
 
 	const fetchPage = useCallback(async (kw: string, p: number, append: boolean) => {
 		if (append) {
@@ -70,7 +91,6 @@ function ImageGalleryPageInner() {
 		}
 	}, [])
 
-	// 初始 / 关键词变化时重置
 	useEffect(() => {
 		pageRef.current = 1
 		keywordRef.current = keyword
@@ -89,11 +109,9 @@ function ImageGalleryPageInner() {
 		if (loadingMoreRef.current || !hasMoreRef.current) return
 		const next = pageRef.current + 1
 		pageRef.current = next
-		setPage(next)
 		fetchPage(keywordRef.current, next, true)
 	}, [fetchPage])
 
-	// 触底加载
 	useEffect(() => {
 		const el = sentinelRef.current
 		if (!el) return
@@ -119,7 +137,6 @@ function ImageGalleryPageInner() {
 	}
 
 	const toggleSelectAll = () => {
-		// 全选语义：选当前已加载的全部；再点一次清空
 		if (selected.size === images.length) setSelected(new Set())
 		else setSelected(new Set(images.map((i) => i.id)))
 	}
@@ -134,9 +151,7 @@ function ImageGalleryPageInner() {
 			}
 		}
 		setSelected(new Set())
-		// 重新拉第一页
 		pageRef.current = 1
-		setPage(1)
 		fetchPage(keywordRef.current, 1, false)
 	}
 
@@ -144,13 +159,57 @@ function ImageGalleryPageInner() {
 		await deleteImage(id)
 		setDetailImage(null)
 		pageRef.current = 1
-		setPage(1)
 		fetchPage(keywordRef.current, 1, false)
 	}
 
+	/** 上传文件处理 */
+	const handleUploadFiles = useCallback(
+		async (files: FileList | File[]) => {
+			const imageFiles = Array.from(files).filter((f) => f.type.startsWith('image/'))
+			if (imageFiles.length === 0) return
+
+			const valid = imageFiles.filter((f) => {
+				if (f.size > 10 * 1024 * 1024) {
+					toast.error(`${f.name} 超过 10MB 限制`)
+					return false
+				}
+				return true
+			})
+			if (valid.length === 0) return
+
+			setUploading(true)
+			try {
+				const res = await uploadImages(valid)
+				if (res.success && res.data) {
+					toast.success(`已上传 ${res.data.length} 张图片`)
+					setUploadOpen(false)
+					// 刷新列表
+					pageRef.current = 1
+					fetchPage(keywordRef.current, 1, false)
+				} else {
+					toast.error(res.message || '上传失败')
+				}
+			} catch (err: any) {
+				toast.error(err?.response?.data?.message || '上传失败')
+			} finally {
+				setUploading(false)
+			}
+		},
+		[fetchPage],
+	)
+
+	const handleUploadDrop = useCallback(
+		(e: React.DragEvent) => {
+			e.preventDefault()
+			setDragging(false)
+			handleUploadFiles(e.dataTransfer.files)
+		},
+		[handleUploadFiles],
+	)
+
 	if (permLoading) {
 		return (
-			<ImageHostingLayout currentPath="/briar-display/images/gallery">
+			<ImageHostingLayout>
 				<div className="flex items-center justify-center py-20">
 					<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 				</div>
@@ -160,7 +219,7 @@ function ImageGalleryPageInner() {
 
 	if (denied) {
 		return (
-			<ImageHostingLayout currentPath="/briar-display/images/gallery">
+			<ImageHostingLayout>
 				<div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
 					<AlertCircle className="h-5 w-5" />
 					<span>你没有权限访问此页面</span>
@@ -170,25 +229,97 @@ function ImageGalleryPageInner() {
 	}
 
 	return (
-		<ImageHostingLayout currentPath="/briar-display/images/gallery">
+		<ImageHostingLayout>
 			<div className="space-y-4">
 				{/* Toolbar */}
 				<div className="flex items-center justify-between gap-3">
-					<div className="relative w-64">
-						<Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-						<Input
-							placeholder="搜索文件名..."
-							value={search}
-							onChange={(e) => handleSearchChange(e.target.value)}
-							className="h-9 pl-8"
-						/>
+					<div className="flex items-center gap-3">
+						<div className="relative w-64">
+							<Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								placeholder="搜索文件名..."
+								value={search}
+								onChange={(e) => handleSearchChange(e.target.value)}
+								className="h-9 pl-8"
+							/>
+						</div>
 					</div>
-					{selected.size > 0 && (
-						<Button variant="destructive" size="sm" onClick={handleBulkDelete} className="gap-1.5">
-							<Trash2 className="h-4 w-4" />
-							删除 ({selected.size})
-						</Button>
-					)}
+					<div className="flex items-center gap-2">
+						{selected.size > 0 && (
+							<Button
+								variant="destructive"
+								size="sm"
+								onClick={handleBulkDelete}
+								className="gap-1.5"
+							>
+								<Trash2 className="h-4 w-4" />
+								删除 ({selected.size})
+							</Button>
+						)}
+						<Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+							<DialogTrigger asChild>
+								<Button size="sm" className="gap-1.5">
+									<Upload className="h-4 w-4" />
+									上传
+								</Button>
+							</DialogTrigger>
+							<DialogContent className="sm:max-w-md">
+								<DialogHeader>
+									<DialogTitle>上传图片</DialogTitle>
+								</DialogHeader>
+								<div
+									onDrop={handleUploadDrop}
+									onDragOver={(e) => {
+										e.preventDefault()
+										setDragging(true)
+									}}
+									onDragLeave={(e) => {
+										if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+											setDragging(false)
+										}
+									}}
+									onPaste={(e) => {
+										const files = Array.from(e.clipboardData.items)
+											.filter((item) => item.type.startsWith('image/'))
+											.map((item) => item.getAsFile())
+											.filter(Boolean) as File[]
+										if (files.length > 0) handleUploadFiles(files)
+									}}
+									onClick={() => fileInputRef.current?.click()}
+									className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-10 transition-all ${
+										dragging
+											? 'border-primary bg-primary/5'
+											: 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30'
+									}`}
+								>
+									<input
+										ref={fileInputRef}
+										type="file"
+										accept="image/*"
+										multiple
+										className="hidden"
+										onChange={(e) => {
+											if (e.target.files) handleUploadFiles(e.target.files)
+											e.target.value = ''
+										}}
+									/>
+									{uploading ? (
+										<Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+									) : (
+										<Upload className="h-10 w-10 text-muted-foreground/60" />
+									)}
+									<div className="text-center">
+										<p className="text-sm font-medium">
+											{uploading ? '上传中...' : '拖拽、点击或粘贴图片'}
+										</p>
+										<p className="mt-1 text-xs text-muted-foreground">
+											支持 JPG、PNG、GIF、WebP、AVIF、SVG，单文件最大 10MB
+										</p>
+									</div>
+								</div>
+							</DialogContent>
+						</Dialog>
+					</div>
 				</div>
 
 				{loading ? (
@@ -234,7 +365,14 @@ function ImageGalleryPageInner() {
 											loading="lazy"
 										/>
 									</button>
-									<p className="mt-1 truncate text-xs text-muted-foreground">{img.originalName}</p>
+									<div className="mt-1 space-y-0.5">
+										<p className="truncate text-xs font-medium" title={img.originalName}>
+											{img.originalName}
+										</p>
+										<p className="truncate text-[11px] text-muted-foreground">
+											{formatSize(img.size)} · {img.mimeType} · {formatDate(img.createdAt)}
+										</p>
+									</div>
 								</div>
 							))}
 						</div>

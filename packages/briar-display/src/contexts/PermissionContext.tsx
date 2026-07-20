@@ -1,6 +1,7 @@
 'use client'
 
 import { getMyPermissions } from '@/api/admin'
+import { Toaster } from '@/components/ui/sonner'
 import type { Role, UserWithRoles } from '@briar/shared'
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from 'react'
 
@@ -109,7 +110,12 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
 		refresh: fetchPermissions,
 	}
 
-	return <PermissionContext.Provider value={value}>{children}</PermissionContext.Provider>
+	return (
+		<PermissionContext.Provider value={value}>
+			{children}
+			<Toaster position="top-center" richColors />
+		</PermissionContext.Provider>
+	)
 }
 
 export function usePermissions(): PermissionContextValue {

@@ -55,10 +55,18 @@ imageRoutes.post('/upload', async (c) => {
 	// Check quota
 	const isAdmin = await permissionService.isAdmin(user.id)
 	const quota = isAdmin ? ADMIN_QUOTA : USER_QUOTA
-	const used = await imageDal.getUserStorageUsed(user.id)
-	const newTotal = files.reduce((sum, f) => sum + f.size, 0)
+	const used = Number(await imageDal.getUserStorageUsed(user.id)) || 0
+	const newTotal = files.reduce((sum, f) => sum + (Number(f.size) || 0), 0)
 
 	if (used + newTotal > quota) {
+		console.warn('[Upload Quota]', {
+			userId: user.id,
+			used,
+			newTotal,
+			quota,
+			isAdmin,
+			fileSizes: files.map((f) => ({ name: f.name, size: f.size, type: f.type })),
+		})
 		return c.json<ApiResponse>(
 			{
 				success: false,

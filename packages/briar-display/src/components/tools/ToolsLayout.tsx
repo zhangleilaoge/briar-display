@@ -83,7 +83,7 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 				</header>
 
 				{/* 内容区 */}
-				<main className="flex min-h-0 flex-1 flex-col p-6">
+				<main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-6">
 					<div className="flex w-full flex-1 flex-col min-h-0">{children}</div>
 				</main>
 			</div>
