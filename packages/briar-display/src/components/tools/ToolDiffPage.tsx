@@ -8,6 +8,7 @@ import { type Change, diffLines } from 'diff'
 import {
 	ChevronLeft,
 	ChevronRight,
+	CircleCheck,
 	Clock,
 	FileDiff,
 	FileUp,
@@ -16,13 +17,15 @@ import {
 	SplitSquareHorizontal,
 	Trash2,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { SplitView, UnifiedView } from './ToolDiffViews'
 import ToolsLayout from './ToolsLayout'
 import {
 	type DiffStats,
 	type HistoryEntry,
 	MAX_HISTORY,
 	type ViewMode,
+	buildDiffSegments,
 	clearCache,
 	computeStats,
 	formatFullTime,
@@ -34,94 +37,6 @@ import {
 	saveHistory,
 } from './toolDiffUtils'
 
-function UnifiedView({ changes }: { changes: Change[] }) {
-	let lineNum = 0
-	return (
-		<pre className="overflow-x-auto rounded-md border bg-muted/30 p-4 font-mono text-sm leading-relaxed">
-			{changes.map((change, ci) => {
-				const lines = change.value.split('\n')
-				if (lines[lines.length - 1] === '') lines.pop()
-				return lines.map((line, li) => {
-					lineNum++
-					const bg = change.added
-						? 'bg-green-100 text-green-900'
-						: change.removed
-							? 'bg-red-100 text-red-900'
-							: ''
-					const prefix = change.added ? '+' : change.removed ? '-' : ' '
-					return (
-						<div key={`${ci}-${li}`} className={`px-1 ${bg}`}>
-							<span className="mr-3 inline-block w-8 select-none text-right text-muted-foreground">
-								{change.removed ? '' : lineNum}
-							</span>
-							<span className="mr-1 select-none text-muted-foreground">{prefix}</span>
-							{line}
-						</div>
-					)
-				})
-			})}
-		</pre>
-	)
-}
-
-function SplitView({ changes }: { changes: Change[] }) {
-	const leftLines: { text: string; type: 'normal' | 'removed' }[] = []
-	const rightLines: { text: string; type: 'normal' | 'added' }[] = []
-
-	for (const change of changes) {
-		const lines = change.value.split('\n')
-		if (lines[lines.length - 1] === '') lines.pop()
-
-		if (!change.added && !change.removed) {
-			for (const line of lines) {
-				leftLines.push({ text: line, type: 'normal' })
-				rightLines.push({ text: line, type: 'normal' })
-			}
-		} else if (change.removed) {
-			for (const line of lines) {
-				leftLines.push({ text: line, type: 'removed' })
-				rightLines.push({ text: '', type: 'normal' })
-			}
-		} else if (change.added) {
-			for (const line of lines) {
-				leftLines.push({ text: '', type: 'normal' })
-				rightLines.push({ text: line, type: 'added' })
-			}
-		}
-	}
-
-	return (
-		<div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border">
-			<pre className="overflow-x-auto bg-muted/30 p-4 font-mono text-sm leading-relaxed">
-				{leftLines.map((item, i) => {
-					const bg = item.type === 'removed' ? 'bg-red-100 text-red-900' : ''
-					return (
-						<div key={i} className={`px-1 ${bg}`}>
-							<span className="mr-3 inline-block w-8 select-none text-right text-muted-foreground">
-								{item.type !== 'removed' ? i + 1 : ''}
-							</span>
-							{item.text || '\u00A0'}
-						</div>
-					)
-				})}
-			</pre>
-			<pre className="overflow-x-auto bg-muted/30 p-4 font-mono text-sm leading-relaxed">
-				{rightLines.map((item, i) => {
-					const bg = item.type === 'added' ? 'bg-green-100 text-green-900' : ''
-					return (
-						<div key={i} className={`px-1 ${bg}`}>
-							<span className="mr-3 inline-block w-8 select-none text-right text-muted-foreground">
-								{item.type !== 'added' ? i + 1 : ''}
-							</span>
-							{item.text || '\u00A0'}
-						</div>
-					)
-				})}
-			</pre>
-		</div>
-	)
-}
-
 export default function ToolDiffPage() {
 	const [leftText, setLeftText] = useState('')
 	const [rightText, setRightText] = useState('')
@@ -131,9 +46,30 @@ export default function ToolDiffPage() {
 	const [history, setHistory] = useState<HistoryEntry[]>([])
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 	const [now, setNow] = useState(0)
+	const [expanded, setExpanded] = useState<Set<number>>(new Set())
 
 	const leftRef = useRef<HTMLTextAreaElement>(null)
 	const rightRef = useRef<HTMLTextAreaElement>(null)
+	const resultRef = useRef<HTMLDivElement>(null)
+
+	// GitLab 风格分段：变更行保留上下文，其余相同区域折叠
+	const segments = useMemo(() => (changes ? buildDiffSegments(changes) : null), [changes])
+
+	// 比较完成后滚动到结果区域
+	useEffect(() => {
+		if (changes) {
+			resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+		}
+	}, [changes])
+
+	const toggleSegment = useCallback((index: number) => {
+		setExpanded((prev) => {
+			const next = new Set(prev)
+			if (next.has(index)) next.delete(index)
+			else next.add(index)
+			return next
+		})
+	}, [])
 
 	// 客户端加载历史记录和缓存（避免 SSR hydration 不匹配）
 	useEffect(() => {
@@ -180,6 +116,7 @@ export default function ToolDiffPage() {
 		const result = diffLines(leftText, rightText)
 		setChanges(result)
 		setStats(computeStats(result))
+		setExpanded(new Set())
 		pushHistory(leftText, rightText)
 	}, [leftText, rightText, pushHistory])
 
@@ -369,8 +306,8 @@ export default function ToolDiffPage() {
 
 						{/* 主内容区 */}
 						<div className="flex min-h-0 flex-1 flex-col space-y-4 overflow-y-auto">
-							{/* 编辑区 */}
-							<div className="grid h-[40vh] shrink-0 grid-cols-2 gap-4">
+							{/* 编辑区：固定高度，接近一屏 */}
+							<div className="grid h-[calc(100vh-250px)] min-h-[280px] shrink-0 grid-cols-2 gap-4">
 								<div
 									onDrop={handleFileDrop('left')}
 									onDragOver={(e) => e.preventDefault()}
@@ -423,27 +360,36 @@ export default function ToolDiffPage() {
 								</div>
 							</div>
 
-							{/* 统计 */}
-							{stats && (
-								<div className="flex items-center gap-3 text-sm">
-									<span className="text-muted-foreground">结果：</span>
-									<Badge variant="outline" className="bg-green-50 text-green-700">
-										+{stats.added} 行新增
-									</Badge>
-									<Badge variant="outline" className="bg-red-50 text-red-700">
-										-{stats.removed} 行删除
-									</Badge>
-								</div>
-							)}
-
-							{/* Diff 结果 */}
-							{changes && (
-								<div className="shrink-0">
-									{viewMode === 'split' ? (
-										<SplitView changes={changes} />
-									) : (
-										<UnifiedView changes={changes} />
+							{/* Diff 结果：固定高度，内部滚动 */}
+							{changes && segments && (
+								<div ref={resultRef} className="flex shrink-0 scroll-mt-4 flex-col gap-2">
+									{stats && (
+										<div className="flex items-center gap-3 text-sm">
+											<span className="text-muted-foreground">结果：</span>
+											<Badge variant="outline" className="bg-green-50 text-green-700">
+												+{stats.added} 行新增
+											</Badge>
+											<Badge variant="outline" className="bg-red-50 text-red-700">
+												-{stats.removed} 行删除
+											</Badge>
+										</div>
 									)}
+									<div className="h-[calc(100vh-310px)] min-h-[280px]">
+										{stats && stats.added === 0 && stats.removed === 0 ? (
+											<div className="flex h-full flex-col items-center justify-center gap-2 rounded-md border bg-muted/30 text-sm text-muted-foreground">
+												<CircleCheck className="h-8 w-8 text-green-600/70 dark:text-green-400/70" />
+												两段文本完全相同，无差异
+											</div>
+										) : viewMode === 'split' ? (
+											<SplitView segments={segments} expanded={expanded} onToggle={toggleSegment} />
+										) : (
+											<UnifiedView
+												segments={segments}
+												expanded={expanded}
+												onToggle={toggleSegment}
+											/>
+										)}
+									</div>
 								</div>
 							)}
 						</div>
