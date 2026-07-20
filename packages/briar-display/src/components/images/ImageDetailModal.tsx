@@ -130,13 +130,7 @@ export default function ImageDetailModal({ image, onClose, onDelete }: Props) {
 							size="sm"
 							className="gap-1.5"
 							onClick={() => {
-								const win = window.open('', '_blank')
-								if (win) {
-									win.document.write(
-										`<!DOCTYPE html><html><head><title>${image.originalName}</title><style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#1a1a1a}img{max-width:100%;max-height:100vh;object-fit:contain}</style></head><body><img src="${image.cdnUrl}" alt="${image.originalName}" /></body></html>`,
-									)
-									win.document.close()
-								}
+								window.open(image.cdnUrl, '_blank')
 							}}
 						>
 							<ExternalLink className="h-4 w-4" /> 新窗口打开
@@ -145,11 +139,22 @@ export default function ImageDetailModal({ image, onClose, onDelete }: Props) {
 							variant="outline"
 							size="sm"
 							className="gap-1.5"
-							onClick={() => {
-								const a = document.createElement('a')
-								a.href = image.cdnUrl
-								a.download = image.originalName
-								a.click()
+							onClick={async () => {
+								try {
+									const res = await fetch(image.cdnUrl)
+									const blob = await res.blob()
+									const url = URL.createObjectURL(blob)
+									const a = document.createElement('a')
+									a.href = url
+									a.download = image.originalName
+									document.body.appendChild(a)
+									a.click()
+									document.body.removeChild(a)
+									URL.revokeObjectURL(url)
+								} catch {
+									// fallback: 直接打开链接
+									window.open(image.cdnUrl, '_blank')
+								}
 							}}
 						>
 							<Download className="h-4 w-4" /> 下载
