@@ -1,15 +1,28 @@
 'use client'
 
+import { uploadImages } from '@/api/images'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
-import { Download, ImageIcon, Loader2, Upload, X } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
+import { Clock, CloudUpload, Download, ImageIcon, Loader2, Trash2, Upload, X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import UPNG from 'upng-js'
 import ToolsLayout from './ToolsLayout'
+import {
+	type CompressHistoryEntry,
+	clearCompressHistory,
+	compressRatio,
+	deleteCompressHistoryEntry,
+	formatSize,
+	generateThumbnail,
+	getExtFromFormat,
+	loadCompressHistory,
+	pushCompressHistory,
+} from './compressHistory'
 
 type OutputFormat = 'image/jpeg' | 'image/webp' | 'image/png'
 
@@ -25,9 +38,10 @@ interface CompressResult {
 	height: number
 	newWidth: number
 	newHeight: number
+	thumbnail: string
 }
 
-function formatSize(bytes: number): string {
+function formatSizeLocal(bytes: number): string {
 	if (bytes < 1024) return `${bytes} B`
 	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
 	return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
@@ -63,9 +77,14 @@ async function compressImage(
 			canvas.height = height
 			const ctx = canvas.getContext('2d')!
 			ctx.drawImage(img, 0, 0, width, height)
+			let thumbnail = ''
+			try {
+				thumbnail = generateThumbnail(canvas)
+			} catch (e) {
+				console.warn('缩略图生成失败:', e)
+			}
 
 			if (format === 'image/png') {
-				// UPNG 量化压缩 — 类似 TinyPNG 的色盘缩减
 				const imageData = ctx.getImageData(0, 0, width, height)
 				const pngBuf = UPNG.encode([imageData.data.buffer], width, height, pngColors)
 				const blob = new Blob([pngBuf], { type: 'image/png' })
@@ -80,9 +99,9 @@ async function compressImage(
 					height: img.height,
 					newWidth: width,
 					newHeight: height,
+					thumbnail,
 				})
 			} else {
-				// JPEG/WebP 用 Canvas 质量控制
 				canvas.toBlob(
 					(blob) => {
 						if (!blob) {
@@ -100,6 +119,7 @@ async function compressImage(
 							height: img.height,
 							newWidth: width,
 							newHeight: height,
+							thumbnail,
 						})
 					},
 					format,
@@ -112,6 +132,18 @@ async function compressImage(
 	})
 }
 
+/** 获取当前用户 userId（从 localStorage 同步读取） */
+function getUserId(): string {
+	try {
+		const raw = localStorage.getItem('briar_user')
+		if (raw) {
+			const u = JSON.parse(raw)
+			if (u?.id) return u.id
+		}
+	} catch {}
+	return 'default'
+}
+
 export default function ToolCompressPage() {
 	const [format, setFormat] = useState<OutputFormat>('image/jpeg')
 	const [quality, setQuality] = useState(0.8)
@@ -120,7 +152,28 @@ export default function ToolCompressPage() {
 	const [results, setResults] = useState<CompressResult[]>([])
 	const [compressing, setCompressing] = useState(false)
 	const [dragging, setDragging] = useState(false)
+	const [history, setHistory] = useState<CompressHistoryEntry[]>([])
+	const [uploadingId, setUploadingId] = useState<string | null>(null)
 	const fileInputRef = useRef<HTMLInputElement>(null)
+
+	const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('briar_token')
+	const userId = getUserId()
+
+	// 加载历史记录（异步）
+	useEffect(() => {
+		if (!hasToken) return
+		loadCompressHistory(userId).then(setHistory).catch(console.error)
+	}, [hasToken, userId])
+
+	const handleClearHistory = useCallback(async () => {
+		await clearCompressHistory(userId)
+		setHistory([])
+	}, [userId])
+
+	const handleDeleteEntry = useCallback(async (id: string) => {
+		await deleteCompressHistoryEntry(id)
+		setHistory((prev) => prev.filter((e) => e.id !== id))
+	}, [])
 
 	const handleFiles = useCallback(
 		async (files: FileList | File[]) => {
@@ -133,7 +186,32 @@ export default function ToolCompressPage() {
 				for (const file of imageFiles) {
 					try {
 						const result = await compressImage(file, format, quality, maxWidth, pngColors)
-						newResults.push({ ...result, id: `${Date.now()}-${Math.random()}` })
+						const id = `${Date.now()}-${Math.random()}`
+						newResults.push({ ...result, id })
+
+						// 保存历史记录到 IndexedDB（仅已登录用户）
+						if (hasToken) {
+							try {
+								const updated = await pushCompressHistory({
+									id,
+									userId,
+									name: result.name,
+									originalSize: result.originalSize,
+									compressedSize: result.compressedSize,
+									width: result.width,
+									height: result.height,
+									newWidth: result.newWidth,
+									newHeight: result.newHeight,
+									format,
+									timestamp: Date.now(),
+									blob: result.compressedBlob,
+									thumbnail: result.thumbnail,
+								})
+								setHistory(updated)
+							} catch (e) {
+								console.warn('历史记录保存失败:', e)
+							}
+						}
 					} catch (err) {
 						console.error(`压缩 ${file.name} 失败:`, err)
 					}
@@ -143,7 +221,7 @@ export default function ToolCompressPage() {
 				setCompressing(false)
 			}
 		},
-		[format, quality, maxWidth, pngColors],
+		[format, quality, maxWidth, pngColors, hasToken, userId],
 	)
 
 	const handleDrop = useCallback(
@@ -174,10 +252,49 @@ export default function ToolCompressPage() {
 		})
 	}
 
+	/** 从历史记录下载 */
+	const handleHistoryDownload = (entry: CompressHistoryEntry) => {
+		const url = URL.createObjectURL(entry.blob)
+		const a = document.createElement('a')
+		a.href = url
+		const baseName = entry.name.replace(/\.[^.]+$/, '')
+		a.download = `${baseName}_compressed${getExtFromFormat(entry.format)}`
+		a.click()
+		URL.revokeObjectURL(url)
+	}
+
+	/** 上传到图床 */
+	const handleUploadToHost = useCallback(async (entry: CompressHistoryEntry) => {
+		setUploadingId(entry.id)
+		try {
+			const ext = getExtFromFormat(entry.format)
+			const baseName = entry.name.replace(/\.[^.]+$/, '')
+			const file = new File([entry.blob], `${baseName}_compressed${ext}`, {
+				type: entry.blob.type || entry.format,
+			})
+			const res = await uploadImages([file])
+			if (res.success && res.data && res.data.length > 0) {
+				const cdnUrl = res.data[0].cdnUrl
+				try {
+					await navigator.clipboard.writeText(cdnUrl)
+					toast.success('已上传到图床并复制链接')
+				} catch {
+					toast.success(`已上传到图床: ${cdnUrl}`)
+				}
+			} else {
+				toast.error(res.message || '上传失败')
+			}
+		} catch (err: any) {
+			toast.error(err?.response?.data?.message || '上传图床失败')
+		} finally {
+			setUploadingId(null)
+		}
+	}, [])
+
 	const isPng = format === 'image/png'
 
 	return (
-		<ToolsLayout currentPath="/briar-display/tools/compress" title="图片压缩">
+		<ToolsLayout currentPath="/briar-display/tools/compress">
 			<div className="space-y-6">
 				{/* 设置面板 */}
 				<Card>
@@ -338,9 +455,11 @@ export default function ToolCompressPage() {
 										</div>
 
 										<div className="flex items-center gap-3 text-sm">
-											<span className="text-muted-foreground">{formatSize(r.originalSize)}</span>
+											<span className="text-muted-foreground">
+												{formatSizeLocal(r.originalSize)}
+											</span>
 											<span className="text-muted-foreground">→</span>
-											<span className="font-medium">{formatSize(r.compressedSize)}</span>
+											<span className="font-medium">{formatSizeLocal(r.compressedSize)}</span>
 										</div>
 
 										<Badge
@@ -371,6 +490,106 @@ export default function ToolCompressPage() {
 							)
 						})}
 					</div>
+				)}
+
+				{/* 压缩历史（仅已登录用户，从 IndexedDB 读取） */}
+				{hasToken && history.length > 0 && (
+					<Card>
+						<CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
+							<CardTitle className="flex items-center gap-2 text-base">
+								<Clock className="h-4 w-4" />
+								压缩历史
+								<span className="text-sm font-normal text-muted-foreground">
+									({history.length})
+								</span>
+							</CardTitle>
+							<Button variant="ghost" size="sm" onClick={handleClearHistory} className="gap-1">
+								<Trash2 className="h-3.5 w-3.5" />
+								清空
+							</Button>
+						</CardHeader>
+						<CardContent>
+							<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+								{history.map((entry) => {
+									const ratio = compressRatio(entry.originalSize, entry.compressedSize)
+									const isBigger = entry.compressedSize > entry.originalSize
+									const isUploading = uploadingId === entry.id
+									return (
+										<div
+											key={entry.id}
+											className="group relative flex flex-col overflow-hidden rounded-md border bg-muted/30"
+										>
+											{/* 缩略图 */}
+											{entry.thumbnail ? (
+												<img
+													src={entry.thumbnail}
+													alt={entry.name}
+													className="aspect-square w-full object-contain bg-white p-1"
+												/>
+											) : (
+												<div className="flex aspect-square w-full items-center justify-center bg-muted">
+													<ImageIcon className="h-6 w-6 text-muted-foreground" />
+												</div>
+											)}
+
+											{/* 信息区 */}
+											<div className="space-y-0.5 p-2 text-xs">
+												<p className="truncate font-medium" title={entry.name}>
+													{entry.name}
+												</p>
+												<p className="text-muted-foreground">
+													{formatSize(entry.originalSize)} → {formatSize(entry.compressedSize)}
+												</p>
+												<p
+													className={
+														isBigger ? 'font-medium text-yellow-600' : 'font-medium text-green-600'
+													}
+												>
+													{isBigger ? `+${Math.abs(ratio)}%` : `-${ratio}%`}
+												</p>
+											</div>
+
+											{/* 操作按钮（hover 显示） */}
+											<div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+												<Button
+													variant="secondary"
+													size="sm"
+													className="h-7 w-7 p-0"
+													title="下载"
+													onClick={() => handleHistoryDownload(entry)}
+												>
+													<Download className="h-3.5 w-3.5" />
+												</Button>
+												<Button
+													variant="secondary"
+													size="sm"
+													className="h-7 w-7 p-0"
+													title="上传到图床"
+													disabled={isUploading}
+													onClick={() => handleUploadToHost(entry)}
+												>
+													{isUploading ? (
+														<Loader2 className="h-3.5 w-3.5 animate-spin" />
+													) : (
+														<CloudUpload className="h-3.5 w-3.5" />
+													)}
+												</Button>
+												<Button
+													variant="secondary"
+													size="sm"
+													className="h-7 w-7 p-0"
+													title="删除"
+													onClick={() => handleDeleteEntry(entry.id)}
+												>
+													<X className="h-3.5 w-3.5" />
+												</Button>
+											</div>
+										</div>
+									)
+								})}
+							</div>
+						</CardContent>
+					</Card>
 				)}
 			</div>
 		</ToolsLayout>
