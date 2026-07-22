@@ -76,11 +76,13 @@ chmod 600 "$HOME/.config/briar-skills/.env"
 | 批量添加 DiffNote | "把 review 意见发上去"、"添加行级评论" | [docs/review.md](docs/review.md) | `briar-mr-review.sh post-notes` |
 | 回复 Discussion | "回复这些评论"、"逐条回复"、"给评论写回复" | [docs/review.md](docs/review.md) | `briar-mr-review.sh reply` |
 | Review 代码 | "review"、"看看代码"、"code review" | [docs/review.md](docs/review.md) | `briar-mr-review.sh diff` |
-| 修复评论 | "修复"、"处理 review"、"修掉" | [docs/review.md](docs/review.md) | **代码修复 → [briar-fix](../../briar-fix/SKILL.md)** |
+| 修复评论 | "修复"、"处理 review"、"修掉" | [docs/review.md](docs/review.md) | 简单修复 → 轻量路径（见下方）；复杂修复 → [briar-fix](../../briar-fix/SKILL.md) |
 | 获取 Pipeline | "看看 pipeline"、"CI 状态"、"构建结果" | [docs/pipeline.md](docs/pipeline.md) | `briar-mr-pipeline.sh` |
 | 列出未回复评论 | "最近 MR 评论"、"待回复评论"、"pending" | [docs/pending.md](docs/pending.md) | `briar-mr-pending.sh [days] [project_filter]` |
 
-> **代码修复统一由 [briar-fix](../../briar-fix/SKILL.md) 处理**：按 comments 修复代码、Pipeline 失败后修复代码等场景，都通过 `briar-fix` 的 worktree 工作流完成。
+> **代码修复路径选择**：
+> - **轻量路径**（简单修复）：直接在 feat 分支修改 + commit + 逐条回复，无需 worktree。适用条件见下方「轻量修复路径」。
+> - **briar-fix 路径**（复杂修复）：通过 [briar-fix](../../briar-fix/SKILL.md) 的 worktree 工作流完成。适用于涉及业务逻辑变更、多文件联动、需要隔离验证的场景。
 
 **重要**：
 - 用户只说"MR 链接"而没有明确意图时，默认触发【获取评论】，**不要自动修复**；修复后不要自动回复 Discussion，需等用户明确要求。
@@ -159,6 +161,33 @@ briar-mr-review.sh find gitlab.qima-inc.com wsc-node/wsc-pc-shop hotfix/20260625
 | 其他 | `$HOME/projects` |
 
 如本地仓库不存在，先使用 `zan-gitlab` skill 拉取。
+
+---
+
+## 轻量修复路径
+
+对于简单的 review 修复，可跳过 briar-fix worktree，直接在 feat 分支完成修改、提交并回复。
+
+### 适用条件（需同时满足）
+
+- 变更文件 ≤ 3 个
+- 无业务逻辑变更（典型：版本锁定、删文件、改脚本命令、加注释、配置微调）
+- 无需额外构建/测试验证即可确认正确性
+
+### 流程
+
+1. 确认当前在 feat 分支（`git branch --show-current`）
+2. 直接修改文件
+3. `git add` + `git commit`（commit message 遵循仓库规范）
+4. 用 `briar-mr-review.sh reply` 逐条回复对应 discussion，说明修复内容
+5. 如用户要求，`git push`
+
+### 不适用场景（仍走 briar-fix）
+
+- Pipeline 失败后的修复（需要 CI 验证）
+- 涉及业务逻辑的代码修改
+- 变更文件 > 3 个或跨模块联动
+- 需要隔离环境进行回归验证
 
 ---
 
