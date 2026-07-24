@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Braces, Check, Copy, Download, FileUp, RotateCcw } from 'lucide-react'
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import JsonHistorySidebar from './JsonHistorySidebar'
 import JsonSearchDropdown from './JsonSearchDropdown'
 import ToolsLayout from './ToolsLayout'
@@ -388,7 +389,7 @@ export default function ToolJsonPage() {
 																}
 															: undefined
 													}
-													enableClipboard={false}
+													enableClipboard={() => toast.success('已复制')}
 													displayDataTypes={false}
 													displayObjectSize={false}
 												/>

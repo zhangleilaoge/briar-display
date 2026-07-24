@@ -349,3 +349,25 @@
 .wiki-editor-container .bn-side-menu:hover {
 	color: var(--wiki-link);
 }
+
+/* JSON 树状预览：复制图标容器高度归零，hover 显示时不撑高当前行（库内联 vertical-align: top 需覆盖） */
+.json-tree-container .copy-to-clipboard-container {
+	height: 0;
+	vertical-align: middle !important;
+}
+
+/* 图标在零高度容器内垂直居中（span 默认 inline 不支持 transform，需 inline-block；溢出可见但不影响行高） */
+.json-tree-container .copy-icon {
+	display: inline-block;
+	vertical-align: top !important;
+	transform: translateY(-50%);
+}
+
+/* 复制成功后的 ✔ 反馈隐藏（已有 sonner toast 提示）：✔ 文本和切换成的对勾图标都不显示 */
+.json-tree-container .copy-icon + span {
+	display: none;
+}
+
+.json-tree-container .copy-icon:has(+ span) {
+	display: none;
+}
