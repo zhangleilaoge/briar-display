@@ -181,7 +181,15 @@ function ImageGalleryPageInner() {
 			try {
 				const res = await uploadImages(valid)
 				if (res.success && res.data) {
-					toast.success(`已上传 ${res.data.length} 张图片`)
+					const deduped = res.data.filter((item: any) => item.deduplicated).length
+					const uploaded = res.data.length - deduped
+					if (deduped > 0 && uploaded > 0) {
+						toast.success(`已上传 ${uploaded} 张，${deduped} 张已存在（自动去重）`)
+					} else if (deduped > 0) {
+						toast.info(`${deduped} 张图片已存在，无需重复上传`)
+					} else {
+						toast.success(`已上传 ${uploaded} 张图片`)
+					}
 					setUploadOpen(false)
 					// 刷新列表
 					pageRef.current = 1

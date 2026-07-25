@@ -12,6 +12,7 @@ export interface ImageRecord {
 	height: number | null
 	cdnUrl: string
 	thumbnailUrl: string | null
+	fileHash: string | null
 	deletedAt: Date | null
 	createdAt: Date
 }
@@ -27,6 +28,7 @@ interface ImageRow {
 	height: number | null
 	cdn_url: string
 	thumbnail_url: string | null
+	file_hash: string | null
 	deleted_at: Date | null
 	created_at: Date
 }
@@ -42,6 +44,7 @@ const mapRow = (row: ImageRow): ImageRecord => ({
 	height: row.height,
 	cdnUrl: row.cdn_url,
 	thumbnailUrl: row.thumbnail_url,
+	fileHash: row.file_hash,
 	deletedAt: row.deleted_at,
 	createdAt: row.created_at,
 })
@@ -57,11 +60,12 @@ export const imageDal = {
 		height?: number
 		cdnUrl: string
 		thumbnailUrl?: string
+		fileHash?: string
 	}): Promise<ImageRecord> {
 		const id = generateId()
 		await execute(
-			`INSERT INTO images (id, user_id, original_name, filename, mime_type, size, width, height, cdn_url, thumbnail_url)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO images (id, user_id, original_name, filename, mime_type, size, width, height, cdn_url, thumbnail_url, file_hash)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			[
 				id,
 				data.userId,
@@ -73,6 +77,7 @@ export const imageDal = {
 				data.height ?? null,
 				data.cdnUrl,
 				data.thumbnailUrl ?? null,
+				data.fileHash ?? null,
 			],
 		)
 		const record = await imageDal.findById(id)
@@ -84,6 +89,14 @@ export const imageDal = {
 		const row = await queryOne<ImageRow>(
 			'SELECT * FROM images WHERE id = ? AND deleted_at IS NULL',
 			[id],
+		)
+		return row ? mapRow(row) : null
+	},
+
+	async findByUserAndHash(userId: string, fileHash: string): Promise<ImageRecord | null> {
+		const row = await queryOne<ImageRow>(
+			'SELECT * FROM images WHERE user_id = ? AND file_hash = ? AND deleted_at IS NULL LIMIT 1',
+			[userId, fileHash],
 		)
 		return row ? mapRow(row) : null
 	},

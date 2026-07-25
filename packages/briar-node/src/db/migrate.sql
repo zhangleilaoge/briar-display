@@ -96,6 +96,10 @@ CREATE TABLE IF NOT EXISTS wiki_change_requests (
   FOREIGN KEY (reviewer_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Wiki 变更请求表';
 
+-- 10. 图床去重：images 表新增 file_hash 字段
+ALTER TABLE images ADD COLUMN IF NOT EXISTS file_hash VARCHAR(64) COMMENT 'SHA-256 内容哈希（用于去重）' AFTER thumbnail_url;
+ALTER TABLE images ADD INDEX IF NOT EXISTS idx_user_hash (user_id, file_hash);
+
 -- 9. 请求日志表
 CREATE TABLE IF NOT EXISTS request_logs (
   id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
