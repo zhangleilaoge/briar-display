@@ -19,3 +19,34 @@ SET @sql = IF(@idx_exists = 0, 'ALTER TABLE images ADD INDEX idx_user_hash (user
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- SQL 控制台审计日志表
+CREATE TABLE IF NOT EXISTS sql_audit_logs (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  user_id VARCHAR(36) NOT NULL COMMENT '执行者 ID',
+  sql_text TEXT NOT NULL COMMENT '执行的 SQL 语句',
+  sql_type ENUM('SELECT','INSERT','UPDATE','DELETE','DDL','OTHER') NOT NULL COMMENT '语句类型',
+  status ENUM('success','error','timeout','blocked') NOT NULL COMMENT '执行状态',
+  affected_rows INT COMMENT '影响行数',
+  row_count INT COMMENT '返回行数（SELECT）',
+  duration_ms INT COMMENT '执行耗时（ms）',
+  error_message TEXT COMMENT '错误信息',
+  ip VARCHAR(45) COMMENT '客户端 IP',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '执行时间',
+  INDEX idx_user_id (user_id),
+  INDEX idx_created_at (created_at),
+  INDEX idx_sql_type (sql_type),
+  INDEX idx_status (status),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SQL 控制台审计日志';
+
+-- SQL 控制台权限初始化
+INSERT INTO permissions (id, code, name, type, module) VALUES
+  ('perm-page-sql-console', 'page:sql-console', '访问 SQL 控制台', 'page', 'admin'),
+  ('perm-admin-sql-execute', 'admin:sql:execute', '执行 SQL', 'api', 'admin')
+ON DUPLICATE KEY UPDATE name=name;
+
+-- 超级管理员自动获得新权限
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT 'role-admin', id FROM permissions WHERE code IN ('page:sql-console', 'admin:sql:execute')
+ON DUPLICATE KEY UPDATE role_id=role_id;

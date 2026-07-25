@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { Radio, Shield, Users } from 'lucide-react'
+import { Database, Radio, Shield, Users } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 interface NavItem {
@@ -35,6 +35,11 @@ const NAV_ITEMS: NavItem[] = [
 		label: '天网日志',
 		href: '/briar-display/admin/logs',
 		icon: <Radio className="h-4 w-4" />,
+	},
+	{
+		label: 'SQL 控制台',
+		href: '/briar-display/admin/sql',
+		icon: <Database className="h-4 w-4" />,
 	},
 ]
 
