@@ -344,7 +344,13 @@ sqlConsoleRoutes.get('/schema', async (c) => {
 			columns: tableMap.get(t.TABLE_NAME) || [],
 		}))
 
-		return c.json<ApiResponse>({ success: true, data: schema })
+		return c.json<ApiResponse>({
+			success: true,
+			data: {
+				database: DatabaseConfig.database,
+				tables: schema,
+			},
+		})
 	} catch (err: any) {
 		return c.json<ApiResponse>(
 			{ success: false, message: err.message || '获取表结构失败' },
