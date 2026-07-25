@@ -47,6 +47,11 @@ interface SchemaTable {
 	columns: SchemaColumn[]
 }
 
+interface SchemaResponse {
+	database: string
+	tables: SchemaTable[]
+}
+
 interface QueryResult {
 	type: 'query' | 'execute'
 	columns?: { name: string; type: number }[]
@@ -107,6 +112,7 @@ function SqlConsoleContent() {
 
 	// Schema
 	const [schema, setSchema] = useState<SchemaTable[]>([])
+	const [databaseName, setDatabaseName] = useState<string>('')
 	const [schemaLoading, setSchemaLoading] = useState(false)
 	const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set())
 
@@ -125,7 +131,9 @@ function SqlConsoleContent() {
 		try {
 			const res = await apiClient.get('/admin/sql/schema')
 			if (res.data.success) {
-				setSchema(res.data.data)
+				const data = res.data.data as SchemaResponse
+				setDatabaseName(data.database)
+				setSchema(data.tables)
 			}
 		} catch {
 			// 静默失败
@@ -312,6 +320,7 @@ function SqlConsoleContent() {
 						{(
 							[
 								{ key: 'result', label: '执行结果', icon: Table2 },
+								{ key: 'schema', label: '表结构', icon: Database },
 								{ key: 'history', label: '执行历史', icon: History },
 							] as const
 						).map(({ key, label, icon: Icon }) => (
@@ -408,71 +417,32 @@ function SqlConsoleContent() {
 							)}
 						</div>
 					)}
+
+					{/* Schema 区域（小屏通过 tab 查看） */}
+					{activeTab === 'schema' && (
+						<div className="min-h-[200px]">
+							<SchemaPanel
+								databaseName={databaseName}
+								schema={schema}
+								schemaLoading={schemaLoading}
+								expandedTables={expandedTables}
+								onToggleTable={toggleTable}
+								onInsertTableName={insertTableName}
+							/>
+						</div>
+					)}
 				</div>
 
 				{/* 右侧：Schema 面板 */}
 				<div className="hidden w-[260px] shrink-0 flex-col rounded-lg border lg:flex">
-					<div className="flex items-center gap-2 border-b px-3 py-2 text-sm font-medium">
-						<Database className="h-3.5 w-3.5" />
-						表结构
-						{schemaLoading && (
-							<Clock className="ml-auto h-3 w-3 animate-spin text-muted-foreground" />
-						)}
-					</div>
-					<div className="flex-1 overflow-auto p-2">
-						{schema.map((table) => (
-							<div key={table.name} className="mb-0.5">
-								<button
-									type="button"
-									className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-xs hover:bg-muted"
-									onClick={() => toggleTable(table.name)}
-								>
-									{expandedTables.has(table.name) ? (
-										<ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-									) : (
-										<ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-									)}
-									<span className="font-mono font-medium">{table.name}</span>
-									<span className="ml-auto text-[10px] text-muted-foreground">
-										{table.rowCount}
-									</span>
-								</button>
-								{expandedTables.has(table.name) && (
-									<div className="ml-5 border-l pl-2">
-										{table.comment && (
-											<p className="px-1 py-0.5 text-[10px] text-muted-foreground">
-												{table.comment}
-											</p>
-										)}
-										{table.columns.map((col) => (
-											<button
-												key={col.name}
-												type="button"
-												className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-left text-[11px] hover:bg-muted"
-												onClick={() => insertTableName(col.name)}
-												title={`${col.type}${col.nullable ? ' NULL' : ' NOT NULL'}${col.comment ? ` — ${col.comment}` : ''}`}
-											>
-												<span
-													className={cn(
-														'font-mono',
-														col.key === 'PRI' && 'font-semibold text-amber-600',
-													)}
-												>
-													{col.name}
-												</span>
-												<span className="ml-auto text-[10px] text-muted-foreground">
-													{col.type}
-												</span>
-											</button>
-										))}
-									</div>
-								)}
-							</div>
-						))}
-						{schema.length === 0 && !schemaLoading && (
-							<p className="px-2 py-4 text-center text-xs text-muted-foreground">暂无表信息</p>
-						)}
-					</div>
+					<SchemaPanel
+						databaseName={databaseName}
+						schema={schema}
+						schemaLoading={schemaLoading}
+						expandedTables={expandedTables}
+						onToggleTable={toggleTable}
+						onInsertTableName={insertTableName}
+					/>
 				</div>
 			</div>
 
@@ -506,6 +476,82 @@ function SqlConsoleContent() {
 }
 
 // ==================== 结果展示 ====================
+
+interface SchemaPanelProps {
+	databaseName: string
+	schema: SchemaTable[]
+	schemaLoading: boolean
+	expandedTables: Set<string>
+	onToggleTable: (name: string) => void
+	onInsertTableName: (name: string) => void
+}
+
+function SchemaPanel({
+	databaseName,
+	schema,
+	schemaLoading,
+	expandedTables,
+	onToggleTable,
+	onInsertTableName,
+}: SchemaPanelProps) {
+	return (
+		<div className="flex h-full flex-col">
+			<div className="flex items-center gap-2 border-b px-3 py-2 text-sm font-medium">
+				<Database className="h-3.5 w-3.5" />
+				{databaseName ? `${databaseName} · 表结构` : '表结构'}
+				{schemaLoading && <Clock className="ml-auto h-3 w-3 animate-spin text-muted-foreground" />}
+			</div>
+			<div className="flex-1 overflow-auto p-2">
+				{schema.map((table) => (
+					<div key={table.name} className="mb-0.5">
+						<button
+							type="button"
+							className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-xs hover:bg-muted"
+							onClick={() => onToggleTable(table.name)}
+						>
+							{expandedTables.has(table.name) ? (
+								<ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+							) : (
+								<ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+							)}
+							<span className="font-mono font-medium">{table.name}</span>
+							<span className="ml-auto text-[10px] text-muted-foreground">{table.rowCount}</span>
+						</button>
+						{expandedTables.has(table.name) && (
+							<div className="ml-5 border-l pl-2">
+								{table.comment && (
+									<p className="px-1 py-0.5 text-[10px] text-muted-foreground">{table.comment}</p>
+								)}
+								{table.columns.map((col) => (
+									<button
+										key={col.name}
+										type="button"
+										className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-left text-[11px] hover:bg-muted"
+										onClick={() => onInsertTableName(col.name)}
+										title={`${col.type}${col.nullable ? ' NULL' : ' NOT NULL'}${col.comment ? ` — ${col.comment}` : ''}`}
+									>
+										<span
+											className={cn(
+												'font-mono',
+												col.key === 'PRI' && 'font-semibold text-amber-600',
+											)}
+										>
+											{col.name}
+										</span>
+										<span className="ml-auto text-[10px] text-muted-foreground">{col.type}</span>
+									</button>
+								))}
+							</div>
+						)}
+					</div>
+				))}
+				{schema.length === 0 && !schemaLoading && (
+					<p className="px-2 py-4 text-center text-xs text-muted-foreground">暂无表信息</p>
+				)}
+			</div>
+		</div>
+	)
+}
 
 function ResultView({ result }: { result: QueryResult }) {
 	if (result.type === 'execute') {
