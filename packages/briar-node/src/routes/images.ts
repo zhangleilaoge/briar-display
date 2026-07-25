@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type { ApiResponse } from '@briar/shared'
 import { HTTP_STATUS } from '@briar/shared'
 import { generateId } from '@briar/shared'
@@ -94,10 +95,30 @@ imageRoutes.post('/upload', async (c) => {
 		}
 
 		const ext = getExt(file.type)
+		const buffer = Buffer.from(await file.arrayBuffer())
+
+		// 计算内容哈希，用于去重
+		const fileHash = createHash('sha256').update(buffer).digest('hex')
+
+		// 检查同一用户是否已上传过相同内容
+		const existing = await imageDal.findByUserAndHash(user.id, fileHash)
+		if (existing) {
+			results.push({
+				id: existing.id,
+				originalName: existing.originalName,
+				cdnUrl: existing.cdnUrl,
+				thumbnailUrl: existing.thumbnailUrl,
+				size: existing.size,
+				mimeType: existing.mimeType,
+				createdAt: existing.createdAt,
+				deduplicated: true,
+			})
+			continue
+		}
+
 		const uuid = generateId()
 		const cosKey = `images/${user.id}/${uuid}${ext}`
 
-		const buffer = Buffer.from(await file.arrayBuffer())
 		const cdnUrl = await cosService.uploadBuffer(buffer, cosKey, file.type)
 		const thumbnailUrl = cosService.getThumbnailUrl(cdnUrl)
 
@@ -109,6 +130,7 @@ imageRoutes.post('/upload', async (c) => {
 			size: file.size,
 			cdnUrl,
 			thumbnailUrl,
+			fileHash,
 		})
 
 		results.push({
@@ -119,6 +141,7 @@ imageRoutes.post('/upload', async (c) => {
 			size: record.size,
 			mimeType: record.mimeType,
 			createdAt: record.createdAt,
+			deduplicated: false,
 		})
 	}
 

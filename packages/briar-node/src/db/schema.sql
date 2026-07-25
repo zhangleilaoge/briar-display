@@ -455,9 +455,11 @@ CREATE TABLE IF NOT EXISTS images (
   height INT UNSIGNED COMMENT '图片高度',
   cdn_url VARCHAR(500) NOT NULL COMMENT 'CDN 完整 URL',
   thumbnail_url VARCHAR(500) COMMENT '缩略图 URL',
+  file_hash VARCHAR(64) COMMENT 'SHA-256 内容哈希（用于去重）',
   deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
   INDEX idx_user_id (user_id),
   INDEX idx_created_at (created_at),
+  INDEX idx_user_hash (user_id, file_hash),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='图床图片表';
