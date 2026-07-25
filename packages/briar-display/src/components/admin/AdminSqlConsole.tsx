@@ -74,27 +74,6 @@ interface HistoryItem {
 // ==================== 组件 ====================
 
 export default function AdminSqlConsole() {
-	const { loading, denied } = useRequirePermission('page:sql-console')
-
-	if (loading) {
-		return (
-			<AdminLayout currentPath="/briar-display/admin/sql">
-				<div className="flex h-64 items-center justify-center text-muted-foreground">加载中...</div>
-			</AdminLayout>
-		)
-	}
-
-	if (denied) {
-		return (
-			<AdminLayout currentPath="/briar-display/admin/sql">
-				<div className="flex h-64 flex-col items-center justify-center gap-2 text-muted-foreground">
-					<Shield className="h-8 w-8" />
-					<p>无权访问 SQL 控制台</p>
-				</div>
-			</AdminLayout>
-		)
-	}
-
 	return (
 		<AdminLayout currentPath="/briar-display/admin/sql">
 			<SqlConsoleContent />
@@ -103,6 +82,22 @@ export default function AdminSqlConsole() {
 }
 
 function SqlConsoleContent() {
+	const { loading, denied } = useRequirePermission('page:sql-console')
+
+	if (loading) {
+		return (
+			<div className="flex h-64 items-center justify-center text-muted-foreground">加载中...</div>
+		)
+	}
+
+	if (denied) {
+		return (
+			<div className="flex h-64 flex-col items-center justify-center gap-2 text-muted-foreground">
+				<Shield className="h-8 w-8" />
+				<p>无权访问 SQL 控制台</p>
+			</div>
+		)
+	}
 	const [sqlText, setSqlText] = useState('')
 	const [readOnly, setReadOnly] = useState(true)
 	const [executing, setExecuting] = useState(false)
