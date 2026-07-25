@@ -13,7 +13,7 @@
 
 直接双击打开 `.app` 或安装 `.dmg` / `.msi`，无需安装 Bun 或 Python。
 
-> 应用体积约 650MB（主要来自 PyTorch 虚拟环境），这是「零配置」的代价。
+> 应用内嵌资源约 505MB（主要来自 PyTorch 虚拟环境），这是「零配置」的代价。Windows 安装包压缩后约 190MB。
 
 ## 开发
 
@@ -56,14 +56,23 @@ npm run build:mac-intel
 
 ### Windows
 
-必须在 Windows 环境构建：
+必须在 Windows 环境构建，依赖：
+
+- [Rust](https://www.rust-lang.org/tools/install)
+- [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/?q=build+tools)（勾选「使用 C++ 的桌面开发」+ Windows SDK）
 
 ```bash
 cd desktop
-# 先下载 Windows 版 Bun 放到 src-tauri/binaries/bun-x86_64-pc-windows-msvc.exe
-./scripts/prepare-embedded.sh x86_64-pc-windows-msvc
-npm run build:windows
+# 自动准备内嵌环境、调用 MSVC、打包并复制 MSI 到桌面
+./build.sh windows
 ```
+
+产物：
+- `desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/施工方案比对_1.0.0_x64_en-US.msi`
+- `desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/施工方案比对_1.0.0_x64-setup.exe`
+- 同时自动复制 `.msi` 到当前用户桌面
+
+> Windows 版本运行后，默认把比对结果输出到用户桌面（`bid_compare_result_<时间戳>` 文件夹），macOS 保持下载目录不变。
 
 ## 快捷入口
 
