@@ -10,6 +10,7 @@ export const PERMISSIONS = {
 	PAGE_WIKI: 'page:wiki',
 	PAGE_ADMIN: 'page:admin',
 	PAGE_BUSINESS: 'page:business',
+	PAGE_SQL_CONSOLE: 'page:sql-console',
 
 	// Wiki - 页面操作
 	WIKI_PAGE_CREATE: 'wiki:page:create',
@@ -57,6 +58,7 @@ export const PERMISSIONS = {
 	ADMIN_PERMISSION_MANAGE: 'admin:permission:manage',
 	ADMIN_USER_MANAGE: 'admin:user:manage',
 	ADMIN_USER_ROLE_ASSIGN: 'admin:user-role:assign',
+	ADMIN_SQL_EXECUTE: 'admin:sql:execute',
 } as const
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS]
@@ -98,6 +100,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
 			{ code: PERMISSIONS.PAGE_WIKI, name: '访问 Wiki', type: 'page' },
 			{ code: PERMISSIONS.PAGE_ADMIN, name: '访问管理后台', type: 'page' },
 			{ code: PERMISSIONS.PAGE_BUSINESS, name: '访问业务页面', type: 'page' },
+			{ code: PERMISSIONS.PAGE_SQL_CONSOLE, name: '访问 SQL 控制台', type: 'page' },
 		],
 	},
 	{
@@ -173,6 +176,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
 			{ code: PERMISSIONS.ADMIN_PERMISSION_MANAGE, name: '管理权限', type: 'api' },
 			{ code: PERMISSIONS.ADMIN_USER_MANAGE, name: '管理用户', type: 'api' },
 			{ code: PERMISSIONS.ADMIN_USER_ROLE_ASSIGN, name: '分配用户角色', type: 'api' },
+			{ code: PERMISSIONS.ADMIN_SQL_EXECUTE, name: '执行 SQL', type: 'api' },
 		],
 	},
 ]

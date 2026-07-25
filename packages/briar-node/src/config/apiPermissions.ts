@@ -31,6 +31,9 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	'DELETE /api/admin/users/:id/roles': PERMISSIONS.ADMIN_USER_ROLE_ASSIGN,
 	'PUT /api/admin/users/:id': PERMISSIONS.ADMIN_USER_MANAGE,
 
+	// ==================== SQL Console ====================
+	'POST /api/admin/sql/execute': PERMISSIONS.ADMIN_SQL_EXECUTE,
+
 	// ==================== Cert ====================
 	'POST /api/cert/renew': PERMISSIONS.ADMIN_ROLE_MANAGE,
 

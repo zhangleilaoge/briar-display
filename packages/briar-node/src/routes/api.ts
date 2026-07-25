@@ -5,6 +5,7 @@ import certRoutes from './cert'
 import imageRoutes from './images'
 import logRoutes from './log'
 import readmeAiRoutes from './readmeAi'
+import sqlConsoleRoutes from './sqlConsole'
 import userRoutes from './users'
 import versionRoutes from './version'
 import wikiRoutes from './wiki'
@@ -14,6 +15,7 @@ const api = new Hono()
 // 注册路由
 api.route('/auth', authRoutes)
 api.route('/admin', adminRoutes)
+api.route('/admin/sql', sqlConsoleRoutes)
 api.route('/cert', certRoutes)
 api.route('/wiki', wikiRoutes)
 api.route('/readme-ai', readmeAiRoutes)

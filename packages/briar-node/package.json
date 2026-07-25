@@ -10,6 +10,7 @@
 		"start": "node dist/index.js",
 		"clean": "rm -rf dist",
 		"db:setup": "tsx src/db/setup.ts",
+		"db:migrate": "tsx src/db/migrate.ts",
 		"upload:cdn": "tsx scripts/upload-cdn.ts",
 		"typecheck": "tsc --noEmit"
 	},
