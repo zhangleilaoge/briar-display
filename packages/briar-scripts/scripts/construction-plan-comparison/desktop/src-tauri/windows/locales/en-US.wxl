@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="en-US" Codepage="936" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="TauriLanguage">1033</String>
+  <String Id="TauriCodepage">936</String>
+  <String Id="LaunchApp">Launch 施工方案比对</String>
+  <String Id="DowngradeErrorMessage">A newer version of 施工方案比对 is already installed.</String>
+  <String Id="PathEnvVarFeature">Add the install location of the 施工方案比对 executable to the PATH system environment variable. This allows the 施工方案比对 executable to be called from any location.</String>
+  <String Id="InstallAppFeature">Installs 施工方案比对.</String>
+</WixLocalization>

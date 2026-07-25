@@ -7,33 +7,63 @@ use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
-/// 工具资源目录（内嵌在 .app 的 Resources/tool 下）
+/// 工具资源目录（内嵌在 app bundle / 安装目录的 resources/tool 下）
 /// 用 current_exe 推导，避免 app.path().resource_dir() 在部分环境卡住
 fn tool_dir() -> Result<PathBuf, String> {
 	let exe = std::env::current_exe().map_err(|e| format!("无法获取可执行文件路径: {}", e))?;
-	let resources_dir = exe
-		.parent()
-		.ok_or("无法获取 MacOS 目录")?
+	let exe_dir = exe.parent().ok_or("无法获取可执行文件目录")?;
+
+	#[cfg(target_os = "macos")]
+	let resources_dir = exe_dir
 		.parent()
 		.ok_or("无法获取 Contents 目录")?
 		.join("Resources");
-	Ok(resources_dir.join("tool"))
+
+	#[cfg(target_os = "windows")]
+	let resources_dir = exe_dir.join("tool");
+
+	#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+	let resources_dir = exe_dir.join("resources");
+
+	let prod = resources_dir.join("tool");
+	if prod.exists() {
+		return Ok(prod);
+	}
+
+	// 开发/测试回退：从 src-tauri/resources/tool 读取
+	let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+	let dev = manifest_dir.join("resources").join("tool");
+	if dev.exists() {
+		return Ok(dev);
+	}
+
+	Err(format!(
+		"未找到工具资源目录，已尝试：{} 和 {}",
+		prod.display(),
+		dev.display()
+	))
 }
 
-/// Bun sidecar 路径
+/// Bun sidecar 路径（仅用于环境检查，运行时仍走 Tauri sidecar API）
 fn bun_sidecar_path() -> Result<PathBuf, String> {
 	let exe = std::env::current_exe().map_err(|e| format!("无法获取可执行文件路径: {}", e))?;
-	let macos_dir = exe.parent().ok_or("无法获取 MacOS 目录")?;
-	Ok(macos_dir.join("bun"))
+	let exe_dir = exe.parent().ok_or("无法获取可执行文件目录")?;
+
+	#[cfg(target_os = "windows")]
+	return Ok(exe_dir.join("bun.exe"));
+
+	#[cfg(not(target_os = "windows"))]
+	return Ok(exe_dir.join("bun"));
 }
 
 /// 检查环境：内嵌 Bun sidecar 和 Python 虚拟环境
 #[tauri::command]
 fn check_environment() -> Result<(bool, String), String> {
 	let tool = tool_dir()?;
-	let venv_python = tool.join("python_encoder").join(".venv").join("bin").join("python");
 	#[cfg(target_os = "windows")]
 	let venv_python = tool.join("python_encoder").join(".venv").join("Scripts").join("python.exe");
+	#[cfg(not(target_os = "windows"))]
+	let venv_python = tool.join("python_encoder").join(".venv").join("bin").join("python");
 
 	let bun_path = bun_sidecar_path()?;
 	let mut messages = Vec::new();
@@ -81,10 +111,14 @@ async fn run_comparison(
 	let tool = tool_dir()?;
 	let script = tool.join("src").join("index.ts");
 
-	// 在用户下载目录创建输出目录
-	let download_dir = dirs::download_dir().unwrap_or_else(|| PathBuf::from("."));
+	// Windows 默认输出到桌面，macOS 保持下载目录不变
+	#[cfg(target_os = "windows")]
+	let base_dir = dirs::desktop_dir().unwrap_or_else(|| PathBuf::from("."));
+	#[cfg(not(target_os = "windows"))]
+	let base_dir = dirs::download_dir().unwrap_or_else(|| PathBuf::from("."));
+
 	let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
-	let out = download_dir.join(format!("bid_compare_result_{}", timestamp));
+	let out = base_dir.join(format!("bid_compare_result_{}", timestamp));
 	std::fs::create_dir_all(&out).map_err(|e| format!("创建输出目录失败: {}", e))?;
 
 	let mut args = vec![
