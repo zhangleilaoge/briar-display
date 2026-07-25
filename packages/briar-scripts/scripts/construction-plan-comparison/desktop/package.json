@@ -1,0 +1,21 @@
+{
+	"name": "bid-compare-desktop",
+	"version": "1.0.0",
+	"description": "施工方案比对工具桌面端",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"dev": "tauri dev",
+		"build": "tauri build",
+		"build:mac-intel": "tauri build --target x86_64-apple-darwin",
+		"build:mac-silicon": "tauri build --target aarch64-apple-darwin",
+		"build:windows": "tauri build --target x86_64-pc-windows-msvc",
+		"tauri": "tauri"
+	},
+	"devDependencies": {
+		"@tauri-apps/cli": "^2.0.0"
+	},
+	"dependencies": {
+		"@tauri-apps/plugin-dialog": "^2.7.2"
+	}
+}
