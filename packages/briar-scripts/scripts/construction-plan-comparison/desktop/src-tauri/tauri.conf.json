@@ -1,0 +1,48 @@
+{
+	"$schema": "https://schema.tauri.app/config/2",
+	"productName": "施工方案比对",
+	"version": "1.0.0",
+	"identifier": "site.stardew.bid-compare-desktop",
+	"build": {
+		"beforeDevCommand": "python3 -m http.server 1420",
+		"beforeBuildCommand": "",
+		"devUrl": "http://localhost:1420",
+		"frontendDist": "../src"
+	},
+	"app": {
+		"withGlobalTauri": true,
+		"windows": [
+			{
+				"title": "施工方案比对工具",
+				"width": 900,
+				"height": 700,
+				"minWidth": 700,
+				"minHeight": 500,
+				"resizable": true,
+				"fullscreen": false,
+				"decorations": true,
+				"transparent": false,
+				"center": true
+			}
+		],
+		"security": {
+			"csp": null,
+			"capabilities": ["default"]
+		}
+	},
+	"bundle": {
+		"active": true,
+		"targets": ["app", "dmg", "msi"],
+		"icon": [
+			"icons/32x32.png",
+			"icons/128x128.png",
+			"icons/128x128@2x.png",
+			"icons/icon.icns",
+			"icons/icon.ico"
+		],
+		"resources": {
+			"resources/tool": "tool"
+		},
+		"externalBin": ["binaries/bun"]
+	}
+}

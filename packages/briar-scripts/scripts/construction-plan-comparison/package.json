@@ -12,7 +12,11 @@
 		"clean": "rm -rf bid_compare_result .compare-cache",
 		"test": "bun test",
 		"check": "bunx tsc --noEmit && bunx @biomejs/biome check src/",
-		"benchmark": "bun src/benchmark.ts"
+		"benchmark": "bun src/benchmark.ts",
+		"desktop:build": "cd desktop && ./build.sh",
+		"desktop:build:mac-intel": "cd desktop && ./build.sh mac-intel",
+		"desktop:build:windows": "cd desktop && ./build.sh windows",
+		"desktop:bump": "cd desktop && ./scripts/bump-version.sh patch"
 	},
 	"dependencies": {
 		"@msgpack/msgpack": "^3.1.3",

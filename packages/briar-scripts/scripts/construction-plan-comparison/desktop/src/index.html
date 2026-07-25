@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>施工方案比对工具</title>
+		<link rel="stylesheet" href="style.css" />
+	</head>
+	<body>
+		<div class="container">
+			<header>
+				<div class="title-row">
+					<h1>施工方案比对工具</h1>
+					<span id="version" class="version">v1.0.0</span>
+				</div>
+				<p class="subtitle">拖拽多份 PDF 施工方案，生成 all-in-one 比对报告</p>
+			</header>
+
+			<section class="env-check">
+				<div class="env-header">
+					<h2>环境检查</h2>
+					<button id="recheck-env" type="button">重新检查</button>
+				</div>
+				<pre id="env-result" class="env-result">正在检查...</pre>
+			</section>
+
+			<section class="drop-zone" id="drop-zone">
+				<div class="drop-hint">
+					<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+						<polyline points="17 8 12 3 7 8" />
+						<line x1="12" y1="3" x2="12" y2="15" />
+					</svg>
+					<p>拖拽 PDF 文件到此处</p>
+					<p class="small">或点击选择文件（按住 Ctrl/Cmd 多选）</p>
+				</div>
+				<input type="file" id="file-input" accept=".pdf" multiple />
+			</section>
+
+			<section class="file-list" id="file-list-section" style="display: none;">
+				<h2>待比对文件</h2>
+				<ul id="file-list"></ul>
+				<div class="actions">
+					<button id="clear-files" type="button" class="secondary">清空</button>
+					<button id="run-compare" type="button" class="primary" disabled>开始比对</button>
+				</div>
+			</section>
+
+			<section class="log-section" id="log-section" style="display: none;">
+				<h2>运行日志</h2>
+				<pre id="log-output"></pre>
+			</section>
+
+			<section class="result-section" id="result-section" style="display: none;">
+				<h2>比对完成</h2>
+				<p>报告已生成，点击下方按钮打开。</p>
+				<button id="open-result" type="button" class="primary">打开 all-in-one 报告</button>
+			</section>
+		</div>
+
+		<script src="app.js"></script>
+	</body>
+</html>
