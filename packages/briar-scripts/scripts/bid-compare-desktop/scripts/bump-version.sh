@@ -65,7 +65,15 @@ rm -f src-tauri/tauri.conf.json.bak
 sed -i.bak "s/\"version\": \".*\"/\"version\": \"${NEW_VERSION}\"/" package.json
 rm -f package.json.bak
 
+# 更新 package-lock.json（根版本和 packages[""].version）
+if [ -f package-lock.json ]; then
+	sed -i.bak "s/^  \"version\": \".*\"/  \"version\": \"${NEW_VERSION}\"/" package-lock.json
+	sed -i.bak "s/      \"version\": \".*\"/      \"version\": \"${NEW_VERSION}\"/" package-lock.json
+	rm -f package-lock.json.bak
+fi
+
 echo "已同步更新:"
 echo "  - src-tauri/Cargo.toml"
 echo "  - src-tauri/tauri.conf.json"
 echo "  - package.json"
+echo "  - package-lock.json"

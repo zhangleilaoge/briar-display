@@ -7,7 +7,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DESKTOP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-TOOL_DIR="$(cd "${DESKTOP_DIR}/.." && pwd)"
+TOOL_DIR="$(cd "${DESKTOP_DIR}/../bid-compare" && pwd)"
 
 # 解析参数
 FORCE=false
