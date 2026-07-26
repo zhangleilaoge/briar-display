@@ -68,6 +68,42 @@ TOOL_RES_DIR="${DESKTOP_DIR}/src-tauri/resources/tool"
 VENV_DIR="${TOOL_RES_DIR}/python_encoder/.venv"
 NODE_MODULES_DIR="${TOOL_RES_DIR}/node_modules"
 
+# macOS: 修复 Python venv 在 app bundle 中的 rpath
+# Tauri 打包资源时会解引用 symlinks，导致 venv/bin/python 变成真实二进制。
+# 该二进制依赖 @executable_path/../Python3，因此需要在 .venv 根目录提供 Python3。
+# 这里把真实 Python 解释器复制到 .venv/Python3，确保打包后 dyld 能找到它。
+fix_macos_python_rpath() {
+	if [[ "$OSTYPE" != "darwin"* ]]; then
+		return 0
+	fi
+	local venv_python="${VENV_DIR}/bin/python"
+	local python3_file="${VENV_DIR}/Python3"
+	if [ ! -e "${venv_python}" ]; then
+		echo "macOS: 未找到 ${venv_python}，跳过 rpath 修复"
+		return 0
+	fi
+	if [ -e "${python3_file}" ]; then
+		echo "macOS: .venv/Python3 已存在，跳过 rpath 修复"
+		return 0
+	fi
+	local real_python
+	real_python=$(python3 -c "import os, sys; print(os.path.realpath('${venv_python}'))" 2>/dev/null || realpath "${venv_python}" 2>/dev/null || readlink -f "${venv_python}" 2>/dev/null)
+	if [ -n "${real_python}" ] && [ -f "${real_python}" ]; then
+		echo "macOS: 复制 Python 解释器到 .venv/Python3 以修复 rpath..."
+		echo "  源: ${real_python}"
+		echo "  目标: ${python3_file}"
+		cp -f "${real_python}" "${python3_file}"
+		chmod +x "${python3_file}"
+		if [ -e "${python3_file}" ]; then
+			echo "macOS: .venv/Python3 创建成功 ($(du -sh ${python3_file} | cut -f1))"
+		else
+			echo "错误：.venv/Python3 创建失败"
+		fi
+	else
+		echo "警告：无法解析 Python 解释器真实路径，跳过 rpath 修复"
+	fi
+}
+
 if [ "${FORCE}" = false ] && \
    [ -f "${BUN_FILE}" ] && \
    [ -d "${TOOL_RES_DIR}/src" ] && \
@@ -78,6 +114,7 @@ if [ "${FORCE}" = false ] && \
 	echo "目标平台: ${TARGET}"
 	echo "（如需强制重新准备，请加上 --force）"
 	echo "=============================================="
+	fix_macos_python_rpath
 	exit 0
 fi
 
@@ -183,20 +220,7 @@ if [ -d "${VENV_DIR}/Lib/site-packages" ]; then
 fi
 
 # macOS: 修复 Python venv 在 app bundle 中的 rpath
-# Tauri 打包资源时会解引用 symlinks，导致 venv/bin/python 变成真实二进制。
-# 该二进制依赖 @executable_path/../Python3，因此需要在 .venv 根目录提供 Python3。
-# 这里把真实 Python 解释器复制到 .venv/Python3，确保打包后 dyld 能找到它。
-if [[ "$OSTYPE" == "darwin"* ]]; then
-	VENV_PYTHON="${VENV_DIR}/bin/python"
-	if [ -e "${VENV_PYTHON}" ]; then
-		REAL_PYTHON=$(python3 -c "import os, sys; print(os.path.realpath('${VENV_PYTHON}'))" 2>/dev/null || realpath "${VENV_PYTHON}" 2>/dev/null || readlink -f "${VENV_PYTHON}" 2>/dev/null)
-		if [ -n "${REAL_PYTHON}" ] && [ -f "${REAL_PYTHON}" ]; then
-			echo "macOS: 复制 Python 解释器到 venv 根目录以修复 rpath..."
-			cp -f "${REAL_PYTHON}" "${VENV_DIR}/Python3"
-			chmod +x "${VENV_DIR}/Python3"
-		fi
-	fi
-fi
+fix_macos_python_rpath
 
 # 安装 TS 运行时依赖（零配置分发需要 node_modules）
 echo "安装 TS 运行时依赖..."
