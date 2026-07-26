@@ -59,6 +59,17 @@ if [ -f "$HOME/.cargo/env" ]; then
 	. "$HOME/.cargo/env"
 fi
 
+# 自动检测当前平台（未显式设置 HOST_TRIPLE 时）
+if [ -z "${HOST_TRIPLE:-}" ]; then
+	case "$(uname -sm)" in
+		"Darwin arm64"|"Darwin ARM64") HOST_TRIPLE="aarch64-apple-darwin" ;;
+		"Darwin x86_64"|"Darwin X86_64") HOST_TRIPLE="x86_64-apple-darwin" ;;
+		"Linux x86_64") HOST_TRIPLE="x86_64-unknown-linux-gnu" ;;
+		MINGW*|CYGWIN*|MSYS*) HOST_TRIPLE="x86_64-pc-windows-msvc" ;;
+		*) HOST_TRIPLE="aarch64-apple-darwin" ;;
+	esac
+fi
+
 # Windows Git Bash：把 MSVC 的 link.exe 放到 PATH 最前面，避免用到 /usr/bin/link
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "mingw"* ]]; then
 	VSWHERE="/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"

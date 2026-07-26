@@ -1,6 +1,6 @@
 [package]
 name = "bid-compare-desktop"
-version = "1.0.3"
+version = "1.0.5"
 description = "施工方案比对工具桌面端"
 authors = ["Briar"]
 edition = "2021"

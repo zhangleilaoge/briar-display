@@ -1,19 +1,19 @@
 {
 	"name": "bid-compare-desktop",
-	"version": "1.0.3",
+	"version": "1.0.5",
 	"description": "施工方案比对工具桌面端",
 	"type": "module",
 	"private": true,
 	"scripts": {
 		"dev": "tauri dev",
-		"build": "./build.sh",
-		"build:mac-intel": "./build.sh mac-intel",
-		"build:mac-silicon": "./build.sh mac-silicon",
-		"build:windows": "./build.sh windows",
-		"release": "./build.sh --release",
-		"release:mac-intel": "./build.sh mac-intel --release",
-		"release:mac-silicon": "./build.sh mac-silicon --release",
-		"release:windows": "./build.sh windows --release",
+		"build": "node scripts/run-sh.cjs build.sh",
+		"build:mac-intel": "node scripts/run-sh.cjs build.sh mac-intel",
+		"build:mac-silicon": "node scripts/run-sh.cjs build.sh mac-silicon",
+		"build:windows": "node scripts/run-sh.cjs build.sh windows",
+		"release": "node scripts/run-sh.cjs build.sh --release",
+		"release:mac-intel": "node scripts/run-sh.cjs build.sh mac-intel --release",
+		"release:mac-silicon": "node scripts/run-sh.cjs build.sh mac-silicon --release",
+		"release:windows": "node scripts/run-sh.cjs build.sh windows --release",
 		"tauri": "tauri"
 	},
 	"devDependencies": {
