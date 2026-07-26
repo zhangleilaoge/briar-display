@@ -18,7 +18,7 @@
 ## 开发
 
 ```bash
-cd desktop
+cd bid-compare-desktop
 npm install
 
 # 准备内嵌运行环境（复制 Bun 二进制 + 工具资源）
@@ -36,7 +36,7 @@ npm run dev
 ### macOS（当前机器是 Apple Silicon）
 
 ```bash
-cd desktop
+cd bid-compare-desktop
 npm run build
 
 # 或
@@ -44,15 +44,15 @@ npm run build
 ```
 
 产物：
-- `desktop/src-tauri/target/release/bundle/macos/施工方案比对.app`
-- `desktop/src-tauri/target/release/bundle/dmg/施工方案比对_1.0.0_aarch64.dmg`
+- `src-tauri/target/release/bundle/macos/施工方案比对.app`
+- `src-tauri/target/release/bundle/dmg/施工方案比对_1.0.0_aarch64.dmg`
 
 ### macOS Intel
 
 需要 Intel Mac 或交叉编译工具链，以及 Intel 版 Bun 二进制：
 
 ```bash
-cd desktop
+cd bid-compare-desktop
 npm run build:mac-intel
 
 # 或
@@ -67,7 +67,7 @@ npm run build:mac-intel
 - [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/?q=build+tools)（勾选「使用 C++ 的桌面开发」+ Windows SDK）
 
 ```bash
-cd desktop
+cd bid-compare-desktop
 # 自动准备内嵌环境、调用 MSVC、打包并复制 MSI 到桌面
 npm run build:windows
 
@@ -76,8 +76,8 @@ npm run build:windows
 ```
 
 产物：
-- `desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/施工方案比对_1.0.0_x64_en-US.msi`
-- `desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/施工方案比对_1.0.0_x64-setup.exe`
+- `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/施工方案比对_1.0.0_x64_en-US.msi`
+- `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/施工方案比对_1.0.0_x64-setup.exe`
 - 同时自动复制 `.msi` 到当前用户桌面
 
 > Windows 版本运行后，默认把比对结果输出到用户桌面（`bid_compare_result_<时间戳>` 文件夹），macOS 保持下载目录不变。
@@ -100,7 +100,7 @@ gh auth login
 ### macOS
 
 ```bash
-cd desktop
+cd bid-compare-desktop
 ./build.sh --release
 # 或
 ./build.sh mac-silicon --release
@@ -109,7 +109,7 @@ cd desktop
 ### Windows
 
 ```bash
-cd desktop
+cd bid-compare-desktop
 ./build.sh windows --release
 ```
 
@@ -120,7 +120,7 @@ cd desktop
 无论用 `./build.sh` 还是直接跑 `bun run build:windows`，构建前都会询问版本升级方式，默认 `patch`（小版本 +1），也可选择 `minor` / `major` 或不升级：
 
 ```bash
-cd desktop
+cd bid-compare-desktop
 ./build.sh windows
 # 或
 bun run build:windows
@@ -139,7 +139,7 @@ BUMP=major bun run build:mac-silicon
 在工具根目录的 `package.json` 中也添加了打包入口：
 
 ```bash
-cd packages/briar-scripts/scripts/construction-plan-comparison
+cd packages/briar-scripts/scripts/bid-compare
 npm run desktop:build
 ```
 

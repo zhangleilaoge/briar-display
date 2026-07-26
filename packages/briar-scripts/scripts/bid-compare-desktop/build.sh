@@ -12,7 +12,7 @@ set -e
 #   ./build.sh windows --release     # Windows，打包后上传
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TOOL_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+TOOL_DIR="$(cd "${SCRIPT_DIR}/../bid-compare" && pwd)"
 cd "${SCRIPT_DIR}"
 
 # 解析参数
@@ -108,6 +108,12 @@ esac
 # 准备内嵌运行环境
 echo "准备内嵌运行环境 (${TRIPLE})..."
 run_with_timing "准备内嵌运行环境" ./scripts/prepare-embedded.sh "${TRIPLE}"
+
+# 清理旧版本产物，避免 bundle 目录残留历史版本的 .dmg/.msi/.exe
+# Tauri 会按当前版本生成新文件，但旧版本命名的产物不会自动删除
+echo "清理旧版本产物..."
+rm -rf "${SCRIPT_DIR}/src-tauri/target/release/bundle"
+rm -rf "${SCRIPT_DIR}/src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
 
 # Tauri 构建（tauri-build.cjs 已包含版本提示和计时）
 case "${TARGET}" in

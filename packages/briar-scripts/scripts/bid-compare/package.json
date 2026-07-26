@@ -1,5 +1,5 @@
 {
-	"name": "construction-plan-comparison",
+	"name": "bid-compare",
 	"version": "2.0.0",
 	"description": "施工方案文档比对工具 - 串标风险排查 (TypeScript + Python 混合架构)",
 	"private": true,
@@ -13,13 +13,15 @@
 		"test": "bun test",
 		"check": "bunx tsc --noEmit && bunx @biomejs/biome check src/",
 		"benchmark": "bun src/benchmark.ts",
-		"desktop:build": "cd desktop && ./build.sh",
-		"desktop:build:mac-intel": "cd desktop && ./build.sh mac-intel",
-		"desktop:build:windows": "cd desktop && ./build.sh windows",
-		"desktop:release": "cd desktop && ./build.sh --release",
-		"desktop:release:mac-intel": "cd desktop && ./build.sh mac-intel --release",
-		"desktop:release:windows": "cd desktop && ./build.sh windows --release",
-		"desktop:bump": "cd desktop && ./scripts/bump-version.sh patch"
+		"desktop:build": "cd ../bid-compare-desktop && ./build.sh",
+		"desktop:build:mac-intel": "cd ../bid-compare-desktop && ./build.sh mac-intel",
+		"desktop:build:mac-silicon": "cd ../bid-compare-desktop && ./build.sh mac-silicon",
+		"desktop:build:windows": "cd ../bid-compare-desktop && ./build.sh windows",
+		"desktop:release": "cd ../bid-compare-desktop && ./build.sh --release",
+		"desktop:release:mac-intel": "cd ../bid-compare-desktop && ./build.sh mac-intel --release",
+		"desktop:release:mac-silicon": "cd ../bid-compare-desktop && ./build.sh mac-silicon --release",
+		"desktop:release:windows": "cd ../bid-compare-desktop && ./build.sh windows --release",
+		"desktop:bump": "cd ../bid-compare-desktop && ./scripts/bump-version.sh patch"
 	},
 	"dependencies": {
 		"@msgpack/msgpack": "^3.1.3",
