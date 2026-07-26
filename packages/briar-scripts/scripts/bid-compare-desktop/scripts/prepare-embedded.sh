@@ -77,46 +77,55 @@ fix_macos_python_rpath() {
 		return 0
 	fi
 	local venv_python="${VENV_DIR}/bin/python"
-	local python3_file="${VENV_DIR}/Python3"
+	local pyvenv_cfg="${VENV_DIR}/pyvenv.cfg"
 	if [ ! -e "${venv_python}" ]; then
 		echo "macOS: 未找到 ${venv_python}，跳过 rpath 修复"
 		return 0
 	fi
-	if [ -e "${python3_file}" ]; then
-		echo "macOS: .venv/Python3 已存在，跳过 rpath 修复"
+	if [ ! -f "${pyvenv_cfg}" ]; then
+		echo "macOS: 未找到 ${pyvenv_cfg}，跳过 rpath 修复"
 		return 0
 	fi
 
-	# venv/bin/python 通常是系统 Python wrapper 的 symlink。
-	# wrapper 本身依赖 @executable_path/../Python3，即 Python 框架中的真实库文件。
-	# 我们需要把那个真实的 Python 库复制到 .venv/Python3，而不是复制 wrapper。
-	local wrapper_path
-	wrapper_path=$(python3 -c "import os; print(os.path.realpath('${venv_python}'))" 2>/dev/null || realpath "${venv_python}" 2>/dev/null || readlink -f "${venv_python}" 2>/dev/null)
-	if [ -z "${wrapper_path}" ] || [ ! -f "${wrapper_path}" ]; then
-		echo "警告：无法解析 Python wrapper 路径，跳过 rpath 修复"
+	# macOS 上 venv/bin/python 经过 Tauri 打包后 rpath 会失效。
+	# 稳妥做法：把 bin/python 替换成一个 shell wrapper，由它设置 VIRTUAL_ENV 并调用系统 Python。
+	# 这样无论系统 Python 是 framework 还是 shim，只要路径/版本匹配就能工作。
+	local home_dir
+	home_dir=$(grep '^home = ' "${pyvenv_cfg}" | head -1 | sed 's/^home = //' | tr -d '\r')
+	if [ -z "${home_dir}" ]; then
+		echo "macOS: pyvenv.cfg 中未找到 home，跳过 rpath 修复"
 		return 0
 	fi
 
-	local wrapper_dir
-	wrapper_dir=$(dirname "${wrapper_path}")
-	local real_python
-	real_python=$(cd "${wrapper_dir}" && pwd)/../Python3
-	real_python=$(python3 -c "import os; print(os.path.realpath('${real_python}'))" 2>/dev/null || realpath "${real_python}" 2>/dev/null || readlink -f "${real_python}" 2>/dev/null)
-
-	if [ -n "${real_python}" ] && [ -f "${real_python}" ]; then
-		echo "macOS: 复制 Python 库到 .venv/Python3 以修复 rpath..."
-		echo "  wrapper: ${wrapper_path}"
-		echo "  源: ${real_python}"
-		echo "  目标: ${python3_file}"
-		cp -f "${real_python}" "${python3_file}"
-		chmod +x "${python3_file}"
-		if [ -e "${python3_file}" ]; then
-			echo "macOS: .venv/Python3 创建成功 ($(du -sh ${python3_file} | cut -f1))"
-		else
-			echo "错误：.venv/Python3 创建失败"
+	local real_python=""
+	for cand in "${home_dir}/python3" "${home_dir}/python" "${home_dir}/python3.$(python3 -c 'import sys; print(sys.version_info[1])' 2>/dev/null)"; do
+		if [ -x "${cand}" ]; then
+			real_python="${cand}"
+			break
 		fi
+	done
+
+	if [ -z "${real_python}" ]; then
+		echo "macOS: 未找到系统 Python 解释器（home=${home_dir}），跳过 rpath 修复"
+		return 0
+	fi
+
+	echo "macOS: 创建 bin/python wrapper 以绕过 app bundle 中的 rpath 问题..."
+	echo "  系统 Python: ${real_python}"
+	echo "  wrapper: ${venv_python}"
+
+	cat > "${venv_python}" <<EOF
+#!/bin/sh
+# 由 prepare-embedded.sh 生成的 wrapper，用于在 app bundle 中正确激活 venv
+VIRTUAL_ENV="\$(cd "\$(dirname "\$0")/.." && pwd)"
+export VIRTUAL_ENV
+exec "${real_python}" "\$@"
+EOF
+	chmod +x "${venv_python}"
+	if [ -x "${venv_python}" ]; then
+		echo "macOS: bin/python wrapper 创建成功"
 	else
-		echo "警告：未找到 Python 库 ${wrapper_dir}/../Python3，跳过 rpath 修复"
+		echo "错误：bin/python wrapper 创建失败"
 	fi
 }
 
