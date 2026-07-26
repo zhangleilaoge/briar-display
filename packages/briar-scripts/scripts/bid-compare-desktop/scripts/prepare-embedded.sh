@@ -86,10 +86,26 @@ fix_macos_python_rpath() {
 		echo "macOS: .venv/Python3 已存在，跳过 rpath 修复"
 		return 0
 	fi
+
+	# venv/bin/python 通常是系统 Python wrapper 的 symlink。
+	# wrapper 本身依赖 @executable_path/../Python3，即 Python 框架中的真实库文件。
+	# 我们需要把那个真实的 Python 库复制到 .venv/Python3，而不是复制 wrapper。
+	local wrapper_path
+	wrapper_path=$(python3 -c "import os; print(os.path.realpath('${venv_python}'))" 2>/dev/null || realpath "${venv_python}" 2>/dev/null || readlink -f "${venv_python}" 2>/dev/null)
+	if [ -z "${wrapper_path}" ] || [ ! -f "${wrapper_path}" ]; then
+		echo "警告：无法解析 Python wrapper 路径，跳过 rpath 修复"
+		return 0
+	fi
+
+	local wrapper_dir
+	wrapper_dir=$(dirname "${wrapper_path}")
 	local real_python
-	real_python=$(python3 -c "import os, sys; print(os.path.realpath('${venv_python}'))" 2>/dev/null || realpath "${venv_python}" 2>/dev/null || readlink -f "${venv_python}" 2>/dev/null)
+	real_python=$(cd "${wrapper_dir}" && pwd)/../Python3
+	real_python=$(python3 -c "import os; print(os.path.realpath('${real_python}'))" 2>/dev/null || realpath "${real_python}" 2>/dev/null || readlink -f "${real_python}" 2>/dev/null)
+
 	if [ -n "${real_python}" ] && [ -f "${real_python}" ]; then
-		echo "macOS: 复制 Python 解释器到 .venv/Python3 以修复 rpath..."
+		echo "macOS: 复制 Python 库到 .venv/Python3 以修复 rpath..."
+		echo "  wrapper: ${wrapper_path}"
 		echo "  源: ${real_python}"
 		echo "  目标: ${python3_file}"
 		cp -f "${real_python}" "${python3_file}"
@@ -100,7 +116,7 @@ fix_macos_python_rpath() {
 			echo "错误：.venv/Python3 创建失败"
 		fi
 	else
-		echo "警告：无法解析 Python 解释器真实路径，跳过 rpath 修复"
+		echo "警告：未找到 Python 库 ${wrapper_dir}/../Python3，跳过 rpath 修复"
 	fi
 }
 
