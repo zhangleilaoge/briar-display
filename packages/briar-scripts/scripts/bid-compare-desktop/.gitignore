@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/
+src-tauri/binaries/
+src-tauri/resources/tool/
+
+# Build outputs
+*.app
+*.dmg
+*.msi
+*.exe
+
+# Misc
+.DS_Store
+*.log
