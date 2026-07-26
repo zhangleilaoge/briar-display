@@ -98,7 +98,7 @@ async function main() {
 			const lockContent = fs.readFileSync(lockPath, 'utf8')
 			// 顶层 version 和 packages[""].version 都要更新
 			const updated = lockContent
-				.replace(/^ {2}"version": "[^"]+"/m, `  "version": "${next}"`)
+				.replace(/^\s+"version": "[^"]+"/m, `  "version": "${next}"`)
 				.replace(
 					/("": \{\n\s+"name": "bid-compare-desktop",\n\s+)"version": "[^"]+"/,
 					`$1"version": "${next}"`,
