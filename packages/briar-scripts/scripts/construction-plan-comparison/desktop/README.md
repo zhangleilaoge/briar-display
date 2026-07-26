@@ -74,6 +74,25 @@ cd desktop
 
 > Windows 版本运行后，默认把比对结果输出到用户桌面（`bid_compare_result_<时间戳>` 文件夹），macOS 保持下载目录不变。
 
+## 版本号
+
+无论用 `./build.sh` 还是直接跑 `bun run build:windows`，构建前都会询问版本升级方式，默认 `patch`（小版本 +1），也可选择 `minor` / `major` 或不升级：
+
+```bash
+cd desktop
+./build.sh windows
+# 或
+bun run build:windows
+# 交互提示：1) patch [默认] 2) minor 3) major 4) 不升级
+
+# 非交互/CI 环境直接指定
+BUMP=patch ./build.sh windows
+BUMP=minor bun run build:windows
+BUMP=major bun run build:mac-silicon
+```
+
+版本会同步写入 `package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`。
+
 ## 快捷入口
 
 在工具根目录的 `package.json` 中也添加了打包入口：
