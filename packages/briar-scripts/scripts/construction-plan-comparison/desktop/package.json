@@ -1,15 +1,15 @@
 {
 	"name": "bid-compare-desktop",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "施工方案比对工具桌面端",
 	"type": "module",
 	"private": true,
 	"scripts": {
 		"dev": "tauri dev",
-		"build": "tauri build",
-		"build:mac-intel": "tauri build --target x86_64-apple-darwin",
-		"build:mac-silicon": "tauri build --target aarch64-apple-darwin",
-		"build:windows": "tauri build --target x86_64-pc-windows-msvc",
+		"build": "node scripts/tauri-build.cjs current current",
+		"build:mac-intel": "node scripts/tauri-build.cjs x86_64-apple-darwin mac-intel",
+		"build:mac-silicon": "node scripts/tauri-build.cjs aarch64-apple-darwin mac-silicon",
+		"build:windows": "node scripts/tauri-build.cjs x86_64-pc-windows-msvc windows",
 		"tauri": "tauri"
 	},
 	"devDependencies": {

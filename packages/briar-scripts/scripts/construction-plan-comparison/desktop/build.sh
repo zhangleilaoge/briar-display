@@ -12,6 +12,22 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TOOL_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${SCRIPT_DIR}"
 
+# 计时辅助函数
+run_with_timing() {
+	local label="$1"
+	shift
+	echo ""
+	echo "[$(date '+%H:%M:%S')] 开始: ${label}"
+	local start=$SECONDS
+	"$@"
+	local status=$?
+	local elapsed=$((SECONDS - start))
+	echo "[$(date '+%H:%M:%S')] 结束: ${label} (耗时 ${elapsed}s)"
+	return ${status}
+}
+
+SCRIPT_START=$SECONDS
+
 # 加载 Rust 环境
 if [ -f "$HOME/.cargo/env" ]; then
 	. "$HOME/.cargo/env"
@@ -56,8 +72,9 @@ esac
 
 # 准备内嵌运行环境
 echo "准备内嵌运行环境 (${TRIPLE})..."
-./scripts/prepare-embedded.sh "${TRIPLE}"
+run_with_timing "准备内嵌运行环境" ./scripts/prepare-embedded.sh "${TRIPLE}"
 
+# Tauri 构建（npm script 已包含版本提示和计时）
 case "${TARGET}" in
 	current)
 		npm run build
@@ -101,4 +118,7 @@ case "${TARGET}" in
 		echo "  cp -R '${SCRIPT_DIR}/src-tauri/target/release/bundle/macos/施工方案比对.app' '${TOOL_DIR}/'"
 		;;
 esac
+TOTAL_ELAPSED=$((SECONDS - SCRIPT_START))
+echo ""
+echo "总耗时: ${TOTAL_ELAPSED}s"
 echo "=============================================="
