@@ -74,6 +74,39 @@ cd desktop
 
 > Windows 版本运行后，默认把比对结果输出到用户桌面（`bid_compare_result_<时间戳>` 文件夹），macOS 保持下载目录不变。
 
+## 发布到 GitHub Release
+
+打包后自动上传 `.dmg` / `.msi` / `.exe` 到 GitHub Release，标签格式为 `desktop-v{version}`。
+
+前提：安装并登录 GitHub CLI
+
+```bash
+# macOS
+brew install gh && gh auth login
+
+# Windows
+winget install --id GitHub.cli
+gh auth login
+```
+
+### macOS
+
+```bash
+cd desktop
+./build.sh --release
+# 或
+./build.sh mac-silicon --release
+```
+
+### Windows
+
+```bash
+cd desktop
+./build.sh windows --release
+```
+
+跨平台发布流程：先在 macOS 上跑 `./build.sh --release` 上传 `.dmg`，再在 Windows 上跑 `./build.sh windows --release` 上传 `.msi` 和 `.exe`，两者会合并到同一个 Release。
+
 ## 版本号
 
 无论用 `./build.sh` 还是直接跑 `bun run build:windows`，构建前都会询问版本升级方式，默认 `patch`（小版本 +1），也可选择 `minor` / `major` 或不升级：

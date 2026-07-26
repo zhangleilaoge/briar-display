@@ -3,14 +3,40 @@ set -e
 
 # 施工方案比对工具桌面端打包脚本
 # 用法：
-#   ./build.sh              # 当前平台
-#   ./build.sh mac-intel    # macOS Intel
-#   ./build.sh mac-silicon  # macOS Apple Silicon
-#   ./build.sh windows      # Windows（需 Windows 环境）
+#   ./build.sh                       # 当前平台
+#   ./build.sh --release             # 当前平台，打包后上传到 GitHub Release
+#   ./build.sh mac-intel             # macOS Intel
+#   ./build.sh mac-intel --release   # macOS Intel，打包后上传
+#   ./build.sh mac-silicon           # macOS Apple Silicon
+#   ./build.sh windows               # Windows（需 Windows 环境）
+#   ./build.sh windows --release     # Windows，打包后上传
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TOOL_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${SCRIPT_DIR}"
+
+# 解析参数
+RELEASE=false
+TARGET="current"
+for arg in "$@"; do
+	case "${arg}" in
+		--release|-r)
+			RELEASE=true
+			;;
+		--help|-h)
+			echo "用法: $0 [current|mac-intel|mac-silicon|windows] [--release]"
+			exit 0
+			;;
+		-*)
+			echo "未知选项: ${arg}"
+			echo "用法: $0 [current|mac-intel|mac-silicon|windows] [--release]"
+			exit 1
+			;;
+		*)
+			TARGET="${arg}"
+			;;
+	esac
+done
 
 # 计时辅助函数
 run_with_timing() {
@@ -46,8 +72,6 @@ if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "mingw"* ]]; then
 		fi
 	fi
 fi
-
-TARGET="${1:-current}"
 
 # 根据目标平台确定 triple
 TRIPLE=""
@@ -118,6 +142,12 @@ case "${TARGET}" in
 		echo "  cp -R '${SCRIPT_DIR}/src-tauri/target/release/bundle/macos/施工方案比对.app' '${TOOL_DIR}/'"
 		;;
 esac
+# 上传到 GitHub Release
+if [ "${RELEASE}" = true ]; then
+	echo ""
+	./scripts/upload-release.sh "${TARGET}"
+fi
+
 TOTAL_ELAPSED=$((SECONDS - SCRIPT_START))
 echo ""
 echo "总耗时: ${TOTAL_ELAPSED}s"
