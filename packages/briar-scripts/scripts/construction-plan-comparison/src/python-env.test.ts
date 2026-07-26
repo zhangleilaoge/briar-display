@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'bun:test'
-import { PythonEnvError, enhancePythonError, findPythonPath } from './python-env.ts'
+import {
+	PythonEnvError,
+	enhancePythonError,
+	findPythonPath,
+	getVenvPythonPath,
+} from './python-env.ts'
+
+const IS_WINDOWS = process.platform === 'win32'
 
 describe('python-env', () => {
 	describe('findPythonPath', () => {
@@ -11,11 +18,12 @@ describe('python-env', () => {
 			process.env.PYTHON_PATH = original
 		})
 
-		it('PYTHON_PATH 不存在时回退到 venv 或 python3', () => {
+		it('PYTHON_PATH 不存在时回退到 venv 或系统命令', () => {
 			const original = process.env.PYTHON_PATH
 			process.env.PYTHON_PATH = undefined
 			const result = findPythonPath()
-			expect(result.endsWith('python_encoder/.venv/bin/python') || result === 'python3').toBe(true)
+			const fallback = IS_WINDOWS ? 'python' : 'python3'
+			expect(result === getVenvPythonPath() || result === fallback).toBe(true)
 			process.env.PYTHON_PATH = original
 		})
 	})

@@ -6,10 +6,14 @@
 	"private": true,
 	"scripts": {
 		"dev": "tauri dev",
-		"build": "node scripts/tauri-build.cjs current current",
-		"build:mac-intel": "node scripts/tauri-build.cjs x86_64-apple-darwin mac-intel",
-		"build:mac-silicon": "node scripts/tauri-build.cjs aarch64-apple-darwin mac-silicon",
-		"build:windows": "node scripts/tauri-build.cjs x86_64-pc-windows-msvc windows",
+		"build": "./build.sh",
+		"build:mac-intel": "./build.sh mac-intel",
+		"build:mac-silicon": "./build.sh mac-silicon",
+		"build:windows": "./build.sh windows",
+		"release": "./build.sh --release",
+		"release:mac-intel": "./build.sh mac-intel --release",
+		"release:mac-silicon": "./build.sh mac-silicon --release",
+		"release:windows": "./build.sh windows --release",
 		"tauri": "tauri"
 	},
 	"devDependencies": {

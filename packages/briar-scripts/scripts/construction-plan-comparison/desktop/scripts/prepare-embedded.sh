@@ -2,12 +2,35 @@
 set -e
 
 # 准备内嵌运行环境：Bun 二进制 + 工具资源
-# 用法：./scripts/prepare-embedded.sh [platform]
+# 用法：./scripts/prepare-embedded.sh [platform] [--force]
 # platform: aarch64-apple-darwin | x86_64-apple-darwin | x86_64-pc-windows-msvc
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DESKTOP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TOOL_DIR="$(cd "${DESKTOP_DIR}/.." && pwd)"
+
+# 解析参数
+FORCE=false
+TARGET=""
+for arg in "$@"; do
+	case "${arg}" in
+		--force|-f)
+			FORCE=true
+			;;
+		--help|-h)
+			echo "用法: $0 [platform] [--force]"
+			exit 0
+			;;
+		-*)
+			echo "未知选项: ${arg}"
+			echo "用法: $0 [platform] [--force]"
+			exit 1
+			;;
+		*)
+			TARGET="${arg}"
+			;;
+	esac
+done
 
 # 默认当前平台
 HOST_TRIPLE="aarch64-apple-darwin"
@@ -18,7 +41,28 @@ case "$(uname -sm)" in
 	MINGW*|CYGWIN*|MSYS*) HOST_TRIPLE="x86_64-pc-windows-msvc" ;;
 esac
 
-TARGET="${1:-${HOST_TRIPLE}}"
+TARGET="${TARGET:-${HOST_TRIPLE}}"
+
+BUN_FILE="${DESKTOP_DIR}/src-tauri/binaries/bun-${TARGET}"
+[ "${TARGET}" = "x86_64-pc-windows-msvc" ] && BUN_FILE="${BUN_FILE}.exe"
+
+# 智能跳过：检查关键产物是否已存在
+TOOL_RES_DIR="${DESKTOP_DIR}/src-tauri/resources/tool"
+VENV_DIR="${TOOL_RES_DIR}/python_encoder/.venv"
+NODE_MODULES_DIR="${TOOL_RES_DIR}/node_modules"
+
+if [ "${FORCE}" = false ] && \
+   [ -f "${BUN_FILE}" ] && \
+   [ -d "${TOOL_RES_DIR}/src" ] && \
+   [ -d "${VENV_DIR}" ] && \
+   [ -d "${NODE_MODULES_DIR}" ]; then
+	echo "=============================================="
+	echo "内嵌运行环境已准备，跳过"
+	echo "目标平台: ${TARGET}"
+	echo "（如需强制重新准备，请加上 --force）"
+	echo "=============================================="
+	exit 0
+fi
 
 echo "=============================================="
 echo "准备内嵌运行环境"
@@ -30,7 +74,6 @@ mkdir -p "${DESKTOP_DIR}/src-tauri/resources"
 
 # 1. 准备 Bun 二进制
 echo "准备 Bun 二进制..."
-BUN_FILE="${DESKTOP_DIR}/src-tauri/binaries/bun-${TARGET}"
 
 case "${TARGET}" in
 	aarch64-apple-darwin)
@@ -60,7 +103,6 @@ case "${TARGET}" in
 		fi
 		;;
 	x86_64-pc-windows-msvc)
-		BUN_FILE="${BUN_FILE}.exe"
 		if [ -f "${BUN_FILE}" ]; then
 			echo "已存在 Windows Bun 二进制，跳过下载"
 		else
