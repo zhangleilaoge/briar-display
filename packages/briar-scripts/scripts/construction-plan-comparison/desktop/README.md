@@ -22,6 +22,7 @@ cd desktop
 npm install
 
 # 准备内嵌运行环境（复制 Bun 二进制 + 工具资源）
+# 已存在时会智能跳过，可加 --force 强制重新准备
 ./scripts/prepare-embedded.sh
 
 # 开发模式
@@ -30,13 +31,15 @@ npm run dev
 
 ## 打包
 
+所有 `build` / `release` 脚本都会先检查内嵌环境，已准备好则跳过（避免重复复制 505MB 资源）。
+
 ### macOS（当前机器是 Apple Silicon）
 
 ```bash
 cd desktop
 npm run build
 
-# 或跑封装脚本（会自动准备内嵌环境）
+# 或
 ./build.sh
 ```
 
@@ -50,8 +53,10 @@ npm run build
 
 ```bash
 cd desktop
-./scripts/prepare-embedded.sh x86_64-apple-darwin
 npm run build:mac-intel
+
+# 或
+./build.sh mac-intel
 ```
 
 ### Windows
@@ -64,6 +69,9 @@ npm run build:mac-intel
 ```bash
 cd desktop
 # 自动准备内嵌环境、调用 MSVC、打包并复制 MSI 到桌面
+npm run build:windows
+
+# 或
 ./build.sh windows
 ```
 

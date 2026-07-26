@@ -98,19 +98,19 @@ esac
 echo "准备内嵌运行环境 (${TRIPLE})..."
 run_with_timing "准备内嵌运行环境" ./scripts/prepare-embedded.sh "${TRIPLE}"
 
-# Tauri 构建（npm script 已包含版本提示和计时）
+# Tauri 构建（tauri-build.cjs 已包含版本提示和计时）
 case "${TARGET}" in
 	current)
-		npm run build
+		node scripts/tauri-build.cjs current current
 		;;
 	mac-intel)
-		npm run build:mac-intel
+		node scripts/tauri-build.cjs x86_64-apple-darwin mac-intel
 		;;
 	mac-silicon)
-		npm run build:mac-silicon
+		node scripts/tauri-build.cjs aarch64-apple-darwin mac-silicon
 		;;
 	windows)
-		npm run build:windows
+		node scripts/tauri-build.cjs x86_64-pc-windows-msvc windows
 		;;
 esac
 
