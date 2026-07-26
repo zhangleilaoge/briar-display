@@ -92,6 +92,22 @@ async function main() {
 		setVersion('package.json', /"version":\s*"[^"]+"/, `"version": "${next}"`)
 		setVersion('src-tauri/tauri.conf.json', /"version":\s*"[^"]+"/, `"version": "${next}"`)
 		setVersion('src-tauri/Cargo.toml', /^version = "[^"]+"/m, `version = "${next}"`)
+		// npm 的 lockfile 也要同步，否则版本号不一致
+		const lockPath = path.join(DESKTOP_DIR, 'package-lock.json')
+		if (fs.existsSync(lockPath)) {
+			const lockContent = fs.readFileSync(lockPath, 'utf8')
+			// 顶层 version 和 packages[""].version 都要更新
+			const updated = lockContent
+				.replace(/^ {2}"version": "[^"]+"/m, `  "version": "${next}"`)
+				.replace(
+					/("": \{\n\s+"name": "bid-compare-desktop",\n\s+)"version": "[^"]+"/,
+					`$1"version": "${next}"`,
+				)
+			if (updated !== lockContent) {
+				fs.writeFileSync(lockPath, updated)
+				console.log('  - package-lock.json')
+			}
+		}
 	}
 
 	console.log('')
