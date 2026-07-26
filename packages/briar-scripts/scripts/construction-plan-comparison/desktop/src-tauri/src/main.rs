@@ -13,34 +13,44 @@ fn tool_dir() -> Result<PathBuf, String> {
 	let exe = std::env::current_exe().map_err(|e| format!("无法获取可执行文件路径: {}", e))?;
 	let exe_dir = exe.parent().ok_or("无法获取可执行文件目录")?;
 
+	let mut candidates: Vec<PathBuf> = Vec::new();
+
 	#[cfg(target_os = "macos")]
-	let resources_dir = exe_dir
-		.parent()
-		.ok_or("无法获取 Contents 目录")?
-		.join("Resources");
+	{
+		let resources_dir = exe_dir
+			.parent()
+			.ok_or("无法获取 Contents 目录")?
+			.join("Resources");
+		candidates.push(resources_dir.join("tool"));
+	}
 
 	#[cfg(target_os = "windows")]
-	let resources_dir = exe_dir.join("tool");
+	{
+		// 标准 MSI 布局：exe 与 tool 目录同级
+		candidates.push(exe_dir.join("tool"));
+		// 容错：有人把 exe 直接放进 tool 目录里分发
+		candidates.push(exe_dir.to_path_buf());
+	}
 
 	#[cfg(not(any(target_os = "macos", target_os = "windows")))]
-	let resources_dir = exe_dir.join("resources");
-
-	let prod = resources_dir.join("tool");
-	if prod.exists() {
-		return Ok(prod);
+	{
+		candidates.push(exe_dir.join("tool"));
 	}
 
 	// 开发/测试回退：从 src-tauri/resources/tool 读取
 	let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-	let dev = manifest_dir.join("resources").join("tool");
-	if dev.exists() {
-		return Ok(dev);
+	candidates.push(manifest_dir.join("resources").join("tool"));
+
+	for cand in &candidates {
+		// 用 package.json 作为工具资源根目录的标记，避免把 exe 所在目录误判为工具目录
+		if cand.join("package.json").exists() {
+			return Ok(cand.clone());
+		}
 	}
 
 	Err(format!(
-		"未找到工具资源目录，已尝试：{} 和 {}",
-		prod.display(),
-		dev.display()
+		"未找到工具资源目录，已尝试：{}",
+		candidates.iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join("、")
 	))
 }
 
