@@ -21,6 +21,10 @@
 cd bid-compare-desktop
 npm install
 
+# 先确保 CLI 工具的 Python 虚拟环境已创建
+# （桌面端会把整个 venv 内嵌到 app bundle 中，约 500MB+）
+cd ../bid-compare && ./setup.sh && cd ../bid-compare-desktop
+
 # 准备内嵌运行环境（复制 Bun 二进制 + 工具资源）
 # 已存在时会智能跳过，可加 --force 强制重新准备
 ./scripts/prepare-embedded.sh

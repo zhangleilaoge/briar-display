@@ -9,6 +9,23 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DESKTOP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TOOL_DIR="$(cd "${DESKTOP_DIR}/../bid-compare" && pwd)"
 
+# 先检查源 Python 虚拟环境是否存在，缺失时直接失败并给出明确提示
+SOURCE_VENV_DIR="${TOOL_DIR}/python_encoder/.venv"
+if [ ! -d "${SOURCE_VENV_DIR}" ]; then
+	echo "=============================================="
+	echo "错误：未找到 Python 虚拟环境"
+	echo "路径: ${SOURCE_VENV_DIR}"
+	echo ""
+	echo "桌面端打包需要把 Python 虚拟环境内嵌到 app bundle 中。"
+	echo "请先创建虚拟环境："
+	echo "  cd ${TOOL_DIR}"
+	echo "  ./setup.sh"
+	echo ""
+	echo "然后再重新运行打包命令。"
+	echo "=============================================="
+	exit 1
+fi
+
 # 解析参数
 FORCE=false
 TARGET=""
