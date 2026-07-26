@@ -16,6 +16,7 @@ const envResult = document.getElementById('env-result')
 const recheckBtn = document.getElementById('recheck-env')
 const logSection = document.getElementById('log-section')
 const logOutput = document.getElementById('log-output')
+const copyLogBtn = document.getElementById('copy-log')
 const resultSection = document.getElementById('result-section')
 const openResultBtn = document.getElementById('open-result')
 const versionEl = document.getElementById('version')
@@ -180,6 +181,25 @@ clearBtn?.addEventListener('click', () => {
 runBtn?.addEventListener('click', runComparison)
 
 recheckBtn?.addEventListener('click', checkEnv)
+
+copyLogBtn?.addEventListener('click', async () => {
+	if (!logOutput) return
+	const text = logOutput.textContent || ''
+	try {
+		await navigator.clipboard.writeText(text)
+		const original = copyLogBtn.textContent
+		copyLogBtn.textContent = '已复制'
+		setTimeout(() => {
+			copyLogBtn.textContent = original
+		}, 1500)
+	} catch (err) {
+		console.error('复制日志失败:', err)
+		copyLogBtn.textContent = '复制失败'
+		setTimeout(() => {
+			copyLogBtn.textContent = '复制日志'
+		}, 1500)
+	}
+})
 
 openResultBtn?.addEventListener('click', async () => {
 	if (resultPath) {

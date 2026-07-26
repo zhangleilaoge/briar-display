@@ -80,15 +80,22 @@ section h2 {
 	font-weight: 600;
 }
 
-.env-header {
+.env-header,
+.log-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	margin-bottom: 12px;
 }
 
-.env-header h2 {
+.env-header h2,
+.log-header h2 {
 	margin: 0;
+}
+
+.log-header button {
+	padding: 6px 12px;
+	font-size: 12px;
 }
 
 .env-result {
