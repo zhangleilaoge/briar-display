@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { findPythonPath } from './python-env.ts'
 
 const BENCH_DIR = path.join('/tmp', 'bid-compare-benchmark')
 const MAX_TOTAL_TIME_MS = 60_000
@@ -29,9 +30,7 @@ function generateTestPdfs(): Promise<{ pdfA: string; pdfB: string }> {
 	return new Promise((resolve, reject) => {
 		fs.mkdirSync(BENCH_DIR, { recursive: true })
 
-		const pythonPath =
-			process.env.PYTHON_PATH ||
-			path.join(process.cwd(), 'python_encoder', '.venv', 'bin', 'python')
+		const pythonPath = process.env.PYTHON_PATH || findPythonPath()
 		const script = `
 import fitz, io, os
 from PIL import Image

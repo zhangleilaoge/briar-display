@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const ENCODER_DIR = path.join(import.meta.dir, '..', 'python_encoder')
+const IS_WINDOWS = process.platform === 'win32'
 
 /**
  * Python 环境未准备好的错误
@@ -15,8 +16,20 @@ export class PythonEnvError extends Error {
 }
 
 /**
+ * 获取默认的 venv Python 可执行文件路径
+ * Windows: python_encoder/.venv/Scripts/python.exe
+ * macOS/Linux: python_encoder/.venv/bin/python
+ */
+export function getVenvPythonPath(): string {
+	if (IS_WINDOWS) {
+		return path.join(ENCODER_DIR, '.venv', 'Scripts', 'python.exe')
+	}
+	return path.join(ENCODER_DIR, '.venv', 'bin', 'python')
+}
+
+/**
  * 查找可用的 Python 解释器路径
- * 优先级：PYTHON_PATH 环境变量 > ./python_encoder/.venv/bin/python > python3
+ * 优先级：PYTHON_PATH 环境变量 > ./python_encoder/.venv/{bin|Scripts}/python > python3/python
  */
 export function findPythonPath(): string {
 	const envPath = process.env.PYTHON_PATH
@@ -24,12 +37,13 @@ export function findPythonPath(): string {
 		return envPath
 	}
 
-	const venvPath = path.join(ENCODER_DIR, '.venv', 'bin', 'python')
+	const venvPath = getVenvPythonPath()
 	if (fs.existsSync(venvPath)) {
 		return venvPath
 	}
 
-	return 'python3'
+	// 回退到系统命令；Windows 通常没有 python3，优先尝试 python
+	return IS_WINDOWS ? 'python' : 'python3'
 }
 
 /**
@@ -48,12 +62,15 @@ export function assertPythonPath(): string {
 
 function buildNotFoundMessage(pythonPath: string): string {
 	const venvHint = `在 ${path.relative(process.cwd(), ENCODER_DIR)} 目录下创建虚拟环境：`
-	const setupHint = '  bash setup.sh'
-	const manualHint =
-		'  python3 -m venv python_encoder/.venv && source python_encoder/.venv/bin/activate && pip install -r python_encoder/requirements.txt'
+	const setupHint = IS_WINDOWS
+		? '  运行 setup-windows.bat（如有）或手动创建 venv'
+		: '  bash setup.sh'
+	const manualHint = IS_WINDOWS
+		? '  python -m venv python_encoder/.venv && python_encoder/.venv/Scripts/pip install -r python_encoder/requirements.txt'
+		: '  python3 -m venv python_encoder/.venv && source python_encoder/.venv/bin/activate && pip install -r python_encoder/requirements.txt'
 	const envHint = '或者设置 PYTHON_PATH 环境变量指向可用的 Python 可执行文件。'
 
-	if (pythonPath === path.join(ENCODER_DIR, '.venv', 'bin', 'python')) {
+	if (pythonPath === getVenvPythonPath()) {
 		return [`未找到 Python 虚拟环境：${pythonPath}`, venvHint, setupHint, manualHint, envHint].join(
 			'\n',
 		)
@@ -70,7 +87,9 @@ export function enhancePythonError(stderr: string): string {
 		return [
 			stderr.trim(),
 			'\n检测到依赖缺失，请运行：',
-			'  bash setup.sh',
+			IS_WINDOWS
+				? '  在 venv 中执行 pip install -r python_encoder/requirements.txt'
+				: '  bash setup.sh',
 			'或激活虚拟环境后执行：',
 			'  pip install -r python_encoder/requirements.txt',
 		].join('\n')

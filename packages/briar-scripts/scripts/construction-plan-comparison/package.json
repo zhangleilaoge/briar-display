@@ -16,6 +16,9 @@
 		"desktop:build": "cd desktop && ./build.sh",
 		"desktop:build:mac-intel": "cd desktop && ./build.sh mac-intel",
 		"desktop:build:windows": "cd desktop && ./build.sh windows",
+		"desktop:release": "cd desktop && ./build.sh --release",
+		"desktop:release:mac-intel": "cd desktop && ./build.sh mac-intel --release",
+		"desktop:release:windows": "cd desktop && ./build.sh windows --release",
 		"desktop:bump": "cd desktop && ./scripts/bump-version.sh patch"
 	},
 	"dependencies": {

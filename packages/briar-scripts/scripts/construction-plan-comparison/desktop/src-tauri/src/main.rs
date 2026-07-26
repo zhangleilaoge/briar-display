@@ -121,6 +121,12 @@ async fn run_comparison(
 	let tool = tool_dir()?;
 	let script = tool.join("src").join("index.ts");
 
+	// 内嵌 Python 解释器路径，必须与 python-env.ts 的查找逻辑保持一致
+	#[cfg(target_os = "windows")]
+	let venv_python = tool.join("python_encoder").join(".venv").join("Scripts").join("python.exe");
+	#[cfg(not(target_os = "windows"))]
+	let venv_python = tool.join("python_encoder").join(".venv").join("bin").join("python");
+
 	// Windows 默认输出到桌面，macOS 保持下载目录不变
 	#[cfg(target_os = "windows")]
 	let base_dir = dirs::desktop_dir().unwrap_or_else(|| PathBuf::from("."));
@@ -153,7 +159,8 @@ async fn run_comparison(
 	let sidecar = app
 		.shell()
 		.sidecar("bun")
-		.map_err(|e| format!("无法加载 bun sidecar: {}", e))?;
+		.map_err(|e| format!("无法加载 bun sidecar: {}", e))?
+		.env("PYTHON_PATH", venv_python.to_string_lossy().to_string());
 
 	let (mut rx, child) = sidecar
 		.args(&args)
