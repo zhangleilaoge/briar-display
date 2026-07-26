@@ -114,6 +114,8 @@ fix_macos_python_rpath() {
 	echo "  系统 Python: ${real_python}"
 	echo "  wrapper: ${venv_python}"
 
+	# 如果 bin/python 是 symlink，直接覆盖会写到系统 Python；先删除再创建
+	rm -f "${venv_python}"
 	cat > "${venv_python}" <<EOF
 #!/bin/sh
 # 由 prepare-embedded.sh 生成的 wrapper，用于在 app bundle 中正确激活 venv
@@ -124,6 +126,18 @@ EOF
 	chmod +x "${venv_python}"
 	if [ -x "${venv_python}" ]; then
 		echo "macOS: bin/python wrapper 创建成功"
+		# 同步更新 python3 / python3.x 指向新 wrapper，避免脚本绕过 wrapper
+		local venv_bin
+		venv_bin=$(dirname "${venv_python}")
+		local py_version
+		py_version=$("${real_python}" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null)
+		for alias in python3 "python3.${py_version}"; do
+			local alias_path="${venv_bin}/${alias}"
+			if [ -L "${alias_path}" ] || [ -e "${alias_path}" ]; then
+				rm -f "${alias_path}"
+				ln -s python "${alias_path}"
+			fi
+		done
 	else
 		echo "错误：bin/python wrapper 创建失败"
 	fi
