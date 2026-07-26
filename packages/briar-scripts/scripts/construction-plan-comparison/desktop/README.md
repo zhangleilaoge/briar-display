@@ -102,6 +102,27 @@ cd packages/briar-scripts/scripts/construction-plan-comparison
 npm run desktop:build
 ```
 
+## 上传到 GitHub Release
+
+打包完成后，`./build.sh` 会询问是否上传到 GitHub Release。需要满足：
+
+1. 安装 GitHub CLI：
+   ```bash
+   winget install --id GitHub.cli
+   ```
+2. 登录 GitHub：
+   ```bash
+   gh auth login
+   ```
+
+然后 `./build.sh windows` 打完包后选择 `y` 即可自动创建 Release 并上传 `.msi`/`.exe`（macOS 上传 `.dmg`）。
+
+非交互/CI 用法：
+
+```bash
+UPLOAD_RELEASE=1 ./build.sh windows
+```
+
 ## 内嵌了哪些东西
 
 | 内容 | 位置 | 说明 |

@@ -122,3 +122,19 @@ TOTAL_ELAPSED=$((SECONDS - SCRIPT_START))
 echo ""
 echo "总耗时: ${TOTAL_ELAPSED}s"
 echo "=============================================="
+
+# GitHub Release 上传
+VERSION=$(node -p "require('./package.json').version")
+UPLOAD_RELEASE="${UPLOAD_RELEASE:-}"
+if [ -z "${UPLOAD_RELEASE}" ] && [ -t 0 ]; then
+	read -rp "是否上传到 GitHub Release v${VERSION}? [y/N]: " upload_choice
+	case "${upload_choice}" in
+		[Yy]*)
+			UPLOAD_RELEASE="1"
+			;;
+	esac
+fi
+
+if [ "${UPLOAD_RELEASE}" = "1" ]; then
+	./scripts/upload-release.sh "${TARGET}" "${VERSION}"
+fi
