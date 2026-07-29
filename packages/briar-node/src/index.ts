@@ -10,6 +10,7 @@ import { startScheduler } from './lib/scheduler'
 import { schedulerTasks } from './lib/schedulerConfig'
 import { applyConfiguredMiddlewares, globalMiddlewares } from './middleware/config'
 import apiRoutes from './routes/api'
+import { rootHandler } from './routes/root'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -48,6 +49,9 @@ applyConfiguredMiddlewares(app, globalMiddlewares, '/*')
 
 // API 路由
 app.route('/api', apiRoutes)
+
+// 根路径落地页（备案合规）：须在静态资源中间件之前注册
+app.get('/', rootHandler)
 
 // 静态资源
 app.use('/*', serveStatic({ root: STATIC_PATH }))
