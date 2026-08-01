@@ -22,27 +22,39 @@ const GITHUB_API = 'https://api.github.com'
 
 const resolveGithubRepo = () => process.env.BRIAR_GITHUB_REPO || 'zhangleilaoge/briar-display'
 
+interface GithubTokenCandidate {
+	token: string
+	source: string
+}
+
 /**
- * 解析 GitHub token：优先 BRIAR_GITHUB_TOKEN 环境变量，
- * 兜底读 briar-assets/github/.env 里的 FINED_GRAINED_GITHUB_TOKEN（服务器上会同步该文件）
+ * 收集所有可用的 GitHub token（按优先级）：
+ * 1. BRIAR_GITHUB_TOKEN 环境变量
+ * 2. briar-assets/github/.env 里的 FINED_GRAINED_GITHUB_TOKEN（服务器上会同步该文件）
+ * 某个来源失效（如配置了错误值）时会自动尝试下一个
  */
-const resolveGithubToken = (): string | undefined => {
+const resolveGithubTokenCandidates = (): GithubTokenCandidate[] => {
+	const candidates: GithubTokenCandidate[] = []
 	if (process.env.BRIAR_GITHUB_TOKEN) {
-		return process.env.BRIAR_GITHUB_TOKEN
+		candidates.push({ token: process.env.BRIAR_GITHUB_TOKEN, source: 'BRIAR_GITHUB_TOKEN' })
 	}
 	try {
 		const envPath = path.join(findRepoRoot(process.cwd()), 'briar-assets/github/.env')
 		const content = fs.readFileSync(envPath, 'utf-8')
 		const match = content.match(/^FINED_GRAINED_GITHUB_TOKEN=(.+)$/m)
 		// 值可能带引号（KEY="xxx"），需剥离，否则 Authorization 头非法导致 401
-		return match?.[1].trim().replace(/^["']|["']$/g, '') || undefined
+		const token = match?.[1].trim().replace(/^["']|["']$/g, '')
+		if (token) {
+			candidates.push({ token, source: 'briar-assets/github/.env' })
+		}
 	} catch {
-		return undefined
+		// 文件不存在等情况，忽略
 	}
+	return candidates
 }
 
-const githubHeaders = () => ({
-	Authorization: `Bearer ${resolveGithubToken()}`,
+const githubHeaders = (token: string) => ({
+	Authorization: `Bearer ${token}`,
 	Accept: 'application/vnd.github+json',
 	'User-Agent': 'briar-node',
 	'X-GitHub-Api-Version': '2022-11-28',
@@ -85,61 +97,79 @@ export const deploymentService = {
 
 	/**
 	 * 拉取 GitHub Actions 某次运行的全部 job 日志（拼接为单文本）
-	 * 需要 GitHub token（actions:read 权限），见 resolveGithubToken
+	 * 依次尝试所有可用的 token 来源，全部失败才报错
 	 */
 	async getRunLogs(runId: string): Promise<DeployRunLogs> {
-		if (!resolveGithubToken()) {
-			throw new Error(
-				'未找到 GitHub token（BRIAR_GITHUB_TOKEN 或 briar-assets/github/.env），无法拉取 CI 日志',
-			)
-		}
 		if (!/^\d+$/.test(runId)) {
 			throw new Error(`非法的 runId: ${runId}`)
 		}
 
-		const repo = resolveGithubRepo()
-		const headers = githubHeaders()
-
-		const runRes = await fetch(`${GITHUB_API}/repos/${repo}/actions/runs/${runId}`, { headers })
-		if (!runRes.ok) {
-			throw new Error(`查询 workflow run 失败: HTTP ${runRes.status}`)
-		}
-		const run = (await runRes.json()) as { status: string; conclusion: string | null }
-
-		const jobsRes = await fetch(
-			`${GITHUB_API}/repos/${repo}/actions/runs/${runId}/jobs?per_page=100`,
-			{ headers },
-		)
-		if (!jobsRes.ok) {
-			throw new Error(`查询 jobs 失败: HTTP ${jobsRes.status}`)
-		}
-		const { jobs } = (await jobsRes.json()) as {
-			jobs: Array<{ id: number; name: string; status: string; conclusion: string | null }>
+		const candidates = resolveGithubTokenCandidates()
+		if (candidates.length === 0) {
+			throw new Error(
+				'未找到 GitHub token（BRIAR_GITHUB_TOKEN 或 briar-assets/github/.env），无法拉取 CI 日志',
+			)
 		}
 
-		const parts: string[] = []
-		for (const job of jobs) {
-			parts.push(`\n===== ${job.name} [${job.conclusion ?? job.status}] =====\n`)
+		let lastError: Error | null = null
+		for (const { token, source } of candidates) {
 			try {
-				// 该接口返回 302 跳转到日志下载地址，fetch 自动跟随
-				const logRes = await fetch(`${GITHUB_API}/repos/${repo}/actions/jobs/${job.id}/logs`, {
-					headers,
-				})
-				if (logRes.ok) {
-					parts.push(await logRes.text())
-				} else {
-					parts.push(`(日志暂不可用: HTTP ${logRes.status})`)
-				}
+				return await fetchRunLogsWithToken(runId, token)
 			} catch (error) {
-				parts.push(`(日志拉取失败: ${error instanceof Error ? error.message : String(error)})`)
+				lastError = error instanceof Error ? error : new Error(String(error))
+				console.warn(`⚠️  token 来源 ${source} 拉取日志失败: ${lastError.message}`)
 			}
 		}
-
-		return {
-			runId,
-			runStatus: run.status,
-			conclusion: run.conclusion,
-			logs: parts.join('\n'),
-		}
+		throw new Error(
+			`${lastError?.message ?? '未知错误'}（已尝试 ${candidates.length} 个 token 来源均失败）`,
+		)
 	},
+}
+
+/** 用指定 token 拉取 run 状态 + 全部 job 日志 */
+const fetchRunLogsWithToken = async (runId: string, token: string): Promise<DeployRunLogs> => {
+	const repo = resolveGithubRepo()
+	const headers = githubHeaders(token)
+
+	const runRes = await fetch(`${GITHUB_API}/repos/${repo}/actions/runs/${runId}`, { headers })
+	if (!runRes.ok) {
+		throw new Error(`查询 workflow run 失败: HTTP ${runRes.status}`)
+	}
+	const run = (await runRes.json()) as { status: string; conclusion: string | null }
+
+	const jobsRes = await fetch(
+		`${GITHUB_API}/repos/${repo}/actions/runs/${runId}/jobs?per_page=100`,
+		{ headers },
+	)
+	if (!jobsRes.ok) {
+		throw new Error(`查询 jobs 失败: HTTP ${jobsRes.status}`)
+	}
+	const { jobs } = (await jobsRes.json()) as {
+		jobs: Array<{ id: number; name: string; status: string; conclusion: string | null }>
+	}
+
+	const parts: string[] = []
+	for (const job of jobs) {
+		parts.push(`\n===== ${job.name} [${job.conclusion ?? job.status}] =====\n`)
+		try {
+			// 该接口返回 302 跳转到日志下载地址，fetch 自动跟随
+			const logRes = await fetch(`${GITHUB_API}/repos/${repo}/actions/jobs/${job.id}/logs`, {
+				headers,
+			})
+			if (logRes.ok) {
+				parts.push(await logRes.text())
+			} else {
+				parts.push(`(日志暂不可用: HTTP ${logRes.status})`)
+			}
+		} catch (error) {
+			parts.push(`(日志拉取失败: ${error instanceof Error ? error.message : String(error)})`)
+		}
+	}
+
+	return {
+		runId,
+		runStatus: run.status,
+		conclusion: run.conclusion,
+		logs: parts.join('\n'),
+	}
 }
