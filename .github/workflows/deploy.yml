@@ -5,6 +5,9 @@ on:
     branches:
       - master
       - main
+    # 证书续期等自动化任务只更新 briar-assets 子模块指针，无需触发部署
+    paths-ignore:
+      - 'briar-assets'
 
 jobs:
   build-and-deploy:
