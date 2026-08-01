@@ -278,7 +278,12 @@ function AdminDeployPageInner() {
 					<RefreshCw className="h-4 w-4 text-muted-foreground" />
 					<h2 className="text-sm font-semibold">续期记录</h2>
 				</div>
-				{renewals.length === 0 ? (
+				{loading ? (
+					<div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+						<Loader2 className="h-4 w-4 animate-spin" />
+						加载中...
+					</div>
+				) : renewals.length === 0 ? (
 					<p className="py-8 text-center text-xs text-muted-foreground">暂无续期记录</p>
 				) : (
 					<div className="rounded-md border">
@@ -346,7 +351,12 @@ function AdminDeployPageInner() {
 					<Rocket className="h-4 w-4 text-muted-foreground" />
 					<h2 className="text-sm font-semibold">部署记录</h2>
 				</div>
-				{history.length === 0 ? (
+				{loading ? (
+					<div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+						<Loader2 className="h-4 w-4 animate-spin" />
+						加载中...
+					</div>
+				) : history.length === 0 ? (
 					<p className="py-8 text-center text-xs text-muted-foreground">
 						暂无部署记录（deploy-history.jsonl 仅存在于服务器）
 					</p>
