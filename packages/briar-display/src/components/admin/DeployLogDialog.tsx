@@ -2,9 +2,10 @@
 
 import { type DeployRunLogs, getDeployLogs } from '@/api/deploy'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
 import Ansi from 'ansi-to-react'
 import axios from 'axios'
-import { Loader2, RefreshCw } from 'lucide-react'
+import { Check, Copy, Loader2, Maximize2, Minimize2, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface DeployLogDialogProps {
@@ -23,7 +24,18 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 	const [data, setData] = useState<DeployRunLogs | null>(null)
 	const [error, setError] = useState<string | null>(null)
 	const [loading, setLoading] = useState(false)
+	const [fullscreen, setFullscreen] = useState(false)
+	const [copied, setCopied] = useState(false)
 	const bodyRef = useRef<HTMLDivElement>(null)
+
+	/** 复制时剥离 ANSI 转义序列，粘贴出来是干净文本 */
+	const handleCopy = () => {
+		if (!data) return
+		// biome-ignore lint/suspicious/noControlCharactersInRegex: 剥离 ANSI 颜色转义码
+		navigator.clipboard.writeText(data.logs.replace(/\u001b\[[0-9;]*m/g, ''))
+		setCopied(true)
+		setTimeout(() => setCopied(false), 2000)
+	}
 
 	const fetchLogs = useCallback(async () => {
 		if (!runId) return
@@ -70,7 +82,12 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			{/* [&>button]:hidden 隐藏 Dialog 自带的右上角关闭按钮（与终端标题栏风格冲突），仍可 Esc/点击遮罩关闭 */}
-			<DialogContent className="max-w-4xl gap-0 overflow-hidden border-zinc-700 bg-zinc-950 p-0 text-zinc-100 [&>button]:hidden">
+			<DialogContent
+				className={cn(
+					'flex flex-col gap-0 overflow-hidden border-zinc-700 bg-zinc-950 p-0 text-zinc-100 [&>button]:hidden',
+					fullscreen ? 'h-screen max-w-none w-screen rounded-none' : 'max-w-4xl',
+				)}
+			>
 				{/* 终端标题栏（红点可点击关闭） */}
 				<div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-4 py-2.5">
 					<button
@@ -100,6 +117,19 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 						)}
 						<button
 							type="button"
+							onClick={handleCopy}
+							disabled={!data}
+							className="text-zinc-500 transition-colors hover:text-zinc-200 disabled:opacity-40"
+							title="复制日志（纯文本）"
+						>
+							{copied ? (
+								<Check className="h-3.5 w-3.5 text-green-400" />
+							) : (
+								<Copy className="h-3.5 w-3.5" />
+							)}
+						</button>
+						<button
+							type="button"
 							onClick={() => {
 								setLoading(true)
 								fetchLogs()
@@ -109,13 +139,28 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 						>
 							<RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
 						</button>
+						<button
+							type="button"
+							onClick={() => setFullscreen((v) => !v)}
+							className="text-zinc-500 transition-colors hover:text-zinc-200"
+							title={fullscreen ? '退出全屏' : '全屏'}
+						>
+							{fullscreen ? (
+								<Minimize2 className="h-3.5 w-3.5" />
+							) : (
+								<Maximize2 className="h-3.5 w-3.5" />
+							)}
+						</button>
 					</div>
 				</div>
 
 				{/* 终端内容区 */}
 				<div
 					ref={bodyRef}
-					className="h-[65vh] overflow-auto bg-zinc-950 p-4 font-mono text-xs leading-relaxed"
+					className={cn(
+						'overflow-auto bg-zinc-950 p-4 font-mono text-xs leading-relaxed',
+						fullscreen ? 'min-h-0 flex-1' : 'h-[65vh]',
+					)}
 				>
 					{loading && !data ? (
 						<div className="flex items-center gap-2 text-zinc-500">
