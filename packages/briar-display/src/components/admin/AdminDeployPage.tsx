@@ -11,6 +11,7 @@ import {
 	triggerCertRenew,
 } from '@/api/deploy'
 import AdminLayout from '@/components/admin/AdminLayout'
+import DeployLogDialog from '@/components/admin/DeployLogDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PermissionProvider } from '@/contexts/PermissionContext'
@@ -18,6 +19,7 @@ import { useRequirePermission } from '@/hooks/useRequirePermission'
 import {
 	AlertTriangle,
 	FileBadge,
+	FileTerminal,
 	Globe,
 	Loader2,
 	RefreshCw,
@@ -115,6 +117,8 @@ function AdminDeployPageInner() {
 	const [history, setHistory] = useState<DeployHistoryItem[]>([])
 	const [loading, setLoading] = useState(true)
 	const [renewing, setRenewing] = useState(false)
+	const [logRunId, setLogRunId] = useState<string | null>(null)
+	const [logOpen, setLogOpen] = useState(false)
 	const wasRunningRef = useRef(false)
 
 	const fetchStatus = useCallback(async () => {
@@ -341,6 +345,7 @@ function AdminDeployPageInner() {
 									<th className="px-3 py-2 text-left font-medium text-muted-foreground">Commit</th>
 									<th className="px-3 py-2 text-left font-medium text-muted-foreground">触发者</th>
 									<th className="px-3 py-2 text-left font-medium text-muted-foreground">状态</th>
+									<th className="px-3 py-2 text-right font-medium text-muted-foreground">操作</th>
 								</tr>
 							</thead>
 							<tbody className="divide-y">
@@ -352,6 +357,22 @@ function AdminDeployPageInner() {
 										<td className="px-3 py-2 font-mono text-xs">{item.commit.slice(0, 7)}</td>
 										<td className="px-3 py-2 text-xs">{item.actor}</td>
 										<td className="px-3 py-2">{deployStatusBadge(item.status)}</td>
+										<td className="px-3 py-2 text-right">
+											{item.run && (
+												<Button
+													variant="ghost"
+													size="sm"
+													className="h-7 gap-1 px-2 text-xs"
+													onClick={() => {
+														setLogRunId(item.run)
+														setLogOpen(true)
+													}}
+												>
+													<FileTerminal className="h-3.5 w-3.5" />
+													发布日志
+												</Button>
+											)}
+										</td>
 									</tr>
 								))}
 							</tbody>
@@ -359,6 +380,7 @@ function AdminDeployPageInner() {
 					</div>
 				)}
 			</div>
+			<DeployLogDialog runId={logRunId} open={logOpen} onOpenChange={setLogOpen} />
 		</AdminLayout>
 	)
 }
