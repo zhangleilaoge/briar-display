@@ -3,6 +3,7 @@
 import { type DeployRunLogs, getDeployLogs } from '@/api/deploy'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import Ansi from 'ansi-to-react'
+import axios from 'axios'
 import { Loader2, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -35,7 +36,9 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 				setError(res.message || '日志拉取失败')
 			}
 		} catch (e) {
-			setError(e instanceof Error ? e.message : '日志拉取失败')
+			// 后端 400 响应里带了具体原因（如 GitHub 401/404），优先展示
+			const serverMessage = axios.isAxiosError(e) ? e.response?.data?.message : undefined
+			setError(serverMessage || (e instanceof Error ? e.message : '日志拉取失败'))
 		} finally {
 			setLoading(false)
 		}
@@ -68,7 +71,7 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-4xl gap-0 overflow-hidden border-zinc-700 bg-zinc-950 p-0 text-zinc-100">
 				{/* 终端标题栏 */}
-				<div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-4 py-2.5">
+				<div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-4 py-2.5 pr-10">
 					<span className="h-3 w-3 rounded-full bg-red-500" />
 					<span className="h-3 w-3 rounded-full bg-yellow-500" />
 					<span className="h-3 w-3 rounded-full bg-green-500" />
