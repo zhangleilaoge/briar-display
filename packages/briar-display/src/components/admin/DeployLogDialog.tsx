@@ -27,6 +27,8 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 	const [fullscreen, setFullscreen] = useState(false)
 	const [copied, setCopied] = useState(false)
 	const bodyRef = useRef<HTMLDivElement>(null)
+	// open 的 ref 镜像：关闭弹窗后，残留定时器/在途响应触发的 fetchLogs 直接变成无操作
+	const openRef = useRef(open)
 
 	/** 复制时剥离 ANSI 转义序列，粘贴出来是干净文本 */
 	const handleCopy = () => {
@@ -38,7 +40,7 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 	}
 
 	const fetchLogs = useCallback(async () => {
-		if (!runId) return
+		if (!runId || !openRef.current) return
 		try {
 			const res = await getDeployLogs(runId)
 			if (res.success && res.data) {
@@ -55,6 +57,13 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 			setLoading(false)
 		}
 	}, [runId])
+
+	// 同步 open 到 ref（声明顺序先于下方 fetchLogs 相关 effect，保证首次加载时已是 true）
+	// 关闭时清空数据，避免残留 in_progress 状态
+	useEffect(() => {
+		openRef.current = open
+		if (!open) setData(null)
+	}, [open])
 
 	// 打开时首次加载
 	useEffect(() => {
