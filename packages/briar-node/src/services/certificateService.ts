@@ -418,7 +418,11 @@ export const certificateService = {
 			execSync(`git commit -m "chore: update SSL certificates for ${domain} [skip ci]"`, {
 				cwd: assetsDir,
 			})
-			execSync('git push origin main', { cwd: assetsDir })
+			// 子模块通常是 detached HEAD 且落后于远端，
+			// 先 rebase 到 origin/main 再推当前 HEAD，避免 non-fast-forward 被拒绝
+			execSync('git fetch origin', { cwd: assetsDir })
+			execSync('git rebase origin/main', { cwd: assetsDir })
+			execSync('git push origin HEAD:main', { cwd: assetsDir })
 			console.log('✅ briar-assets 已提交并推送')
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error)
@@ -448,7 +452,10 @@ export const certificateService = {
 			execSync('git commit -m "chore: update briar-assets submodule (certificates) [skip ci]"', {
 				cwd: repoRoot,
 			})
-			execSync('git push origin master', { cwd: repoRoot })
+			// 先 rebase 到远端最新再推，避免本地落后导致 non-fast-forward
+			execSync('git fetch origin', { cwd: repoRoot })
+			execSync('git rebase origin/master', { cwd: repoRoot })
+			execSync('git push origin HEAD:master', { cwd: repoRoot })
 			console.log('✅ 主仓库子模块已更新')
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error)
@@ -531,11 +538,21 @@ export const certificateService = {
 
 			const cdnUrls = await this.uploadCertificatesToCDN(domain.replace(/\*/g, 'wildcard'))
 
-			await this.commitAndPushAssets(domain)
-
-			await this.updateMainRepoSubmodule()
+			// git 同步失败不阻断本地 nginx 部署——证书文件已在服务器上，优先保证服务不中断
+			let gitError: string | null = null
+			try {
+				await this.commitAndPushAssets(domain)
+				await this.updateMainRepoSubmodule()
+			} catch (error) {
+				gitError = error instanceof Error ? error.message : String(error)
+				console.error(`\n⚠️  git 同步失败（继续部署 nginx）: ${gitError}\n`)
+			}
 
 			await this.deployNginx()
+
+			if (gitError) {
+				throw new Error(`证书已部署到 nginx，但 git 同步失败: ${gitError}`)
+			}
 
 			console.log(`\n${'='.repeat(60)}`)
 			console.log('✅ 证书续期流程全部完成')
