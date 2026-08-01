@@ -60,3 +60,15 @@ export const getDeployHistory = async () => {
 		await apiClient.get<ApiResponse<{ items: DeployHistoryItem[] }>>('/deployment/history')
 	return response.data
 }
+
+export interface DeployRunLogs {
+	runId: string
+	runStatus: string
+	conclusion: string | null
+	logs: string
+}
+
+export const getDeployLogs = async (runId: string) => {
+	const response = await apiClient.get<ApiResponse<DeployRunLogs>>(`/deployment/${runId}/logs`)
+	return response.data
+}
