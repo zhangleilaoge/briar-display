@@ -34,7 +34,8 @@ const resolveGithubToken = (): string | undefined => {
 		const envPath = path.join(findRepoRoot(process.cwd()), 'briar-assets/github/.env')
 		const content = fs.readFileSync(envPath, 'utf-8')
 		const match = content.match(/^FINED_GRAINED_GITHUB_TOKEN=(.+)$/m)
-		return match?.[1].trim() || undefined
+		// 值可能带引号（KEY="xxx"），需剥离，否则 Authorization 头非法导致 401
+		return match?.[1].trim().replace(/^["']|["']$/g, '') || undefined
 	} catch {
 		return undefined
 	}
