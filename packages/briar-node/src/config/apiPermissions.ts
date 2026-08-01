@@ -35,7 +35,7 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	'POST /api/admin/sql/execute': PERMISSIONS.ADMIN_SQL_EXECUTE,
 
 	// ==================== Cert ====================
-	'POST /api/cert/renew': PERMISSIONS.ADMIN_ROLE_MANAGE,
+	'POST /api/cert/renew': PERMISSIONS.ADMIN_DEPLOY_MANAGE,
 
 	// ==================== Images ====================
 	'POST /api/images/upload': PERMISSIONS.WIKI_PAGE_CREATE,
