@@ -55,4 +55,4 @@ const { certificateService } = await tsImport(
 
 const domain = process.env.CERTIFICATE_DOMAIN || 'stardew.site'
 
-await certificateService.renewCertificate(domain)
+await certificateService.renewCertificate(domain, false, 'scheduled')

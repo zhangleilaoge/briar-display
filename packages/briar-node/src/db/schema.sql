@@ -489,3 +489,16 @@ CREATE TABLE IF NOT EXISTS sql_audit_logs (
   INDEX idx_status (status),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SQL 控制台审计日志';
+
+-- 证书续期记录表
+CREATE TABLE IF NOT EXISTS cert_renewal_logs (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  domain VARCHAR(255) NOT NULL COMMENT '证书域名',
+  trigger_type ENUM('scheduled','manual') NOT NULL DEFAULT 'manual' COMMENT '触发方式',
+  status ENUM('running','success','skipped','failed') NOT NULL DEFAULT 'running' COMMENT '执行状态',
+  message TEXT COMMENT '结果信息或错误原因',
+  started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '开始时间',
+  finished_at TIMESTAMP NULL DEFAULT NULL COMMENT '结束时间',
+  INDEX idx_started_at (started_at),
+  INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='证书续期记录';
