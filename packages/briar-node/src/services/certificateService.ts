@@ -321,7 +321,9 @@ export const certificateService = {
 			}
 
 			execSync('git add ssl/', { cwd: assetsDir })
-			execSync(`git commit -m "chore: update SSL certificates for ${domain}"`, { cwd: assetsDir })
+			execSync(`git commit -m "chore: update SSL certificates for ${domain} [skip ci]"`, {
+				cwd: assetsDir,
+			})
 			execSync('git push origin main', { cwd: assetsDir })
 			console.log('✅ briar-assets 已提交并推送')
 		} catch (error) {
@@ -349,7 +351,7 @@ export const certificateService = {
 			}
 
 			execSync('git add briar-assets', { cwd: repoRoot })
-			execSync('git commit -m "chore: update briar-assets submodule (certificates)"', {
+			execSync('git commit -m "chore: update briar-assets submodule (certificates) [skip ci]"', {
 				cwd: repoRoot,
 			})
 			execSync('git push origin master', { cwd: repoRoot })
