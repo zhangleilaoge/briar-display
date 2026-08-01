@@ -22,8 +22,26 @@ const GITHUB_API = 'https://api.github.com'
 
 const resolveGithubRepo = () => process.env.BRIAR_GITHUB_REPO || 'zhangleilaoge/briar-display'
 
+/**
+ * 解析 GitHub token：优先 BRIAR_GITHUB_TOKEN 环境变量，
+ * 兜底读 briar-assets/github/.env 里的 FINED_GRAINED_GITHUB_TOKEN（服务器上会同步该文件）
+ */
+const resolveGithubToken = (): string | undefined => {
+	if (process.env.BRIAR_GITHUB_TOKEN) {
+		return process.env.BRIAR_GITHUB_TOKEN
+	}
+	try {
+		const envPath = path.join(findRepoRoot(process.cwd()), 'briar-assets/github/.env')
+		const content = fs.readFileSync(envPath, 'utf-8')
+		const match = content.match(/^FINED_GRAINED_GITHUB_TOKEN=(.+)$/m)
+		return match?.[1].trim() || undefined
+	} catch {
+		return undefined
+	}
+}
+
 const githubHeaders = () => ({
-	Authorization: `Bearer ${process.env.BRIAR_GITHUB_TOKEN}`,
+	Authorization: `Bearer ${resolveGithubToken()}`,
 	Accept: 'application/vnd.github+json',
 	'User-Agent': 'briar-node',
 	'X-GitHub-Api-Version': '2022-11-28',
@@ -66,11 +84,13 @@ export const deploymentService = {
 
 	/**
 	 * 拉取 GitHub Actions 某次运行的全部 job 日志（拼接为单文本）
-	 * 需要环境变量 BRIAR_GITHUB_TOKEN（actions:read 权限）
+	 * 需要 GitHub token（actions:read 权限），见 resolveGithubToken
 	 */
 	async getRunLogs(runId: string): Promise<DeployRunLogs> {
-		if (!process.env.BRIAR_GITHUB_TOKEN) {
-			throw new Error('未配置 BRIAR_GITHUB_TOKEN，无法拉取 GitHub CI 日志')
+		if (!resolveGithubToken()) {
+			throw new Error(
+				'未找到 GitHub token（BRIAR_GITHUB_TOKEN 或 briar-assets/github/.env），无法拉取 CI 日志',
+			)
 		}
 		if (!/^\d+$/.test(runId)) {
 			throw new Error(`非法的 runId: ${runId}`)
