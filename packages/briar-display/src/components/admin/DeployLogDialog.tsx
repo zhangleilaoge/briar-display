@@ -125,10 +125,9 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 					) : error ? (
 						<p className="text-red-400">$ fetch logs → error: {error}</p>
 					) : data ? (
-						<pre className="whitespace-pre-wrap break-all">
-							<Ansi useClasses linkify={false}>
-								{data.logs}
-							</Ansi>
+						// whitespace-pre 保持等宽对齐（如 PM2 表格），长行横向滚动而非折行错位
+						<pre className="whitespace-pre">
+							<Ansi linkify={false}>{data.logs}</Ansi>
 						</pre>
 					) : null}
 					{data && data.runStatus !== 'completed' && (

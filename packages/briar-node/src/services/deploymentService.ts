@@ -96,12 +96,49 @@ export const deploymentService = {
 	},
 
 	/**
+	 * 部署记录：jsonl 历史 + GitHub 实时 runs 合并
+	 * API 数据更新（状态实时），同一 run 以 API 为准；token 全失效时退回纯 jsonl
+	 */
+	async listDeployRuns(limit = 20): Promise<DeployHistoryItem[]> {
+		const history = await this.listDeployHistory(50)
+
+		let apiRuns: DeployHistoryItem[] = []
+		for (const { token, source } of resolveGithubTokenCandidates()) {
+			try {
+				apiRuns = await fetchRecentRuns(token, limit)
+				break
+			} catch (error) {
+				console.warn(
+					`⚠️  token 来源 ${source} 查询 runs 失败:`,
+					error instanceof Error ? error.message : error,
+				)
+			}
+		}
+
+		const byRun = new Map<string, DeployHistoryItem>()
+		for (const item of history) {
+			if (item.run) byRun.set(item.run, item)
+		}
+		for (const item of apiRuns) {
+			byRun.set(item.run, item)
+		}
+
+		return [...byRun.values()].sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit)
+	},
+
+	/**
 	 * 拉取 GitHub Actions 某次运行的全部 job 日志（拼接为单文本）
 	 * 依次尝试所有可用的 token 来源，全部失败才报错
 	 */
 	async getRunLogs(runId: string): Promise<DeployRunLogs> {
 		if (!/^\d+$/.test(runId)) {
 			throw new Error(`非法的 runId: ${runId}`)
+		}
+
+		// 已完成 run 的日志不可变，走内存缓存避免重复跨境拉取
+		const cached = runLogsCache.get(runId)
+		if (cached) {
+			return cached
 		}
 
 		const candidates = resolveGithubTokenCandidates()
@@ -114,7 +151,14 @@ export const deploymentService = {
 		let lastError: Error | null = null
 		for (const { token, source } of candidates) {
 			try {
-				return await fetchRunLogsWithToken(runId, token)
+				const result = await fetchRunLogsWithToken(runId, token)
+				if (result.runStatus === 'completed') {
+					if (runLogsCache.size >= 50) {
+						runLogsCache.delete(runLogsCache.keys().next().value as string)
+					}
+					runLogsCache.set(runId, result)
+				}
+				return result
 			} catch (error) {
 				lastError = error instanceof Error ? error : new Error(String(error))
 				console.warn(`⚠️  token 来源 ${source} 拉取日志失败: ${lastError.message}`)
@@ -124,6 +168,40 @@ export const deploymentService = {
 			`${lastError?.message ?? '未知错误'}（已尝试 ${candidates.length} 个 token 来源均失败）`,
 		)
 	},
+}
+
+/** 已完成 run 的日志缓存（不可变数据，无需过期） */
+const runLogsCache = new Map<string, DeployRunLogs>()
+
+/** 从 GitHub API 查询最近的 workflow runs（含进行中的） */
+const fetchRecentRuns = async (token: string, limit: number): Promise<DeployHistoryItem[]> => {
+	const repo = resolveGithubRepo()
+	const res = await fetch(`${GITHUB_API}/repos/${repo}/actions/runs?per_page=${limit}`, {
+		headers: githubHeaders(token),
+	})
+	if (!res.ok) {
+		throw new Error(`查询 workflow runs 失败: HTTP ${res.status}`)
+	}
+	const { workflow_runs } = (await res.json()) as {
+		workflow_runs: Array<{
+			id: number
+			head_sha: string
+			head_branch: string
+			status: string
+			conclusion: string | null
+			created_at: string
+			actor: { login: string } | null
+		}>
+	}
+
+	return workflow_runs.map((run) => ({
+		commit: run.head_sha,
+		ref: run.head_branch,
+		actor: run.actor?.login ?? '',
+		status: run.status === 'completed' ? (run.conclusion ?? 'completed') : run.status,
+		at: run.created_at,
+		run: String(run.id),
+	}))
 }
 
 /** 用指定 token 拉取 run 状态 + 全部 job 日志 */
@@ -148,23 +226,24 @@ const fetchRunLogsWithToken = async (runId: string, token: string): Promise<Depl
 		jobs: Array<{ id: number; name: string; status: string; conclusion: string | null }>
 	}
 
-	const parts: string[] = []
-	for (const job of jobs) {
-		parts.push(`\n===== ${job.name} [${job.conclusion ?? job.status}] =====\n`)
-		try {
-			// 该接口返回 302 跳转到日志下载地址，fetch 自动跟随
-			const logRes = await fetch(`${GITHUB_API}/repos/${repo}/actions/jobs/${job.id}/logs`, {
-				headers,
-			})
-			if (logRes.ok) {
-				parts.push(await logRes.text())
-			} else {
-				parts.push(`(日志暂不可用: HTTP ${logRes.status})`)
+	// 多 job 并行拉取日志（每个请求都要 302 跳转下载，串行会叠加跨境延迟）
+	const parts = await Promise.all(
+		jobs.map(async (job) => {
+			const header = `\n===== ${job.name} [${job.conclusion ?? job.status}] =====\n`
+			try {
+				// 该接口返回 302 跳转到日志下载地址，fetch 自动跟随
+				const logRes = await fetch(`${GITHUB_API}/repos/${repo}/actions/jobs/${job.id}/logs`, {
+					headers,
+				})
+				if (logRes.ok) {
+					return header + (await logRes.text())
+				}
+				return `${header}(日志暂不可用: HTTP ${logRes.status})`
+			} catch (error) {
+				return `${header}(日志拉取失败: ${error instanceof Error ? error.message : String(error)})`
 			}
-		} catch (error) {
-			parts.push(`(日志拉取失败: ${error instanceof Error ? error.message : String(error)})`)
-		}
-	}
+		}),
+	)
 
 	return {
 		runId,
