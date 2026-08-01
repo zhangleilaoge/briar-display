@@ -69,10 +69,16 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-4xl gap-0 overflow-hidden border-zinc-700 bg-zinc-950 p-0 text-zinc-100">
-				{/* 终端标题栏 */}
-				<div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-4 py-2.5 pr-10">
-					<span className="h-3 w-3 rounded-full bg-red-500" />
+			{/* [&>button]:hidden 隐藏 Dialog 自带的右上角关闭按钮（与终端标题栏风格冲突），仍可 Esc/点击遮罩关闭 */}
+			<DialogContent className="max-w-4xl gap-0 overflow-hidden border-zinc-700 bg-zinc-950 p-0 text-zinc-100 [&>button]:hidden">
+				{/* 终端标题栏（红点可点击关闭） */}
+				<div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-4 py-2.5">
+					<button
+						type="button"
+						onClick={() => onOpenChange(false)}
+						className="h-3 w-3 rounded-full bg-red-500 transition-opacity hover:opacity-70"
+						title="关闭"
+					/>
 					<span className="h-3 w-3 rounded-full bg-yellow-500" />
 					<span className="h-3 w-3 rounded-full bg-green-500" />
 					<DialogTitle className="ml-2 font-mono text-xs text-zinc-400">
