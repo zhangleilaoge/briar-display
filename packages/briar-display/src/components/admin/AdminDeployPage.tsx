@@ -54,9 +54,15 @@ const TRIGGER_LABEL: Record<CertRenewalItem['triggerType'], string> = {
 	manual: '手动触发',
 }
 
+const RUNNING_DEPLOY_STATUS = ['in_progress', 'queued', 'waiting', 'requested']
+
 function deployStatusBadge(status: string) {
 	if (status === 'success') return <Badge className="bg-green-100 text-green-700">成功</Badge>
 	if (status === 'failure') return <Badge className="bg-red-100 text-red-700">失败</Badge>
+	if (status === 'cancelled') return <Badge className="bg-gray-100 text-gray-600">已取消</Badge>
+	if (RUNNING_DEPLOY_STATUS.includes(status)) {
+		return <Badge className="animate-pulse bg-blue-100 text-blue-700">进行中</Badge>
+	}
 	return <Badge className="bg-gray-100 text-gray-600">{status}</Badge>
 }
 
@@ -139,6 +145,14 @@ function AdminDeployPageInner() {
 	useEffect(() => {
 		Promise.all([fetchStatus(), fetchRenewals(), fetchHistory()]).finally(() => setLoading(false))
 	}, [fetchStatus, fetchRenewals, fetchHistory])
+
+	// 有进行中的部署时轮询列表，状态翻转后自动停止
+	const hasRunningDeploy = history.some((h) => RUNNING_DEPLOY_STATUS.includes(h.status))
+	useEffect(() => {
+		if (!hasRunningDeploy) return
+		const timer = setInterval(fetchHistory, 10000)
+		return () => clearInterval(timer)
+	}, [hasRunningDeploy, fetchHistory])
 
 	// 有 running 状态的续期记录时轮询，结束后提示结果并刷新证书状态
 	const hasRunning = renewals.some((r) => r.status === 'running')
