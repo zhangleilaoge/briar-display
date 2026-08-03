@@ -33,6 +33,7 @@ function useFluidBackground(containerRef: React.RefObject<HTMLDivElement | null>
 		if (!container) return
 		let instance: WebGLFluidEnhanced | null = null
 		let timer: ReturnType<typeof setInterval> | null = null
+		let onMouseMove: ((e: MouseEvent) => void) | null = null
 		let disposed = false
 
 		// 动态导入：避免 SSR 阶段触碰 window/document
@@ -53,18 +54,39 @@ function useFluidBackground(containerRef: React.RefObject<HTMLDivElement | null>
 				// 去掉泛光/日光，避免发白发乱
 				bloom: false,
 				sunrays: false,
-				// 悬停搅动流体
-				hover: true,
 			})
 			instance.start()
 			// 开场多来几团，随后周期性注入保持流动
 			instance.multipleSplats(6)
 			timer = setInterval(() => instance?.multipleSplats(1), IDLE_SPLAT_INTERVAL)
+
+			// 鼠标搅动：库的 hover 监听挂在 canvas 上，但画布在负 z-index 层收不到事件，
+			// 改为在 window 上监听并手动注入 splat（x 乘 pixelRatio 对齐库内部算法，
+			// y 方向翻转——纹理坐标系 y 轴向上）
+			let lastX = 0
+			let lastY = 0
+			onMouseMove = (e: MouseEvent) => {
+				if (!instance) return
+				const dx = (e.clientX - lastX) * 10
+				const dy = (e.clientY - lastY) * 10
+				lastX = e.clientX
+				lastY = e.clientY
+				if (dx === 0 && dy === 0) return
+				const clamp = (v: number) => Math.max(-600, Math.min(600, v))
+				instance.splatAtLocation(
+					e.clientX * (window.devicePixelRatio || 1),
+					e.clientY,
+					clamp(dx),
+					clamp(-dy),
+				)
+			}
+			window.addEventListener('mousemove', onMouseMove)
 		})
 
 		return () => {
 			disposed = true
 			if (timer) clearInterval(timer)
+			if (onMouseMove) window.removeEventListener('mousemove', onMouseMove)
 			instance?.stop()
 		}
 	}, [containerRef])
