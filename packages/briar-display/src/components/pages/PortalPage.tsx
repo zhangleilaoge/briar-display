@@ -20,8 +20,8 @@ const PORTAL_STYLE = `
 }
 `
 
-/** 无操作时每隔 3s 自动注入一团流体，保持画面流动 */
-const IDLE_SPLAT_INTERVAL = 3000
+/** 无操作时每 5s 自动注入一小团流体，保持画面微流动 */
+const IDLE_SPLAT_INTERVAL = 5000
 
 /**
  * WebGL 流体背景（webgl-fluid-enhanced，MIT，基于 PavelDoGreat 的流体模拟）
@@ -45,19 +45,19 @@ function useFluidBackground(containerRef: React.RefObject<HTMLDivElement | null>
 				transparent: true,
 				colorPalette: ['#22d3ee', '#3b82f6', '#8b5cf6'],
 				colorful: false,
-				brightness: 0.55,
-				// 染料消散快一点，画面干净不糊；速度消散慢一点，流动感更持久
-				densityDissipation: 2.2,
+				// 低亮度 + 小染料团 + 快消散，保持暗色科幻感，避免光污染
+				brightness: 0.32,
+				densityDissipation: 3.2,
 				velocityDissipation: 0.4,
-				curl: 20,
-				splatRadius: 0.3,
+				curl: 12,
+				splatRadius: 0.18,
 				// 去掉泛光/日光，避免发白发乱
 				bloom: false,
 				sunrays: false,
 			})
 			instance.start()
-			// 开场多来几团，随后周期性注入保持流动
-			instance.multipleSplats(6)
+			// 开场几团即可，随后低频注入保持微流动
+			instance.multipleSplats(3)
 			timer = setInterval(() => instance?.multipleSplats(1), IDLE_SPLAT_INTERVAL)
 
 			// 鼠标搅动：库的 hover 监听挂在 canvas 上，但画布在负 z-index 层收不到事件，
@@ -67,12 +67,12 @@ function useFluidBackground(containerRef: React.RefObject<HTMLDivElement | null>
 			let lastY = 0
 			onMouseMove = (e: MouseEvent) => {
 				if (!instance) return
-				const dx = (e.clientX - lastX) * 10
-				const dy = (e.clientY - lastY) * 10
+				const dx = (e.clientX - lastX) * 5
+				const dy = (e.clientY - lastY) * 5
 				lastX = e.clientX
 				lastY = e.clientY
 				if (dx === 0 && dy === 0) return
-				const clamp = (v: number) => Math.max(-600, Math.min(600, v))
+				const clamp = (v: number) => Math.max(-400, Math.min(400, v))
 				instance.splatAtLocation(
 					e.clientX * (window.devicePixelRatio || 1),
 					e.clientY,
