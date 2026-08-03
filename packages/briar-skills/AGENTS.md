@@ -17,6 +17,7 @@
 | `briar-sync` | 反合主分支：将最新 master/main 合入开发分支，自动处理简单冲突 |
 | `briar-skynet` | 天网日志查询、traceId 链路追踪与日志导出下载 |
 | `briar-session` | 按时间范围查找历史 kimi-code 会话（主题、目录、会话 ID、恢复命令） |
+| `briar-get-session-id` | 按时间窗口 + （定制页面 key 或 kdtId）查询有效导购登录 sessionId（天网日志 + Dubbo 校验） |
 
 ---
 
