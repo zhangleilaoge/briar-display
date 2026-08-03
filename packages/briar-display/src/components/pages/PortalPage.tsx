@@ -13,22 +13,22 @@ import { BookOpen, ImageIcon, Shield, Wrench } from 'lucide-react'
 const PORTAL_STYLE = `
 .portal-blob {
 	position: absolute;
-	filter: blur(110px);
+	filter: blur(100px);
 	will-change: transform, border-radius;
 }
 .portal-blob-1 {
 	left: -15%; top: -20%; width: 55vw; height: 55vw;
-	background: rgba(34, 211, 238, 0.16);
+	background: rgba(34, 211, 238, 0.22);
 	animation: portal-drift-a 28s ease-in-out infinite alternate;
 }
 .portal-blob-2 {
 	right: -12%; top: 5%; width: 48vw; height: 48vw;
-	background: rgba(139, 92, 246, 0.14);
+	background: rgba(139, 92, 246, 0.19);
 	animation: portal-drift-b 34s ease-in-out infinite alternate;
 }
 .portal-blob-3 {
 	left: 28%; bottom: -18%; width: 45vw; height: 45vw;
-	background: rgba(59, 130, 246, 0.13);
+	background: rgba(59, 130, 246, 0.17);
 	animation: portal-drift-c 24s ease-in-out infinite alternate;
 }
 @keyframes portal-drift-a {
@@ -70,7 +70,7 @@ interface EntryCardProps {
 function EntryCard({ icon, title, description, href, gradient }: EntryCardProps) {
 	return (
 		<a href={href} className="group block">
-			<Card className="rounded-xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-cyan-400/30 hover:bg-white/[0.07] hover:shadow-[0_0_45px_-10px_rgba(56,189,248,0.35)]">
+			<Card className="rounded-xl border border-white/[0.12] bg-white/[0.06] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-cyan-400/40 hover:bg-white/[0.09] hover:shadow-[0_0_45px_-10px_rgba(56,189,248,0.4)]">
 				<CardContent className="flex items-start gap-4 p-5">
 					<div
 						className={cn(
@@ -96,11 +96,11 @@ function PortalPageInner() {
 	const { isAdmin, loading } = usePermissions()
 
 	return (
-		<div className="relative flex min-h-screen flex-col overflow-hidden bg-[#04070f]">
+		<div className="relative flex min-h-screen flex-col overflow-hidden">
 			<style>{PORTAL_STYLE}</style>
 
-			{/* 流体光斑背景 */}
-			<div className="pointer-events-none fixed inset-0 -z-20 overflow-hidden">
+			{/* 流体光斑背景（底色必须在这层，不能放根节点——负 z-index 会被根背景盖住） */}
+			<div className="pointer-events-none fixed inset-0 -z-20 overflow-hidden bg-[#04070f]">
 				<div className="portal-blob portal-blob-1" />
 				<div className="portal-blob portal-blob-2" />
 				<div className="portal-blob portal-blob-3" />
