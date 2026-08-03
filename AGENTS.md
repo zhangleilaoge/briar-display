@@ -136,6 +136,8 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 **自动部署**：`git push` 到 master/main → GitHub Actions 一条流水线完成：
 构建前端 + 上传 CDN → rsync 到服务器 `web/` → SSH 调用 `deploy.sh`（更新代码、build shared+node、migrate、写 version、PM2 重启）→ 健康检查 `GET /api/version` → 记录到 `briar-assets/deploy-history.jsonl`。
 
+**触发范围**：CI 仅对 `packages/briar-{node,display,shared,scripts}`、`scripts/deploy.sh` 及根构建文件（`package.json`/`bun.lock`/`Makefile`/`biome.json`）的改动触发；其他改动（如 briar-agent、briar-skills、docs）不触发，如需部署可在 Actions 页面手动 `workflow_dispatch`。
+
 | 修改内容 | 执行 |
 | :--- | :--- |
 | `packages/briar-node/src/**/*.ts` | git push，CI 自动部署（含 migrate） |
