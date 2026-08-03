@@ -32,8 +32,8 @@ function getToken(): string | null {
 }
 
 interface UserMenuProps {
-	/** 主题：light 给 Tools/Images/Admin，wiki 给 Wiki 主题顶部，dark 给深色 Portal 页 */
-	variant?: 'light' | 'wiki' | 'dark'
+	/** 主题：light 给 Portal/Tools/Images/Admin，wiki 给 Wiki 主题顶部 */
+	variant?: 'light' | 'wiki'
 }
 
 function Avatar({
@@ -97,36 +97,28 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 		window.location.href = '/briar-display/'
 	}, [])
 
-	// 下拉面板始终是浅色面板：dark 变体只影响触发器与登录按钮
-	const isLight = variant !== 'wiki'
-	const isDark = variant === 'dark'
+	const isLight = variant === 'light'
 	const initial = user?.name?.charAt(0)?.toUpperCase() || 'U'
 	const roleDisplay = roles.length > 0 ? roles.map((r) => r.displayName).join(' · ') : null
 
 	// 触发器样式（区分主题）
 	const triggerClass = cn(
 		'inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors',
-		isDark
-			? 'text-zinc-200 hover:bg-white/10'
-			: isLight
-				? 'text-foreground hover:bg-accent'
-				: 'text-wiki-text hover:bg-wiki-bg-tertiary text-[13px]',
+		isLight
+			? 'text-foreground hover:bg-accent'
+			: 'text-wiki-text hover:bg-wiki-bg-tertiary text-[13px]',
 	)
 	const avatarClass = cn(
 		'flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-semibold text-white',
-		isDark
-			? 'bg-gradient-to-br from-cyan-400 to-violet-500'
-			: isLight
-				? 'bg-gradient-to-br from-blue-500 to-purple-500'
-				: 'bg-wiki-link',
+		isLight ? 'bg-gradient-to-br from-blue-500 to-purple-500' : 'bg-wiki-link',
 	)
 	const nameClass = cn(
 		'hidden max-w-[80px] truncate sm:inline',
-		isDark ? 'text-zinc-200' : isLight ? 'text-foreground' : 'text-wiki-text text-[13px]',
+		isLight ? 'text-foreground' : 'text-wiki-text text-[13px]',
 	)
 	const chevronClass = cn(
 		'h-3.5 w-3.5 transition-transform',
-		isDark ? 'text-zinc-500' : isLight ? 'text-muted-foreground' : 'text-wiki-text-muted',
+		isLight ? 'text-muted-foreground' : 'text-wiki-text-muted',
 		open && 'rotate-180',
 	)
 
@@ -151,11 +143,9 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 				href="/briar-display/login"
 				className={cn(
 					'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
-					isDark
-						? 'border border-white/15 bg-white/[0.06] text-zinc-200 hover:bg-white/10'
-						: isLight
-							? 'border border-border bg-background text-foreground hover:bg-accent'
-							: 'text-wiki-text hover:bg-wiki-bg-tertiary text-[13px]',
+					isLight
+						? 'border border-border bg-background text-foreground hover:bg-accent'
+						: 'text-wiki-text hover:bg-wiki-bg-tertiary text-[13px]',
 				)}
 			>
 				<LogIn className="h-3.5 w-3.5" />
