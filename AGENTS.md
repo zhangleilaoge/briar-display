@@ -73,6 +73,7 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 - 页面 `/briar-display/files`（旧 `/briar-display/images/*` 重定向至此），API `/api/files`
 - 上传走**前端分片直传 COS**：`POST /api/files/precheck`（配额/去重/发 cosKey）→ cos-js-sdk-v5 `sliceUploadFile` 直传（分片签名由 `POST /api/files/cos-sign` 下发，仅放行 `files/{userId}/` 前缀）→ `POST /api/files/confirm` 写库。文件不经过 nginx/服务器，`client_max_body_size 10m` 不影响上传
 - 直传依赖 COS bucket CORS，一次性配置：`make cos-cors`
+- 视频封面：上传完成后客户端用 video+canvas 截首帧，直传为 `{cosKey去扩展名}.cover.jpg` 并在 confirm 时传 `thumbnailKey`；网格有封面用 `<img>`，存量无封面视频 fallback 到 `<video preload="metadata">`；删除文件/文件夹时连带删封面
 - 数据表：`files`（原 `images` 表改名）+ `folders`（嵌套文件夹），迁移见 `migrate.sql`
 
 ## 已知陷阱
