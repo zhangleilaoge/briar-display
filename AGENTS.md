@@ -51,6 +51,8 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 | `packages/briar-shared/src/permissions.ts` | 权限编码常量和分组 |
 | `packages/briar-display/src/api/request.ts` | 前端 axios 实例，baseURL 自动计算 |
 | `packages/briar-node/src/routes/version.ts` | `/api/version` 版本指纹接口（前后端一致性校验） |
+| `packages/briar-node/src/routes/files.ts` | 文件管理 API（`/api/files`，原图床）：上传 precheck/cos-sign/confirm、文件夹 CRUD、文本预览代理 |
+| `packages/briar-display/src/api/files.ts` | 前端文件 API + cos-js-sdk-v5 分片直传封装 |
 | `packages/briar-scripts/scripts/write-version.ts` | 构建时写入 `version.json` 的脚本 |
 | `.github/workflows/deploy.yml` | CI：构建前端 + 上传 CDN + SSH 部署后端 + 健康检查 |
 | `default.conf` | Nginx 配置 |
@@ -65,6 +67,13 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 - `/` → `http://127.0.0.1:3888/`（根路径落地页，备案合规，源码 `packages/briar-node/src/routes/root.ts`）
 - `/briar-display/` → `http://127.0.0.1:3888`（后端提供静态资源 + fallback）
 - `/api/` → `http://127.0.0.1:3888/api/`
+
+### 文件管理（原图床）
+
+- 页面 `/briar-display/files`（旧 `/briar-display/images/*` 重定向至此），API `/api/files`
+- 上传走**前端分片直传 COS**：`POST /api/files/precheck`（配额/去重/发 cosKey）→ cos-js-sdk-v5 `sliceUploadFile` 直传（分片签名由 `POST /api/files/cos-sign` 下发，仅放行 `files/{userId}/` 前缀）→ `POST /api/files/confirm` 写库。文件不经过 nginx/服务器，`client_max_body_size 10m` 不影响上传
+- 直传依赖 COS bucket CORS，一次性配置：`make cos-cors`
+- 数据表：`files`（原 `images` 表改名）+ `folders`（嵌套文件夹），迁移见 `migrate.sql`
 
 ## 已知陷阱
 

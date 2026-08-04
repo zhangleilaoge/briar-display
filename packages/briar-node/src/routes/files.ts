@@ -132,12 +132,22 @@ fileRoutes.post('/cos-sign', async (c) => {
 	const method = (body.method || '').toUpperCase()
 	const key = body.key || ''
 
-	if (!method || !key) {
+	if (!method) {
 		return c.json<ApiResponse>({ success: false, message: '参数不完整' }, HTTP_STATUS.BAD_REQUEST)
 	}
 
-	// 只允许签名当前用户自己的 files/{userId}/ 前缀
-	if (!key.startsWith(`files/${user.id}/`)) {
+	// 只允许签名当前用户自己的 files/{userId}/ 前缀。
+	// key 为空时是 bucket 级请求（sliceUploadFile 续传检查：GET /?prefix=xxx&uploads），
+	// 此时校验 query.prefix 前缀。
+	const userPrefix = `files/${user.id}/`
+	if (key) {
+		if (!key.startsWith(userPrefix)) {
+			return c.json<ApiResponse>(
+				{ success: false, message: '无权操作该对象' },
+				HTTP_STATUS.FORBIDDEN,
+			)
+		}
+	} else if (!(body.query?.prefix || '').startsWith(userPrefix)) {
 		return c.json<ApiResponse>({ success: false, message: '无权操作该对象' }, HTTP_STATUS.FORBIDDEN)
 	}
 
