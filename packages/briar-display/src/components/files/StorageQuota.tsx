@@ -1,6 +1,6 @@
 'use client'
 
-import { type ImageStats, getImageStats } from '@/api/images'
+import { type FileStats, getFileStats } from '@/api/files'
 import { cn } from '@/lib/utils'
 import { useEffect, useState } from 'react'
 
@@ -12,10 +12,10 @@ function formatBytes(bytes: number): string {
 }
 
 export default function StorageQuota() {
-	const [stats, setStats] = useState<ImageStats | null>(null)
+	const [stats, setStats] = useState<FileStats | null>(null)
 
 	useEffect(() => {
-		getImageStats()
+		getFileStats()
 			.then((res) => {
 				if (res.success && res.data) setStats(res.data)
 			})
@@ -40,7 +40,7 @@ export default function StorageQuota() {
 					{formatBytes(stats.used)} / {formatBytes(stats.quota)}
 				</span>
 			</div>
-			<span className="text-xs text-muted-foreground">{stats.count} 张</span>
+			<span className="text-xs text-muted-foreground">{stats.count} 个文件</span>
 		</div>
 	)
 }

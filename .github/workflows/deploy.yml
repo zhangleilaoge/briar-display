@@ -5,6 +5,21 @@ on:
     branches:
       - master
       - main
+    # 白名单：仅影响部署产物的改动才触发流水线
+    # （briar-agent / briar-skills / docs / briar-assets 等改动自动跳过；
+    #   其他改动如需部署可在 Actions 页面手动 workflow_dispatch）
+    paths:
+      - 'packages/briar-node/**'
+      - 'packages/briar-display/**'
+      - 'packages/briar-shared/**'
+      - 'packages/briar-scripts/**' # write-version.ts 被 CI 使用
+      - 'scripts/deploy.sh' # 部署脚本本身
+      - 'package.json' # 根依赖/脚本变化影响构建
+      - 'bun.lock' # 锁定文件变化影响构建
+      - 'Makefile'
+      - 'biome.json'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:

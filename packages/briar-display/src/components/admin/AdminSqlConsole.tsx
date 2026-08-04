@@ -333,6 +333,8 @@ function SqlConsoleContent() {
 								}}
 								className={cn(
 									'flex items-center gap-1.5 border-b-2 px-3 py-1.5 text-sm transition-colors',
+									// 大屏下表结构固定在右侧面板，tab 仅在小屏提供
+									key === 'schema' && 'lg:hidden',
 									activeTab === key
 										? 'border-foreground font-medium'
 										: 'border-transparent text-muted-foreground hover:text-foreground',
@@ -418,9 +420,9 @@ function SqlConsoleContent() {
 						</div>
 					)}
 
-					{/* Schema 区域（小屏通过 tab 查看） */}
+					{/* Schema 区域（小屏通过 tab 查看，大屏固定使用右侧面板） */}
 					{activeTab === 'schema' && (
-						<div className="min-h-[200px]">
+						<div className="min-h-[200px] lg:hidden">
 							<SchemaPanel
 								databaseName={databaseName}
 								schema={schema}

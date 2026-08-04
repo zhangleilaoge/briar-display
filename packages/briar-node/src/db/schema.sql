@@ -446,29 +446,44 @@ CREATE TABLE IF NOT EXISTS request_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='请求日志表';
 
 -- ============================================================
--- 图床系统表
+-- 文件管理系统表
 -- ============================================================
 
--- 图片表
-CREATE TABLE IF NOT EXISTS images (
+-- 文件夹表（支持嵌套）
+CREATE TABLE IF NOT EXISTS folders (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  user_id VARCHAR(36) NOT NULL COMMENT '创建者 ID',
+  name VARCHAR(255) NOT NULL COMMENT '文件夹名',
+  parent_id VARCHAR(36) NULL COMMENT '父文件夹 ID（NULL 为根目录）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  INDEX idx_user_parent (user_id, parent_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES folders(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文件夹表';
+
+-- 文件表
+CREATE TABLE IF NOT EXISTS files (
   id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
   user_id VARCHAR(36) NOT NULL COMMENT '上传者 ID',
   original_name VARCHAR(255) NOT NULL COMMENT '原始文件名',
-  filename VARCHAR(255) NOT NULL COMMENT 'COS key: images/{userId}/{uuid}.{ext}',
-  mime_type VARCHAR(50) NOT NULL COMMENT 'MIME 类型',
+  filename VARCHAR(255) NOT NULL COMMENT 'COS key: files/{userId}/{uuid}.{ext}',
+  mime_type VARCHAR(100) NOT NULL COMMENT 'MIME 类型',
   size INT UNSIGNED NOT NULL COMMENT '文件大小（字节）',
   width INT UNSIGNED COMMENT '图片宽度',
   height INT UNSIGNED COMMENT '图片高度',
   cdn_url VARCHAR(500) NOT NULL COMMENT 'CDN 完整 URL',
-  thumbnail_url VARCHAR(500) COMMENT '缩略图 URL',
+  thumbnail_url VARCHAR(500) COMMENT '缩略图 URL（仅图片）',
   file_hash VARCHAR(64) COMMENT 'SHA-256 内容哈希（用于去重）',
+  folder_id VARCHAR(36) NULL COMMENT '所属文件夹 ID（NULL 为根目录）',
   deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
   INDEX idx_user_id (user_id),
   INDEX idx_created_at (created_at),
   INDEX idx_user_hash (user_id, file_hash),
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='图床图片表';
+  INDEX idx_folder_id (folder_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文件表';
 
 -- SQL 控制台审计日志表
 CREATE TABLE IF NOT EXISTS sql_audit_logs (
@@ -489,3 +504,16 @@ CREATE TABLE IF NOT EXISTS sql_audit_logs (
   INDEX idx_status (status),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SQL 控制台审计日志';
+
+-- 证书续期记录表
+CREATE TABLE IF NOT EXISTS cert_renewal_logs (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  domain VARCHAR(255) NOT NULL COMMENT '证书域名',
+  trigger_type ENUM('scheduled','manual') NOT NULL DEFAULT 'manual' COMMENT '触发方式',
+  status ENUM('running','success','skipped','failed') NOT NULL DEFAULT 'running' COMMENT '执行状态',
+  message TEXT COMMENT '结果信息或错误原因',
+  started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '开始时间',
+  finished_at TIMESTAMP NULL DEFAULT NULL COMMENT '结束时间',
+  INDEX idx_started_at (started_at),
+  INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='证书续期记录';

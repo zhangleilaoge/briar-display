@@ -36,11 +36,23 @@ if (result.error) {
 	}
 }
 
-const certificateServiceUrl = new URL('../services/certificateService.ts', import.meta.url).href
+// 本文件会被 tsup 复制到 src/jobs、dist/jobs、<pkg>/jobs 三个位置，
+// 依次尝试相对路径，定位 src/services 下的服务文件
+const serviceCandidates = [
+	new URL('../services/certificateService.ts', import.meta.url),
+	new URL('../src/services/certificateService.ts', import.meta.url),
+]
+const certificateServiceUrl = serviceCandidates.find((url) => fs.existsSync(fileURLToPath(url)))
+if (!certificateServiceUrl) {
+	throw new Error('找不到 certificateService.ts')
+}
 
 const { tsImport } = await import('tsx/esm/api')
-const { certificateService } = await tsImport(certificateServiceUrl, certificateServiceUrl)
+const { certificateService } = await tsImport(
+	certificateServiceUrl.href,
+	certificateServiceUrl.href,
+)
 
 const domain = process.env.CERTIFICATE_DOMAIN || 'stardew.site'
 
-await certificateService.renewCertificate(domain)
+await certificateService.renewCertificate(domain, false, 'scheduled')

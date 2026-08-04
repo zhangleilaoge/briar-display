@@ -1,8 +1,7 @@
 ---
-import ImageUploadPage from '../../../components/images/ImageUploadPage'
-import Layout from '../../../layouts/Layout.astro'
+// 上传功能已并入文件管理页：/briar-display/files
 ---
 
-<Layout title="上传图片 - 图床">
-	<ImageUploadPage client:only="react" />
-</Layout>
+<script>
+	window.location.replace('/briar-display/files')
+</script>
