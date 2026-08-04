@@ -7,19 +7,6 @@
 -- 完整建表见 schema.sql（make db-setup）
 -- ============================================================
 
--- 图床去重：images 表新增 file_hash 字段（MySQL 兼容写法）
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'images' AND COLUMN_NAME = 'file_hash');
-SET @sql = IF(@col_exists = 0, 'ALTER TABLE images ADD COLUMN file_hash VARCHAR(64) COMMENT ''SHA-256 内容哈希（用于去重）'' AFTER thumbnail_url', 'SELECT 1');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @idx_exists = (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'images' AND INDEX_NAME = 'idx_user_hash');
-SET @sql = IF(@idx_exists = 0, 'ALTER TABLE images ADD INDEX idx_user_hash (user_id, file_hash)', 'SELECT 1');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
 -- SQL 控制台审计日志表
 CREATE TABLE IF NOT EXISTS sql_audit_logs (
   id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
@@ -73,3 +60,48 @@ ON DUPLICATE KEY UPDATE name=name;
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT 'role-admin', id FROM permissions WHERE code IN ('admin:deploy:manage')
 ON DUPLICATE KEY UPDATE role_id=role_id;
+
+-- ============================================================
+-- 图床升级为文件管理
+-- ============================================================
+
+-- images 表更名为 files（幂等：仅当旧表存在时执行）
+SET @tbl_exists = (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'images');
+SET @sql = IF(@tbl_exists = 1, 'RENAME TABLE images TO files', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 文件夹表（支持嵌套）
+CREATE TABLE IF NOT EXISTS folders (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  user_id VARCHAR(36) NOT NULL COMMENT '创建者 ID',
+  name VARCHAR(255) NOT NULL COMMENT '文件夹名',
+  parent_id VARCHAR(36) NULL COMMENT '父文件夹 ID（NULL 为根目录）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  INDEX idx_user_parent (user_id, parent_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES folders(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文件夹表';
+
+-- files 表支持任意文件类型：mime_type 扩长（MODIFY 幂等）
+ALTER TABLE files MODIFY COLUMN mime_type VARCHAR(100) NOT NULL COMMENT 'MIME 类型';
+
+-- files 表新增 folder_id（NULL = 根目录）
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'files' AND COLUMN_NAME = 'folder_id');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE files ADD COLUMN folder_id VARCHAR(36) NULL COMMENT ''所属文件夹 ID（NULL 为根目录）'' AFTER file_hash', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @idx_exists = (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'files' AND INDEX_NAME = 'idx_folder_id');
+SET @sql = IF(@idx_exists = 0, 'ALTER TABLE files ADD INDEX idx_folder_id (folder_id)', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @fk_exists = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'files' AND CONSTRAINT_NAME = 'files_ibfk_folder');
+SET @sql = IF(@fk_exists = 0, 'ALTER TABLE files ADD CONSTRAINT files_ibfk_folder FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

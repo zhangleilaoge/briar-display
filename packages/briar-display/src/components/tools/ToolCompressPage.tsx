@@ -1,6 +1,6 @@
 'use client'
 
-import { uploadImages } from '@/api/images'
+import { uploadFiles } from '@/api/files'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -270,7 +270,7 @@ export default function ToolCompressPage() {
 		}
 	}
 
-	/** 上传到图床 */
+	/** 上传到文件管理 */
 	const handleUploadToHost = useCallback(async (entry: CompressHistoryEntry) => {
 		setUploadingId(entry.id)
 		try {
@@ -279,20 +279,21 @@ export default function ToolCompressPage() {
 			const file = new File([entry.blob], `${baseName}_compressed${ext}`, {
 				type: entry.blob.type || entry.format,
 			})
-			const res = await uploadImages([file])
-			if (res.success && res.data && res.data.length > 0) {
-				const cdnUrl = res.data[0].cdnUrl
+			const results = await uploadFiles([file])
+			const uploaded = results[0]?.file
+			if (uploaded) {
+				const cdnUrl = uploaded.cdnUrl
 				try {
 					await navigator.clipboard.writeText(cdnUrl)
-					toast.success('已上传到图床并复制链接')
+					toast.success('已上传并复制链接')
 				} catch {
-					toast.success(`已上传到图床: ${cdnUrl}`)
+					toast.success(`已上传: ${cdnUrl}`)
 				}
 			} else {
-				toast.error(res.message || '上传失败')
+				toast.error(results[0]?.error || '上传失败')
 			}
 		} catch (err: any) {
-			toast.error(err?.response?.data?.message || '上传图床失败')
+			toast.error(err?.response?.data?.message || '上传失败')
 		} finally {
 			setUploadingId(null)
 		}
