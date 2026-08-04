@@ -19,7 +19,15 @@ if [ ! -d "${SOURCE_VENV_DIR}" ]; then
 	echo "桌面端打包需要把 Python 虚拟环境内嵌到 app bundle 中。"
 	echo "请先创建虚拟环境："
 	echo "  cd ${TOOL_DIR}"
-	echo "  ./setup.sh"
+	if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "mingw"* ]]; then
+		echo "  bash ./setup.sh"
+		echo ""
+		echo "提示：在 Windows PowerShell 中 ./setup.sh 会被当作文件打开，"
+		echo "      请在 Git Bash 终端中执行上述命令，或使用项目封装："
+		echo "  node ../bid-compare-desktop/scripts/run-sh.cjs setup.sh"
+	else
+		echo "  ./setup.sh"
+	fi
 	echo ""
 	echo "然后再重新运行打包命令。"
 	echo "=============================================="
@@ -63,7 +71,6 @@ TARGET="${TARGET:-${HOST_TRIPLE}}"
 BUN_FILE="${DESKTOP_DIR}/src-tauri/binaries/bun-${TARGET}"
 [ "${TARGET}" = "x86_64-pc-windows-msvc" ] && BUN_FILE="${BUN_FILE}.exe"
 
-# 智能跳过：检查关键产物是否已存在
 TOOL_RES_DIR="${DESKTOP_DIR}/src-tauri/resources/tool"
 VENV_DIR="${TOOL_RES_DIR}/python_encoder/.venv"
 NODE_MODULES_DIR="${TOOL_RES_DIR}/node_modules"
@@ -147,20 +154,6 @@ EOF
 	fi
 }
 
-if [ "${FORCE}" = false ] && \
-   [ -f "${BUN_FILE}" ] && \
-   [ -d "${TOOL_RES_DIR}/src" ] && \
-   [ -d "${VENV_DIR}" ] && \
-   [ -d "${NODE_MODULES_DIR}" ]; then
-	echo "=============================================="
-	echo "内嵌运行环境已准备，跳过"
-	echo "目标平台: ${TARGET}"
-	echo "（如需强制重新准备，请加上 --force）"
-	echo "=============================================="
-	fix_macos_python_rpath
-	exit 0
-fi
-
 echo "=============================================="
 echo "准备内嵌运行环境"
 echo "目标平台: ${TARGET}"
@@ -169,40 +162,40 @@ echo "=============================================="
 mkdir -p "${DESKTOP_DIR}/src-tauri/binaries"
 mkdir -p "${DESKTOP_DIR}/src-tauri/resources"
 
-# 1. 准备 Bun 二进制
-echo "准备 Bun 二进制..."
+# 1. 准备 Bun 二进制（体积大，允许跳过）
+if [ -f "${BUN_FILE}" ] && [ "${FORCE}" = false ]; then
+	echo "Bun 二进制已存在，跳过"
+else
+	echo "准备 Bun 二进制..."
 
-case "${TARGET}" in
-	aarch64-apple-darwin)
-		BUN_BIN="$(command -v bun || true)"
-		if [ -z "${BUN_BIN}" ]; then
-			echo "错误：未找到 bun，请先安装 Bun"
-			exit 1
-		fi
-		cp "${BUN_BIN}" "${BUN_FILE}"
-		chmod +x "${BUN_FILE}"
-		;;
-	x86_64-apple-darwin)
-		BUN_BIN="$(command -v bun || true)"
-		if [ -z "${BUN_BIN}" ]; then
-			echo "错误：未找到 bun，请先安装 Bun"
-			exit 1
-		fi
-		# 如果当前是 Intel Mac，直接复制；否则尝试下载
-		if [ "${HOST_TRIPLE}" = "x86_64-apple-darwin" ]; then
+	case "${TARGET}" in
+		aarch64-apple-darwin)
+			BUN_BIN="$(command -v bun || true)"
+			if [ -z "${BUN_BIN}" ]; then
+				echo "错误：未找到 bun，请先安装 Bun"
+				exit 1
+			fi
 			cp "${BUN_BIN}" "${BUN_FILE}"
 			chmod +x "${BUN_FILE}"
-		else
-			echo "提示：当前是 Apple Silicon，构建 Intel 版需要下载 Intel Bun 二进制"
-			echo "  请手动下载并放到: ${BUN_FILE}"
-			echo "  下载地址: https://github.com/oven-sh/bun/releases"
-			exit 1
-		fi
-		;;
-	x86_64-pc-windows-msvc)
-		if [ -f "${BUN_FILE}" ]; then
-			echo "已存在 Windows Bun 二进制，跳过下载"
-		else
+			;;
+		x86_64-apple-darwin)
+			BUN_BIN="$(command -v bun || true)"
+			if [ -z "${BUN_BIN}" ]; then
+				echo "错误：未找到 bun，请先安装 Bun"
+				exit 1
+			fi
+			# 如果当前是 Intel Mac，直接复制；否则尝试下载
+			if [ "${HOST_TRIPLE}" = "x86_64-apple-darwin" ]; then
+				cp "${BUN_BIN}" "${BUN_FILE}"
+				chmod +x "${BUN_FILE}"
+			else
+				echo "提示：当前是 Apple Silicon，构建 Intel 版需要下载 Intel Bun 二进制"
+				echo "  请手动下载并放到: ${BUN_FILE}"
+				echo "  下载地址: https://github.com/oven-sh/bun/releases"
+				exit 1
+			fi
+			;;
+		x86_64-pc-windows-msvc)
 			# 优先使用本机已安装的 bun.exe（npm 全局/本地包里的 Windows 二进制）
 			LOCAL_BUN_EXE=""
 			BUN_SHIM="$(command -v bun || true)"
@@ -225,39 +218,49 @@ case "${TARGET}" in
 				trap - EXIT
 				rm -rf "${TMP_DIR}"
 			fi
-		fi
-		;;
-	*)
-		echo "不支持的目标平台: ${TARGET}"
-		exit 1
-		;;
-esac
+			;;
+		*)
+			echo "不支持的目标平台: ${TARGET}"
+			exit 1
+			;;
+	esac
 
-echo "Bun 二进制: ${BUN_FILE} ($(du -sh ${BUN_FILE} | cut -f1))"
+	echo "Bun 二进制: ${BUN_FILE} ($(du -sh ${BUN_FILE} | cut -f1))"
+fi
 
-# 2. 复制工具资源到 resources/tool/
-echo "复制工具资源..."
-rm -rf "${DESKTOP_DIR}/src-tauri/resources/tool"
-mkdir -p "${DESKTOP_DIR}/src-tauri/resources/tool"
-cp -R "${TOOL_DIR}/src" "${DESKTOP_DIR}/src-tauri/resources/tool/src"
-cp -R "${TOOL_DIR}/python_encoder" "${DESKTOP_DIR}/src-tauri/resources/tool/python_encoder"
-cp "${TOOL_DIR}/package.json" "${DESKTOP_DIR}/src-tauri/resources/tool/package.json"
-cp "${TOOL_DIR}/bun.lock" "${DESKTOP_DIR}/src-tauri/resources/tool/bun.lock"
-cp "${TOOL_DIR}/tsconfig.json" "${DESKTOP_DIR}/src-tauri/resources/tool/tsconfig.json"
+# 2. 复制工具源码（代码修改必须被嵌入，因此每次都要复制）
+echo "复制工具源码..."
+mkdir -p "${TOOL_RES_DIR}"
+rm -rf "${TOOL_RES_DIR}/src"
+cp -R "${TOOL_DIR}/src" "${TOOL_RES_DIR}/src"
+rm -rf "${TOOL_RES_DIR}/python_encoder"
+mkdir -p "${TOOL_RES_DIR}/python_encoder"
+cp "${TOOL_DIR}/python_encoder"/*.py "${TOOL_RES_DIR}/python_encoder/"
+cp "${TOOL_DIR}/package.json" "${TOOL_RES_DIR}/package.json"
+cp "${TOOL_DIR}/bun.lock" "${TOOL_RES_DIR}/bun.lock"
+cp "${TOOL_DIR}/tsconfig.json" "${TOOL_RES_DIR}/tsconfig.json"
+
+# 3. 复制 Python 虚拟环境（体积大，允许跳过）
+if [ -d "${VENV_DIR}" ] && [ "${FORCE}" = false ]; then
+	echo "Python 虚拟环境已存在，跳过"
+else
+	echo "复制 Python 虚拟环境..."
+	cp -R "${SOURCE_VENV_DIR}" "${VENV_DIR}"
+fi
 
 # 清理不需要的文件
-rm -f "${DESKTOP_DIR}/src-tauri/resources/tool/python_encoder/.DS_Store"
-find "${DESKTOP_DIR}/src-tauri/resources/tool" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
-find "${DESKTOP_DIR}/src-tauri/resources/tool" -name "*.pyc" -delete 2>/dev/null || true
+rm -f "${TOOL_RES_DIR}/python_encoder/.DS_Store"
+find "${TOOL_RES_DIR}" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+find "${TOOL_RES_DIR}" -name "*.pyc" -delete 2>/dev/null || true
 
 # 清理 Python venv 中打包/运行时不需要的文件（避免 WiX 长路径错误并减小体积）
-VENV_DIR="${DESKTOP_DIR}/src-tauri/resources/tool/python_encoder/.venv"
 if [ -d "${VENV_DIR}/Lib/site-packages" ]; then
 	echo "清理 venv 中的头文件、测试、静态库和许可证目录..."
 	rm -rf "${VENV_DIR}/Lib/site-packages/torch/include" 2>/dev/null || true
 	rm -rf "${VENV_DIR}/Lib/site-packages/torchvision/include" 2>/dev/null || true
 	find "${VENV_DIR}/Lib/site-packages" -type d -name "include" -exec rm -rf {} + 2>/dev/null || true
-	find "${VENV_DIR}/Lib/site-packages" -type d \( -name "test" -o -name "tests" -o -name "testing" \) -exec rm -rf {} + 2>/dev/null || true
+	# 注意：不能匹配 "testing"，torch.testing 是 PyTorch 核心模块，误删会导致 import torch 失败
+    find "${VENV_DIR}/Lib/site-packages" -type d \( -name "test" -o -name "tests" \) -exec rm -rf {} + 2>/dev/null || true
 	find "${VENV_DIR}/Lib/site-packages" -type d -name "licenses" -exec rm -rf {} + 2>/dev/null || true
 	find "${VENV_DIR}/Lib/site-packages" -type f \( -name "*.lib" -o -name "*.pdb" -o -name "*.a" \) -delete 2>/dev/null || true
 fi
@@ -265,13 +268,17 @@ fi
 # macOS: 修复 Python venv 在 app bundle 中的 rpath
 fix_macos_python_rpath
 
-# 安装 TS 运行时依赖（零配置分发需要 node_modules）
-echo "安装 TS 运行时依赖..."
-cd "${DESKTOP_DIR}/src-tauri/resources/tool"
-"${BUN_FILE}" install --frozen-lockfile --production
-cd "${DESKTOP_DIR}"
+# 4. 安装 TS 运行时依赖（零配置分发需要 node_modules）
+if [ -d "${NODE_MODULES_DIR}" ] && [ "${FORCE}" = false ]; then
+	echo "node_modules 已存在，跳过安装"
+else
+	echo "安装 TS 运行时依赖..."
+	cd "${TOOL_RES_DIR}"
+	"${BUN_FILE}" install --frozen-lockfile --production
+	cd "${DESKTOP_DIR}"
+fi
 
-echo "工具资源大小: $(du -sh ${DESKTOP_DIR}/src-tauri/resources/tool | cut -f1)"
+echo "工具资源大小: $(du -sh ${TOOL_RES_DIR} | cut -f1)"
 
 echo ""
 echo "=============================================="
