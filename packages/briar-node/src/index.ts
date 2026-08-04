@@ -10,6 +10,7 @@ import { startScheduler } from './lib/scheduler'
 import { schedulerTasks } from './lib/schedulerConfig'
 import { applyConfiguredMiddlewares, globalMiddlewares } from './middleware/config'
 import apiRoutes from './routes/api'
+import { rootHandler } from './routes/root'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -49,6 +50,9 @@ applyConfiguredMiddlewares(app, globalMiddlewares, '/*')
 // API 路由
 app.route('/api', apiRoutes)
 
+// 根路径落地页（备案合规）：须在静态资源中间件之前注册
+app.get('/', rootHandler)
+
 // 静态资源
 app.use('/*', serveStatic({ root: STATIC_PATH }))
 
@@ -60,6 +64,18 @@ app.get('/briar-display/wiki/*', async (c) => {
 		return c.html(html)
 	}
 	// fallback to root
+	const rootIndexPath = path.join(STATIC_PATH, 'index.html')
+	const html = fs.readFileSync(rootIndexPath, 'utf-8')
+	return c.html(html)
+})
+
+// 文件管理 SPA fallback: /briar-display/files/<folderId> 返回 files/index.html
+app.get('/briar-display/files/*', async (c) => {
+	const filesIndexPath = path.join(STATIC_PATH, 'briar-display/files/index.html')
+	if (fs.existsSync(filesIndexPath)) {
+		const html = fs.readFileSync(filesIndexPath, 'utf-8')
+		return c.html(html)
+	}
 	const rootIndexPath = path.join(STATIC_PATH, 'index.html')
 	const html = fs.readFileSync(rootIndexPath, 'utf-8')
 	return c.html(html)

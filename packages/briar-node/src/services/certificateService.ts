@@ -1,10 +1,44 @@
+import { X509Certificate } from 'crypto'
 import * as fs from 'fs'
 import * as path from 'path'
+import * as tls from 'tls'
 import * as acme from 'acme-client'
 import COS from 'cos-nodejs-sdk-v5'
+import { type CertRenewalTrigger, certRenewalDal } from '../dal/certRenewalDal'
 import { createDnsRecord, deleteDnsRecord } from './certificate/dnsService'
 import { getOrCreateAccountKey, getOrCreateServerKey } from './certificate/keyService'
 import { findRepoRoot } from './certificate/utils'
+
+export interface CertInfo {
+	commonName: string
+	issuer: string
+	notBefore: string
+	notAfter: string
+	daysRemaining: number
+}
+
+/** 从 X509 subject/issuer 字符串中提取 CN */
+const extractCN = (value: string): string => {
+	const match = value.match(/CN=([^\n,]+)/)
+	return match ? match[1].trim() : value
+}
+
+const buildCertInfo = (
+	commonName: string,
+	issuer: string,
+	notBefore: string,
+	notAfter: string,
+): CertInfo => ({
+	commonName,
+	issuer,
+	notBefore: new Date(notBefore).toISOString(),
+	notAfter: new Date(notAfter).toISOString(),
+	daysRemaining: Math.floor((new Date(notAfter).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+})
+
+/** tls.getPeerCertificate 的字段可能是 string[]，统一取首个 */
+const first = (value: string | string[] | undefined): string | undefined =>
+	Array.isArray(value) ? value[0] : value
 
 /**
  * 证书申请和管理服务
@@ -261,6 +295,66 @@ export const certificateService = {
 	},
 
 	/**
+	 * 读取本地证书文件信息（briar-assets/ssl 下即将部署的证书）
+	 */
+	async getLocalCertificateInfo(domain: string): Promise<CertInfo | null> {
+		const repoRoot = findRepoRoot(process.cwd())
+		const certPath = path.join(repoRoot, 'briar-assets/ssl', `${domain}_bundle.crt`)
+
+		if (!fs.existsSync(certPath)) {
+			return null
+		}
+
+		try {
+			const x509 = new X509Certificate(fs.readFileSync(certPath, 'utf-8'))
+			return buildCertInfo(
+				extractCN(x509.subject),
+				extractCN(x509.issuer),
+				x509.validFrom,
+				x509.validTo,
+			)
+		} catch (error) {
+			console.error('解析本地证书失败:', error)
+			return null
+		}
+	},
+
+	/**
+	 * 通过 TLS 握手探测线上实际服役的证书
+	 */
+	async getLiveCertificateInfo(domain: string): Promise<CertInfo | null> {
+		return new Promise((resolve) => {
+			const socket = tls.connect(
+				{ host: domain, port: 443, servername: domain, rejectUnauthorized: false, timeout: 8000 },
+				() => {
+					const cert = socket.getPeerCertificate()
+					socket.end()
+					if (!cert || !cert.valid_to) {
+						resolve(null)
+						return
+					}
+					resolve(
+						buildCertInfo(
+							first(cert.subject?.CN) || domain,
+							first(cert.issuer?.CN) || first(cert.issuer?.O) || '',
+							cert.valid_from,
+							cert.valid_to,
+						),
+					)
+				},
+			)
+			socket.on('timeout', () => {
+				socket.destroy()
+				resolve(null)
+			})
+			socket.on('error', (error) => {
+				console.error('探测线上证书失败:', error.message)
+				resolve(null)
+			})
+		})
+	},
+
+	/**
 	 * 检查证书是否需要续期
 	 */
 	async shouldRenew(domain: string): Promise<boolean> {
@@ -321,8 +415,14 @@ export const certificateService = {
 			}
 
 			execSync('git add ssl/', { cwd: assetsDir })
-			execSync(`git commit -m "chore: update SSL certificates for ${domain}"`, { cwd: assetsDir })
-			execSync('git push origin main', { cwd: assetsDir })
+			execSync(`git commit -m "chore: update SSL certificates for ${domain} [skip ci]"`, {
+				cwd: assetsDir,
+			})
+			// 子模块通常是 detached HEAD 且落后于远端，
+			// 先 rebase 到 origin/main 再推当前 HEAD，避免 non-fast-forward 被拒绝
+			execSync('git fetch origin', { cwd: assetsDir })
+			execSync('git rebase origin/main', { cwd: assetsDir })
+			execSync('git push origin HEAD:main', { cwd: assetsDir })
 			console.log('✅ briar-assets 已提交并推送')
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error)
@@ -349,10 +449,13 @@ export const certificateService = {
 			}
 
 			execSync('git add briar-assets', { cwd: repoRoot })
-			execSync('git commit -m "chore: update briar-assets submodule (certificates)"', {
+			execSync('git commit -m "chore: update briar-assets submodule (certificates) [skip ci]"', {
 				cwd: repoRoot,
 			})
-			execSync('git push origin master', { cwd: repoRoot })
+			// 先 rebase 到远端最新再推，避免本地落后导致 non-fast-forward
+			execSync('git fetch origin', { cwd: repoRoot })
+			execSync('git rebase origin/master', { cwd: repoRoot })
+			execSync('git push origin HEAD:master', { cwd: repoRoot })
 			console.log('✅ 主仓库子模块已更新')
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error)
@@ -386,6 +489,7 @@ export const certificateService = {
 	async renewCertificate(
 		domain: string,
 		force = false,
+		triggerType: CertRenewalTrigger = 'manual',
 	): Promise<{
 		success: boolean
 		skipped?: boolean
@@ -394,6 +498,20 @@ export const certificateService = {
 		cdnUrls?: { certUrl: string; keyUrl: string }
 		error?: string
 	}> {
+		// 落库记录续期过程，写库失败不影响续期主流程
+		let logId: string | null = null
+		try {
+			logId = await certRenewalDal.create(domain, triggerType)
+		} catch (e) {
+			console.error('写入续期记录失败（不影响续期流程）:', e)
+		}
+		const finishLog = (status: 'success' | 'skipped' | 'failed', message?: string) => {
+			if (!logId) return
+			certRenewalDal
+				.finish(logId, status, message)
+				.catch((e) => console.error('更新续期记录失败:', e))
+		}
+
 		try {
 			console.log(`\n${'='.repeat(60)}`)
 			console.log(`🔍 检查证书续期状态: ${domain}`)
@@ -403,6 +521,7 @@ export const certificateService = {
 				const needsRenew = await this.shouldRenew(domain)
 				if (!needsRenew) {
 					console.log('✅ 证书尚未到期，无需续期')
+					finishLog('skipped', '证书尚未到期，无需续期')
 					return { success: true, skipped: true }
 				}
 			} else {
@@ -419,16 +538,27 @@ export const certificateService = {
 
 			const cdnUrls = await this.uploadCertificatesToCDN(domain.replace(/\*/g, 'wildcard'))
 
-			await this.commitAndPushAssets(domain)
-
-			await this.updateMainRepoSubmodule()
+			// git 同步失败不阻断本地 nginx 部署——证书文件已在服务器上，优先保证服务不中断
+			let gitError: string | null = null
+			try {
+				await this.commitAndPushAssets(domain)
+				await this.updateMainRepoSubmodule()
+			} catch (error) {
+				gitError = error instanceof Error ? error.message : String(error)
+				console.error(`\n⚠️  git 同步失败（继续部署 nginx）: ${gitError}\n`)
+			}
 
 			await this.deployNginx()
+
+			if (gitError) {
+				throw new Error(`证书已部署到 nginx，但 git 同步失败: ${gitError}`)
+			}
 
 			console.log(`\n${'='.repeat(60)}`)
 			console.log('✅ 证书续期流程全部完成')
 			console.log(`${'='.repeat(60)}\n`)
 
+			finishLog('success', '证书续期流程全部完成')
 			return {
 				success: true,
 				certPath,
@@ -438,6 +568,7 @@ export const certificateService = {
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error)
 			console.error(`\n❌ 证书续期失败: ${errorMsg}\n`)
+			finishLog('failed', errorMsg)
 			return {
 				success: false,
 				error: errorMsg,

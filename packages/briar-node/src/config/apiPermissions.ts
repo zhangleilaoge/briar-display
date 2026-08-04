@@ -35,11 +35,17 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	'POST /api/admin/sql/execute': PERMISSIONS.ADMIN_SQL_EXECUTE,
 
 	// ==================== Cert ====================
-	'POST /api/cert/renew': PERMISSIONS.ADMIN_ROLE_MANAGE,
+	'POST /api/cert/renew': PERMISSIONS.ADMIN_DEPLOY_MANAGE,
 
-	// ==================== Images ====================
-	'POST /api/images/upload': PERMISSIONS.WIKI_PAGE_CREATE,
-	'DELETE /api/images/:id': PERMISSIONS.WIKI_PAGE_CREATE,
+	// ==================== Files ====================
+	'POST /api/files/precheck': PERMISSIONS.WIKI_PAGE_CREATE,
+	'POST /api/files/cos-sign': PERMISSIONS.WIKI_PAGE_CREATE,
+	'POST /api/files/confirm': PERMISSIONS.WIKI_PAGE_CREATE,
+	'POST /api/files/folders': PERMISSIONS.WIKI_PAGE_CREATE,
+	'PATCH /api/files/folders/:id': PERMISSIONS.WIKI_PAGE_CREATE,
+	'DELETE /api/files/folders/:id': PERMISSIONS.WIKI_PAGE_CREATE,
+	'PATCH /api/files/:id': PERMISSIONS.WIKI_PAGE_CREATE,
+	'DELETE /api/files/:id': PERMISSIONS.WIKI_PAGE_CREATE,
 
 	// ==================== Logs ====================
 	// GET-only, no write routes needed

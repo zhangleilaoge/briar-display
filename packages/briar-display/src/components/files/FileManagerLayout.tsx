@@ -13,11 +13,11 @@ import { PermissionProvider } from '@/contexts/PermissionContext'
 import type { ReactNode } from 'react'
 import StorageQuota from './StorageQuota'
 
-interface ImageHostingLayoutProps {
+interface FileManagerLayoutProps {
 	children: ReactNode
 }
 
-export default function ImageHostingLayout({ children }: ImageHostingLayoutProps) {
+export default function FileManagerLayout({ children }: FileManagerLayoutProps) {
 	return (
 		<PermissionProvider>
 			<div className="flex min-h-screen flex-col bg-background">
@@ -30,7 +30,7 @@ export default function ImageHostingLayout({ children }: ImageHostingLayoutProps
 								</BreadcrumbItem>
 								<BreadcrumbSeparator />
 								<BreadcrumbItem>
-									<BreadcrumbPage>图床</BreadcrumbPage>
+									<BreadcrumbPage>文件</BreadcrumbPage>
 								</BreadcrumbItem>
 							</BreadcrumbList>
 						</Breadcrumb>

@@ -59,6 +59,7 @@ export const PERMISSIONS = {
 	ADMIN_USER_MANAGE: 'admin:user:manage',
 	ADMIN_USER_ROLE_ASSIGN: 'admin:user-role:assign',
 	ADMIN_SQL_EXECUTE: 'admin:sql:execute',
+	ADMIN_DEPLOY_MANAGE: 'admin:deploy:manage',
 } as const
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS]
@@ -177,6 +178,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
 			{ code: PERMISSIONS.ADMIN_USER_MANAGE, name: '管理用户', type: 'api' },
 			{ code: PERMISSIONS.ADMIN_USER_ROLE_ASSIGN, name: '分配用户角色', type: 'api' },
 			{ code: PERMISSIONS.ADMIN_SQL_EXECUTE, name: '执行 SQL', type: 'api' },
+			{ code: PERMISSIONS.ADMIN_DEPLOY_MANAGE, name: '应用部署与证书', type: 'api' },
 		],
 	},
 ]
