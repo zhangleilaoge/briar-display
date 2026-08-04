@@ -69,6 +69,18 @@ app.get('/briar-display/wiki/*', async (c) => {
 	return c.html(html)
 })
 
+// 文件管理 SPA fallback: /briar-display/files/<folderId> 返回 files/index.html
+app.get('/briar-display/files/*', async (c) => {
+	const filesIndexPath = path.join(STATIC_PATH, 'briar-display/files/index.html')
+	if (fs.existsSync(filesIndexPath)) {
+		const html = fs.readFileSync(filesIndexPath, 'utf-8')
+		return c.html(html)
+	}
+	const rootIndexPath = path.join(STATIC_PATH, 'index.html')
+	const html = fs.readFileSync(rootIndexPath, 'utf-8')
+	return c.html(html)
+})
+
 // 其他页面 fallback
 app.get('/*', serveStatic({ path: './index.html', root: STATIC_PATH }))
 

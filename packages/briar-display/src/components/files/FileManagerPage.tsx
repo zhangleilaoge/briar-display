@@ -107,6 +107,13 @@ function FileManagerPageInner() {
 		refreshFolders()
 	}, [refreshFolders])
 
+	// URL 中的文件夹 id 失效（被删除或链接错误）时回退到根目录
+	useEffect(() => {
+		if (currentFolderId && folders.length > 0 && !folders.some((f) => f.id === currentFolderId)) {
+			setCurrentFolderId(null)
+		}
+	}, [folders, currentFolderId, setCurrentFolderId])
+
 	// 当前文件夹的面包屑路径（根 → ... → 当前）
 	const folderPath: FolderItem[] = []
 	{
