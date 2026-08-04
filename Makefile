@@ -59,6 +59,10 @@ db-setup:
 	@echo "🗄️  初始化数据库..."
 	@bun run --filter @briar/node db:setup
 
+# 配置 COS bucket CORS（前端分片直传需要，一次性）
+cos-cors:
+	@bun run --filter @briar/scripts cos:cors
+
 # 启动全量开发服务（shared + display + node）
 dev:
 	bun dev

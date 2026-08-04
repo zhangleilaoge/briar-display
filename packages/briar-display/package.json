@@ -51,6 +51,7 @@
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"cmdk": "^1.0.4",
+		"cos-js-sdk-v5": "^1.10.1",
 		"date-fns": "^3.3.1",
 		"diff": "^7",
 		"highlight.js": "^11.11.1",

@@ -4,7 +4,7 @@ import UserMenu from '@/components/common/UserMenu'
 import { Card, CardContent } from '@/components/ui/card'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { BookOpen, ImageIcon, Shield, Wrench } from 'lucide-react'
+import { BookOpen, Folder, Shield, Wrench } from 'lucide-react'
 
 interface EntryCardProps {
 	icon: React.ReactNode
@@ -102,10 +102,10 @@ function PortalPageInner() {
 							gradient="from-teal-500 to-emerald-500"
 						/>
 						<EntryCard
-							icon={<ImageIcon className="h-5 w-5" />}
-							title="图床"
-							description="图片上传与相册管理"
-							href="/briar-display/images/gallery"
+							icon={<Folder className="h-5 w-5" />}
+							title="文件"
+							description="文件、图片与视频的云端管理"
+							href="/briar-display/files"
 							gradient="from-pink-500 to-rose-500"
 						/>
 						{!loading && isAdmin && (
