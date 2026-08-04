@@ -1,0 +1,27 @@
+name: Deploy Nginx Config
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-nginx:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy nginx config on server
+        env:
+          PROJECT_DIR: ${{ secrets.DEPLOY_PROJECT_DIR }}
+        run: |
+          SSH_OPTS="-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3"
+          PROJECT_DIR="${PROJECT_DIR:-/home/ubuntu/github/briar-display}"
+
+          echo "在服务器执行 deploy-nginx.sh ..."
+          ssh $SSH_OPTS ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "cd $PROJECT_DIR && bash scripts/deploy-nginx.sh"

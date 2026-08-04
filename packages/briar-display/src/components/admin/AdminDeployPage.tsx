@@ -9,6 +9,7 @@ import {
 	getCertStatus,
 	getDeployHistory,
 	triggerCertRenew,
+	triggerNginxDeploy,
 } from '@/api/deploy'
 import AdminLayout from '@/components/admin/AdminLayout'
 import DeployLogDialog from '@/components/admin/DeployLogDialog'
@@ -24,6 +25,7 @@ import {
 	Loader2,
 	RefreshCw,
 	Rocket,
+	Server,
 	ShieldCheck,
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -123,6 +125,7 @@ function AdminDeployPageInner() {
 	const [history, setHistory] = useState<DeployHistoryItem[]>([])
 	const [loading, setLoading] = useState(true)
 	const [renewing, setRenewing] = useState(false)
+	const [nginxDeploying, setNginxDeploying] = useState(false)
 	const [logRunId, setLogRunId] = useState<string | null>(null)
 	const [logOpen, setLogOpen] = useState(false)
 	const wasRunningRef = useRef(false)
@@ -191,6 +194,36 @@ function AdminDeployPageInner() {
 			toast.error('触发续期失败')
 		} finally {
 			setRenewing(false)
+		}
+	}
+
+	const handleNginxDeploy = async () => {
+		setNginxDeploying(true)
+		try {
+			const res = await triggerNginxDeploy()
+			if (res.success && res.data) {
+				toast.success(
+					<div className="space-y-1">
+						<p>Nginx 部署任务已启动</p>
+						<a
+							href={res.data.url}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-xs underline"
+						>
+							查看运行日志
+						</a>
+					</div>,
+				)
+				// 刷新部署记录列表
+				setTimeout(fetchHistory, 3000)
+			} else {
+				toast.error(res.message || '触发 Nginx 部署失败')
+			}
+		} catch {
+			toast.error('触发 Nginx 部署失败')
+		} finally {
+			setNginxDeploying(false)
 		}
 	}
 
@@ -270,6 +303,33 @@ function AdminDeployPageInner() {
 						/>
 					</div>
 				)}
+			</div>
+
+			{/* Nginx 配置部署 */}
+			<div className="mb-4 rounded-md border bg-card p-4">
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<Server className="h-4 w-4 text-muted-foreground" />
+						<h2 className="text-sm font-semibold">Nginx 配置</h2>
+					</div>
+					<Button
+						size="sm"
+						onClick={handleNginxDeploy}
+						disabled={nginxDeploying}
+						className="gap-1.5"
+					>
+						{nginxDeploying ? (
+							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+						) : (
+							<Rocket className="h-3.5 w-3.5" />
+						)}
+						{nginxDeploying ? '部署中...' : '重新部署 Nginx'}
+					</Button>
+				</div>
+				<p className="mt-2 text-xs text-muted-foreground">
+					将本地 default.conf 同步到服务器 /etc/nginx/ 并重载
+					nginx。默认不会自动执行，仅在手动点击后触发。
+				</p>
 			</div>
 
 			{/* 续期记录 */}

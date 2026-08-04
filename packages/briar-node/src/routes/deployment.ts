@@ -44,4 +44,31 @@ deploymentRoutes.get(
 	},
 )
 
+/**
+ * 触发远程 Nginx 配置部署
+ */
+deploymentRoutes.post(
+	'/nginx/deploy',
+	requirePermission(PERMISSIONS.ADMIN_DEPLOY_MANAGE),
+	async (c) => {
+		try {
+			const result = await deploymentService.triggerNginxDeploy()
+			return c.json({
+				success: true,
+				data: result,
+				code: HTTP_STATUS.OK,
+			})
+		} catch (error) {
+			return c.json(
+				{
+					success: false,
+					message: error instanceof Error ? error.message : String(error),
+					code: HTTP_STATUS.BAD_REQUEST,
+				},
+				HTTP_STATUS.BAD_REQUEST,
+			)
+		}
+	},
+)
+
 export default deploymentRoutes
