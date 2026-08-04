@@ -61,6 +61,73 @@ const githubHeaders = (token: string) => ({
 })
 
 /**
+ * 触发 GitHub Actions 的 nginx 配置部署 workflow
+ */
+async function triggerWorkflowDispatch(
+	workflowId: string,
+): Promise<{ runId: number; url: string }> {
+	const candidates = resolveGithubTokenCandidates()
+	if (candidates.length === 0) {
+		throw new Error(
+			'未找到 GitHub token（BRIAR_GITHUB_TOKEN 或 briar-assets/github/.env），无法触发 CI',
+		)
+	}
+
+	const repo = resolveGithubRepo()
+	let lastError: Error | null = null
+
+	for (const { token, source } of candidates) {
+		try {
+			const dispatchRes = await fetch(
+				`${GITHUB_API}/repos/${repo}/actions/workflows/${workflowId}/dispatches`,
+				{
+					method: 'POST',
+					headers: {
+						...githubHeaders(token),
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ ref: 'master' }),
+				},
+			)
+			if (!dispatchRes.ok) {
+				throw new Error(`触发 workflow 失败: HTTP ${dispatchRes.status}`)
+			}
+
+			// GitHub 创建 run 有短暂延迟，稍等再查
+			await new Promise((resolve) => setTimeout(resolve, 1500))
+
+			const runsRes = await fetch(
+				`${GITHUB_API}/repos/${repo}/actions/workflows/${workflowId}/runs?per_page=1`,
+				{ headers: githubHeaders(token) },
+			)
+			if (!runsRes.ok) {
+				return {
+					runId: 0,
+					url: `https://github.com/${repo}/actions/workflows/${workflowId}`,
+				}
+			}
+			const { workflow_runs } = (await runsRes.json()) as {
+				workflow_runs: Array<{ id: number }>
+			}
+			const runId = workflow_runs[0]?.id ?? 0
+			return {
+				runId,
+				url: runId
+					? `https://github.com/${repo}/actions/runs/${runId}`
+					: `https://github.com/${repo}/actions/workflows/${workflowId}`,
+			}
+		} catch (error) {
+			lastError = error instanceof Error ? error : new Error(String(error))
+			console.warn(`⚠️ token 来源 ${source} 触发 nginx 部署失败: ${lastError.message}`)
+		}
+	}
+
+	throw new Error(
+		`${lastError?.message ?? '未知错误'}（已尝试 ${candidates.length} 个 token 来源均失败）`,
+	)
+}
+
+/**
  * 部署记录服务
  * 读取服务器上由 CI 追加的 briar-assets/deploy-history.jsonl（不在 git 中，仅服务器存在）
  */
@@ -124,6 +191,13 @@ export const deploymentService = {
 		}
 
 		return [...byRun.values()].sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit)
+	},
+
+	/**
+	 * 触发远程 Nginx 配置部署（调用 GitHub Actions workflow_dispatch）
+	 */
+	async triggerNginxDeploy(): Promise<{ runId: number; url: string }> {
+		return triggerWorkflowDispatch('deploy-nginx.yml')
 	},
 
 	/**

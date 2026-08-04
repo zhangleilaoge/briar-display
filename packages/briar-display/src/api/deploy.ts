@@ -72,3 +72,15 @@ export const getDeployLogs = async (runId: string) => {
 	const response = await apiClient.get<ApiResponse<DeployRunLogs>>(`/deployment/${runId}/logs`)
 	return response.data
 }
+
+// ==================== Nginx 部署 ====================
+
+export interface NginxDeployResult {
+	runId: number
+	url: string
+}
+
+export const triggerNginxDeploy = async () => {
+	const response = await apiClient.post<ApiResponse<NginxDeployResult>>('/deployment/nginx/deploy')
+	return response.data
+}

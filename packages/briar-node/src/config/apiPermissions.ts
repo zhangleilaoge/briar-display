@@ -37,6 +37,9 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	// ==================== Cert ====================
 	'POST /api/cert/renew': PERMISSIONS.ADMIN_DEPLOY_MANAGE,
 
+	// ==================== Deployment ====================
+	'POST /api/deployment/nginx/deploy': PERMISSIONS.ADMIN_DEPLOY_MANAGE,
+
 	// ==================== Files ====================
 	'POST /api/files/precheck': PERMISSIONS.WIKI_PAGE_CREATE,
 	'POST /api/files/cos-sign': PERMISSIONS.WIKI_PAGE_CREATE,
