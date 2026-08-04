@@ -116,6 +116,58 @@ function sliceUpload(
 	})
 }
 
+function putObject(
+	cos: COS,
+	params: { Bucket: string; Region: string; Key: string; Body: Blob; ContentType: string },
+): Promise<void> {
+	return new Promise((resolve, reject) => {
+		cos.putObject({ ...params, ContentDisposition: 'inline' }, (err) => {
+			if (err) return reject(err)
+			resolve()
+		})
+	})
+}
+
+/** 客户端截取视频首帧作为封面（浏览器无法解码时返回 null，降级为图标/原生 video） */
+function captureVideoCover(file: File): Promise<Blob | null> {
+	return new Promise((resolve) => {
+		const url = URL.createObjectURL(file)
+		const video = document.createElement('video')
+		video.muted = true
+		video.playsInline = true
+		video.preload = 'auto'
+		let settled = false
+		const done = (blob: Blob | null) => {
+			if (settled) return
+			settled = true
+			clearTimeout(timer)
+			URL.revokeObjectURL(url)
+			resolve(blob)
+		}
+		const timer = setTimeout(() => done(null), 8000)
+		video.onloadeddata = () => {
+			// 取开头附近的一帧，避免纯黑的第一帧
+			video.currentTime = Math.min(1, (video.duration || 1) * 0.1)
+		}
+		video.onseeked = () => {
+			try {
+				if (!video.videoWidth) return done(null)
+				const canvas = document.createElement('canvas')
+				canvas.width = video.videoWidth
+				canvas.height = video.videoHeight
+				const ctx = canvas.getContext('2d')
+				if (!ctx) return done(null)
+				ctx.drawImage(video, 0, 0)
+				canvas.toBlob((blob) => done(blob), 'image/jpeg', 0.7)
+			} catch {
+				done(null)
+			}
+		}
+		video.onerror = () => done(null)
+		video.src = url
+	})
+}
+
 /**
  * 直传上传：precheck → cos-js-sdk-v5 分片直传 → confirm
  * onProgress(fileName, percent) 回报每个文件的进度
@@ -174,6 +226,26 @@ export const uploadFiles = async (
 				(percent) => options?.onProgress?.(file.name, percent),
 			)
 
+			// 2.5 视频：客户端截首帧生成封面图一并上传（失败不影响主流程）
+			let thumbnailKey: string | undefined
+			if (mimeType.startsWith('video/')) {
+				try {
+					const cover = await captureVideoCover(file)
+					if (cover) {
+						thumbnailKey = `${cosKey.replace(/\.[a-z0-9]+$/i, '')}.cover.jpg`
+						await putObject(cos, {
+							Bucket: bucket,
+							Region: region,
+							Key: thumbnailKey,
+							Body: cover,
+							ContentType: 'image/jpeg',
+						})
+					}
+				} catch {
+					thumbnailKey = undefined
+				}
+			}
+
 			// 3. confirm 写库
 			const confirm = await apiClient.post<ApiResponse<FileItem>>('/files/confirm', {
 				cosKey,
@@ -181,6 +253,7 @@ export const uploadFiles = async (
 				mimeType,
 				folderId: options?.folderId ?? null,
 				fileHash,
+				thumbnailKey,
 			})
 			if (!confirm.data.success || !confirm.data.data) {
 				results.push({ name: file.name, error: confirm.data.message || '确认失败' })

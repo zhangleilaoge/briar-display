@@ -32,6 +32,27 @@ function getExtFromName(name: string): string {
 	return /^\.[a-z0-9]{1,10}$/.test(ext) ? ext : ''
 }
 
+/** 视频封面图的 COS key 约定：{原 key 去扩展名}.cover.jpg（与前端上传约定一致） */
+function getCoverKey(cosKey: string): string {
+	return `${cosKey.replace(/\.[a-z0-9]+$/i, '')}.cover.jpg`
+}
+
+/** 删除 COS 对象（视频会连带封面图，best effort） */
+async function deleteCosObjects(file: { filename: string; mimeType: string }) {
+	try {
+		await cosService.deleteObject(file.filename)
+	} catch (err) {
+		console.error('COS delete failed:', err)
+	}
+	if (file.mimeType.startsWith('video/')) {
+		try {
+			await cosService.deleteObject(getCoverKey(file.filename))
+		} catch {
+			/* 封面可能不存在，忽略 */
+		}
+	}
+}
+
 /** 校验文件夹归属当前用户，返回文件夹或 null（根目录） */
 async function validateFolder(userId: string, folderId?: string | null) {
 	if (!folderId) return null
@@ -172,6 +193,7 @@ fileRoutes.post('/confirm', async (c) => {
 		mimeType?: string
 		folderId?: string | null
 		fileHash?: string
+		thumbnailKey?: string
 	}>()
 
 	const cosKey = body.cosKey || ''
@@ -179,6 +201,11 @@ fileRoutes.post('/confirm', async (c) => {
 	if (!cosKey.startsWith(`files/${user.id}/`) || !name) {
 		return c.json<ApiResponse>({ success: false, message: '参数不完整' }, HTTP_STATUS.BAD_REQUEST)
 	}
+
+	// 封面图 key（视频客户端截帧），同样限制在当前用户前缀下
+	const thumbnailKey = body.thumbnailKey?.startsWith(`files/${user.id}/`)
+		? body.thumbnailKey
+		: undefined
 
 	const folder = await validateFolder(user.id, body.folderId)
 	if (folder === undefined) {
@@ -218,7 +245,9 @@ fileRoutes.post('/confirm', async (c) => {
 	const cdnUrl = cosService.getPublicUrl(cosKey)
 	const thumbnailUrl = mimeType.startsWith('image/')
 		? cosService.getThumbnailUrl(cdnUrl)
-		: undefined
+		: thumbnailKey
+			? cosService.getPublicUrl(thumbnailKey)
+			: undefined
 
 	const record = await fileDal.create({
 		userId: user.id,
@@ -330,13 +359,9 @@ fileRoutes.delete('/folders/:id', async (c) => {
 	// 删除文件夹行（子文件夹通过 parent_id 外键级联删除）
 	await folderDal.remove(folderId, user.id)
 
-	// COS 对象删除（best effort）
+	// COS 对象删除（best effort，视频连带封面图）
 	for (const file of files) {
-		try {
-			await cosService.deleteObject(file.filename)
-		} catch (err) {
-			console.error('COS delete failed:', err)
-		}
+		await deleteCosObjects(file)
 	}
 
 	return c.json<ApiResponse>({ success: true, message: `已删除文件夹及 ${files.length} 个文件` })
@@ -469,12 +494,8 @@ fileRoutes.delete('/:id', async (c) => {
 		await fileDal.softDelete(file.id, user.id)
 	}
 
-	// Delete from COS (best effort)
-	try {
-		await cosService.deleteObject(file.filename)
-	} catch (err) {
-		console.error('COS delete failed:', err)
-	}
+	// Delete from COS (best effort，视频连带封面图)
+	await deleteCosObjects(file)
 
 	return c.json<ApiResponse>({ success: true, message: '删除成功' })
 })

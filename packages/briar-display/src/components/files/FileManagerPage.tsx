@@ -124,8 +124,9 @@ function FileManagerPageInner() {
 		}
 	}
 
-	// 当前文件夹下的子文件夹
-	const subFolders = keyword ? [] : folders.filter((f) => (f.parentId ?? null) === currentFolderId)
+	// 当前文件夹下的子文件夹（搜索或类型筛选时为扁平结果视图，隐藏文件夹）
+	const subFolders =
+		keyword || typeFilter ? [] : folders.filter((f) => (f.parentId ?? null) === currentFolderId)
 
 	// ========== 选择 ==========
 
@@ -359,7 +360,7 @@ function FileManagerPageInner() {
 					</div>
 				) : files.length === 0 && subFolders.length === 0 ? (
 					<div className="py-20 text-center text-muted-foreground">
-						{keyword ? '没有匹配的文件' : '这里还是空的，上传文件或新建文件夹吧'}
+						{keyword || typeFilter ? '没有匹配的文件' : '这里还是空的，上传文件或新建文件夹吧'}
 					</div>
 				) : (
 					<>

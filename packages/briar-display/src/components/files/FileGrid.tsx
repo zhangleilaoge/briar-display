@@ -151,12 +151,21 @@ export default function FileGrid({
 							/>
 						) : file.mimeType.startsWith('video/') ? (
 							<>
-								<video
-									src={file.cdnUrl}
-									preload="metadata"
-									muted
-									className="h-full w-full object-cover"
-								/>
+								{file.thumbnailUrl ? (
+									<img
+										src={file.thumbnailUrl}
+										alt={file.originalName}
+										className="h-full w-full object-cover"
+										loading="lazy"
+									/>
+								) : (
+									<video
+										src={file.cdnUrl}
+										preload="metadata"
+										muted
+										className="h-full w-full object-cover"
+									/>
+								)}
 								<span className="absolute inset-0 flex items-center justify-center">
 									<span className="rounded-full bg-black/50 p-2">
 										<Play className="h-5 w-5 text-white" />
