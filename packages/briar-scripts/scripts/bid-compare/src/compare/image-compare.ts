@@ -14,13 +14,26 @@ import type {
 const ENCODER_DIR = path.join(import.meta.dir, '..', '..', 'python_encoder')
 const ENCODER_PATH = path.join(ENCODER_DIR, 'image_encoder.py')
 
+interface EncoderPayload {
+	doc: number
+	page: number
+	idx: number
+	path: string
+	width: number
+	height: number
+}
+
 /**
  * 启动 Python 图片编码长驻子进程
  */
-function startEncoderProcess(): {
+function startEncoderProcess(
+	baseDir: string,
+	logger?: Logger,
+): {
 	proc: ReturnType<typeof spawn>
+	ready: Promise<void>
 	send: (
-		images: { doc: number; page: number; idx: number; base64: string }[],
+		images: ImageItemSaved[],
 	) => Promise<{ doc: number; page: number; idx: number; embedding: number[] }[]>
 	close: () => Promise<void>
 } {
@@ -31,10 +44,18 @@ function startEncoderProcess(): {
 	})
 
 	let buffer = ''
+	let stderr = ''
 	const pendingResolvers: {
 		resolve: (value: { doc: number; page: number; idx: number; embedding: number[] }[]) => void
 		reject: (reason: Error) => void
 	}[] = []
+
+	let readyResolve: (() => void) | null = null
+	let readyReject: ((err: Error) => void) | null = null
+	const readyPromise = new Promise<void>((resolve, reject) => {
+		readyResolve = resolve
+		readyReject = reject
+	})
 
 	proc.stdout.on('data', (data: Buffer) => {
 		buffer += data.toString('utf-8')
@@ -50,7 +71,11 @@ function startEncoderProcess(): {
 					| { error: string }
 
 				if ('status' in result) {
-					// 忽略 ready 状态消息
+					if (result.status === 'ready' && readyResolve) {
+						readyResolve()
+						readyResolve = null
+						readyReject = null
+					}
 					continue
 				}
 
@@ -71,46 +96,112 @@ function startEncoderProcess(): {
 		}
 	})
 
-	let stderr = ''
 	proc.stderr.on('data', (data: Buffer) => {
-		stderr += data.toString('utf-8')
+		const chunk = data.toString('utf-8')
+		stderr += chunk
+		// 实时输出 Python stderr，便于定位模型加载/依赖/CUDA 等崩溃原因
+		if (logger) logger.debug(`[encoder stderr] ${chunk.trimEnd()}`)
 	})
 
-	proc.on('error', (err) => {
+	const rejectAll = (err: Error) => {
+		readyReject?.(err)
+		readyReject = null
+		readyResolve = null
 		for (const pending of pendingResolvers.splice(0)) {
 			pending.reject(err)
 		}
+	}
+
+	proc.on('error', rejectAll)
+
+	// stdin 流本身的错误（如 EPIPE）也要捕获，否则会变成未捕获异常
+	proc.stdin.on('error', (err) => {
+		rejectAll(
+			new PythonEnvError(
+				`Python encoder stdin error: ${err.message}. stderr: ${enhancePythonError(stderr)}`,
+			),
+		)
+	})
+
+	// stdin 管道关闭时（Python 提前退出），reject 所有待处理请求
+	proc.stdin.on('close', () => {
+		rejectAll(
+			new PythonEnvError(
+				`Python encoder stdin closed unexpectedly. stderr: ${enhancePythonError(stderr)}`,
+			),
+		)
 	})
 
 	proc.on('close', (code) => {
 		if (code !== 0) {
-			const err = new PythonEnvError(
-				`Python encoder exited with code ${code}: ${enhancePythonError(stderr)}`,
+			rejectAll(
+				new PythonEnvError(
+					`Python encoder exited with code ${code}: ${enhancePythonError(stderr)}`,
+				),
 			)
-			for (const pending of pendingResolvers.splice(0)) {
-				pending.reject(err)
-			}
 		}
 	})
 
 	return {
 		proc,
+		ready: readyPromise,
 		send(images) {
 			return new Promise((resolve, reject) => {
+				// 写入前检查子进程是否还活着
+				if (proc.exitCode !== null || proc.signalCode !== null) {
+					reject(
+						new PythonEnvError(
+							`Python encoder already exited (code=${proc.exitCode}, signal=${proc.signalCode}). stderr: ${enhancePythonError(stderr)}`,
+						),
+					)
+					return
+				}
+				if (proc.stdin.destroyed || proc.stdin.writableEnded) {
+					reject(
+						new PythonEnvError(
+							`Python encoder stdin is closed. stderr: ${enhancePythonError(stderr)}`,
+						),
+					)
+					return
+				}
+
 				pendingResolvers.push({ resolve, reject })
-				proc.stdin.write(`${JSON.stringify({ images })}\n`)
+				const payload: EncoderPayload[] = images.map((img) => ({
+					doc: img.doc,
+					page: img.page,
+					idx: img.idx,
+					path: path.resolve(baseDir, img.imgPath),
+					width: img.width,
+					height: img.height,
+				}))
+				try {
+					proc.stdin.write(`${JSON.stringify({ images: payload })}\n`)
+				} catch (err) {
+					pendingResolvers.pop()
+					reject(
+						new PythonEnvError(
+							`Failed to write to Python encoder: ${err instanceof Error ? err.message : String(err)}. stderr: ${stderr}`,
+						),
+					)
+				}
 			})
 		},
 		close() {
-			return new Promise((resolve, reject) => {
-				proc.stdin.end()
-				proc.on('close', (code) => {
-					if (code === 0) {
-						resolve()
-					} else {
-						reject(new Error(`Python encoder exited with code ${code}: ${stderr}`))
+			return new Promise((resolve, _reject) => {
+				// 安全结束 stdin；若 Python 已退出，end() 可能抛 EPIPE，需吞掉
+				try {
+					if (!proc.stdin.destroyed && !proc.stdin.writableEnded) {
+						proc.stdin.end()
 					}
-				})
+				} catch {
+					// ignore
+				}
+				// 若进程已退出，直接 resolve；否则等 close 事件
+				if (proc.exitCode !== null || proc.signalCode !== null) {
+					resolve()
+				} else {
+					proc.on('close', () => resolve())
+				}
 			})
 		},
 	}
@@ -123,17 +214,21 @@ export async function encodeImages(
 	images: ImageItemSaved[],
 	batchSize = DEFAULT_CONFIG.BATCH_SIZE,
 	logger?: Logger,
+	baseDir = process.cwd(),
 ): Promise<ImageItem[]> {
 	if (images.length === 0) {
 		return []
 	}
 
-	const encoder = startEncoderProcess()
+	const encoder = startEncoderProcess(baseDir, logger)
 	const results: ImageItem[] = []
 
 	try {
-		// 流水线发送 batch（最多 3 个并发），减少 IPC 等待同时避免内存峰值
-		const concurrency = 3
+		// 等待 Python 端模型加载完成；若加载失败会立即抛出带 stderr 的错误
+		await encoder.ready
+
+		// Windows 管道较窄，降低并发避免 broken pipe；macOS/Linux 保持 3 并发
+		const concurrency = process.platform === 'win32' ? 1 : 3
 		const batches: { index: number; batch: typeof images }[] = []
 		for (let i = 0; i < images.length; i += batchSize) {
 			batches.push({ index: i, batch: images.slice(i, i + batchSize) })
@@ -178,7 +273,12 @@ export async function encodeImages(
 			else console.warn(msg)
 		}
 	} finally {
-		await encoder.close()
+		// 安全关闭 encoder，close 本身的错误不应掩盖原始错误
+		try {
+			await encoder.close()
+		} catch (closeErr) {
+			if (logger) logger.warn(`Encoder close warning: ${(closeErr as Error).message}`)
+		}
 	}
 
 	return results

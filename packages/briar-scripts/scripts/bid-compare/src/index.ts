@@ -223,7 +223,7 @@ async function main() {
 		// [2.5/6] 图片编码 + 缓存
 		if (allImgsRaw.length > 0) {
 			logger.info('\n[2.5/6] 图片编码...')
-			allImgs = await encodeImages(allImgsRaw, opts.batchSize, logger)
+			allImgs = await encodeImages(allImgsRaw, opts.batchSize, logger, outDir)
 			saveImagesCache(outDir, allImgs)
 			logger.info(`  已缓存 ${allImgs.length} 张图片编码`)
 		} else {
