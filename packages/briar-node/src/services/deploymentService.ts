@@ -28,28 +28,52 @@ interface GithubTokenCandidate {
 }
 
 /**
+ * 从 .env 文件读取指定 key 的 token 值
+ */
+const readTokenFromEnvFile = (envPath: string, key: string): string | null => {
+	try {
+		const content = fs.readFileSync(envPath, 'utf-8')
+		const regex = new RegExp(`^${key}=(.+)$`, 'm')
+		const match = content.match(regex)
+		// 值可能带引号（KEY="xxx"），需剥离，否则 Authorization 头非法导致 401
+		const token = match?.[1].trim().replace(/^["']|["']$/g, '')
+		return token || null
+	} catch {
+		return null
+	}
+}
+
+/**
  * 收集所有可用的 GitHub token（按优先级）：
  * 1. BRIAR_GITHUB_TOKEN 环境变量
- * 2. briar-assets/github/.env 里的 FINED_GRAINED_GITHUB_TOKEN（服务器上会同步该文件）
+ * 2. briar-assets/briar/.env 里的 BRIAR_GITHUB_TOKEN（classic token，权限通常更全）
+ * 3. briar-assets/github/.env 里的 FINED_GRAINED_GITHUB_TOKEN
  * 某个来源失效（如配置了错误值）时会自动尝试下一个
  */
 const resolveGithubTokenCandidates = (): GithubTokenCandidate[] => {
 	const candidates: GithubTokenCandidate[] = []
+	const repoRoot = findRepoRoot(process.cwd())
+
 	if (process.env.BRIAR_GITHUB_TOKEN) {
-		candidates.push({ token: process.env.BRIAR_GITHUB_TOKEN, source: 'BRIAR_GITHUB_TOKEN' })
+		candidates.push({ token: process.env.BRIAR_GITHUB_TOKEN, source: 'BRIAR_GITHUB_TOKEN (env)' })
 	}
-	try {
-		const envPath = path.join(findRepoRoot(process.cwd()), 'briar-assets/github/.env')
-		const content = fs.readFileSync(envPath, 'utf-8')
-		const match = content.match(/^FINED_GRAINED_GITHUB_TOKEN=(.+)$/m)
-		// 值可能带引号（KEY="xxx"），需剥离，否则 Authorization 头非法导致 401
-		const token = match?.[1].trim().replace(/^["']|["']$/g, '')
-		if (token) {
-			candidates.push({ token, source: 'briar-assets/github/.env' })
-		}
-	} catch {
-		// 文件不存在等情况，忽略
+
+	const briarToken = readTokenFromEnvFile(
+		path.join(repoRoot, 'briar-assets/briar/.env'),
+		'BRIAR_GITHUB_TOKEN',
+	)
+	if (briarToken) {
+		candidates.push({ token: briarToken, source: 'briar-assets/briar/.env' })
 	}
+
+	const fineGrainedToken = readTokenFromEnvFile(
+		path.join(repoRoot, 'briar-assets/github/.env'),
+		'FINED_GRAINED_GITHUB_TOKEN',
+	)
+	if (fineGrainedToken) {
+		candidates.push({ token: fineGrainedToken, source: 'briar-assets/github/.env' })
+	}
+
 	return candidates
 }
 
@@ -77,6 +101,7 @@ async function triggerWorkflowDispatch(
 	let lastError: Error | null = null
 
 	for (const { token, source } of candidates) {
+		const tokenPrefix = token.slice(0, 12)
 		try {
 			const dispatchRes = await fetch(
 				`${GITHUB_API}/repos/${repo}/actions/workflows/${workflowId}/dispatches`,
@@ -90,7 +115,9 @@ async function triggerWorkflowDispatch(
 				},
 			)
 			if (!dispatchRes.ok) {
-				throw new Error(`触发 workflow 失败: HTTP ${dispatchRes.status}`)
+				throw new Error(
+					`来源 ${source} (token ${tokenPrefix}...) 触发 workflow 失败: HTTP ${dispatchRes.status}`,
+				)
 			}
 
 			// GitHub 创建 run 有短暂延迟，稍等再查
@@ -118,12 +145,14 @@ async function triggerWorkflowDispatch(
 			}
 		} catch (error) {
 			lastError = error instanceof Error ? error : new Error(String(error))
-			console.warn(`⚠️ token 来源 ${source} 触发 nginx 部署失败: ${lastError.message}`)
+			console.warn(
+				`⚠️ token 来源 ${source} (${tokenPrefix}...) 触发 nginx 部署失败: ${lastError.message}`,
+			)
 		}
 	}
 
 	throw new Error(
-		`${lastError?.message ?? '未知错误'}（已尝试 ${candidates.length} 个 token 来源均失败）`,
+		`${lastError?.message ?? '未知错误'}（已尝试 ${candidates.length} 个 token 来源均失败；请检查 token 是否有 Actions:write 权限）`,
 	)
 }
 
