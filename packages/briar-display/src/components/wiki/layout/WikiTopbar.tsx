@@ -1,6 +1,5 @@
 'use client'
 
-import NotificationBell from '@/components/common/NotificationBell'
 import SearchDropdown from '@/components/wiki/common/SearchDropdown'
 import UserMenu from '@/components/wiki/layout/UserMenu'
 import { cn } from '@/lib/utils'
@@ -42,9 +41,8 @@ export default function WikiTopbar({ onMenuToggle, className }: WikiTopbarProps)
 				<SearchDropdown />
 			</div>
 
-			{/* Right: notifications + user menu */}
+			{/* Right: user menu */}
 			<div className="flex items-center justify-end gap-2">
-				<NotificationBell variant="wiki" />
 				<UserMenu />
 			</div>
 		</header>

@@ -59,7 +59,8 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 | `packages/briar-node/src/routes/scheduler.ts` | 定时任务管理 API（`/api/scheduler`）：任务列表（含最近运行记录）、手动触发 |
 | `packages/briar-node/src/lib/schedulerConfig.ts` | 定时任务注册表（唯一事实来源），新增任务在此注册后管理卡片自动展示 |
 | `packages/briar-node/src/services/schedulerRunService.ts` | `runWithLog`：执行包装器，定时/手动运行统一落 `scheduler_runs` 表 |
-| `packages/briar-display/src/components/common/NotificationBell.tsx` | 右上角站内信铃铛（嵌入 `UserMenu`，wiki 顶栏单独接入） |
+| `packages/briar-display/src/hooks/useUnreadMessages.ts` | 站内信未读数 hook（60s 轮询），UserMenu 红点与菜单角标共用 |
+| `packages/briar-display/src/components/profile/MessagesPanel.tsx` | 站内信面板（个人中心「站内信」页签）：分页列表 + 详情弹窗 |
 | `packages/briar-scripts/scripts/write-version.ts` | 构建时写入 `version.json` 的脚本 |
 | `.github/workflows/deploy.yml` | CI：构建前端 + 上传 CDN + SSH 部署后端 + 健康检查 |
 | `default.conf` | Nginx 配置 |
