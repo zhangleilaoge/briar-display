@@ -8,11 +8,11 @@ import {
 	getCertRenewals,
 	getCertStatus,
 	getDeployHistory,
-	triggerCertRenew,
 	triggerNginxDeploy,
 } from '@/api/deploy'
 import AdminLayout from '@/components/admin/AdminLayout'
 import DeployLogDialog from '@/components/admin/DeployLogDialog'
+import SchedulerTasksCard from '@/components/admin/SchedulerTasksCard'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PermissionProvider } from '@/contexts/PermissionContext'
@@ -124,7 +124,6 @@ function AdminDeployPageInner() {
 	const [renewals, setRenewals] = useState<CertRenewalItem[]>([])
 	const [history, setHistory] = useState<DeployHistoryItem[]>([])
 	const [loading, setLoading] = useState(true)
-	const [renewing, setRenewing] = useState(false)
 	const [nginxDeploying, setNginxDeploying] = useState(false)
 	const [logRunId, setLogRunId] = useState<string | null>(null)
 	const [logOpen, setLogOpen] = useState(false)
@@ -179,23 +178,6 @@ function AdminDeployPageInner() {
 		}
 		wasRunningRef.current = hasRunning
 	}, [hasRunning, renewals, fetchStatus])
-
-	const handleRenew = async () => {
-		setRenewing(true)
-		try {
-			const res = await triggerCertRenew()
-			if (res.success) {
-				toast.success('续期任务已启动，通常需要 3~5 分钟')
-				setTimeout(fetchRenewals, 3000)
-			} else {
-				toast.error(res.message || '触发续期失败')
-			}
-		} catch {
-			toast.error('触发续期失败')
-		} finally {
-			setRenewing(false)
-		}
-	}
 
 	const handleNginxDeploy = async () => {
 		setNginxDeploying(true)
@@ -255,34 +237,19 @@ function AdminDeployPageInner() {
 		<AdminLayout currentPath={PAGE_PATH}>
 			{/* 证书状态 */}
 			<div className="mb-4 rounded-md border bg-card p-4">
-				<div className="mb-4 flex items-center justify-between">
-					<div className="flex items-center gap-2">
-						<ShieldCheck className="h-4 w-4 text-muted-foreground" />
-						<h2 className="text-sm font-semibold">证书状态</h2>
-						{certStatus && (
-							<span className="font-mono text-xs text-muted-foreground">{certStatus.domain}</span>
-						)}
-						{certStatus?.local &&
-							certStatus?.live &&
-							(certConsistent ? (
-								<Badge className="bg-green-100 text-green-700">本地与线上一致</Badge>
-							) : (
-								<Badge className="bg-yellow-100 text-yellow-700">本地与线上不一致</Badge>
-							))}
-					</div>
-					<Button
-						size="sm"
-						onClick={handleRenew}
-						disabled={renewing || hasRunning}
-						className="gap-1.5"
-					>
-						{renewing || hasRunning ? (
-							<Loader2 className="h-3.5 w-3.5 animate-spin" />
+				<div className="mb-4 flex items-center gap-2">
+					<ShieldCheck className="h-4 w-4 text-muted-foreground" />
+					<h2 className="text-sm font-semibold">证书状态</h2>
+					{certStatus && (
+						<span className="font-mono text-xs text-muted-foreground">{certStatus.domain}</span>
+					)}
+					{certStatus?.local &&
+						certStatus?.live &&
+						(certConsistent ? (
+							<Badge className="bg-green-100 text-green-700">本地与线上一致</Badge>
 						) : (
-							<RefreshCw className="h-3.5 w-3.5" />
-						)}
-						{hasRunning ? '续期进行中...' : '立即续期'}
-					</Button>
+							<Badge className="bg-yellow-100 text-yellow-700">本地与线上不一致</Badge>
+						))}
 				</div>
 				{loading ? (
 					<div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
@@ -304,6 +271,9 @@ function AdminDeployPageInner() {
 					</div>
 				)}
 			</div>
+
+			{/* 定时任务 */}
+			<SchedulerTasksCard />
 
 			{/* Nginx 配置部署 */}
 			<div className="mb-4 rounded-md border bg-card p-4">

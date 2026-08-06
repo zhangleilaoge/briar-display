@@ -122,3 +122,18 @@ CREATE TABLE IF NOT EXISTS messages (
   INDEX idx_user_created (user_id, created_at),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='站内信';
+
+-- ============================================================
+-- 定时任务运行记录
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS scheduler_runs (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  task_name VARCHAR(64) NOT NULL COMMENT '任务名（schedulerConfig 注册）',
+  trigger_type ENUM('scheduled','manual') NOT NULL COMMENT '触发方式',
+  status ENUM('running','success','failed') NOT NULL DEFAULT 'running' COMMENT '执行状态',
+  message TEXT COMMENT '结果信息或错误原因',
+  started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '开始时间',
+  finished_at TIMESTAMP NULL DEFAULT NULL COMMENT '结束时间',
+  INDEX idx_task_started (task_name, started_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='定时任务运行记录';

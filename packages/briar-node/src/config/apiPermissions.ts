@@ -54,6 +54,9 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	'POST /api/messages/read-all': null,
 	'POST /api/messages/:id/read': null,
 
+	// ==================== Scheduler（定时任务管理） ====================
+	'POST /api/scheduler/tasks/:name/run': PERMISSIONS.ADMIN_DEPLOY_MANAGE,
+
 	// ==================== Logs ====================
 	// GET-only, no write routes needed
 

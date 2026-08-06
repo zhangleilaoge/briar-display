@@ -56,6 +56,9 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 | `packages/briar-node/src/routes/messages.ts` | 站内信 API（`/api/messages`）：列表/未读数/标记已读 |
 | `packages/briar-node/src/services/fileModerationService.ts` | 图片封禁检测：定时扫描 CDN URL（403/451 判定被封）→ 删记录 + 清理 COS + 发站内信 |
 | `packages/briar-node/src/jobs/scan-blocked-files.mjs` | 封禁扫描定时任务（cron 见 schedulerConfig，`BRIAR_SCAN_BLOCKED_CRON` 可覆盖） |
+| `packages/briar-node/src/routes/scheduler.ts` | 定时任务管理 API（`/api/scheduler`）：任务列表（含最近运行记录）、手动触发 |
+| `packages/briar-node/src/lib/schedulerConfig.ts` | 定时任务注册表（唯一事实来源），新增任务在此注册后管理卡片自动展示 |
+| `packages/briar-node/src/services/schedulerRunService.ts` | `runWithLog`：执行包装器，定时/手动运行统一落 `scheduler_runs` 表 |
 | `packages/briar-display/src/components/common/NotificationBell.tsx` | 右上角站内信铃铛（嵌入 `UserMenu`，wiki 顶栏单独接入） |
 | `packages/briar-scripts/scripts/write-version.ts` | 构建时写入 `version.json` 的脚本 |
 | `.github/workflows/deploy.yml` | CI：构建前端 + 上传 CDN + SSH 部署后端 + 健康检查 |
