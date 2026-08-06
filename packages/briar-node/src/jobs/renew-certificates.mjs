@@ -53,6 +53,31 @@ const { certificateService } = await tsImport(
 	certificateServiceUrl.href,
 )
 
+const schedulerRunCandidates = [
+	new URL('../services/schedulerRunService.ts', import.meta.url),
+	new URL('../src/services/schedulerRunService.ts', import.meta.url),
+]
+const schedulerRunServiceUrl = schedulerRunCandidates.find((url) =>
+	fs.existsSync(fileURLToPath(url)),
+)
+if (!schedulerRunServiceUrl) {
+	throw new Error('找不到 schedulerRunService.ts')
+}
+const { schedulerRunService } = await tsImport(
+	schedulerRunServiceUrl.href,
+	schedulerRunServiceUrl.href,
+)
+
 const domain = process.env.CERTIFICATE_DOMAIN || 'stardew.site'
 
-await certificateService.renewCertificate(domain, false, 'scheduled')
+try {
+	await schedulerRunService.runWithLog('renew-certificates', 'scheduled', async () => {
+		const result = await certificateService.renewCertificate(domain, false, 'scheduled')
+		if (!result.success) throw new Error(result.error || '续期失败')
+		return result.skipped ? '证书尚未到期，已跳过' : '证书续期成功'
+	})
+	process.exit(0)
+} catch (error) {
+	console.error('[renew-certificates] 执行失败:', error)
+	process.exit(1)
+}

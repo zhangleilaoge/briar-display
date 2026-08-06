@@ -98,3 +98,31 @@ export interface SiteMessage {
 	readAt: string | null
 	createdAt: string
 }
+
+/**
+ * 定时任务运行记录
+ */
+export type SchedulerRunStatus = 'running' | 'success' | 'failed'
+export type SchedulerTriggerType = 'scheduled' | 'manual'
+
+export interface SchedulerRunItem {
+	id: string
+	taskName: string
+	triggerType: SchedulerTriggerType
+	status: SchedulerRunStatus
+	message: string | null
+	startedAt: string
+	finishedAt: string | null
+}
+
+/**
+ * 定时任务信息（管理后台「定时任务」卡片）
+ */
+export interface SchedulerTaskInfo {
+	name: string
+	label: string
+	description: string
+	scheduleText: string
+	manual: boolean
+	lastRun: SchedulerRunItem | null
+}

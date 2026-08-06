@@ -63,21 +63,21 @@
 	   components automatically adopt wiki colors when rendered inside
 	   a container with the .wiki-theme class. */
 	.wiki-theme {
-		--background: 0 0% 100%;         /* --wiki-bg #ffffff */
-		--foreground: 210 6% 13%;        /* --wiki-text #202122 */
-		--primary: 217 59% 50%;          /* --wiki-link #3366cc */
+		--background: 0 0% 100%; /* --wiki-bg #ffffff */
+		--foreground: 210 6% 13%; /* --wiki-text #202122 */
+		--primary: 217 59% 50%; /* --wiki-link #3366cc */
 		--primary-foreground: 0 0% 100%; /* white */
-		--secondary: 210 20% 98%;        /* --wiki-bg-secondary #f8f9fa */
+		--secondary: 210 20% 98%; /* --wiki-bg-secondary #f8f9fa */
 		--secondary-foreground: 210 6% 13%;
-		--muted: 220 14% 92%;            /* --wiki-bg-tertiary #eaecf0 */
-		--muted-foreground: 210 5% 47%;  /* --wiki-text-muted #72777d */
+		--muted: 220 14% 92%; /* --wiki-bg-tertiary #eaecf0 */
+		--muted-foreground: 210 5% 47%; /* --wiki-text-muted #72777d */
 		--accent: 220 14% 92%;
 		--accent-foreground: 210 6% 13%;
-		--destructive: 0 100% 36%;       /* --wiki-link-red #ba0000 */
+		--destructive: 0 100% 36%; /* --wiki-link-red #ba0000 */
 		--destructive-foreground: 0 0% 100%;
-		--border: 210 10% 80%;           /* --wiki-border-light #c8ccd1 */
+		--border: 210 10% 80%; /* --wiki-border-light #c8ccd1 */
 		--input: 210 10% 80%;
-		--ring: 217 59% 50%;             /* --wiki-link #3366cc */
+		--ring: 217 59% 50%; /* --wiki-link #3366cc */
 	}
 
 	* {
@@ -187,7 +187,6 @@
 		max-width: 100%;
 		border-radius: 2px;
 	}
-
 
 	/* Task list (checkbox) styling for TipTap editor and rendered content */
 	.prose ul[data-type="taskList"],

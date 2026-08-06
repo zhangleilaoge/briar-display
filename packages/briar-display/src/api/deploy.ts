@@ -1,4 +1,4 @@
-import type { ApiResponse } from '@briar/shared'
+import type { ApiResponse, SchedulerTaskInfo } from '@briar/shared'
 import { apiClient } from './request'
 
 // ==================== 证书状态 ====================
@@ -82,5 +82,18 @@ export interface NginxDeployResult {
 
 export const triggerNginxDeploy = async () => {
 	const response = await apiClient.post<ApiResponse<NginxDeployResult>>('/deployment/nginx/deploy')
+	return response.data
+}
+
+// ==================== 定时任务 ====================
+
+export const getSchedulerTasks = async () => {
+	const response =
+		await apiClient.get<ApiResponse<{ items: SchedulerTaskInfo[] }>>('/scheduler/tasks')
+	return response.data
+}
+
+export const runSchedulerTask = async (name: string) => {
+	const response = await apiClient.post<ApiResponse>(`/scheduler/tasks/${name}/run`)
 	return response.data
 }

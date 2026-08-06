@@ -18,6 +18,14 @@ export type SchedulerTask = {
 	worker?: WorkerOptionsWithType
 	enabled?: boolean
 	runOnStart?: boolean
+	/** 卡片显示名（管理后台「定时任务」卡片） */
+	label?: string
+	/** 任务描述（卡片副文案） */
+	description?: string
+	/** 人类可读的调度说明（如「每日 04:43」），避免前端解析 cron */
+	scheduleText?: string
+	/** 手动触发（主进程内执行，可返回结果信息）；缺省则不支持手动触发 */
+	run?: () => Promise<string | undefined>
 }
 
 const resolveRuntimeExtension = () => {

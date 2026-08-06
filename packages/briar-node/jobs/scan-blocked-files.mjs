@@ -45,8 +45,29 @@ const { fileModerationService } = await tsImport(
 	fileModerationServiceUrl.href,
 )
 
+const schedulerRunCandidates = [
+	new URL('../services/schedulerRunService.ts', import.meta.url),
+	new URL('../src/services/schedulerRunService.ts', import.meta.url),
+]
+const schedulerRunServiceUrl = schedulerRunCandidates.find((url) =>
+	fs.existsSync(fileURLToPath(url)),
+)
+if (!schedulerRunServiceUrl) {
+	throw new Error('找不到 schedulerRunService.ts')
+}
+const { schedulerRunService } = await tsImport(
+	schedulerRunServiceUrl.href,
+	schedulerRunServiceUrl.href,
+)
+
 try {
-	await fileModerationService.scanAndCleanBlockedImages()
-} finally {
+	await schedulerRunService.runWithLog('scan-blocked-files', 'scheduled', async () => {
+		const cleaned = await fileModerationService.scanAndCleanBlockedImages()
+		return `扫描完成，清理 ${cleaned} 张被封禁图片`
+	})
 	await fileModerationService.close()
+	process.exit(0)
+} catch (error) {
+	console.error('[scan-blocked-files] 执行失败:', error)
+	process.exit(1)
 }
