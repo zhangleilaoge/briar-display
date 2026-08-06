@@ -50,6 +50,10 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	'PATCH /api/files/:id': PERMISSIONS.WIKI_PAGE_CREATE,
 	'DELETE /api/files/:id': PERMISSIONS.WIKI_PAGE_CREATE,
 
+	// ==================== Messages（站内信，登录用户即可） ====================
+	'POST /api/messages/read-all': null,
+	'POST /api/messages/:id/read': null,
+
 	// ==================== Logs ====================
 	// GET-only, no write routes needed
 

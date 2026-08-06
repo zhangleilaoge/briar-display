@@ -85,3 +85,16 @@ export interface Permission {
 export interface RoleWithPermissions extends Role {
 	permissions: Permission[]
 }
+
+/**
+ * 站内信
+ */
+export interface SiteMessage {
+	id: string
+	userId: string
+	type: string
+	title: string
+	content: string
+	readAt: string | null
+	createdAt: string
+}

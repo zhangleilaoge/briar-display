@@ -18,4 +18,10 @@ export const schedulerTasks: SchedulerTask[] = [
 		runOnStart: false,
 		path: fileURLToPath(new URL('../jobs/renew-certificates.mjs', import.meta.url)),
 	},
+	{
+		name: 'scan-blocked-files',
+		cron: resolveCron('BRIAR_SCAN_BLOCKED_CRON', '43 4 * * *'), // 每日 04:43 扫描被腾讯封禁的图片
+		runOnStart: false,
+		path: fileURLToPath(new URL('../jobs/scan-blocked-files.mjs', import.meta.url)),
+	},
 ]

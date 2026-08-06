@@ -32,25 +32,9 @@ function getExtFromName(name: string): string {
 	return /^\.[a-z0-9]{1,10}$/.test(ext) ? ext : ''
 }
 
-/** 视频封面图的 COS key 约定：{原 key 去扩展名}.cover.jpg（与前端上传约定一致） */
-function getCoverKey(cosKey: string): string {
-	return `${cosKey.replace(/\.[a-z0-9]+$/i, '')}.cover.jpg`
-}
-
 /** 删除 COS 对象（视频会连带封面图，best effort） */
 async function deleteCosObjects(file: { filename: string; mimeType: string }) {
-	try {
-		await cosService.deleteObject(file.filename)
-	} catch (err) {
-		console.error('COS delete failed:', err)
-	}
-	if (file.mimeType.startsWith('video/')) {
-		try {
-			await cosService.deleteObject(getCoverKey(file.filename))
-		} catch {
-			/* 封面可能不存在，忽略 */
-		}
-	}
+	await cosService.deleteFileWithCover(file.filename, file.mimeType)
 }
 
 /** 校验文件夹归属当前用户，返回文件夹或 null（根目录） */

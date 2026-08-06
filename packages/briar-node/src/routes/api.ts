@@ -5,6 +5,7 @@ import certRoutes from './cert'
 import deploymentRoutes from './deployment'
 import fileRoutes from './files'
 import logRoutes from './log'
+import messageRoutes from './messages'
 import readmeAiRoutes from './readmeAi'
 import sqlConsoleRoutes from './sqlConsole'
 import userRoutes from './users'
@@ -22,6 +23,7 @@ api.route('/deployment', deploymentRoutes)
 api.route('/wiki', wikiRoutes)
 api.route('/readme-ai', readmeAiRoutes)
 api.route('/logs', logRoutes)
+api.route('/messages', messageRoutes)
 api.route('/files', fileRoutes)
 api.route('/users', userRoutes)
 api.route('/version', versionRoutes)
