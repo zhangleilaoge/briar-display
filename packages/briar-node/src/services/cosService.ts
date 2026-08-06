@@ -65,6 +65,27 @@ export const cosService = {
 		})
 	},
 
+	/** 视频封面图的 COS key 约定：{原 key 去扩展名}.cover.jpg（与前端上传约定一致） */
+	getCoverKey(key: string): string {
+		return `${key.replace(/\.[a-z0-9]+$/i, '')}.cover.jpg`
+	},
+
+	/** 删除文件对象（视频会连带封面图，best effort，不抛错） */
+	async deleteFileWithCover(key: string, mimeType: string): Promise<void> {
+		try {
+			await cosService.deleteObject(key)
+		} catch (err) {
+			console.error('COS delete failed:', err)
+		}
+		if (mimeType.startsWith('video/')) {
+			try {
+				await cosService.deleteObject(cosService.getCoverKey(key))
+			} catch {
+				/* 封面可能不存在，忽略 */
+			}
+		}
+	},
+
 	/**
 	 * Get thumbnail URL using COS image processing (数据万象)
 	 * Appends image processing params to the CDN URL

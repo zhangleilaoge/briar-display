@@ -105,3 +105,20 @@ SET @sql = IF(@fk_exists = 0, 'ALTER TABLE files ADD CONSTRAINT files_ibfk_folde
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- ============================================================
+-- 站内信
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS messages (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  user_id VARCHAR(36) NOT NULL COMMENT '接收用户 ID',
+  type VARCHAR(50) NOT NULL DEFAULT 'system' COMMENT '消息类型（system / file_blocked 等）',
+  title VARCHAR(255) NOT NULL COMMENT '标题',
+  content TEXT NOT NULL COMMENT '内容',
+  read_at TIMESTAMP NULL DEFAULT NULL COMMENT '阅读时间（NULL 为未读）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  INDEX idx_user_read (user_id, read_at),
+  INDEX idx_user_created (user_id, created_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='站内信';

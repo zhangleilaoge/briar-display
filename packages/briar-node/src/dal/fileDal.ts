@@ -243,4 +243,23 @@ export const fileDal = {
 		)
 		return row?.cnt ?? 0
 	},
+
+	/** 全量图片记录（封禁扫描用，仅取必要字段） */
+	async listAllImages(): Promise<
+		Pick<FileRecord, 'id' | 'userId' | 'originalName' | 'filename' | 'mimeType' | 'cdnUrl'>[]
+	> {
+		const rows = await query<
+			Pick<FileRow, 'id' | 'user_id' | 'original_name' | 'filename' | 'mime_type' | 'cdn_url'>
+		>(
+			"SELECT id, user_id, original_name, filename, mime_type, cdn_url FROM files WHERE mime_type LIKE 'image/%' AND deleted_at IS NULL",
+		)
+		return rows.map((row) => ({
+			id: row.id,
+			userId: row.user_id,
+			originalName: row.original_name,
+			filename: row.filename,
+			mimeType: row.mime_type,
+			cdnUrl: row.cdn_url,
+		}))
+	},
 }
