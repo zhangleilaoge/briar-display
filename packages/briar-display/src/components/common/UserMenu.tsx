@@ -2,10 +2,10 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { usePermissions } from '@/contexts/PermissionContext'
+import { useUnreadMessages } from '@/hooks/useUnreadMessages'
 import { cn } from '@/lib/utils'
-import { ChevronDown, Home, LogIn, LogOut, Shield, User as UserIcon } from 'lucide-react'
+import { ChevronDown, Home, LogIn, LogOut, Mail, Shield, User as UserIcon } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import NotificationBell from './NotificationBell'
 
 interface StoredUser {
 	name: string
@@ -68,6 +68,7 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 	const [user, setUser] = useState<StoredUser | null>(null)
 	const [token, setToken] = useState<string | null>(null)
 	const { roles, isAdmin, isLoggedIn } = usePermissions()
+	const { unread } = useUnreadMessages()
 
 	useEffect(() => {
 		const t = getToken()
@@ -156,95 +157,112 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 	}
 
 	return (
-		<div className="flex items-center gap-1">
-			<NotificationBell variant={variant} />
-			<Popover open={open} onOpenChange={setOpen}>
-				<PopoverTrigger asChild>
-					<button type="button" className={triggerClass} aria-label="用户菜单">
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger asChild>
+				<button type="button" className={triggerClass} aria-label="用户菜单">
+					<span className="relative">
 						<Avatar url={user?.avatar} initial={initial} className={avatarClass} />
-						<span className={nameClass}>{user?.name || '用户'}</span>
-						<ChevronDown className={chevronClass} />
-					</button>
-				</PopoverTrigger>
-				<PopoverContent
-					className={cn('w-56 p-1', isLight && 'bg-popover')}
-					align="end"
-					sideOffset={6}
-				>
-					{/* 头部：用户信息 */}
-					<div
-						className={cn(
-							'border-b px-3 py-2 mb-1',
-							isLight ? 'border-border' : 'border-wiki-border-light',
+						{unread > 0 && (
+							<span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-red-500" />
 						)}
-					>
-						{/* 名字与角色 */}
-						<div className="flex items-center justify-between gap-2">
-							<p
-								className={cn(
-									'truncate text-sm font-medium',
-									isLight ? 'text-foreground' : 'text-wiki-text',
-								)}
-							>
-								{user?.name || '用户'}
-							</p>
-							{roleDisplay && (
-								<span
-									className={cn(
-										'inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px]',
-										isLight ? 'bg-primary/10 text-primary' : 'bg-wiki-link/10 text-wiki-link',
-									)}
-									title={roleDisplay}
-								>
-									<Shield className="h-3 w-3" />
-									{roleDisplay}
-								</span>
+					</span>
+					<span className={nameClass}>{user?.name || '用户'}</span>
+					<ChevronDown className={chevronClass} />
+				</button>
+			</PopoverTrigger>
+			<PopoverContent
+				className={cn('w-56 p-1', isLight && 'bg-popover')}
+				align="end"
+				sideOffset={6}
+			>
+				{/* 头部：用户信息 */}
+				<div
+					className={cn(
+						'border-b px-3 py-2 mb-1',
+						isLight ? 'border-border' : 'border-wiki-border-light',
+					)}
+				>
+					{/* 名字与角色 */}
+					<div className="flex items-center justify-between gap-2">
+						<p
+							className={cn(
+								'truncate text-sm font-medium',
+								isLight ? 'text-foreground' : 'text-wiki-text',
 							)}
-						</div>
-
-						{/* 邮箱独占一行，避免被角色压缩 */}
-						{user?.email && (
-							<p
+						>
+							{user?.name || '用户'}
+						</p>
+						{roleDisplay && (
+							<span
 								className={cn(
-									'mt-0.5 truncate text-[11px]',
-									isLight ? 'text-muted-foreground' : 'text-wiki-text-muted',
+									'inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px]',
+									isLight ? 'bg-primary/10 text-primary' : 'bg-wiki-link/10 text-wiki-link',
 								)}
+								title={roleDisplay}
 							>
-								{user.email}
-							</p>
+								<Shield className="h-3 w-3" />
+								{roleDisplay}
+							</span>
 						)}
 					</div>
 
-					{/* 菜单项 */}
-					<a href="/briar-display/profile" className={itemClass} onClick={() => setOpen(false)}>
-						<UserIcon className="h-3.5 w-3.5" />
-						个人中心
-					</a>
-					<a href="/briar-display/" className={itemClass} onClick={() => setOpen(false)}>
-						<Home className="h-3.5 w-3.5" />
-						回到主页
-					</a>
-					{isAdmin && (
-						<a
-							href="/briar-display/admin/permissions"
-							className={itemClass}
-							onClick={() => setOpen(false)}
+					{/* 邮箱独占一行，避免被角色压缩 */}
+					{user?.email && (
+						<p
+							className={cn(
+								'mt-0.5 truncate text-[11px]',
+								isLight ? 'text-muted-foreground' : 'text-wiki-text-muted',
+							)}
 						>
-							<Shield className="h-3.5 w-3.5" />
-							管理后台
-						</a>
+							{user.email}
+						</p>
 					)}
+				</div>
 
-					<div
-						className={cn('my-1 border-t', isLight ? 'border-border' : 'border-wiki-border-light')}
-					/>
+				{/* 菜单项 */}
+				<a href="/briar-display/profile" className={itemClass} onClick={() => setOpen(false)}>
+					<UserIcon className="h-3.5 w-3.5" />
+					个人中心
+				</a>
+				<a
+					href="/briar-display/profile?tab=messages"
+					className={cn(itemClass, 'justify-between')}
+					onClick={() => setOpen(false)}
+				>
+					<span className="flex items-center gap-2">
+						<Mail className="h-3.5 w-3.5" />
+						站内信
+					</span>
+					{unread > 0 && (
+						<span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium text-white">
+							{unread > 99 ? '99+' : unread}
+						</span>
+					)}
+				</a>
+				<a href="/briar-display/" className={itemClass} onClick={() => setOpen(false)}>
+					<Home className="h-3.5 w-3.5" />
+					回到主页
+				</a>
+				{isAdmin && (
+					<a
+						href="/briar-display/admin/permissions"
+						className={itemClass}
+						onClick={() => setOpen(false)}
+					>
+						<Shield className="h-3.5 w-3.5" />
+						管理后台
+					</a>
+				)}
 
-					<button type="button" onClick={handleLogout} className={destructiveItemClass}>
-						<LogOut className="h-3.5 w-3.5" />
-						退出登录
-					</button>
-				</PopoverContent>
-			</Popover>
-		</div>
+				<div
+					className={cn('my-1 border-t', isLight ? 'border-border' : 'border-wiki-border-light')}
+				/>
+
+				<button type="button" onClick={handleLogout} className={destructiveItemClass}>
+					<LogOut className="h-3.5 w-3.5" />
+					退出登录
+				</button>
+			</PopoverContent>
+		</Popover>
 	)
 }

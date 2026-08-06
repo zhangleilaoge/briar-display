@@ -3,8 +3,9 @@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { WikiButton as Button } from '@/components/wiki/common/ui/button'
 import { usePermissions } from '@/contexts/PermissionContext'
+import { useUnreadMessages } from '@/hooks/useUnreadMessages'
 import { cn } from '@/lib/utils'
-import { ChevronDown, History, Home, LogOut, Plus, Shield, Star, User } from 'lucide-react'
+import { ChevronDown, History, Home, LogOut, Mail, Plus, Shield, Star, User } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 interface UserInfo {
@@ -55,6 +56,7 @@ export default function UserMenu() {
 	const [user, setUser] = useState<UserInfo | null>(null)
 	const [token, setToken] = useState<string | null>(null)
 	const { roles, isAdmin, hasPermission } = usePermissions()
+	const { unread } = useUnreadMessages()
 
 	useEffect(() => {
 		const t = getToken()
@@ -109,7 +111,12 @@ export default function UserMenu() {
 					type="button"
 					className="inline-flex items-center gap-1.5 rounded px-2 py-1.5 text-[13px] transition-colors hover:bg-wiki-bg-tertiary"
 				>
-					<Avatar url={user?.avatar} initial={initial} />
+					<span className="relative">
+						<Avatar url={user?.avatar} initial={initial} />
+						{unread > 0 && (
+							<span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-red-500" />
+						)}
+					</span>
 					<span className="hidden max-w-[80px] truncate text-wiki-text sm:inline">
 						{user?.name || '用户'}
 					</span>
@@ -146,6 +153,21 @@ export default function UserMenu() {
 				>
 					<User className="h-3.5 w-3.5" />
 					个人中心
+				</a>
+				<a
+					href="/briar-display/profile?tab=messages"
+					className="flex items-center justify-between gap-2 rounded-sm px-3 py-2 text-[13px] text-wiki-text-secondary transition-colors hover:bg-wiki-bg-tertiary hover:text-wiki-text"
+					onClick={() => setOpen(false)}
+				>
+					<span className="flex items-center gap-2">
+						<Mail className="h-3.5 w-3.5" />
+						站内信
+					</span>
+					{unread > 0 && (
+						<span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium text-white">
+							{unread > 99 ? '99+' : unread}
+						</span>
+					)}
 				</a>
 				<a
 					href="/briar-display/"
