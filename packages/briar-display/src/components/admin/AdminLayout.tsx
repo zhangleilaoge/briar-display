@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { Database, Radio, Rocket, Shield, Users } from 'lucide-react'
+import { Database, Radio, Rocket, Shield, TerminalSquare, Users } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 interface NavItem {
@@ -45,6 +45,11 @@ const NAV_ITEMS: NavItem[] = [
 		label: '应用部署',
 		href: '/briar-display/admin/deploy',
 		icon: <Rocket className="h-4 w-4" />,
+	},
+	{
+		label: 'SSH 控制台',
+		href: '/briar-display/admin/terminal',
+		icon: <TerminalSquare className="h-4 w-4" />,
 	},
 ]
 

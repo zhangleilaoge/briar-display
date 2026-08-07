@@ -50,6 +50,9 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 | `packages/briar-shared/src/constants.ts` | 共享常量（`API_BASE_PATH`、`NODE_PORT`） |
 | `packages/briar-shared/src/permissions.ts` | 权限编码常量和分组 |
 | `packages/briar-display/src/api/request.ts` | 前端 axios 实例，baseURL 自动计算 |
+| `packages/briar-node/src/routes/terminalWs.ts` | SSH 控制台 WebSocket 桥接（`/api/terminal/ws`，挂 http server upgrade，cookie/token 鉴权 + `admin:terminal:access` 权限 + 设备令牌）：ssh2 连 `DEPLOY_HOST`，`DEPLOY_KEY_PATH` 私钥优先、否则 `DEPLOY_PASS`；命令行审计落 `terminal_audit_logs` |
+| `packages/briar-node/src/routes/terminal.ts` | SSH 控制台 HTTP API（`/api/terminal`）：发设备验证码、验码签 7 天设备令牌、服务器信息采集（host-info） |
+| `packages/briar-node/src/services/terminalService.ts` | 终端服务：验证码/设备令牌签发校验、ssh2 采集服务器信息（10s 缓存）、`resolveDeployKeyPath` |
 | `packages/briar-node/src/routes/version.ts` | `/api/version` 版本指纹接口（前后端一致性校验） |
 | `packages/briar-node/src/routes/files.ts` | 文件管理 API（`/api/files`，原图床）：上传 precheck/cos-sign/confirm、文件夹 CRUD、文本预览代理 |
 | `packages/briar-display/src/api/files.ts` | 前端文件 API + cos-js-sdk-v5 分片直传封装 |
@@ -83,6 +86,15 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 - 直传依赖 COS bucket CORS，一次性配置：`make cos-cors`
 - 视频封面：上传完成后客户端用 video+canvas 截首帧，直传为 `{cosKey去扩展名}.cover.jpg` 并在 confirm 时传 `thumbnailKey`；网格有封面用 `<img>`，存量无封面视频 fallback 到 `<video preload="metadata">`；删除文件/文件夹时连带删封面
 - 数据表：`files`（原 `images` 表改名）+ `folders`（嵌套文件夹），迁移见 `migrate.sql`
+
+### SSH 控制台
+
+- 页面 `/briar-display/admin/terminal`（AdminLayout 侧边栏「SSH 控制台」），前端 xterm.js（**必须动态 import**，静态导入 CJS 包会让 Astro build 失败）；多标签会话（每个 tab 独立 WS + SSH 连接，切换仅隐藏容器保持存活）
+- WS 端点 `/api/terminal/ws`，nginx 需转发 Upgrade 头（`default.conf` 已配，改动后手动 `./scripts/deploy-nginx.sh`）
+- SSH 目标复用 `DEPLOY_*` 环境变量；**`.env` 需配 `DEPLOY_KEY_PATH`**（指向私钥，相对路径基于仓库根目录解析，如 `briar-assets/ssh/xiaobuzi.pem`，本地/服务器同值通用；`briar-assets/briar/.env` 已配，`make init` 会带出来），否则回退 `DEPLOY_PASS` 密码（当前服务器密码已失效，仅密钥可用）
+- 权限 `admin:terminal:access`（admin 角色已授权），所有会话的命令行输入落 `terminal_audit_logs` 审计表
+- **设备授权**：使用前需邮箱验证码验证（复用通用验证码邮件模板），验码通过签发 7 天设备令牌（JWT，purpose=`terminal-device`，存前端 localStorage `briar_terminal_device`）；WS 连接与 `/api/terminal/host-info` 均强校验设备令牌
+- 页面顶部有服务器信息面板（`/api/terminal/host-info`，ssh2 采集系统/CPU 负载/内存/硬盘，10s 缓存，前端 15s 轮询）
 
 ## 已知陷阱
 

@@ -27,9 +27,6 @@ export const RouteConfig = {
 	/** API GET 公开的路径（写操作仍需认证） */
 	API_PUBLIC_PATHS: [
 		'/api/version',
-		'/api/readme-ai',
-		'/api/readme-ai/init',
-		'/api/readme-ai/rewrite',
 		'/api/wiki/pages',
 		'/api/wiki/pages/search',
 		'/api/wiki/categories',

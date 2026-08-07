@@ -21,6 +21,10 @@ export enum VerificationCodeType {
 	 * 账户恢复验证码
 	 */
 	ACCOUNT_RECOVERY = 'account_recovery',
+	/**
+	 * SSH 控制台设备授权验证码
+	 */
+	TERMINAL_ACCESS = 'terminal_access',
 }
 
 export interface VerificationCodeRecord {

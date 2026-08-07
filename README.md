@@ -42,7 +42,6 @@
 | `sqlConsole` | SQL 控制台（只读/读写、黑名单、审计日志） |
 | `images` | 图床上传（COS）、去重、列表 |
 | `cert` | SSL 证书自动续期（ACME） |
-| `readmeAi` | README AI 生成/重写 |
 | `users` | 用户资料、头像 |
 | `version` | 版本指纹（前后端一致性校验） |
 

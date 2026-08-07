@@ -11,6 +11,7 @@ import { schedulerTasks } from './lib/schedulerConfig'
 import { applyConfiguredMiddlewares, globalMiddlewares } from './middleware/config'
 import apiRoutes from './routes/api'
 import { rootHandler } from './routes/root'
+import { setupTerminalWebSocket } from './routes/terminalWs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -103,7 +104,8 @@ const startServer = async () => {
 
 	startScheduler(schedulerTasks)
 
-	serve({ fetch: app.fetch, port: Number(PORT) })
+	const server = serve({ fetch: app.fetch, port: Number(PORT) })
+	setupTerminalWebSocket(server)
 }
 
 startServer().catch((error) => {

@@ -137,3 +137,33 @@ CREATE TABLE IF NOT EXISTS scheduler_runs (
   finished_at TIMESTAMP NULL DEFAULT NULL COMMENT '结束时间',
   INDEX idx_task_started (task_name, started_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='定时任务运行记录';
+
+-- ============================================================
+-- SSH 控制台
+-- ============================================================
+
+-- 会话审计日志
+CREATE TABLE IF NOT EXISTS terminal_audit_logs (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  session_id VARCHAR(36) NOT NULL COMMENT '会话 ID',
+  user_id VARCHAR(36) NOT NULL COMMENT '操作用户 ID',
+  user_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '操作用户名',
+  event VARCHAR(16) NOT NULL COMMENT '事件：connect / input / close',
+  data TEXT COMMENT '输入的命令行（event=input 时）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  INDEX idx_session (session_id),
+  INDEX idx_user_created (user_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SSH 控制台审计日志';
+
+-- SSH 控制台权限初始化
+INSERT INTO permissions (id, code, name, type, module) VALUES
+  ('perm-admin-terminal-access', 'admin:terminal:access', 'SSH 控制台', 'api', 'admin')
+ON DUPLICATE KEY UPDATE name=name;
+
+-- 超级管理员自动获得新权限
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT 'role-admin', id FROM permissions WHERE code IN ('admin:terminal:access')
+ON DUPLICATE KEY UPDATE role_id=role_id;
+
+-- readme_ai 功能已下线，删除遗留表
+DROP TABLE IF EXISTS readme_ai;
