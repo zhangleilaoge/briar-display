@@ -11,6 +11,7 @@ import DeviceGate from '@/components/admin/terminal/DeviceGate'
 import HostInfoPanel from '@/components/admin/terminal/HostInfoPanel'
 import TerminalTabs from '@/components/admin/terminal/TerminalTabs'
 import { Button } from '@/components/ui/button'
+import { PermissionProvider } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import { PERMISSIONS } from '@briar/shared'
 import { AlertTriangle, Loader2, ShieldCheck } from 'lucide-react'
@@ -19,6 +20,14 @@ import { useState } from 'react'
 const PAGE_PATH = '/briar-display/admin/terminal'
 
 export default function AdminTerminalPage() {
+	return (
+		<PermissionProvider>
+			<AdminTerminalPageInner />
+		</PermissionProvider>
+	)
+}
+
+function AdminTerminalPageInner() {
 	const { loading: permLoading, denied } = useRequirePermission(PERMISSIONS.ADMIN_TERMINAL_ACCESS)
 	// 设备授权态：邮箱验证码换取的 7 天设备令牌（本机 localStorage）
 	const [authorized, setAuthorized] = useState(() => isDeviceAuthorized())
