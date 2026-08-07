@@ -40,6 +40,7 @@ init:
 	@echo ""
 	@echo "📦 Step 3: 安装项目依赖..."
 	@bun install
+	@node scripts/remove-ssh2-native.mjs
 	@echo ""
 	@echo "================================================"
 	@echo "✅ 项目初始化完成！"

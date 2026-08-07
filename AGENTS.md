@@ -98,41 +98,7 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 
 ## 已知陷阱
 
-### 1. Hono 的 `basePath()` 是 immutable 的
-
-```ts
-// ❌ 返回值被忽略
-app.basePath('/briar-display')
-// ✅ 链式调用
-const app = new Hono().basePath('/briar-display')
-```
-
-当前项目已通过 nginx 处理路径前缀，后端无需 basePath。
-
-### 2. 前端 API baseURL 不要加 `/briar-display`
-
-生产环境请求 `https://stardew.site/api/*`（Nginx 代理），`request.ts` 自动计算 baseURL，无需手动拼。
-
-### 3. 环境变量在项目根目录
-
-后端加载 `.env` 的路径是 `../../../../.env`（项目根目录），不是 `packages/briar-node/` 下。
-
-### 4. 数据库初始化
-
-`make db-setup` 执行 `packages/briar-node/src/db/setup.ts`，数据库名 `briar_display`。
-
-### 5. 权限检查必须区分三态
-
-**错误**：loading 期间 `hasPermission` 返回 false，闪现"无权限"。
-
-**正确**：使用 `useRequirePermission` hook：
-
-```tsx
-const { loading, authorized, denied } = useRequirePermission('admin:xxx')
-if (loading) return <Spinner />
-if (denied) return <NoPermission />
-return <Content />
-```
+已拆分到 [`docs/pitfalls.md`](docs/pitfalls.md)，新陷阱追加到该文件末尾并递增编号。
 
 ## RBAC 权限系统
 
