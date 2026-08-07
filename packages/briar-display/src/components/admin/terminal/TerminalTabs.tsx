@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { NODE_PORT } from '@briar/shared'
 import type { FitAddon } from '@xterm/addon-fit'
 import type { Terminal } from '@xterm/xterm'
-import { Plus, RotateCcw, X } from 'lucide-react'
+import { Maximize, Minimize, Plus, RotateCcw, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import '@xterm/xterm/css/xterm.css'
 
@@ -53,10 +53,43 @@ export default function TerminalTabs() {
 	const libRef = useRef<XtermLib | null>(null)
 	const instancesRef = useRef(new Map<number, Instance>())
 	const containersRef = useRef(new Map<number, HTMLDivElement>())
+	const cardRef = useRef<HTMLDivElement>(null)
+	const [isFullscreen, setIsFullscreen] = useState(false)
 
 	const setSessionStatus = useCallback((id: number, status: ConnStatus) => {
 		setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)))
 	}, [])
+
+	// 全屏切换（Fullscreen API），状态变化后重新 fit 当前终端
+	const toggleFullscreen = useCallback(() => {
+		if (document.fullscreenElement) {
+			void document.exitFullscreen()
+		} else {
+			void cardRef.current?.requestFullscreen()
+		}
+	}, [])
+
+	useEffect(() => {
+		const onFullscreenChange = () => {
+			const fs = !!document.fullscreenElement
+			setIsFullscreen(fs)
+			// 等浏览器完成全屏布局后再 fit
+			requestAnimationFrame(() => {
+				if (activeId === null) return
+				const inst = instancesRef.current.get(activeId)
+				if (!inst) return
+				inst.fit.fit()
+				if (inst.ws?.readyState === WebSocket.OPEN) {
+					inst.ws.send(
+						JSON.stringify({ type: 'resize', cols: inst.term.cols, rows: inst.term.rows }),
+					)
+				}
+				inst.term.focus()
+			})
+		}
+		document.addEventListener('fullscreenchange', onFullscreenChange)
+		return () => document.removeEventListener('fullscreenchange', onFullscreenChange)
+	}, [activeId])
 
 	const connect = useCallback(
 		(id: number) => {
@@ -220,7 +253,12 @@ export default function TerminalTabs() {
 	const activeSession = sessions.find((s) => s.id === activeId)
 
 	return (
-		<div className="overflow-hidden rounded-lg border border-[#2d2d2d] bg-[#0c0c0c] shadow-lg">
+		<div
+			ref={cardRef}
+			className={`overflow-hidden border border-[#2d2d2d] bg-[#0c0c0c] shadow-lg ${
+				isFullscreen ? 'flex h-full flex-col rounded-none' : 'rounded-lg'
+			}`}
+		>
 			{/* 标签栏 */}
 			<div className="flex items-center gap-1 bg-[#1e1e1e] px-2 pt-1.5">
 				{sessions.map((s, i) => (
@@ -273,9 +311,22 @@ export default function TerminalTabs() {
 						重新连接
 					</Button>
 				)}
+				<button
+					type="button"
+					aria-label={isFullscreen ? '退出全屏' : '全屏'}
+					title={isFullscreen ? '退出全屏' : '全屏'}
+					onClick={toggleFullscreen}
+					className="mb-1 rounded p-1.5 text-gray-500 hover:bg-[#2a2a2a] hover:text-gray-300"
+				>
+					{isFullscreen ? (
+						<Minimize className="h-3.5 w-3.5" />
+					) : (
+						<Maximize className="h-3.5 w-3.5" />
+					)}
+				</button>
 			</div>
 			{/* 终端区域：每个会话一个容器，切换时仅隐藏，保持会话存活 */}
-			<div className="p-2">
+			<div className={isFullscreen ? 'flex-1 overflow-hidden p-2' : 'p-2'}>
 				{sessions.length === 0 ? (
 					<div className="flex h-[480px] flex-col items-center justify-center gap-3 text-gray-500">
 						<p className="text-sm">没有打开的会话</p>
@@ -294,7 +345,7 @@ export default function TerminalTabs() {
 						<div
 							key={s.id}
 							ref={(el) => registerContainer(s.id, el)}
-							className={s.id === activeId ? 'h-[480px]' : 'hidden'}
+							className={s.id === activeId ? (isFullscreen ? 'h-full' : 'h-[480px]') : 'hidden'}
 						/>
 					))
 				)}
