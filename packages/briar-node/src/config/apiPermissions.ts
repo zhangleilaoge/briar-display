@@ -57,13 +57,12 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	// ==================== Scheduler（定时任务管理） ====================
 	'POST /api/scheduler/tasks/:name/run': PERMISSIONS.ADMIN_DEPLOY_MANAGE,
 
+	// ==================== Terminal（SSH 控制台设备授权） ====================
+	'POST /api/terminal/verification-code': PERMISSIONS.ADMIN_TERMINAL_ACCESS,
+	'POST /api/terminal/verify-device': PERMISSIONS.ADMIN_TERMINAL_ACCESS,
+
 	// ==================== Logs ====================
 	// GET-only, no write routes needed
-
-	// ==================== Readme AI ====================
-	'POST /api/readme-ai/init': PERMISSIONS.ADMIN_ROLE_MANAGE,
-	'POST /api/readme-ai/rewrite': PERMISSIONS.ADMIN_ROLE_MANAGE,
-	'DELETE /api/readme-ai': PERMISSIONS.ADMIN_ROLE_MANAGE,
 
 	// ==================== Users ====================
 	'PUT /api/users/me': null,
