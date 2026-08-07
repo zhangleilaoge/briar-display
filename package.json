@@ -19,6 +19,7 @@
 		"build:meeting": "bun run --filter @briar/meeting-sdk build && bun run --filter @briar/meeting-app build",
 		"preview": "bun run --filter @briar/display preview",
 		"install:all": "bun install && rm -rf node_modules/.cache packages/*/node_modules/.cache",
+		"postinstall": "node scripts/remove-ssh2-native.mjs",
 		"lint": "biome check .",
 		"lint:fix": "biome check . --write",
 		"format": "biome format . --write",
