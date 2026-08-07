@@ -43,3 +43,19 @@ return <Content />
 ssh2 的两个可选原生依赖（`sshcrypto.node`、`cpufeatures.node`）在 `bun install` 时编译，但**加载即崩溃**（bun 报 `unsupported uv function: uv_version_string`，node 直接 segfault），表现为部署后 briar-node 崩溃循环、502。
 
 修复：`scripts/remove-ssh2-native.mjs` 删除这两个 build 目录（ssh2 有纯 JS 降级，性能差异可忽略）。已挂三处：根 `package.json` postinstall、`Makefile init`、`scripts/deploy.sh`（bun install 之后）。**注意 bun 不会可靠执行根 package.json 的 postinstall**，所以 deploy.sh 里必须显式调用。
+
+## 7. 页面组件用 `useRequirePermission` 必须自己包 `PermissionProvider`
+
+`usePermissions` 在 provider 外会返回兜底 context（`loading:false` + `isAdmin:false` + 空权限），`useRequirePermission` 不会 loading、直接 denied——表现为管理员也提示「你没有权限访问此页面」。
+
+注意 `AdminLayout` 内部的 `PermissionProvider` 帮不上忙：页面的权限判断发生在 `AdminLayout` 返回之前。正确姿势是页面组件自己包（对照 `AdminUsersPage`）：
+
+```tsx
+export default function AdminXxxPage() {
+	return (
+		<PermissionProvider>
+			<AdminXxxPageInner />
+		</PermissionProvider>
+	)
+}
+```
