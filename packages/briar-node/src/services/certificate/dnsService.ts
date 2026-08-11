@@ -43,11 +43,19 @@ export async function createDnsRecord(
 	try {
 		const client = getDnsPodClient()
 
-		const listResult = await client.DescribeRecordList({
-			Domain: rootDomain,
-			Subdomain: subDomain,
-			RecordType: 'TXT',
-		})
+		// 域名下无匹配 TXT 记录时 DNSPod 会抛 ResourceNotFound.NoDataOfRecord，按空列表处理
+		const listResult = await client
+			.DescribeRecordList({
+				Domain: rootDomain,
+				Subdomain: subDomain,
+				RecordType: 'TXT',
+			})
+			.catch((error: { code?: string }) => {
+				if (error?.code === 'ResourceNotFound.NoDataOfRecord') {
+					return { RecordList: [] }
+				}
+				throw error
+			})
 		const existing = listResult?.RecordList?.find(
 			(r: any) => r.Name === subDomain && r.Type === 'TXT',
 		)
