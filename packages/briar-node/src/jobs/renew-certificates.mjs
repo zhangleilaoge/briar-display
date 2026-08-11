@@ -68,7 +68,7 @@ const { schedulerRunService } = await tsImport(
 	schedulerRunServiceUrl.href,
 )
 
-const domain = process.env.CERTIFICATE_DOMAIN || 'stardew.site'
+const domain = process.env.CERTIFICATE_DOMAIN || 'xiaobuzi.cn'
 
 try {
 	await schedulerRunService.runWithLog('renew-certificates', 'scheduled', async () => {

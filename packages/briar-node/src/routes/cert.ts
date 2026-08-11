@@ -6,7 +6,7 @@ import { certificateService } from '../services/certificateService'
 
 const certRoutes = new Hono()
 
-const resolveDomain = () => process.env.CERTIFICATE_DOMAIN || 'stardew.site'
+const resolveDomain = () => process.env.CERTIFICATE_DOMAIN || 'xiaobuzi.cn'
 
 /**
  * 证书状态：本地证书文件 + 线上实际服役证书

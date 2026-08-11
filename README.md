@@ -2,7 +2,7 @@
 
 基于 bun workspace 的 monorepo，包含前端展示站点（Astro）、Node.js 后端服务（Hono）、AI Agent 工具链和 Skill 集合。
 
-线上地址：`https://stardew.site/briar-display/`
+线上地址：`https://xiaobuzi.cn/briar-display/`
 
 ## 技术栈
 
@@ -302,4 +302,4 @@ pm2 stop briar-node         # 停止服务
 - `DEPLOY_PROJECT_DIR`（可选，默认 `~/github/briar-display`）
 - `BRIAR_TX_BUCKET_REGION` / `BRIAR_TX_SEC_ID` / `BRIAR_TX_SEC_KEY` / `BRIAR_TX_BUCKET_NAME`（CDN）
 
-> 部署后访问 `https://stardew.site/api/version` 可校验前后端 commit 是否一致。
+> 部署后访问 `https://xiaobuzi.cn/api/version` 可校验前后端 commit 是否一致。

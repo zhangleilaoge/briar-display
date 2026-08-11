@@ -34,7 +34,7 @@ export const emailService = {
 	) {
 		return new Promise<boolean>((resolve, reject) => {
 			const params = {
-				FromEmailAddress: 'zhangleilaoge <zhangleilaoge@stardew.site>',
+				FromEmailAddress: 'zhangleilaoge <zhangleilaoge@xiaobuzi.cn>',
 				Destination: [targetEmail],
 				Template: {
 					TemplateID: template.TemplateID,

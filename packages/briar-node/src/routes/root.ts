@@ -2,11 +2,11 @@ import type { Context } from 'hono'
 
 /**
  * 根路径落地页
- * 用于域名根目录（https://stardew.site/）展示站点名称与备案号，满足备案合规要求
+ * 用于域名根目录（https://xiaobuzi.cn/）展示站点名称与备案号，满足备案合规要求
  */
 // 标题需与备案网站名称保持一致（管局审核要求）
-const SITE_TITLE = '私人编程技术分享'
-const ICP_NUMBER = '浙ICP备20241116093号-2'
+const SITE_TITLE = '个人学习'
+const ICP_NUMBER = '浙ICP备20241116093号-3'
 
 const LANDING_HTML = `<!DOCTYPE html>
 <html lang="zh-CN">

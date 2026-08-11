@@ -9,7 +9,7 @@ const resolveCron = (envKey: string, fallbackCron: string) => {
 	return raw && raw.trim().length > 0 ? raw : fallbackCron
 }
 
-const resolveDomain = () => process.env.CERTIFICATE_DOMAIN || 'stardew.site'
+const resolveDomain = () => process.env.CERTIFICATE_DOMAIN || 'xiaobuzi.cn'
 
 /**
  * 定时任务注册表（唯一事实来源）。
