@@ -70,7 +70,7 @@ export default function SearchDropdown({ onSelect, className }: SearchDropdownPr
 				if (onSelect) {
 					onSelect(query.trim())
 				} else {
-					window.location.href = `/briar-display/wiki/search?q=${encodeURIComponent(query.trim())}`
+					window.location.href = `/briar/wiki/search?q=${encodeURIComponent(query.trim())}`
 				}
 				setOpen(false)
 			}
@@ -88,7 +88,7 @@ export default function SearchDropdown({ onSelect, className }: SearchDropdownPr
 			if (onSelect) {
 				onSelect(slug)
 			} else {
-				window.location.href = `/briar-display/wiki/${slug}`
+				window.location.href = `/briar/wiki/${slug}`
 			}
 		},
 		[onSelect],

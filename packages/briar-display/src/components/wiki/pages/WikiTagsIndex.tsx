@@ -181,7 +181,7 @@ export default function WikiTagsIndex() {
 					{tags.map((tag) => (
 						<a
 							key={tag.id}
-							href={`/briar-display/wiki/tag/${tag.slug}`}
+							href={`/briar/wiki/tag/${tag.slug}`}
 							className="group relative inline-flex items-center"
 						>
 							<Badge

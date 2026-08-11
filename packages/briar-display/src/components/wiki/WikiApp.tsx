@@ -36,7 +36,7 @@ import WikiUserContributions from './pages/WikiUserContributions'
 import WikiWantedPages from './pages/WikiWantedPages'
 import WikiWatchlist from './pages/WikiWatchlist'
 
-const WIKI_BASE = '/briar-display/wiki'
+const WIKI_BASE = '/briar/wiki'
 
 interface RouteMatch {
 	page: ReactNode
@@ -228,7 +228,7 @@ export default function WikiApp() {
 			if (!href) return
 
 			// Only intercept wiki links
-			if (!href.startsWith(WIKI_BASE) && !href.startsWith('/briar-display/wiki')) return
+			if (!href.startsWith(WIKI_BASE) && !href.startsWith('/briar/wiki')) return
 
 			// Don't intercept same-page anchor links
 			if (href.startsWith('#')) return

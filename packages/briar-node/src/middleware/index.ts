@@ -187,7 +187,7 @@ export const pageAuthMiddleware = (): MiddlewareHandler => {
 	return async (c, next) => {
 		const token = getCookie(c, 'briar_token')
 		if (!token) {
-			return c.redirect('/briar-display/login')
+			return c.redirect('/briar/login')
 		}
 
 		// 真正校验 token 签名 + 过期时间，防止伪造 cookie
@@ -196,12 +196,12 @@ export const pageAuthMiddleware = (): MiddlewareHandler => {
 			// 可选：进一步校验用户是否仍存在
 			const user = await authService.getUserById(payload.sub)
 			if (!user) {
-				return c.redirect('/briar-display/login')
+				return c.redirect('/briar/login')
 			}
 		} catch {
 			// token 无效/过期/签名错误 → 清掉 cookie 并重定向
 			c.header('Set-Cookie', 'briar_token=; Path=/; Max-Age=0')
-			return c.redirect('/briar-display/login')
+			return c.redirect('/briar/login')
 		}
 
 		return next()

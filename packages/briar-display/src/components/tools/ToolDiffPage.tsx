@@ -182,7 +182,7 @@ export default function ToolDiffPage() {
 	)
 
 	return (
-		<ToolsLayout currentPath="/briar-display/tools/diff">
+		<ToolsLayout currentPath="/briar/tools/diff">
 			<Card className="flex min-h-0 flex-1 flex-col">
 				<CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
 					<CardTitle className="flex items-center gap-2 text-lg">

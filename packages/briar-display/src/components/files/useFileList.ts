@@ -4,12 +4,12 @@ import { type FileItem, type FileTypeFilter, getFiles } from '@/api/files'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 const PAGE_SIZE = 24
-const BASE_PATH = '/briar-display/files'
+const BASE_PATH = '/briar/files'
 
-/** 从 URL 路径解析文件夹 id：/briar-display/files/<folderId> */
+/** 从 URL 路径解析文件夹 id：/briar/files/<folderId> */
 function readFolderFromPath(): string | null {
 	if (typeof window === 'undefined') return null
-	const match = window.location.pathname.match(/^\/briar-display\/files\/([^/]+)\/?$/)
+	const match = window.location.pathname.match(/^\/briar\/files\/([^/]+)\/?$/)
 	return match ? match[1] : null
 }
 

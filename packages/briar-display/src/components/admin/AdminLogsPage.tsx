@@ -169,7 +169,7 @@ function AdminLogsPageInner() {
 
 	if (permLoading) {
 		return (
-			<AdminLayout currentPath="/briar-display/admin/logs" title="天网日志">
+			<AdminLayout currentPath="/briar/admin/logs" title="天网日志">
 				<div className="flex items-center justify-center py-20">
 					<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 				</div>
@@ -179,7 +179,7 @@ function AdminLogsPageInner() {
 
 	if (denied) {
 		return (
-			<AdminLayout currentPath="/briar-display/admin/logs" title="天网日志">
+			<AdminLayout currentPath="/briar/admin/logs" title="天网日志">
 				<div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
 					<AlertTriangle className="h-5 w-5" />
 					<span>你没有权限访问此页面</span>
@@ -189,7 +189,7 @@ function AdminLogsPageInner() {
 	}
 
 	return (
-		<AdminLayout currentPath="/briar-display/admin/logs" title="天网日志">
+		<AdminLayout currentPath="/briar/admin/logs" title="天网日志">
 			{/* Stats cards */}
 			<div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
 				<div className="rounded-md border bg-card p-3">

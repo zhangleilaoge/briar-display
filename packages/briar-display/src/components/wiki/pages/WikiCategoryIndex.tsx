@@ -122,7 +122,7 @@ function CategoryTreeNode({
 				) : (
 					<>
 						<a
-							href={`/briar-display/wiki/category/${node.slug}`}
+							href={`/briar/wiki/category/${node.slug}`}
 							className="flex flex-1 items-center gap-2 text-foreground transition-colors hover:text-primary"
 						>
 							<FolderTree className="h-4 w-4 flex-shrink-0 text-muted-foreground" />

@@ -99,7 +99,7 @@ export default function WikiStarsList() {
 							<li key={page.id} className="flex items-center gap-3 px-5 py-3">
 								<Star className="h-4 w-4 shrink-0 fill-wiki-link text-wiki-link" />
 								<a
-									href={`/briar-display/wiki/${page.slug}`}
+									href={`/briar/wiki/${page.slug}`}
 									className="min-w-0 flex-1 text-[14px] text-wiki-link hover:underline"
 								>
 									<div className="flex items-center gap-2">

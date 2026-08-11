@@ -20,7 +20,7 @@ export default function ArticleBacklinks({ backlinks }: ArticleBacklinksProps) {
 				{backlinks.map((bl) => (
 					<li key={bl.id}>
 						<a
-							href={`/briar-display/wiki/${bl.sourceSlug}`}
+							href={`/briar/wiki/${bl.sourceSlug}`}
 							className="text-[13px] text-wiki-link hover:underline"
 						>
 							{bl.sourceSlug}

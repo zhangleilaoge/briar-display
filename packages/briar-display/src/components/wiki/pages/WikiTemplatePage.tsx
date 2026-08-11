@@ -53,7 +53,7 @@ export default function WikiTemplatePage({ slug }: WikiTemplatePageProps) {
 		setDeleting(true)
 		const res = await wikiApi.deleteTemplate(slug)
 		if (res.success) {
-			window.history.pushState({}, '', '/briar-display/wiki/special/templates')
+			window.history.pushState({}, '', '/briar/wiki/special/templates')
 			window.dispatchEvent(new PopStateEvent('popstate'))
 		} else {
 			alert(res.message || '删除失败')

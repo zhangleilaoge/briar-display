@@ -17,7 +17,7 @@ import { PERMISSIONS } from '@briar/shared'
 import { AlertTriangle, Loader2, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 
-const PAGE_PATH = '/briar-display/admin/terminal'
+const PAGE_PATH = '/briar/admin/terminal'
 
 export default function AdminTerminalPage() {
 	return (

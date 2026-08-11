@@ -28,10 +28,7 @@ export default function WikiTopbar({ onMenuToggle, className }: WikiTopbarProps)
 				>
 					<Menu className="h-5 w-5" />
 				</button>
-				<a
-					href="/briar-display/wiki/"
-					className="flex items-center gap-2 text-wiki-text no-underline"
-				>
+				<a href="/briar/wiki/" className="flex items-center gap-2 text-wiki-text no-underline">
 					<span className="whitespace-nowrap text-[15px] font-semibold">Briar Wiki</span>
 				</a>
 			</div>

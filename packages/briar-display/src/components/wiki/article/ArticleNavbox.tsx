@@ -60,7 +60,7 @@ export default function ArticleNavbox({ categorySlug }: ArticleNavboxProps) {
 				{pages.map((page) => (
 					<a
 						key={page.id}
-						href={`/briar-display/wiki/${page.slug}`}
+						href={`/briar/wiki/${page.slug}`}
 						className="flex items-center gap-2 bg-wiki-bg px-3 py-2 text-[12px] text-wiki-link transition-colors hover:bg-wiki-bg-secondary"
 					>
 						<span className="truncate">{page.title}</span>

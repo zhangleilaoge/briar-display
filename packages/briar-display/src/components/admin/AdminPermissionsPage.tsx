@@ -191,7 +191,7 @@ function AdminPermissionsPageInner() {
 
 	if (permLoading || loading) {
 		return (
-			<AdminLayout currentPath="/briar-display/admin/permissions" title="权限管理">
+			<AdminLayout currentPath="/briar/admin/permissions" title="权限管理">
 				<div className="flex items-center justify-center py-20">
 					<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 				</div>
@@ -201,7 +201,7 @@ function AdminPermissionsPageInner() {
 
 	if (denied) {
 		return (
-			<AdminLayout currentPath="/briar-display/admin/permissions" title="权限管理">
+			<AdminLayout currentPath="/briar/admin/permissions" title="权限管理">
 				<Card>
 					<CardContent className="flex items-center gap-2 pt-6">
 						<AlertCircle className="h-5 w-5 text-destructive" />
@@ -213,7 +213,7 @@ function AdminPermissionsPageInner() {
 	}
 
 	return (
-		<AdminLayout currentPath="/briar-display/admin/permissions" title="权限管理">
+		<AdminLayout currentPath="/briar/admin/permissions" title="权限管理">
 			<div className="mb-4 flex items-center gap-2">
 				<Shield className="h-5 w-5" />
 				<h1 className="text-lg font-semibold">角色与权限管理</h1>

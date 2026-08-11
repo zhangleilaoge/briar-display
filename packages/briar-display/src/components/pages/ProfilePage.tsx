@@ -103,7 +103,7 @@ function ProfilePageInner() {
 		<div className="min-h-screen bg-background">
 			{/* 顶部导航 */}
 			<header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b bg-background/80 px-6 backdrop-blur-md">
-				<a href="/briar-display/" className="text-sm font-semibold text-foreground">
+				<a href="/briar/" className="text-sm font-semibold text-foreground">
 					Briar
 				</a>
 				<UserMenu variant="light" />
@@ -304,7 +304,7 @@ function ProfilePageInner() {
 								</CardHeader>
 								<CardContent>
 									<a
-										href="/briar-display/forgot-password"
+										href="/briar/forgot-password"
 										className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm transition-colors hover:bg-accent"
 									>
 										<KeyRound className="h-3.5 w-3.5" />

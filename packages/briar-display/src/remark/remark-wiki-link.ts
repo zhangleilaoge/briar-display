@@ -1,6 +1,6 @@
 /**
  * remark plugin to parse MediaWiki-style internal links: [[Page title|display text]]
- * Converts them to standard anchor elements linking to /briar-display/wiki/{slug}
+ * Converts them to standard anchor elements linking to /briar/wiki/{slug}
  */
 import type { Root } from 'mdast'
 import type { Plugin } from 'unified'
@@ -36,7 +36,7 @@ const remarkWikiLink: Plugin<[], Root> = () => {
 				// Create wiki link node
 				children.push({
 					type: 'link',
-					url: `/briar-display/wiki/${slug}`,
+					url: `/briar/wiki/${slug}`,
 					title: pageName,
 					children: [{ type: 'text', value: displayText }],
 					data: {

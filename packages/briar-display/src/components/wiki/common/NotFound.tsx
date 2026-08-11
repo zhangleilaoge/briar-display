@@ -9,7 +9,7 @@ export default function NotFound() {
 				您访问的页面不存在或已被删除。请检查链接是否正确，或返回 Wiki 首页浏览其他内容。
 			</p>
 			<a
-				href="/briar-display/wiki/"
+				href="/briar/wiki/"
 				className="inline-flex items-center rounded bg-[#3366cc] px-5 py-2 text-[14px] font-medium text-white transition-colors hover:bg-[#2a4b8d]"
 			>
 				返回 Wiki 首页

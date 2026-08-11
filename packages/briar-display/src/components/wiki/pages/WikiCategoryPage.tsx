@@ -96,7 +96,7 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 		if (!category || !confirm(`确定删除分类「${category.name}」？`)) return
 		const res = await wikiApi.deleteCategory(slug)
 		if (res.success) {
-			window.location.href = '/briar-display/wiki/category'
+			window.location.href = '/briar/wiki/category'
 		} else {
 			alert(res.message || '删除失败')
 		}
@@ -125,7 +125,7 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 	return (
 		<div className="space-y-4">
 			<WikiBreadcrumbs
-				items={[{ label: '分类', href: '/briar-display/wiki/category/' }, { label: category.name }]}
+				items={[{ label: '分类', href: '/briar/wiki/category/' }, { label: category.name }]}
 			/>
 
 			<div>
@@ -212,7 +212,7 @@ export default function WikiCategoryPage({ slug }: WikiCategoryPageProps) {
 						{subcategories.map((sub) => (
 							<a
 								key={sub.id}
-								href={`/briar-display/wiki/category/${sub.slug}`}
+								href={`/briar/wiki/category/${sub.slug}`}
 								className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm transition-colors hover:bg-muted"
 							>
 								<FolderTree className="h-3.5 w-3.5 text-muted-foreground" />

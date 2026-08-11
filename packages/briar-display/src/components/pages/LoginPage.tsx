@@ -44,7 +44,7 @@ export default function LoginPage() {
 			const result = await login({ email, password })
 			if (result.success && result.data) {
 				setAuthToken(result.data.token, result.data.user, result.data.permissions)
-				window.location.href = '/briar-display/'
+				window.location.href = '/briar/'
 				return
 			}
 			setError(result.message || '登录失败')
@@ -116,7 +116,7 @@ export default function LoginPage() {
 									<div className="flex items-center justify-between">
 										<Label htmlFor="password">密码</Label>
 										<a
-											href="/briar-display/forgot-password"
+											href="/briar/forgot-password"
 											className="text-xs text-muted-foreground hover:text-primary"
 										>
 											忘记密码？
@@ -156,7 +156,7 @@ export default function LoginPage() {
 								</Button>
 								<p className="text-center text-xs text-muted-foreground">
 									还没有账号？{' '}
-									<a href="/briar-display/register" className="text-primary hover:underline">
+									<a href="/briar/register" className="text-primary hover:underline">
 										创建账号
 									</a>
 								</p>

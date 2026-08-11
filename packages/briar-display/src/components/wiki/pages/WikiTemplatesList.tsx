@@ -83,7 +83,7 @@ export default function WikiTemplatesList() {
 								<tr key={template.id} className="transition-colors hover:bg-muted/30">
 									<td className="px-4 py-2">
 										<a
-											href={`/briar-display/wiki/template/${template.slug}`}
+											href={`/briar/wiki/template/${template.slug}`}
 											className="text-wiki-link hover:underline"
 										>
 											{template.name}

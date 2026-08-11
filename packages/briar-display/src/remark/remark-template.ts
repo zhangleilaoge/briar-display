@@ -38,7 +38,7 @@ const remarkTemplate: Plugin<[], Root> = () => {
 
 				children.push({
 					type: 'link',
-					url: `/briar-display/wiki/template/${encodeURIComponent(templateName)}`,
+					url: `/briar/wiki/template/${encodeURIComponent(templateName)}`,
 					title: `模板: ${templateName}`,
 					children: [{ type: 'text', value: displayText }],
 					data: {

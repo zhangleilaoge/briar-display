@@ -17,15 +17,15 @@ export default function WikiTabs({ slug, active, discussionCount, className }: W
 	const { hasPermission, isAdmin } = usePermissions()
 
 	const allTabs: { key: TabKey; label: string; href: string; requirePermission?: string }[] = [
-		{ key: 'read', label: '阅读', href: `/briar-display/wiki/${slug}` },
-		{ key: 'talk', label: '讨论', href: `/briar-display/wiki/${slug}/talk` },
+		{ key: 'read', label: '阅读', href: `/briar/wiki/${slug}` },
+		{ key: 'talk', label: '讨论', href: `/briar/wiki/${slug}/talk` },
 		{
 			key: 'edit',
 			label: '编辑',
-			href: `/briar-display/wiki/${slug}/edit`,
+			href: `/briar/wiki/${slug}/edit`,
 			requirePermission: PERMISSIONS.WIKI_PAGE_UPDATE,
 		},
-		{ key: 'history', label: '历史', href: `/briar-display/wiki/${slug}/history` },
+		{ key: 'history', label: '历史', href: `/briar/wiki/${slug}/history` },
 	]
 
 	const tabs = allTabs.filter(

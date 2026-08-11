@@ -39,7 +39,7 @@ export default function RegisterPage() {
 			})
 			if (result.success && result.data) {
 				setAuthToken(result.data.token, result.data.user)
-				window.location.href = '/briar-display/'
+				window.location.href = '/briar/'
 				return
 			}
 			setError(result.message || '注册失败')
@@ -166,7 +166,7 @@ export default function RegisterPage() {
 								</Button>
 								<p className="text-center text-xs text-muted-foreground">
 									已有账号？{' '}
-									<a href="/briar-display/login" className="text-primary hover:underline">
+									<a href="/briar/login" className="text-primary hover:underline">
 										返回登录
 									</a>
 								</p>

@@ -17,10 +17,7 @@ export default function WikiBreadcrumbs({ items, className }: WikiBreadcrumbsPro
 		<nav aria-label="面包屑导航" className={cn('text-xs text-muted-foreground', className)}>
 			<ol className="flex flex-wrap items-center gap-1">
 				<li>
-					<a
-						href="/briar-display/wiki/"
-						className="text-blue-600 hover:text-blue-800 hover:underline"
-					>
+					<a href="/briar/wiki/" className="text-blue-600 hover:text-blue-800 hover:underline">
 						首页
 					</a>
 				</li>

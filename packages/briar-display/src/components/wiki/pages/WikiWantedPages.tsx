@@ -82,7 +82,7 @@ export default function WikiWantedPages() {
 								<tr key={page.slug} className="transition-colors hover:bg-muted/30">
 									<td className="px-4 py-2">
 										<a
-											href={`/briar-display/wiki/new?title=${encodeURIComponent(page.slug)}`}
+											href={`/briar/wiki/new?title=${encodeURIComponent(page.slug)}`}
 											className="border-b border-dashed border-red-500 text-red-600 transition-colors hover:text-red-800"
 											title="点击创建此页面"
 										>
@@ -94,7 +94,7 @@ export default function WikiWantedPages() {
 									</td>
 									<td className="hidden px-4 py-2 md:table-cell">
 										<a
-											href={`/briar-display/wiki/new?title=${encodeURIComponent(page.slug)}`}
+											href={`/briar/wiki/new?title=${encodeURIComponent(page.slug)}`}
 											className="inline-flex items-center gap-1 text-primary text-xs transition-colors hover:text-primary/80"
 										>
 											<ExternalLink className="h-3 w-3" />
