@@ -107,11 +107,7 @@ export default function WikiSearchResults() {
 		(e: React.FormEvent) => {
 			e.preventDefault()
 			if (query.trim()) {
-				window.history.pushState(
-					{},
-					'',
-					`/briar-display/wiki/search?q=${encodeURIComponent(query.trim())}`,
-				)
+				window.history.pushState({}, '', `/briar/wiki/search?q=${encodeURIComponent(query.trim())}`)
 				window.dispatchEvent(new PopStateEvent('popstate'))
 				performSearch(query, 0)
 			}
@@ -177,7 +173,7 @@ export default function WikiSearchResults() {
 							{results.map((result) => (
 								<li key={result.id}>
 									<a
-										href={`/briar-display/wiki/${result.slug}`}
+										href={`/briar/wiki/${result.slug}`}
 										className="block px-5 py-4 transition-colors hover:bg-wiki-bg-secondary"
 									>
 										<div className="flex items-start justify-between gap-3">

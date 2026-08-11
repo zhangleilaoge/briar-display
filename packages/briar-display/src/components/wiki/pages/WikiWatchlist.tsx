@@ -90,7 +90,7 @@ export default function WikiWatchlist() {
 						<AlertCircle className="h-4 w-4 flex-shrink-0" />
 						<span>
 							请先
-							<a href="/briar-display/login" className="mx-1 font-medium text-amber-800 underline">
+							<a href="/briar/login" className="mx-1 font-medium text-amber-800 underline">
 								登录
 							</a>
 							后查看关注列表
@@ -153,7 +153,7 @@ export default function WikiWatchlist() {
 									<tr key={item.pageId} className="transition-colors hover:bg-muted/30">
 										<td className="px-4 py-2">
 											<a
-												href={`/briar-display/wiki/${slug}`}
+												href={`/briar/wiki/${slug}`}
 												className="text-blue-600 transition-colors hover:text-blue-800 hover:underline"
 											>
 												{title}

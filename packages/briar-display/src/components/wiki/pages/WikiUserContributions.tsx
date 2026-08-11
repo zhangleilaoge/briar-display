@@ -92,7 +92,7 @@ export default function WikiUserContributions() {
 						<AlertCircle className="h-4 w-4 flex-shrink-0" />
 						<span>
 							请先
-							<a href="/briar-display/login" className="mx-1 font-medium text-amber-800 underline">
+							<a href="/briar/login" className="mx-1 font-medium text-amber-800 underline">
 								登录
 							</a>
 							后查看贡献记录
@@ -158,7 +158,7 @@ export default function WikiUserContributions() {
 									>
 										<td className="px-4 py-2">
 											<a
-												href={`/briar-display/wiki/${item.pageSlug}`}
+												href={`/briar/wiki/${item.pageSlug}`}
 												className="text-blue-600 transition-colors hover:text-blue-800 hover:underline"
 											>
 												{item.pageTitle}

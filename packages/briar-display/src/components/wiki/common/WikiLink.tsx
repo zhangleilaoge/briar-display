@@ -12,9 +12,7 @@ interface WikiLinkProps {
 export default function WikiLink({ slug, title, namespace, className }: WikiLinkProps) {
 	// main 是默认命名空间，URL 中不显示
 	const href =
-		namespace && namespace !== 'main'
-			? `/briar-display/wiki/${namespace}/${slug}`
-			: `/briar-display/wiki/${slug}`
+		namespace && namespace !== 'main' ? `/briar/wiki/${namespace}/${slug}` : `/briar/wiki/${slug}`
 
 	return (
 		<a href={href} className={cn('text-blue-600 hover:text-blue-800 hover:underline', className)}>

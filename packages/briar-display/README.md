@@ -64,7 +64,7 @@ make preview
 # ssh -p $DEPLOY_PORT $DEPLOY_USER@$DEPLOY_HOST
 
 # 项目目录
-cd /home/ubuntu/Documents/briar-display
+cd /home/ubuntu/Documents/briar
 
 # 查看 PM2 进程状态
 pm2 status
@@ -82,7 +82,7 @@ ls -la packages/briar-display/dist/
 find packages/briar-display/dist/_astro -type f
 
 # 查看 Nginx 配置
-cat /etc/nginx/conf.d/briar-display.conf
+cat /etc/nginx/conf.d/briar.conf
 nginx -t
 sudo systemctl reload nginx
 ```
@@ -91,7 +91,7 @@ sudo systemctl reload nginx
 
 ```bash
 # 服务器上执行：只构建后端并重启（前端 dist 已由 Actions 同步）
-cd /home/ubuntu/Documents/briar-display
+cd /home/ubuntu/Documents/briar
 ./scripts/deploy.sh
 
 # 如需完整构建（首次部署或特殊情况）

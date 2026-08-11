@@ -95,31 +95,31 @@ export default function WikiStatistics() {
 						icon={<FileText className="h-6 w-6" />}
 						label="总页面数"
 						value={stats.totalPages}
-						href="/briar-display/wiki/special/all-pages"
+						href="/briar/wiki/special/all-pages"
 					/>
 					<StatCard
 						icon={<FileText className="h-6 w-6" />}
 						label="文章数"
 						value={stats.totalArticles}
-						href="/briar-display/wiki/"
+						href="/briar/wiki/"
 					/>
 					<StatCard
 						icon={<Clock className="h-6 w-6" />}
 						label="总修订数"
 						value={stats.totalRevisions}
-						href="/briar-display/wiki/special/recent-changes"
+						href="/briar/wiki/special/recent-changes"
 					/>
 					<StatCard
 						icon={<FolderTree className="h-6 w-6" />}
 						label="分类数"
 						value={stats.totalCategories}
-						href="/briar-display/wiki/categories"
+						href="/briar/wiki/categories"
 					/>
 					<StatCard
 						icon={<LayoutList className="h-6 w-6" />}
 						label="模板数"
 						value={stats.totalTemplates}
-						href="/briar-display/wiki/special/templates"
+						href="/briar/wiki/special/templates"
 					/>
 					<StatCard
 						icon={<Users className="h-6 w-6" />}
@@ -128,10 +128,10 @@ export default function WikiStatistics() {
 					/>
 					<div className="sm:col-span-2 lg:col-span-3">
 						<a
-							href="/briar-display/wiki/special/recent-changes"
+							href="/briar/wiki/special/recent-changes"
 							onClick={(e) => {
 								e.preventDefault()
-								window.history.pushState({}, '', '/briar-display/wiki/special/recent-changes')
+								window.history.pushState({}, '', '/briar/wiki/special/recent-changes')
 								window.dispatchEvent(new PopStateEvent('popstate'))
 							}}
 							className="block"

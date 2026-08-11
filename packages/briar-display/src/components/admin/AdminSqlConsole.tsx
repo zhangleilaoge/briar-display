@@ -80,7 +80,7 @@ interface HistoryItem {
 
 export default function AdminSqlConsole() {
 	return (
-		<AdminLayout currentPath="/briar-display/admin/sql">
+		<AdminLayout currentPath="/briar/admin/sql">
 			<SqlConsoleContent />
 		</AdminLayout>
 	)

@@ -278,7 +278,7 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 							{children}
 							<PermissionGuard permission={PERMISSIONS.WIKI_PAGE_UPDATE}>
 								<a
-									href={`/briar-display/wiki/${slug}/edit`}
+									href={`/briar/wiki/${slug}/edit`}
 									className="float-right ml-2 mt-1 inline-flex items-center gap-1 text-[12px] font-normal text-wiki-text-muted opacity-0 transition-opacity hover:text-wiki-link group-hover:opacity-100"
 								>
 									<Pencil className="h-3 w-3" />
@@ -298,7 +298,7 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 							{children}
 							<PermissionGuard permission={PERMISSIONS.WIKI_PAGE_UPDATE}>
 								<a
-									href={`/briar-display/wiki/${slug}/edit`}
+									href={`/briar/wiki/${slug}/edit`}
 									className="float-right ml-2 mt-0.5 inline-flex items-center gap-1 text-[11px] font-normal text-wiki-text-muted opacity-0 transition-opacity hover:text-wiki-link group-hover:opacity-100"
 								>
 									<Pencil className="h-2.5 w-2.5" />
@@ -382,13 +382,13 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 					</p>
 					<div className="flex gap-3">
 						<a
-							href={`/briar-display/wiki/${slug}/edit`}
+							href={`/briar/wiki/${slug}/edit`}
 							className="inline-flex items-center gap-2 rounded-sm bg-wiki-link px-4 py-2 text-[13px] text-white transition-colors hover:bg-wiki-link-hover"
 						>
 							创建此文章
 						</a>
 						<a
-							href="/briar-display/wiki/"
+							href="/briar/wiki/"
 							className="inline-flex items-center gap-2 rounded-sm border border-wiki-border-light px-4 py-2 text-[13px] text-wiki-text transition-colors hover:bg-wiki-bg-secondary"
 						>
 							返回首页
@@ -411,7 +411,7 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 						<span className="text-[13px]">
 							此页面重定向至{' '}
 							<a
-								href={`/briar-display/wiki/${page.redirectTarget}`}
+								href={`/briar/wiki/${page.redirectTarget}`}
 								className="font-medium text-wiki-link hover:underline"
 							>
 								{page.redirectTarget}
@@ -543,7 +543,7 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 					{page.tags.map((tag) => (
 						<a
 							key={tag.id}
-							href={`/briar-display/wiki/tag/${tag.slug}`}
+							href={`/briar/wiki/tag/${tag.slug}`}
 							className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[12px] text-white transition-colors hover:opacity-80"
 							style={{ backgroundColor: tag.color }}
 						>
@@ -561,7 +561,7 @@ export default function WikiArticlePage({ slug }: WikiArticlePageProps) {
 					{page.categories.map((cat) => (
 						<a
 							key={cat.id}
-							href={`/briar-display/wiki/category/${cat.slug}`}
+							href={`/briar/wiki/category/${cat.slug}`}
 							className="inline-flex items-center rounded-full bg-wiki-link/10 px-2.5 py-0.5 text-[12px] text-wiki-link transition-colors hover:bg-wiki-link/20 hover:underline"
 						>
 							{cat.name}

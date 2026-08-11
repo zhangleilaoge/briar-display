@@ -71,7 +71,7 @@ export default function WikiTagPage({ slug }: WikiTagPageProps) {
 		if (!tag || !confirm(`确定删除标签「${tag.name}」？`)) return
 		const res = await wikiApi.deleteTag(tag.id)
 		if (res.success) {
-			window.location.href = '/briar-display/wiki/special/tags'
+			window.location.href = '/briar/wiki/special/tags'
 		} else {
 			alert(res.message || '删除失败')
 		}
@@ -100,7 +100,7 @@ export default function WikiTagPage({ slug }: WikiTagPageProps) {
 	return (
 		<div className="space-y-4">
 			<WikiBreadcrumbs
-				items={[{ label: '标签', href: '/briar-display/wiki/special/tags' }, { label: tag.name }]}
+				items={[{ label: '标签', href: '/briar/wiki/special/tags' }, { label: tag.name }]}
 			/>
 
 			<div>

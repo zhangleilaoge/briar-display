@@ -136,7 +136,7 @@ function AdminUsersPageInner() {
 
 	if (permLoading || loading) {
 		return (
-			<AdminLayout currentPath="/briar-display/admin/users" title="用户角色">
+			<AdminLayout currentPath="/briar/admin/users" title="用户角色">
 				<div className="flex items-center justify-center py-20">
 					<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 				</div>
@@ -146,7 +146,7 @@ function AdminUsersPageInner() {
 
 	if (denied) {
 		return (
-			<AdminLayout currentPath="/briar-display/admin/users" title="用户角色">
+			<AdminLayout currentPath="/briar/admin/users" title="用户角色">
 				<Card>
 					<CardContent className="flex items-center gap-2 pt-6">
 						<AlertCircle className="h-5 w-5 text-destructive" />
@@ -158,7 +158,7 @@ function AdminUsersPageInner() {
 	}
 
 	return (
-		<AdminLayout currentPath="/briar-display/admin/users" title="用户角色">
+		<AdminLayout currentPath="/briar/admin/users" title="用户角色">
 			<Card>
 				<CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
 					<CardTitle className="flex items-center gap-2 text-lg">

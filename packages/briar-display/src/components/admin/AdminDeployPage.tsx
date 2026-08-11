@@ -31,7 +31,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
-const PAGE_PATH = '/briar-display/admin/deploy'
+const PAGE_PATH = '/briar/admin/deploy'
 
 function formatTime(date: string) {
 	return new Date(date).toLocaleString('zh-CN', { hour12: false })

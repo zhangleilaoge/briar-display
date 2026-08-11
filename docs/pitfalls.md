@@ -6,14 +6,14 @@
 
 ```ts
 // ❌ 返回值被忽略
-app.basePath('/briar-display')
+app.basePath('/briar')
 // ✅ 链式调用
-const app = new Hono().basePath('/briar-display')
+const app = new Hono().basePath('/briar')
 ```
 
 当前项目已通过 nginx 处理路径前缀，后端无需 basePath。
 
-## 2. 前端 API baseURL 不要加 `/briar-display`
+## 2. 前端 API baseURL 不要加 `/briar`
 
 生产环境请求 `https://xiaobuzi.cn/api/*`（Nginx 代理），`request.ts` 自动计算 baseURL，无需手动拼。
 

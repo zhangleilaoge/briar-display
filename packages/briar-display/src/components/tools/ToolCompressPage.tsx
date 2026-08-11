@@ -302,7 +302,7 @@ export default function ToolCompressPage() {
 	const isPng = format === 'image/png'
 
 	return (
-		<ToolsLayout currentPath="/briar-display/tools/compress">
+		<ToolsLayout currentPath="/briar/tools/compress">
 			<div className="space-y-6">
 				{/* 设置面板 */}
 				<Card>

@@ -91,21 +91,21 @@ function PortalPageInner() {
 							icon={<BookOpen className="h-5 w-5" />}
 							title="Wiki"
 							description="知识库与文档管理"
-							href="/briar-display/wiki/"
+							href="/briar/wiki/"
 							gradient="from-blue-500 to-purple-500"
 						/>
 						<EntryCard
 							icon={<Wrench className="h-5 w-5" />}
 							title="工具箱"
 							description="文件 Diff、图片压缩等实用工具"
-							href="/briar-display/tools/diff"
+							href="/briar/tools/diff"
 							gradient="from-teal-500 to-emerald-500"
 						/>
 						<EntryCard
 							icon={<Folder className="h-5 w-5" />}
 							title="文件"
 							description="文件、图片与视频的云端管理"
-							href="/briar-display/files"
+							href="/briar/files"
 							gradient="from-pink-500 to-rose-500"
 						/>
 						{!loading && isAdmin && (
@@ -113,7 +113,7 @@ function PortalPageInner() {
 								icon={<Shield className="h-5 w-5" />}
 								title="管理后台"
 								description="角色权限与用户管理"
-								href="/briar-display/admin/permissions"
+								href="/briar/admin/permissions"
 								gradient="from-amber-500 to-orange-500"
 							/>
 						)}

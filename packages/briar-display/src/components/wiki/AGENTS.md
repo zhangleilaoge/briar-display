@@ -151,7 +151,7 @@ import PermissionGuard from '@/components/wiki/common/PermissionGuard'
 
 ### 管理后台页面
 
-管理后台已独立为 Astro 页面（`/briar-display/admin/*`），不再属于 Wiki SPA。详见 `packages/briar-display/src/components/admin/` 目录。
+管理后台已独立为 Astro 页面（`/briar/admin/*`），不再属于 Wiki SPA。详见 `packages/briar-display/src/components/admin/` 目录。
 
 侧边栏"管理"区域的链接指向独立管理后台，仅对拥有 `page:admin` 权限的用户可见。
 

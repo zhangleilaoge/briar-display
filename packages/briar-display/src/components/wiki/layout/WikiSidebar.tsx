@@ -34,25 +34,25 @@ const sections: SidebarSection[] = [
 	{
 		title: '导航',
 		links: [
-			{ label: '首页', href: '/briar-display/wiki/', icon: <Home className="h-3.5 w-3.5" /> },
+			{ label: '首页', href: '/briar/wiki/', icon: <Home className="h-3.5 w-3.5" /> },
 			{
 				label: '最近更改',
-				href: '/briar-display/wiki/special/recent-changes',
+				href: '/briar/wiki/special/recent-changes',
 				icon: <TrendingUp className="h-3.5 w-3.5" />,
 			},
 			{
 				label: '所有页面',
-				href: '/briar-display/wiki/special/all-pages',
+				href: '/briar/wiki/special/all-pages',
 				icon: <FileText className="h-3.5 w-3.5" />,
 			},
 			{
 				label: '分类',
-				href: '/briar-display/wiki/category/',
+				href: '/briar/wiki/category/',
 				icon: <LayoutList className="h-3.5 w-3.5" />,
 			},
 			{
 				label: '标签',
-				href: '/briar-display/wiki/special/tags',
+				href: '/briar/wiki/special/tags',
 				icon: <Tag className="h-3.5 w-3.5" />,
 			},
 		],
@@ -63,17 +63,17 @@ const sections: SidebarSection[] = [
 		links: [
 			{
 				label: '关注列表',
-				href: '/briar-display/wiki/special/watchlist',
+				href: '/briar/wiki/special/watchlist',
 				icon: <Eye className="h-3.5 w-3.5" />,
 			},
 			{
 				label: '我的收藏',
-				href: '/briar-display/wiki/special/stars',
+				href: '/briar/wiki/special/stars',
 				icon: <Star className="h-3.5 w-3.5" />,
 			},
 			{
 				label: '我的贡献',
-				href: '/briar-display/wiki/special/user-contributions',
+				href: '/briar/wiki/special/user-contributions',
 				icon: <History className="h-3.5 w-3.5" />,
 			},
 		],
@@ -83,22 +83,22 @@ const sections: SidebarSection[] = [
 		links: [
 			{
 				label: '孤立页面',
-				href: '/briar-display/wiki/special/orphaned-pages',
+				href: '/briar/wiki/special/orphaned-pages',
 				icon: <Link2 className="h-3.5 w-3.5" />,
 			},
 			{
 				label: '期望页面',
-				href: '/briar-display/wiki/special/wanted-pages',
+				href: '/briar/wiki/special/wanted-pages',
 				icon: <FileText className="h-3.5 w-3.5" />,
 			},
 			{
 				label: '模板',
-				href: '/briar-display/wiki/special/templates',
+				href: '/briar/wiki/special/templates',
 				icon: <LayoutList className="h-3.5 w-3.5" />,
 			},
 			{
 				label: '统计',
-				href: '/briar-display/wiki/special/statistics',
+				href: '/briar/wiki/special/statistics',
 				icon: <BarChart3 className="h-3.5 w-3.5" />,
 			},
 		],
@@ -115,7 +115,7 @@ function isActiveLink(href: string, pathname: string): boolean {
 	if (normPath === normHref) return true
 
 	// Root wiki is active only on exact match
-	if (normHref === '/briar-display/wiki') return normPath === '/briar-display/wiki'
+	if (normHref === '/briar/wiki') return normPath === '/briar/wiki'
 
 	// For non-root links, check if path starts with href
 	return normPath.startsWith(`${normHref}/`)

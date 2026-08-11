@@ -20,7 +20,7 @@ export default function ArticleSubpages({ subpages }: ArticleSubpagesProps) {
 				{subpages.map((sp) => (
 					<li key={sp.id}>
 						<a
-							href={`/briar-display/wiki/${sp.slug}`}
+							href={`/briar/wiki/${sp.slug}`}
 							className="inline-flex items-center gap-1.5 text-[13px] text-wiki-link hover:underline"
 						>
 							<FileText className="h-3.5 w-3.5" />

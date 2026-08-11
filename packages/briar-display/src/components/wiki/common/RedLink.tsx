@@ -11,7 +11,7 @@ interface RedLinkProps {
 export default function RedLink({ slug, title, className }: RedLinkProps) {
 	return (
 		<a
-			href={`/briar-display/wiki/${slug}/edit`}
+			href={`/briar/wiki/${slug}/edit`}
 			className={cn(
 				'border-b border-dashed border-red-500 text-red-600 hover:text-red-800',
 				className,

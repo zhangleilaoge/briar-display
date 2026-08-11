@@ -96,7 +96,7 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 		localStorage.removeItem('briar_token')
 		localStorage.removeItem('briar_user')
 		localStorage.removeItem('briar_permissions')
-		window.location.href = '/briar-display/'
+		window.location.href = '/briar/'
 	}, [])
 
 	const isLight = variant === 'light'
@@ -142,7 +142,7 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 	if (!token || !isLoggedIn) {
 		return (
 			<a
-				href="/briar-display/login"
+				href="/briar/login"
 				className={cn(
 					'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
 					isLight
@@ -220,12 +220,12 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 				</div>
 
 				{/* 菜单项 */}
-				<a href="/briar-display/profile" className={itemClass} onClick={() => setOpen(false)}>
+				<a href="/briar/profile" className={itemClass} onClick={() => setOpen(false)}>
 					<UserIcon className="h-3.5 w-3.5" />
 					个人中心
 				</a>
 				<a
-					href="/briar-display/profile?tab=messages"
+					href="/briar/profile?tab=messages"
 					className={cn(itemClass, 'justify-between')}
 					onClick={() => setOpen(false)}
 				>
@@ -239,16 +239,12 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 						</span>
 					)}
 				</a>
-				<a href="/briar-display/" className={itemClass} onClick={() => setOpen(false)}>
+				<a href="/briar/" className={itemClass} onClick={() => setOpen(false)}>
 					<Home className="h-3.5 w-3.5" />
 					回到主页
 				</a>
 				{isAdmin && (
-					<a
-						href="/briar-display/admin/permissions"
-						className={itemClass}
-						onClick={() => setOpen(false)}
-					>
+					<a href="/briar/admin/permissions" className={itemClass} onClick={() => setOpen(false)}>
 						<Shield className="h-3.5 w-3.5" />
 						管理后台
 					</a>

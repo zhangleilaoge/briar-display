@@ -89,7 +89,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 					categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
 				})
 				if (res.success && res.data) {
-					window.history.pushState({}, '', `/briar-display/wiki/${res.data.slug}`)
+					window.history.pushState({}, '', `/briar/wiki/${res.data.slug}`)
 					window.dispatchEvent(new PopStateEvent('popstate'))
 				} else {
 					setError(res.message || '创建失败')
@@ -110,7 +110,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 
 				const res = await wikiApi.updatePage(slug, payload)
 				if (res.success && res.data) {
-					window.history.pushState({}, '', `/briar-display/wiki/${res.data.slug}`)
+					window.history.pushState({}, '', `/briar/wiki/${res.data.slug}`)
 					window.dispatchEvent(new PopStateEvent('popstate'))
 				} else {
 					setError(res.message || '保存失败')
@@ -130,9 +130,9 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 	// Cancel handler
 	const handleCancel = useCallback(() => {
 		if (isNew) {
-			window.history.pushState({}, '', '/briar-display/wiki/')
+			window.history.pushState({}, '', '/briar/wiki/')
 		} else {
-			window.history.pushState({}, '', `/briar-display/wiki/${slug}`)
+			window.history.pushState({}, '', `/briar/wiki/${slug}`)
 		}
 		window.dispatchEvent(new PopStateEvent('popstate'))
 	}, [isNew, slug])
@@ -154,7 +154,7 @@ export default function WikiEditPage({ slug }: WikiEditPageProps) {
 		<div className="space-y-4">
 			<WikiBreadcrumbs
 				items={[
-					{ label: existingPage?.title || slug, href: `/briar-display/wiki/${slug}` },
+					{ label: existingPage?.title || slug, href: `/briar/wiki/${slug}` },
 					{ label: isNew ? '新建' : '编辑' },
 				]}
 			/>

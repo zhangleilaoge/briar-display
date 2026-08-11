@@ -92,7 +92,7 @@ export default function UserMenu() {
 	if (!token) {
 		return (
 			<a
-				href="/briar-display/login"
+				href="/briar/login"
 				className="inline-flex items-center gap-1.5 rounded-sm px-2 py-1.5 text-[13px] text-wiki-text transition-colors hover:bg-wiki-bg-tertiary"
 			>
 				<User className="h-3.5 w-3.5" />
@@ -147,7 +147,7 @@ export default function UserMenu() {
 				</div>
 
 				<a
-					href="/briar-display/profile"
+					href="/briar/profile"
 					className="flex items-center gap-2 rounded-sm px-3 py-2 text-[13px] text-wiki-text-secondary transition-colors hover:bg-wiki-bg-tertiary hover:text-wiki-text"
 					onClick={() => setOpen(false)}
 				>
@@ -155,7 +155,7 @@ export default function UserMenu() {
 					个人中心
 				</a>
 				<a
-					href="/briar-display/profile?tab=messages"
+					href="/briar/profile?tab=messages"
 					className="flex items-center justify-between gap-2 rounded-sm px-3 py-2 text-[13px] text-wiki-text-secondary transition-colors hover:bg-wiki-bg-tertiary hover:text-wiki-text"
 					onClick={() => setOpen(false)}
 				>
@@ -170,7 +170,7 @@ export default function UserMenu() {
 					)}
 				</a>
 				<a
-					href="/briar-display/"
+					href="/briar/"
 					className="flex items-center gap-2 rounded-sm px-3 py-2 text-[13px] text-wiki-text-secondary transition-colors hover:bg-wiki-bg-tertiary hover:text-wiki-text"
 					onClick={() => setOpen(false)}
 				>
@@ -182,7 +182,7 @@ export default function UserMenu() {
 
 				{hasPermission('wiki:page:create') && (
 					<a
-						href="/briar-display/wiki/new"
+						href="/briar/wiki/new"
 						className="flex items-center gap-2 rounded-sm px-3 py-2 text-[13px] text-wiki-text-secondary transition-colors hover:bg-wiki-bg-tertiary hover:text-wiki-text"
 						onClick={() => setOpen(false)}
 					>
@@ -191,7 +191,7 @@ export default function UserMenu() {
 					</a>
 				)}
 				<a
-					href="/briar-display/wiki/special/user-contributions"
+					href="/briar/wiki/special/user-contributions"
 					className="flex items-center gap-2 rounded-sm px-3 py-2 text-[13px] text-wiki-text-secondary transition-colors hover:bg-wiki-bg-tertiary hover:text-wiki-text"
 					onClick={() => setOpen(false)}
 				>
@@ -199,7 +199,7 @@ export default function UserMenu() {
 					我的贡献
 				</a>
 				<a
-					href="/briar-display/wiki/special/watchlist"
+					href="/briar/wiki/special/watchlist"
 					className="flex items-center gap-2 rounded-sm px-3 py-2 text-[13px] text-wiki-text-secondary transition-colors hover:bg-wiki-bg-tertiary hover:text-wiki-text"
 					onClick={() => setOpen(false)}
 				>
@@ -211,7 +211,7 @@ export default function UserMenu() {
 					<>
 						<div className="my-1 border-t border-wiki-border-light" />
 						<a
-							href="/briar-display/admin/permissions"
+							href="/briar/admin/permissions"
 							className="flex items-center gap-2 rounded-sm px-3 py-2 text-[13px] text-wiki-text-secondary transition-colors hover:bg-wiki-bg-tertiary hover:text-wiki-text"
 							onClick={() => setOpen(false)}
 						>

@@ -386,9 +386,7 @@ export default function WikiTalkPage({ slug }: WikiTalkPageProps) {
 
 	return (
 		<div className="space-y-4">
-			<WikiBreadcrumbs
-				items={[{ label: slug, href: `/briar-display/wiki/${slug}` }, { label: '讨论' }]}
-			/>
+			<WikiBreadcrumbs items={[{ label: slug, href: `/briar/wiki/${slug}` }, { label: '讨论' }]} />
 			<WikiTabs slug={slug} active="talk" />
 
 			<div className="flex items-center justify-between">
@@ -409,7 +407,7 @@ export default function WikiTalkPage({ slug }: WikiTalkPageProps) {
 					<AlertCircle className="h-4 w-4 flex-shrink-0" />
 					<span>
 						请先
-						<a href="/briar-display/login" className="mx-1 font-medium text-amber-800 underline">
+						<a href="/briar/login" className="mx-1 font-medium text-amber-800 underline">
 							登录
 						</a>
 						后再参与讨论

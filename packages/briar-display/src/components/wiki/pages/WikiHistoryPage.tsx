@@ -137,7 +137,7 @@ export default function WikiHistoryPage({ slug }: WikiHistoryPageProps) {
 			try {
 				const res = await wikiApi.revertToRevision(slug, revId)
 				if (res.success) {
-					window.history.pushState({}, '', `/briar-display/wiki/${slug}`)
+					window.history.pushState({}, '', `/briar/wiki/${slug}`)
 					window.dispatchEvent(new PopStateEvent('popstate'))
 				} else {
 					alert(res.message || '回退失败')
@@ -155,7 +155,7 @@ export default function WikiHistoryPage({ slug }: WikiHistoryPageProps) {
 		return (
 			<div className="space-y-4">
 				<WikiBreadcrumbs
-					items={[{ label: slug, href: `/briar-display/wiki/${slug}` }, { label: '历史' }]}
+					items={[{ label: slug, href: `/briar/wiki/${slug}` }, { label: '历史' }]}
 				/>
 				<WikiTabs slug={slug} active="history" />
 				<div className="flex items-center justify-center py-20">
@@ -170,7 +170,7 @@ export default function WikiHistoryPage({ slug }: WikiHistoryPageProps) {
 		return (
 			<div className="space-y-4">
 				<WikiBreadcrumbs
-					items={[{ label: slug, href: `/briar-display/wiki/${slug}` }, { label: '历史' }]}
+					items={[{ label: slug, href: `/briar/wiki/${slug}` }, { label: '历史' }]}
 				/>
 				<WikiTabs slug={slug} active="history" />
 				<div className="py-12 text-center text-wiki-text-muted">{error}</div>
@@ -180,9 +180,7 @@ export default function WikiHistoryPage({ slug }: WikiHistoryPageProps) {
 
 	return (
 		<div className="space-y-4">
-			<WikiBreadcrumbs
-				items={[{ label: slug, href: `/briar-display/wiki/${slug}` }, { label: '历史' }]}
-			/>
+			<WikiBreadcrumbs items={[{ label: slug, href: `/briar/wiki/${slug}` }, { label: '历史' }]} />
 			<WikiTabs slug={slug} active="history" />
 
 			<h1 className="border-b border-wiki-border-light pb-2 text-[1.5em] font-normal text-wiki-text">

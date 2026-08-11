@@ -228,7 +228,7 @@ export default function ToolJsonPage() {
 	}, [])
 
 	return (
-		<ToolsLayout currentPath="/briar-display/tools/json">
+		<ToolsLayout currentPath="/briar/tools/json">
 			<Card className="flex min-h-0 flex-1 flex-col">
 				<CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
 					<div className="flex items-center gap-3">

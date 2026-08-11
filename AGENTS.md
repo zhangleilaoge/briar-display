@@ -4,12 +4,12 @@
 
 Briar Display 是一个基于 bun workspace 的 monorepo：
 
-- **前端** (`@briar/display`)：Astro + React + Vue + TailwindCSS，部署在 `/briar-display/` 子路径
+- **前端** (`@briar/display`)：Astro + React + Vue + TailwindCSS，部署在 `/briar/` 子路径
 - **后端** (`@briar/node`)：Hono + MySQL2，端口 `3888`
 - **共享库** (`@briar/shared`)：TypeScript 常量、类型和工具函数
 - **脚本** (`@briar/scripts`)：构建辅助脚本
 
-线上地址：`https://xiaobuzi.cn/briar-display/`
+线上地址：`https://xiaobuzi.cn/briar/`
 
 | 包 | 关键技术 |
 | :--- | :--- |
@@ -71,17 +71,17 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 
 ## 路由架构
 
-前端页面在 `packages/briar-display/src/pages/briar-display/`，后端 API 在 `packages/briar-node/src/routes/`，Wiki 模块详见 `packages/briar-display/src/components/wiki/AGENTS.md`。
+前端页面在 `packages/briar-display/src/pages/briar/`，后端 API 在 `packages/briar-node/src/routes/`，Wiki 模块详见 `packages/briar-display/src/components/wiki/AGENTS.md`。
 
 ### Nginx 代理
 
 - `/` → `http://127.0.0.1:3888/`（根路径落地页，备案合规，源码 `packages/briar-node/src/routes/root.ts`）
-- `/briar-display/` → `http://127.0.0.1:3888`（后端提供静态资源 + fallback）
+- `/briar/` → `http://127.0.0.1:3888`（后端提供静态资源 + fallback）
 - `/api/` → `http://127.0.0.1:3888/api/`
 
 ### 文件管理（原图床）
 
-- 页面 `/briar-display/files`（旧 `/briar-display/images/*` 重定向至此），API `/api/files`
+- 页面 `/briar/files`（旧 `/briar/images/*` 重定向至此），API `/api/files`
 - 上传走**前端分片直传 COS**：`POST /api/files/precheck`（配额/去重/发 cosKey）→ cos-js-sdk-v5 `sliceUploadFile` 直传（分片签名由 `POST /api/files/cos-sign` 下发，仅放行 `files/{userId}/` 前缀）→ `POST /api/files/confirm` 写库。文件不经过 nginx/服务器，`client_max_body_size 10m` 不影响上传
 - 直传依赖 COS bucket CORS，一次性配置：`make cos-cors`
 - 视频封面：上传完成后客户端用 video+canvas 截首帧，直传为 `{cosKey去扩展名}.cover.jpg` 并在 confirm 时传 `thumbnailKey`；网格有封面用 `<img>`，存量无封面视频 fallback 到 `<video preload="metadata">`；删除文件/文件夹时连带删封面
@@ -89,7 +89,7 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 
 ### SSH 控制台
 
-- 页面 `/briar-display/admin/terminal`（AdminLayout 侧边栏「SSH 控制台」），前端 xterm.js（**必须动态 import**，静态导入 CJS 包会让 Astro build 失败）；多标签会话（每个 tab 独立 WS + SSH 连接，切换仅隐藏容器保持存活）
+- 页面 `/briar/admin/terminal`（AdminLayout 侧边栏「SSH 控制台」），前端 xterm.js（**必须动态 import**，静态导入 CJS 包会让 Astro build 失败）；多标签会话（每个 tab 独立 WS + SSH 连接，切换仅隐藏容器保持存活）
 - WS 端点 `/api/terminal/ws`，nginx 需转发 Upgrade 头（`default.conf` 已配，改动后手动 `./scripts/deploy-nginx.sh`）
 - SSH 目标复用 `DEPLOY_*` 环境变量；**`.env` 需配 `DEPLOY_KEY_PATH`**（指向私钥，相对路径基于仓库根目录解析，如 `briar-assets/ssh/xiaobuzi.pem`，本地/服务器同值通用；`briar-assets/briar/.env` 已配，`make init` 会带出来），否则回退 `DEPLOY_PASS` 密码（当前服务器密码已失效，仅密钥可用）
 - 权限 `admin:terminal:access`（admin 角色已授权），所有会话的命令行输入落 `terminal_audit_logs` 审计表
@@ -159,4 +159,4 @@ SELECT * FROM request_logs WHERE status >= 400 ORDER BY created_at DESC LIMIT 20
 
 或 API：`GET /api/admin/logs?statusGroup=5xx&limit=20`
 
-管理页面：`/briar-display/admin/logs`
+管理页面：`/briar/admin/logs`

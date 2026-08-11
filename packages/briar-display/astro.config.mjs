@@ -96,12 +96,8 @@ export default defineConfig({
 				configureServer(server) {
 					server.middlewares.use((req, res, next) => {
 						const url = req.url?.split('?')[0] || ''
-						if (
-							url.startsWith('/briar-display/wiki/') &&
-							url !== '/briar-display/wiki/' &&
-							!url.includes('.')
-						) {
-							req.url = '/briar-display/wiki/'
+						if (url.startsWith('/briar/wiki/') && url !== '/briar/wiki/' && !url.includes('.')) {
+							req.url = '/briar/wiki/'
 						}
 						next()
 					})

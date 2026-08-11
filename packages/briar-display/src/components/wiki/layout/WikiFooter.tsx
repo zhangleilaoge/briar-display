@@ -43,11 +43,11 @@ export default function WikiFooter({
 				。浏览次数: {viewCount != null ? viewCount.toLocaleString() : '0'}
 			</p>
 			<div className="mt-1.5 flex items-center gap-2">
-				<a href="/briar-display/wiki/" className="hover:text-wiki-link hover:underline">
+				<a href="/briar/wiki/" className="hover:text-wiki-link hover:underline">
 					首页
 				</a>
 				<span className="text-wiki-border-light">|</span>
-				<a href="/briar-display/wiki/" className="hover:text-wiki-link hover:underline">
+				<a href="/briar/wiki/" className="hover:text-wiki-link hover:underline">
 					关于
 				</a>
 			</div>

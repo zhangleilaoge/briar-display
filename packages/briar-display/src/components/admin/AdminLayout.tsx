@@ -23,32 +23,32 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
 	{
 		label: '权限管理',
-		href: '/briar-display/admin/permissions',
+		href: '/briar/admin/permissions',
 		icon: <Shield className="h-4 w-4" />,
 	},
 	{
 		label: '用户角色',
-		href: '/briar-display/admin/users',
+		href: '/briar/admin/users',
 		icon: <Users className="h-4 w-4" />,
 	},
 	{
 		label: '天网日志',
-		href: '/briar-display/admin/logs',
+		href: '/briar/admin/logs',
 		icon: <Radio className="h-4 w-4" />,
 	},
 	{
 		label: 'SQL 控制台',
-		href: '/briar-display/admin/sql',
+		href: '/briar/admin/sql',
 		icon: <Database className="h-4 w-4" />,
 	},
 	{
 		label: '应用部署',
-		href: '/briar-display/admin/deploy',
+		href: '/briar/admin/deploy',
 		icon: <Rocket className="h-4 w-4" />,
 	},
 	{
 		label: 'SSH 控制台',
-		href: '/briar-display/admin/terminal',
+		href: '/briar/admin/terminal',
 		icon: <TerminalSquare className="h-4 w-4" />,
 	},
 ]
@@ -69,7 +69,7 @@ export default function AdminLayout({ children, currentPath }: AdminLayoutProps)
 							<BreadcrumbList className="text-background/40">
 								<BreadcrumbItem>
 									<BreadcrumbLink
-										href="/briar-display/"
+										href="/briar/"
 										className="text-background/40 hover:text-background/60"
 									>
 										Briar

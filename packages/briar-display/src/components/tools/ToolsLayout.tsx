@@ -23,17 +23,17 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
 	{
 		label: '文件 Diff',
-		href: '/briar-display/tools/diff',
+		href: '/briar/tools/diff',
 		icon: <FileDiff className="h-4 w-4" />,
 	},
 	{
 		label: '图片压缩',
-		href: '/briar-display/tools/compress',
+		href: '/briar/tools/compress',
 		icon: <ImageIcon className="h-4 w-4" />,
 	},
 	{
 		label: 'JSON 格式化',
-		href: '/briar-display/tools/json',
+		href: '/briar/tools/json',
 		icon: <Braces className="h-4 w-4" />,
 	},
 ]
@@ -54,7 +54,7 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 							<Breadcrumb>
 								<BreadcrumbList>
 									<BreadcrumbItem>
-										<BreadcrumbLink href="/briar-display/">Briar</BreadcrumbLink>
+										<BreadcrumbLink href="/briar/">Briar</BreadcrumbLink>
 									</BreadcrumbItem>
 									<BreadcrumbSeparator />
 									<BreadcrumbItem>

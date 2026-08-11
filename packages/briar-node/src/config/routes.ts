@@ -7,9 +7,9 @@ export const RouteConfig = {
 	/** 完全公开的路径（前端页面） */
 	PUBLIC_PATHS: new Set([
 		'/', // 根路径落地页（备案合规）
-		'/briar-display/login',
-		'/briar-display/register',
-		'/briar-display/forgot-password',
+		'/briar/login',
+		'/briar/register',
+		'/briar/forgot-password',
 	]),
 
 	/** 公开的路径前缀 */

@@ -59,7 +59,7 @@ export default function WikiLinkText({ text, highlightQuery, className }: WikiLi
 		nodes.push(
 			<a
 				key={`link-${match.index}`}
-				href={`/briar-display/wiki/${slug}`}
+				href={`/briar/wiki/${slug}`}
 				className="text-wiki-link hover:underline"
 				onClick={(e) => e.stopPropagation()}
 			>

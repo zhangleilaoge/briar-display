@@ -97,7 +97,7 @@ export default function WikiHomePage() {
 								{hotArticles.map((article) => (
 									<li key={article.id}>
 										<a
-											href={`/briar-display/wiki/${article.slug}`}
+											href={`/briar/wiki/${article.slug}`}
 											className="block px-4 py-3 transition-colors hover:bg-wiki-bg-secondary"
 										>
 											<h3 className="text-[14px] font-medium text-wiki-link hover:underline">
@@ -133,7 +133,7 @@ export default function WikiHomePage() {
 								<h2 className="text-[14px] font-semibold text-wiki-text">最近编辑</h2>
 							</div>
 							<a
-								href="/briar-display/wiki/special/recent-changes"
+								href="/briar/wiki/special/recent-changes"
 								className="text-[12px] text-wiki-link hover:underline"
 							>
 								查看全部 →
@@ -156,7 +156,7 @@ export default function WikiHomePage() {
 											</span>
 											<span className="mx-1.5 text-wiki-text-muted">编辑</span>
 											<a
-												href={`/briar-display/wiki/${change.pageSlug}`}
+												href={`/briar/wiki/${change.pageSlug}`}
 												className="font-medium text-wiki-link hover:underline"
 											>
 												{change.pageTitle}
@@ -222,7 +222,7 @@ export default function WikiHomePage() {
 								{categories.map((cat) => (
 									<li key={cat.id}>
 										<a
-											href={`/briar-display/wiki/category/${cat.slug}`}
+											href={`/briar/wiki/category/${cat.slug}`}
 											className="flex items-center justify-between rounded-sm px-2 py-1.5 text-[13px] transition-colors hover:bg-wiki-bg-secondary"
 										>
 											<span className="text-wiki-link hover:underline">{cat.name}</span>
@@ -239,7 +239,7 @@ export default function WikiHomePage() {
 						<h3 className="mb-3 text-[14px] font-semibold text-wiki-text">⚡ 快速操作</h3>
 						<div className="flex flex-col gap-2">
 							<a
-								href="/briar-display/wiki/new"
+								href="/briar/wiki/new"
 								className="inline-flex items-center gap-2 rounded-sm border border-wiki-border-light px-3 py-2 text-[13px] text-wiki-link transition-colors hover:bg-wiki-bg-secondary hover:text-wiki-link-hover"
 							>
 								<FilePlus className="h-4 w-4" />
@@ -250,9 +250,9 @@ export default function WikiHomePage() {
 								onClick={() => {
 									if (hotArticles.length > 0) {
 										const random = hotArticles[Math.floor(Math.random() * hotArticles.length)]
-										window.location.href = `/briar-display/wiki/${random.slug}`
+										window.location.href = `/briar/wiki/${random.slug}`
 									} else {
-										window.location.href = '/briar-display/wiki/'
+										window.location.href = '/briar/wiki/'
 									}
 								}}
 								className="inline-flex items-center gap-2 rounded-sm border border-wiki-border-light px-3 py-2 text-[13px] text-wiki-link transition-colors hover:bg-wiki-bg-secondary hover:text-wiki-link-hover"
@@ -261,7 +261,7 @@ export default function WikiHomePage() {
 								随机页面
 							</button>
 							<a
-								href="/briar-display/wiki/special/all-pages"
+								href="/briar/wiki/special/all-pages"
 								className="inline-flex items-center gap-2 rounded-sm border border-wiki-border-light px-3 py-2 text-[13px] text-wiki-link transition-colors hover:bg-wiki-bg-secondary hover:text-wiki-link-hover"
 							>
 								<FileText className="h-4 w-4" />

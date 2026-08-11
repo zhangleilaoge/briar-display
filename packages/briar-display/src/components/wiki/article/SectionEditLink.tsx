@@ -9,7 +9,7 @@ interface SectionEditLinkProps {
 }
 
 export default function SectionEditLink({ slug, sectionId, className }: SectionEditLinkProps) {
-	const href = `/briar-display/wiki/${slug}/edit?section=${encodeURIComponent(sectionId)}`
+	const href = `/briar/wiki/${slug}/edit?section=${encodeURIComponent(sectionId)}`
 
 	return (
 		<a

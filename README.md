@@ -2,14 +2,14 @@
 
 基于 bun workspace 的 monorepo，包含前端展示站点（Astro）、Node.js 后端服务（Hono）、AI Agent 工具链和 Skill 集合。
 
-线上地址：`https://xiaobuzi.cn/briar-display/`
+线上地址：`https://xiaobuzi.cn/briar/`
 
 ## 技术栈
 
 | 包 | 技术 | 说明 |
 | :--- | :--- | :--- |
 | `@briar/shared` | TypeScript / tsup | 共享常量、类型、权限编码和工具函数 |
-| `@briar/display` | Astro + React + Vue + TailwindCSS + shadcn/ui | 前端页面，部署在 `/briar-display/` 子路径 |
+| `@briar/display` | Astro + React + Vue + TailwindCSS + shadcn/ui | 前端页面，部署在 `/briar/` 子路径 |
 | `@briar/node` | Hono + MySQL2 + JWT + bcryptjs + Bree | REST API 服务，端口 `3888` |
 | `@briar/agent` | pi-coding-agent + tsup | AI 编码 Agent CLI 工具（`briar` 命令） |
 | `@briar/skills` | Markdown (SKILL.md) | AI Agent 技能集合（context / fix / mr / repo / sync） |
@@ -22,15 +22,15 @@
 
 | 路径 | 功能 |
 | :--- | :--- |
-| `/briar-display/` | 首页 |
-| `/briar-display/wiki/` | Wiki 知识库（文章、讨论、评论、变更请求、分类/标签/模板） |
-| `/briar-display/tools/json` | JSON 格式化工具（树形预览、对象字面量支持、本地历史） |
-| `/briar-display/tools/diff` | 文本 Diff 对比工具 |
-| `/briar-display/tools/compress` | 图片压缩工具（IndexedDB 历史） |
-| `/briar-display/images/` | 图床相册（COS 上传、SHA-256 去重） |
-| `/briar-display/admin/` | 管理后台（用户/角色/权限/日志/SQL 控制台） |
-| `/briar-display/login` / `register` | 认证页面 |
-| `/briar-display/profile` | 个人中心 |
+| `/briar/` | 首页 |
+| `/briar/wiki/` | Wiki 知识库（文章、讨论、评论、变更请求、分类/标签/模板） |
+| `/briar/tools/json` | JSON 格式化工具（树形预览、对象字面量支持、本地历史） |
+| `/briar/tools/diff` | 文本 Diff 对比工具 |
+| `/briar/tools/compress` | 图片压缩工具（IndexedDB 历史） |
+| `/briar/images/` | 图床相册（COS 上传、SHA-256 去重） |
+| `/briar/admin/` | 管理后台（用户/角色/权限/日志/SQL 控制台） |
+| `/briar/login` / `register` | 认证页面 |
+| `/briar/profile` | 个人中心 |
 
 ### 后端 API（`@briar/node`）
 
@@ -162,7 +162,7 @@ make dev-shared
 │   ├── briar-display/       # 前端 (Astro + React + Vue + shadcn/ui)
 │   │   ├── src/
 │   │   │   ├── pages/       # Astro 页面路由
-│   │   │   │   └── briar-display/   # 部署页面 (/briar-display/*)
+│   │   │   │   └── briar/   # 部署页面 (/briar/*)
 │   │   │   │       ├── admin/       # 管理后台（用户/角色/日志/SQL）
 │   │   │   │       ├── tools/       # 工具页（JSON/Diff/压缩）
 │   │   │   │       ├── images/      # 图床相册
@@ -268,9 +268,9 @@ DEPLOY_COMMIT=<sha> ./scripts/deploy.sh  # 精确部署某次 commit
 ./scripts/deploy-nginx.sh
 ```
 
-实际生产部署在 `/briar-display/` 子路径，Nginx 配置要点：
+实际生产部署在 `/briar/` 子路径，Nginx 配置要点：
 
-- `location /briar-display/` 代理到前端静态资源和页面
+- `location /briar/` 代理到前端静态资源和页面
 - `location /api/` 代理到后端 API（`/api/*`）
 - 后端端口 `3888`
 
