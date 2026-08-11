@@ -156,8 +156,13 @@ export const terminalService = {
 
 		try {
 			await emailService.sendEmail(user.email, {
-				TemplateID: EmailTemplate.RESET_PASSWORD, // 通用「姓名 + 验证码」模板
-				TemplateData: { name: user.name, verificationCode: code },
+				TemplateID: EmailTemplate.GENERIC_VERIFICATION,
+				TemplateData: {
+					name: user.name,
+					verificationCode: code,
+					title: 'SSH 控制台设备验证',
+					reason: '您正在新设备上验证 SSH 控制台访问权限，验证码用于完成设备授权',
+				},
 				subject: 'Briar - SSH 控制台验证码',
 			})
 		} catch (error) {

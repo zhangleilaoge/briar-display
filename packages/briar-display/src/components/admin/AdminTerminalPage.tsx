@@ -69,7 +69,7 @@ function AdminTerminalPageInner() {
 	}
 
 	return (
-		<AdminLayout currentPath={PAGE_PATH}>
+		<AdminLayout currentPath={PAGE_PATH} fullWidth>
 			<div className="space-y-3">
 				<div className="flex items-center justify-between">
 					<p className="text-xs text-muted-foreground">
