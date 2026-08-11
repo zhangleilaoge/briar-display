@@ -55,6 +55,16 @@ export default function TerminalTabs() {
 	const containersRef = useRef(new Map<number, HTMLDivElement>())
 	const cardRef = useRef<HTMLDivElement>(null)
 	const [isFullscreen, setIsFullscreen] = useState(false)
+	const [paneHeight, setPaneHeight] = useState(480)
+
+	// 非全屏时终端高度自适应：最小 480，视口够高则填满剩余空间
+	const updatePaneHeight = useCallback(() => {
+		const el = cardRef.current
+		if (!el || document.fullscreenElement) return
+		// 40 = 标签栏 + 终端区内边距，24 = 卡片距视口底部留白
+		const avail = window.innerHeight - el.getBoundingClientRect().top - 40 - 24
+		setPaneHeight(Math.max(480, Math.floor(avail)))
+	}, [])
 
 	const setSessionStatus = useCallback((id: number, status: ConnStatus) => {
 		setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)))
@@ -219,9 +229,10 @@ export default function TerminalTabs() {
 		inst.term.focus()
 	}, [activeId])
 
-	// 窗口尺寸变化时 fit 当前会话
+	// 窗口尺寸变化时重算高度并 fit 当前会话
 	useEffect(() => {
 		const onResize = () => {
+			updatePaneHeight()
 			if (activeId === null) return
 			const inst = instancesRef.current.get(activeId)
 			if (!inst) return
@@ -230,9 +241,23 @@ export default function TerminalTabs() {
 				inst.ws.send(JSON.stringify({ type: 'resize', cols: inst.term.cols, rows: inst.term.rows }))
 			}
 		}
+		updatePaneHeight()
 		window.addEventListener('resize', onResize)
 		return () => window.removeEventListener('resize', onResize)
-	}, [activeId])
+	}, [activeId, updatePaneHeight])
+
+	// 终端高度变化后等 DOM 更新再 fit
+	useEffect(() => {
+		if (activeId === null) return
+		const inst = instancesRef.current.get(activeId)
+		if (!inst) return
+		requestAnimationFrame(() => {
+			inst.fit.fit()
+			if (inst.ws?.readyState === WebSocket.OPEN) {
+				inst.ws.send(JSON.stringify({ type: 'resize', cols: inst.term.cols, rows: inst.term.rows }))
+			}
+		})
+	}, [paneHeight, activeId])
 
 	// 卸载时清理所有会话
 	useEffect(() => {
@@ -328,7 +353,10 @@ export default function TerminalTabs() {
 			{/* 终端区域：每个会话一个容器，切换时仅隐藏，保持会话存活 */}
 			<div className={isFullscreen ? 'flex-1 overflow-hidden p-2' : 'p-2'}>
 				{sessions.length === 0 ? (
-					<div className="flex h-[480px] flex-col items-center justify-center gap-3 text-gray-500">
+					<div
+						className="flex flex-col items-center justify-center gap-3 text-gray-500"
+						style={{ height: paneHeight }}
+					>
 						<p className="text-sm">没有打开的会话</p>
 						<Button
 							variant="outline"
@@ -345,7 +373,8 @@ export default function TerminalTabs() {
 						<div
 							key={s.id}
 							ref={(el) => registerContainer(s.id, el)}
-							className={s.id === activeId ? (isFullscreen ? 'h-full' : 'h-[480px]') : 'hidden'}
+							className={s.id === activeId ? (isFullscreen ? 'h-full' : '') : 'hidden'}
+							style={s.id === activeId && !isFullscreen ? { height: paneHeight } : undefined}
 						/>
 					))
 				)}
