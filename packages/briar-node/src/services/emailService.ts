@@ -4,6 +4,8 @@ import * as tencentcloud from 'tencentcloud-sdk-nodejs-ses'
 
 export enum EmailTemplate {
 	RESET_PASSWORD = 131569,
+	/** 通用验证码模板（标题/事由可变），用于 SSH 控制台设备验证等场景 */
+	GENERIC_VERIFICATION = 211971,
 }
 
 const SesClient = tencentcloud.ses.v20201002.Client

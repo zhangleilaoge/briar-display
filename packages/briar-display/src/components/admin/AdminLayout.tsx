@@ -56,9 +56,11 @@ const NAV_ITEMS: NavItem[] = [
 interface AdminLayoutProps {
 	children: ReactNode
 	currentPath: string
+	/** 内容区占满可用宽度（默认限宽 1200px 居中） */
+	fullWidth?: boolean
 }
 
-export default function AdminLayout({ children, currentPath }: AdminLayoutProps) {
+export default function AdminLayout({ children, currentPath, fullWidth }: AdminLayoutProps) {
 	return (
 		<PermissionProvider>
 			<div className="flex min-h-screen">
@@ -114,7 +116,7 @@ export default function AdminLayout({ children, currentPath }: AdminLayoutProps)
 					</header>
 
 					<main className="flex-1 bg-muted/30 p-6">
-						<div className="mx-auto max-w-[1200px]">{children}</div>
+						<div className={fullWidth ? 'w-full' : 'mx-auto w-full max-w-[1200px]'}>{children}</div>
 					</main>
 				</div>
 			</div>
