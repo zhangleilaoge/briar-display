@@ -48,7 +48,7 @@ cos.putBucketCors(
 		Region: region,
 		CORSRules: [
 			{
-				AllowedOrigins: ['https://stardew.site', 'http://localhost:4321', 'http://127.0.0.1:4321'],
+				AllowedOrigins: ['https://xiaobuzi.cn', 'http://localhost:4321', 'http://127.0.0.1:4321'],
 				AllowedMethods: ['GET', 'PUT', 'POST', 'HEAD'],
 				AllowedHeaders: ['*'],
 				ExposeHeaders: ['ETag', 'x-cos-request-id'],

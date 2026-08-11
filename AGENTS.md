@@ -9,7 +9,7 @@ Briar Display 是一个基于 bun workspace 的 monorepo：
 - **共享库** (`@briar/shared`)：TypeScript 常量、类型和工具函数
 - **脚本** (`@briar/scripts`)：构建辅助脚本
 
-线上地址：`https://stardew.site/briar-display/`
+线上地址：`https://xiaobuzi.cn/briar-display/`
 
 | 包 | 关键技术 |
 | :--- | :--- |
@@ -144,7 +144,7 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 
 **手动兜底**：服务器上 `./scripts/deploy.sh`（支持 `--skip-install`/`--skip-build`/`--full-build`，支持 `DEPLOY_COMMIT=<sha>` 精确部署）。
 
-**版本校验**：访问 `https://stardew.site/api/version` 查看 `backend.commit` 与 `frontend.commit` 是否一致。
+**版本校验**：访问 `https://xiaobuzi.cn/api/version` 查看 `backend.commit` 与 `frontend.commit` 是否一致。
 
 **所需 GitHub Secrets**：`DOCKER_GITHUB_TOKEN`、`DEPLOY_KEY`、`DEPLOY_HOST`、`DEPLOY_USER`、`DEPLOY_REMOTE_DIR`（默认 `~/github/briar-display/packages/briar-display/web`）、`DEPLOY_PROJECT_DIR`（默认 `~/github/briar-display`）、`BRIAR_TX_*`（CDN）。
 

@@ -14,10 +14,10 @@ NC='\033[0m' # No Color
 # 配置
 NGINX_CONF_SRC="default.conf"
 NGINX_CONF_DEST="/etc/nginx/conf.d/briar-display.conf"
-SSL_CERT_SRC="briar-assets/ssl/stardew.site_bundle.crt"
-SSL_KEY_SRC="briar-assets/ssl/stardew.site.key"
-SSL_CERT_DEST="/etc/nginx/stardew.site_bundle.crt"
-SSL_KEY_DEST="/etc/nginx/stardew.site.key"
+SSL_CERT_SRC="briar-assets/ssl/xiaobuzi.cn_bundle.crt"
+SSL_KEY_SRC="briar-assets/ssl/xiaobuzi.cn.key"
+SSL_CERT_DEST="/etc/nginx/xiaobuzi.cn_bundle.crt"
+SSL_KEY_DEST="/etc/nginx/xiaobuzi.cn.key"
 
 # 工具函数
 log_info() {

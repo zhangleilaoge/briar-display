@@ -15,7 +15,7 @@ const app = new Hono().basePath('/briar-display')
 
 ## 2. 前端 API baseURL 不要加 `/briar-display`
 
-生产环境请求 `https://stardew.site/api/*`（Nginx 代理），`request.ts` 自动计算 baseURL，无需手动拼。
+生产环境请求 `https://xiaobuzi.cn/api/*`（Nginx 代理），`request.ts` 自动计算 baseURL，无需手动拼。
 
 ## 3. 环境变量在项目根目录
 
