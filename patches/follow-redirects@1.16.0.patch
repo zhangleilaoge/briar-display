@@ -1,0 +1,11 @@
+--- a/index.js
++++ b/index.js
+@@ -644,7 +644,7 @@
+   function CustomError(properties) {
+     // istanbul ignore else
+     if (isFunction(Error.captureStackTrace)) {
+-      Error.captureStackTrace(this, this.constructor);
++      Error.captureStackTrace(new Error(), this.constructor);
+     }
+     Object.assign(this, properties || {});
+     this.code = code;
