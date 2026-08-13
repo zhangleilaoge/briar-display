@@ -73,6 +73,49 @@ export const getDeployLogs = async (runId: string) => {
 	return response.data
 }
 
+// ==================== 部署实时进度 ====================
+
+export interface DeployStepInfo {
+	name: string
+	number: number
+	status: string
+	conclusion: string | null
+	startedAt: string | null
+	completedAt: string | null
+}
+
+export interface DeployJobProgress {
+	name: string
+	status: string
+	conclusion: string | null
+	steps: DeployStepInfo[]
+}
+
+export interface DeployRunProgress {
+	runId: string
+	runStatus: string
+	conclusion: string | null
+	jobs: DeployJobProgress[]
+}
+
+export const getDeployProgress = async (runId: string) => {
+	const response = await apiClient.get<ApiResponse<DeployRunProgress>>(
+		`/deployment/${runId}/progress`,
+	)
+	return response.data
+}
+
+export interface DeployLiveProgress {
+	available: boolean
+	runId: string | null
+	lines: string[]
+}
+
+export const getDeployLive = async () => {
+	const response = await apiClient.get<ApiResponse<DeployLiveProgress>>('/deployment/live')
+	return response.data
+}
+
 // ==================== Nginx 部署 ====================
 
 export interface NginxDeployResult {
