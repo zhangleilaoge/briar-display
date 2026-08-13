@@ -24,6 +24,8 @@ export interface FolderItem {
 	name: string
 	parentId: string | null
 	createdAt: string
+	/** 直接文件数（不含子文件夹）；新建文件夹的响应里没有此字段 */
+	fileCount?: number
 }
 
 export interface FileStats {
@@ -34,6 +36,9 @@ export interface FileStats {
 }
 
 export type FileTypeFilter = 'image' | 'video' | 'text' | 'other'
+
+export type FileSortField = 'createdAt' | 'name' | 'size'
+export type FileSortOrder = 'asc' | 'desc'
 
 export interface UploadResult {
 	name: string
@@ -275,6 +280,8 @@ export const getFiles = async (params?: {
 	keyword?: string
 	folderId?: string | null
 	type?: FileTypeFilter
+	sort?: FileSortField
+	order?: FileSortOrder
 	page?: number
 	pageSize?: number
 }) => {
@@ -282,6 +289,8 @@ export const getFiles = async (params?: {
 	if (params?.keyword) searchParams.set('keyword', params.keyword)
 	if (params?.folderId) searchParams.set('folderId', params.folderId)
 	if (params?.type) searchParams.set('type', params.type)
+	if (params?.sort) searchParams.set('sort', params.sort)
+	if (params?.order) searchParams.set('order', params.order)
 	if (params?.page) searchParams.set('page', String(params.page))
 	if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize))
 	const qs = searchParams.toString()
