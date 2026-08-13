@@ -1,10 +1,29 @@
 'use client'
 
-import { type FileItem, type FileTypeFilter, getFiles } from '@/api/files'
+import {
+	type FileItem,
+	type FileSortField,
+	type FileSortOrder,
+	type FileTypeFilter,
+	getFiles,
+} from '@/api/files'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 const PAGE_SIZE = 24
 const BASE_PATH = '/briar/files'
+
+/** 排序组合值（Select 单值，拆成 field + order 传给后端） */
+export type FileSortValue = `${FileSortField}-${FileSortOrder}`
+
+export const DEFAULT_SORT: FileSortValue = 'createdAt-desc'
+
+export function splitSort(value: FileSortValue): { sort: FileSortField; order: FileSortOrder } {
+	const idx = value.lastIndexOf('-')
+	return {
+		sort: value.slice(0, idx) as FileSortField,
+		order: value.slice(idx + 1) as FileSortOrder,
+	}
+}
 
 /** 从 URL 路径解析文件夹 id：/briar/files/<folderId> */
 function readFolderFromPath(): string | null {
@@ -23,6 +42,7 @@ export function useFileList() {
 	const [search, setSearch] = useState('')
 	const [keyword, setKeyword] = useState('')
 	const [typeFilter, setTypeFilter] = useState<'' | FileTypeFilter>('')
+	const [sortValue, setSortValue] = useState<FileSortValue>(DEFAULT_SORT)
 	const [currentFolderId, setCurrentFolderIdState] = useState<string | null>(() =>
 		readFolderFromPath(),
 	)
@@ -50,6 +70,7 @@ export function useFileList() {
 			kw: string,
 			folderId: string | null,
 			type: '' | FileTypeFilter,
+			sort: FileSortValue,
 			p: number,
 			append: boolean,
 		) => {
@@ -64,6 +85,7 @@ export function useFileList() {
 					keyword: kw || undefined,
 					folderId,
 					type: type || undefined,
+					...splitSort(sort),
 					page: p,
 					pageSize: PAGE_SIZE,
 				})
@@ -90,13 +112,13 @@ export function useFileList() {
 
 	const refresh = useCallback(() => {
 		pageRef.current = 1
-		fetchPage(keyword, currentFolderId, typeFilter, 1, false)
-	}, [fetchPage, keyword, currentFolderId, typeFilter])
+		fetchPage(keyword, currentFolderId, typeFilter, sortValue, 1, false)
+	}, [fetchPage, keyword, currentFolderId, typeFilter, sortValue])
 
 	useEffect(() => {
 		pageRef.current = 1
-		fetchPage(keyword, currentFolderId, typeFilter, 1, false)
-	}, [keyword, currentFolderId, typeFilter, fetchPage])
+		fetchPage(keyword, currentFolderId, typeFilter, sortValue, 1, false)
+	}, [keyword, currentFolderId, typeFilter, sortValue, fetchPage])
 
 	const handleSearchChange = (value: string) => {
 		setSearch(value)
@@ -110,8 +132,8 @@ export function useFileList() {
 		if (loadingMoreRef.current || !hasMoreRef.current) return
 		const next = pageRef.current + 1
 		pageRef.current = next
-		fetchPage(keyword, currentFolderId, typeFilter, next, true)
-	}, [fetchPage, keyword, currentFolderId, typeFilter])
+		fetchPage(keyword, currentFolderId, typeFilter, sortValue, next, true)
+	}, [fetchPage, keyword, currentFolderId, typeFilter, sortValue])
 
 	useEffect(() => {
 		const el = sentinelRef.current
@@ -137,9 +159,11 @@ export function useFileList() {
 		search,
 		keyword,
 		typeFilter,
+		sortValue,
 		currentFolderId,
 		sentinelRef,
 		setTypeFilter,
+		setSortValue,
 		setCurrentFolderId,
 		handleSearchChange,
 		refresh,

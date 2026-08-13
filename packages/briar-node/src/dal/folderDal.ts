@@ -56,6 +56,15 @@ export const folderDal = {
 		return rows.map(mapRow)
 	},
 
+	/** 各文件夹的直接文件数（不含子文件夹；folder_id -> count） */
+	async countFilesByFolder(userId: string): Promise<Map<string, number>> {
+		const rows = await query<{ folder_id: string; cnt: number | string }>(
+			'SELECT folder_id, COUNT(*) AS cnt FROM files WHERE user_id = ? AND deleted_at IS NULL AND folder_id IS NOT NULL GROUP BY folder_id',
+			[userId],
+		)
+		return new Map(rows.map((r) => [r.folder_id, Number(r.cnt)]))
+	},
+
 	async rename(id: string, userId: string, name: string): Promise<boolean> {
 		const result = await execute('UPDATE folders SET name = ? WHERE id = ? AND user_id = ?', [
 			name,

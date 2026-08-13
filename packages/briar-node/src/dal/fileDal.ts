@@ -3,6 +3,15 @@ import { execute, query, queryOne } from '../lib/db'
 
 export type FileType = 'image' | 'video' | 'text' | 'other'
 
+export type FileSortField = 'createdAt' | 'name' | 'size'
+
+/** 排序字段白名单（防注入，仅允许映射内的列） */
+const SORT_COLUMNS: Record<FileSortField, string> = {
+	createdAt: 'created_at',
+	name: 'original_name',
+	size: 'size',
+}
+
 export interface FileRecord {
 	id: string
 	userId: string
@@ -149,6 +158,8 @@ export const fileDal = {
 			keyword?: string
 			folderId?: string | null
 			type?: FileType
+			sort?: FileSortField
+			order?: 'asc' | 'desc'
 		},
 	): Promise<{ items: FileRecord[]; total: number }> {
 		const conditions = ['user_id = ?', 'deleted_at IS NULL']
@@ -179,8 +190,10 @@ export const fileDal = {
 		const total = countRow?.cnt ?? 0
 
 		const offset = (params.page - 1) * params.pageSize
+		const sortColumn = SORT_COLUMNS[params.sort ?? 'createdAt'] ?? SORT_COLUMNS.createdAt
+		const sortOrder = params.order === 'asc' ? 'ASC' : 'DESC'
 		const rows = await query<FileRow>(
-			`SELECT * FROM files ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+			`SELECT * FROM files ${where} ORDER BY ${sortColumn} ${sortOrder}, id ASC LIMIT ? OFFSET ?`,
 			[...values, params.pageSize, offset],
 		)
 

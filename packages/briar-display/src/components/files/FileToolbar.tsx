@@ -10,11 +10,19 @@ import {
 	DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { FolderPlus, Search, Trash2 } from 'lucide-react'
+import { ArrowDownUp, FolderPlus, Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import UploadDialog from './UploadDialog'
+import type { FileSortValue } from './useFileList'
 
 const TYPE_TABS: { value: '' | FileTypeFilter; label: string }[] = [
 	{ value: '', label: '全部' },
@@ -24,11 +32,22 @@ const TYPE_TABS: { value: '' | FileTypeFilter; label: string }[] = [
 	{ value: 'other', label: '其他' },
 ]
 
+const SORT_OPTIONS: { value: FileSortValue; label: string }[] = [
+	{ value: 'createdAt-desc', label: '最新上传' },
+	{ value: 'createdAt-asc', label: '最早上传' },
+	{ value: 'name-asc', label: '名称 A → Z' },
+	{ value: 'name-desc', label: '名称 Z → A' },
+	{ value: 'size-desc', label: '体积从大到小' },
+	{ value: 'size-asc', label: '体积从小到大' },
+]
+
 interface FileToolbarProps {
 	search: string
 	onSearchChange: (value: string) => void
 	typeFilter: '' | FileTypeFilter
 	onTypeFilterChange: (value: '' | FileTypeFilter) => void
+	sortValue: FileSortValue
+	onSortChange: (value: FileSortValue) => void
 	selectedCount: number
 	onBulkDelete: () => void
 	currentFolderId: string | null
@@ -36,12 +55,14 @@ interface FileToolbarProps {
 	onUploaded: () => void
 }
 
-/** 工具栏：搜索、类型筛选、批量删除、新建文件夹、上传 */
+/** 工具栏：搜索、类型筛选、排序、批量删除、新建文件夹、上传 */
 export default function FileToolbar({
 	search,
 	onSearchChange,
 	typeFilter,
 	onTypeFilterChange,
+	sortValue,
+	onSortChange,
 	selectedCount,
 	onBulkDelete,
 	currentFolderId,
@@ -101,6 +122,19 @@ export default function FileToolbar({
 						删除 ({selectedCount})
 					</Button>
 				)}
+				<Select value={sortValue} onValueChange={(v) => onSortChange(v as FileSortValue)}>
+					<SelectTrigger className="h-9 w-auto gap-1.5 text-xs">
+						<ArrowDownUp className="h-4 w-4 text-muted-foreground" />
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent align="end">
+						{SORT_OPTIONS.map((o) => (
+							<SelectItem key={o.value} value={o.value}>
+								{o.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 				<Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
 					<DialogTrigger asChild>
 						<Button variant="outline" size="sm" className="gap-1.5">
