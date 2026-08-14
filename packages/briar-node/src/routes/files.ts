@@ -458,12 +458,28 @@ fileRoutes.get('/:id/content', async (c) => {
 	}
 })
 
-/** PATCH /:id — 移动文件夹 */
+/** PATCH /:id — 移动文件夹（folderId）或重命名（name） */
 fileRoutes.patch('/:id', async (c) => {
 	const user = requireUser(c)
 	if (!user) return unauthorized(c)
 
-	const body = await c.req.json<{ folderId?: string | null }>()
+	const body = await c.req.json<{ folderId?: string | null; name?: string }>()
+
+	if (body.name !== undefined) {
+		const name = body.name.trim()
+		if (!name || name.length > 255 || name.includes('/') || name.includes('\\')) {
+			return c.json<ApiResponse>(
+				{ success: false, message: '文件名不合法' },
+				HTTP_STATUS.BAD_REQUEST,
+			)
+		}
+		const ok = await fileDal.rename(c.req.param('id'), user.id, name)
+		if (!ok) {
+			return c.json<ApiResponse>({ success: false, message: '文件不存在' }, HTTP_STATUS.NOT_FOUND)
+		}
+		return c.json<ApiResponse>({ success: true, message: '重命名成功' })
+	}
+
 	const folder = await validateFolder(user.id, body.folderId)
 	if (folder === undefined) {
 		return c.json<ApiResponse>({ success: false, message: '文件夹不存在' }, HTTP_STATUS.BAD_REQUEST)

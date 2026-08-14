@@ -8,6 +8,8 @@ import {
 	deleteFolder,
 	getFolders,
 	moveFile,
+	renameFile,
+	renameFolder,
 } from '@/api/files'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
@@ -28,7 +30,7 @@ import { toast } from 'sonner'
 import FileBreadcrumb from './FileBreadcrumb'
 import FileContextMenu, { type ContextMenuItem } from './FileContextMenu'
 import FileDetailModal from './FileDetailModal'
-import { ConfirmDialog, type ConfirmState, MoveFileDialog, RenameFolderDialog } from './FileDialogs'
+import { ConfirmDialog, type ConfirmState, MoveFileDialog, RenameDialog } from './FileDialogs'
 import FileGrid from './FileGrid'
 import FileManagerLayout from './FileManagerLayout'
 import FileToolbar from './FileToolbar'
@@ -92,6 +94,7 @@ function FileManagerPageInner() {
 	const [selected, setSelected] = useState<Set<string>>(new Set())
 	const [detailFile, setDetailFile] = useState<FileItem | null>(null)
 	const [renameTarget, setRenameTarget] = useState<FolderItem | null>(null)
+	const [renameFileTarget, setRenameFileTarget] = useState<FileItem | null>(null)
 	const [confirmState, setConfirmState] = useState<ConfirmState | null>(null)
 	const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
 	const [moveTarget, setMoveTarget] = useState<FileItem | null>(null)
@@ -346,6 +349,11 @@ function FileManagerPageInner() {
 					onClick: () => downloadFile(contextMenu.file!),
 				},
 				{
+					label: '重命名',
+					icon: <Pencil className="h-4 w-4" />,
+					onClick: () => setRenameFileTarget(contextMenu.file!),
+				},
+				{
 					label: '移动到...',
 					icon: <FolderInput className="h-4 w-4" />,
 					onClick: () => setMoveTarget(contextMenu.file!),
@@ -480,10 +488,22 @@ function FileManagerPageInner() {
 				/>
 			)}
 
-			<RenameFolderDialog
+			<RenameDialog
+				title="重命名文件夹"
 				target={renameTarget}
+				onSubmit={renameFolder}
 				onClose={() => setRenameTarget(null)}
 				onRenamed={refreshFolders}
+			/>
+
+			<RenameDialog
+				title="重命名文件"
+				target={
+					renameFileTarget ? { id: renameFileTarget.id, name: renameFileTarget.originalName } : null
+				}
+				onSubmit={renameFile}
+				onClose={() => setRenameFileTarget(null)}
+				onRenamed={refreshAll}
 			/>
 
 			<ConfirmDialog confirm={confirmState} onClose={() => setConfirmState(null)} />

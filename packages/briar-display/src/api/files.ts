@@ -326,6 +326,11 @@ export const moveFile = async (id: string, folderId: string | null) => {
 	return response.data
 }
 
+export const renameFile = async (id: string, name: string) => {
+	const response = await apiClient.patch<ApiResponse>(`/files/${id}`, { name })
+	return response.data
+}
+
 export const deleteFile = async (id: string) => {
 	const response = await apiClient.delete<ApiResponse>(`/files/${id}`)
 	return response.data

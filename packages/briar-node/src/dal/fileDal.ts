@@ -208,6 +208,14 @@ export const fileDal = {
 		return result.affectedRows > 0
 	},
 
+	async rename(id: string, userId: string, name: string): Promise<boolean> {
+		const result = await execute(
+			'UPDATE files SET original_name = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+			[name, id, userId],
+		)
+		return result.affectedRows > 0
+	},
+
 	async softDelete(id: string, userId: string): Promise<boolean> {
 		const result = await execute(
 			'UPDATE files SET deleted_at = NOW() WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
