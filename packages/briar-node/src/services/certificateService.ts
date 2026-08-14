@@ -418,10 +418,20 @@ export const certificateService = {
 			execSync(`git commit -m "chore: update SSL certificates for ${domain} [skip ci]"`, {
 				cwd: assetsDir,
 			})
-			// 子模块通常是 detached HEAD 且落后于远端，
-			// 先 rebase 到 origin/main 再推当前 HEAD，避免 non-fast-forward 被拒绝
+			// 子模块通常是 detached HEAD 且落后于远端：
+			// 先本地提交，再 merge 远端最新（-X ours：同一证书文件冲突时以本次新签发的为准），
+			// 不用 rebase——rebase 冲突会中途卡死，残留带冲突标记的文件流入后续部署步骤
 			execSync('git fetch origin', { cwd: assetsDir })
-			execSync('git rebase origin/main', { cwd: assetsDir })
+			try {
+				execSync('git merge --no-edit -X ours origin/main', { cwd: assetsDir })
+			} catch (mergeError) {
+				try {
+					execSync('git merge --abort', { cwd: assetsDir })
+				} catch {
+					// 无 merge 现场可清理（如 merge 未开始即失败）
+				}
+				throw mergeError
+			}
 			execSync('git push origin HEAD:main', { cwd: assetsDir })
 			console.log('✅ briar-assets 已提交并推送')
 		} catch (error) {
@@ -452,9 +462,19 @@ export const certificateService = {
 			execSync('git commit -m "chore: update briar-assets submodule (certificates) [skip ci]"', {
 				cwd: repoRoot,
 			})
-			// 先 rebase 到远端最新再推，避免本地落后导致 non-fast-forward
+			// 先本地提交，再 merge 远端最新（-X ours：gitlink 冲突以本次更新为准），
+			// 不用 rebase——rebase 冲突会中途卡死残留现场
 			execSync('git fetch origin', { cwd: repoRoot })
-			execSync('git rebase origin/master', { cwd: repoRoot })
+			try {
+				execSync('git merge --no-edit -X ours origin/master', { cwd: repoRoot })
+			} catch (mergeError) {
+				try {
+					execSync('git merge --abort', { cwd: repoRoot })
+				} catch {
+					// 无 merge 现场可清理（如 merge 未开始即失败）
+				}
+				throw mergeError
+			}
 			execSync('git push origin HEAD:master', { cwd: repoRoot })
 			console.log('✅ 主仓库子模块已更新')
 		} catch (error) {
@@ -474,12 +494,21 @@ export const certificateService = {
 		console.log('\n🚀 部署 Nginx 配置...')
 
 		try {
-			execSync('./scripts/deploy-nginx.sh', { cwd: repoRoot, stdio: 'inherit' })
+			// 捕获脚本输出再落日志：Bree worker 里 stdio:'inherit' 的输出会丢失，
+			// 失败时只剩一句 "Command failed"，无法定位脚本内具体失败步骤
+			const output = execSync('./scripts/deploy-nginx.sh', { cwd: repoRoot, encoding: 'utf-8' })
+			if (output.trim()) console.log(output.trim())
 			console.log('✅ Nginx 已重载')
 		} catch (error) {
-			const msg = error instanceof Error ? error.message : String(error)
+			const e = error as { stdout?: string; stderr?: string; message?: string }
+			if (e.stdout?.trim()) console.error(`deploy-nginx stdout:\n${e.stdout.trim()}`)
+			if (e.stderr?.trim()) console.error(`deploy-nginx stderr:\n${e.stderr.trim()}`)
+			// 把脚本末尾输出拼进错误信息，随运行记录落库，管理后台可直接看到失败原因
+			const lines = (e.stderr || e.stdout || '').trim().split('\n').filter(Boolean)
+			const detail = lines.slice(-2).join(' | ')
+			const msg = detail ? `${e.message}: ${detail}` : e.message || String(error)
 			console.error('❌ Nginx 部署失败:', msg)
-			throw error
+			throw new Error(msg)
 		}
 	},
 
