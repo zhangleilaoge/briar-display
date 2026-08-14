@@ -117,7 +117,9 @@ export default function FileGrid({
 						<p className="truncate text-xs font-medium" title={folder.name}>
 							{folder.name}
 						</p>
-						<p className="text-[11px] text-muted-foreground">文件夹</p>
+						<p className="text-[11px] text-muted-foreground">
+							{(folder.fileCount ?? 0) > 0 ? `${folder.fileCount} 个文件` : '空文件夹'}
+						</p>
 					</div>
 				</div>
 			))}

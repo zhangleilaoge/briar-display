@@ -62,16 +62,28 @@ for arg in "$@"; do
 done
 
 # 工具函数
+
+# 行级部署进度文件：Admin 部署弹窗通过 /api/deployment/live 实时读取
+# （CI 与后端同机，首行 RUN <runId> 用于和 GitHub run 关联）
+PROGRESS_FILE="${DEPLOY_PROGRESS_FILE:-/tmp/briar-deploy-progress.log}"
+
+progress() {
+  echo "$(date '+%H:%M:%S') $1" >> "$PROGRESS_FILE" 2>/dev/null || true
+}
+
 log_info() {
   echo -e "${GREEN}[INFO]${NC} $1"
+  progress "$1"
 }
 
 log_warn() {
   echo -e "${YELLOW}[WARN]${NC} $1"
+  progress "WARN: $1"
 }
 
 log_error() {
   echo -e "${RED}[ERROR]${NC} $1"
+  progress "ERROR: $1"
 }
 
 # 检查命令是否存在
@@ -187,6 +199,10 @@ run_migrate() {
 
 # 主流程
 main() {
+  # 清空并初始化进度文件（首行标记 runId，供后端关联 GitHub run）
+  : > "$PROGRESS_FILE" 2>/dev/null || true
+  progress "RUN ${DEPLOY_RUN_ID:--}"
+
   log_info "开始部署 $PROJECT_NAME..."
   
   # 检查必要命令

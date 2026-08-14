@@ -2,7 +2,7 @@ import type { ApiResponse } from '@briar/shared'
 import { HTTP_STATUS } from '@briar/shared'
 import { generateId } from '@briar/shared'
 import { type Context, Hono } from 'hono'
-import { type FileType, fileDal, isTextLike } from '../dal/fileDal'
+import { type FileSortField, type FileType, fileDal, isTextLike } from '../dal/fileDal'
 import { folderDal } from '../dal/folderDal'
 import { cosService } from '../services/cosService'
 import { permissionService } from '../services/permissionService'
@@ -263,13 +263,19 @@ fileRoutes.get('/stats', async (c) => {
 	})
 })
 
-/** GET /folders — 当前用户全部文件夹（前端拼树/面包屑） */
+/** GET /folders — 当前用户全部文件夹（前端拼树/面包屑），fileCount 为直接文件数（不含子文件夹） */
 fileRoutes.get('/folders', async (c) => {
 	const user = requireUser(c)
 	if (!user) return unauthorized(c)
 
-	const folders = await folderDal.listByUser(user.id)
-	return c.json<ApiResponse>({ success: true, data: folders })
+	const [folders, fileCounts] = await Promise.all([
+		folderDal.listByUser(user.id),
+		folderDal.countFilesByFolder(user.id),
+	])
+	return c.json<ApiResponse>({
+		success: true,
+		data: folders.map((f) => ({ ...f, fileCount: fileCounts.get(f.id) ?? 0 })),
+	})
 })
 
 /** POST /folders — 新建文件夹 */
@@ -364,6 +370,11 @@ fileRoutes.get('/', async (c) => {
 	const type = ['image', 'video', 'text', 'other'].includes(typeParam || '')
 		? (typeParam as FileType)
 		: undefined
+	const sortParam = c.req.query('sort') || undefined
+	const sort = ['createdAt', 'name', 'size'].includes(sortParam || '')
+		? (sortParam as FileSortField)
+		: undefined
+	const order = c.req.query('order') === 'asc' ? ('asc' as const) : undefined
 
 	const { items, total } = await fileDal.listByUser(user.id, {
 		page,
@@ -371,6 +382,8 @@ fileRoutes.get('/', async (c) => {
 		keyword,
 		folderId,
 		type,
+		sort,
+		order,
 	})
 
 	return c.json<ApiResponse>({

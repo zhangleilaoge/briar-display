@@ -45,6 +45,44 @@ deploymentRoutes.get(
 )
 
 /**
+ * 某次部署的步骤级实时进度（运行中即可用，解决日志接口进行中 404 的问题）
+ */
+deploymentRoutes.get(
+	'/:runId/progress',
+	requirePermission(PERMISSIONS.ADMIN_DEPLOY_MANAGE),
+	async (c) => {
+		try {
+			const progress = await deploymentService.getRunProgress(c.req.param('runId'))
+			return c.json({
+				success: true,
+				data: progress,
+				code: HTTP_STATUS.OK,
+			})
+		} catch (error) {
+			return c.json(
+				{
+					success: false,
+					message: error instanceof Error ? error.message : String(error),
+					code: HTTP_STATUS.BAD_REQUEST,
+				},
+				HTTP_STATUS.BAD_REQUEST,
+			)
+		}
+	},
+)
+
+/**
+ * 服务器端 deploy.sh 的行级实时进度（读服务器本地进度文件）
+ */
+deploymentRoutes.get('/live', requirePermission(PERMISSIONS.ADMIN_DEPLOY_MANAGE), async (c) => {
+	return c.json({
+		success: true,
+		data: deploymentService.getLiveProgress(),
+		code: HTTP_STATUS.OK,
+	})
+})
+
+/**
  * 触发远程 Nginx 配置部署
  */
 deploymentRoutes.post(

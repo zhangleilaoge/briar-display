@@ -1,12 +1,19 @@
 'use client'
 
-import { type DeployRunLogs, getDeployLogs } from '@/api/deploy'
+import {
+	type DeployRunLogs,
+	type DeployRunProgress,
+	getDeployLive,
+	getDeployLogs,
+	getDeployProgress,
+} from '@/api/deploy'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import Ansi from 'ansi-to-react'
 import axios from 'axios'
 import { Check, Copy, Loader2, Maximize2, Minimize2, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import DeployProgressView from './DeployProgressView'
 
 interface DeployLogDialogProps {
 	runId: string | null
@@ -22,6 +29,8 @@ const POLL_INTERVAL = 5000
  */
 export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLogDialogProps) {
 	const [data, setData] = useState<DeployRunLogs | null>(null)
+	const [progress, setProgress] = useState<DeployRunProgress | null>(null)
+	const [liveLines, setLiveLines] = useState<string[] | null>(null)
 	const [error, setError] = useState<string | null>(null)
 	const [loading, setLoading] = useState(false)
 	const [fullscreen, setFullscreen] = useState(false)
@@ -39,6 +48,11 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 		setTimeout(() => setCopied(false), 2000)
 	}
 
+	/** 从 axios 错误里提取后端给的具体原因（如 GitHub 401/404） */
+	const extractError = (e: unknown, fallback: string) =>
+		(axios.isAxiosError(e) ? e.response?.data?.message : undefined) ||
+		(e instanceof Error ? e.message : fallback)
+
 	const fetchLogs = useCallback(async () => {
 		if (!runId || !openRef.current) return
 		try {
@@ -50,43 +64,97 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 				setError(res.message || '日志拉取失败')
 			}
 		} catch (e) {
-			// 后端 400 响应里带了具体原因（如 GitHub 401/404），优先展示
-			const serverMessage = axios.isAxiosError(e) ? e.response?.data?.message : undefined
-			setError(serverMessage || (e instanceof Error ? e.message : '日志拉取失败'))
+			setError(extractError(e, '日志拉取失败'))
 		} finally {
 			setLoading(false)
 		}
 	}, [runId])
 
-	// 同步 open 到 ref（声明顺序先于下方 fetchLogs 相关 effect，保证首次加载时已是 true）
+	/** 步骤级实时进度（运行中可用）；run 完成后顺带拉一次完整日志 */
+	const fetchProgress = useCallback(async () => {
+		if (!runId || !openRef.current) return
+		try {
+			const res = await getDeployProgress(runId)
+			if (res.success && res.data) {
+				setProgress(res.data)
+				setError(null)
+				if (res.data.runStatus === 'completed') fetchLogs()
+			} else {
+				setError(res.message || '进度拉取失败')
+			}
+		} catch (e) {
+			setError(extractError(e, '进度拉取失败'))
+		} finally {
+			setLoading(false)
+		}
+	}, [runId, fetchLogs])
+
+	/** 服务器 deploy.sh 行级输出（仅当进度文件属于本次 run 才展示） */
+	const fetchLive = useCallback(async () => {
+		if (!runId || !openRef.current) return
+		try {
+			const res = await getDeployLive()
+			if (res.success && res.data?.available && res.data.runId === runId) {
+				setLiveLines(res.data.lines)
+			} else {
+				setLiveLines(null)
+			}
+		} catch {
+			/* 本地开发等场景没有进度文件，静默忽略 */
+		}
+	}, [runId])
+
+	const inProgress = progress != null && progress.runStatus !== 'completed'
+
+	const handleRefresh = () => {
+		setLoading(true)
+		if (inProgress || !data) {
+			fetchProgress()
+			fetchLive()
+		} else {
+			fetchLogs()
+		}
+	}
+
+	// 同步 open 到 ref（声明顺序先于下方 fetch 相关 effect，保证首次加载时已是 true）
 	// 关闭时清空数据，避免残留 in_progress 状态
 	useEffect(() => {
 		openRef.current = open
-		if (!open) setData(null)
+		if (!open) {
+			setData(null)
+			setProgress(null)
+			setLiveLines(null)
+		}
 	}, [open])
 
-	// 打开时首次加载
+	// 打开时首次加载（先拉进度：进行中可用且响应快；已完成时进度接口会顺带触发日志拉取）
 	useEffect(() => {
 		if (open && runId) {
 			setData(null)
+			setProgress(null)
+			setLiveLines(null)
 			setError(null)
 			setLoading(true)
-			fetchLogs()
+			fetchProgress()
+			fetchLive()
 		}
-	}, [open, runId, fetchLogs])
+	}, [open, runId, fetchProgress, fetchLive])
 
-	// 运行未完成时轮询
+	// 运行未完成时轮询进度 + 服务器行级输出
 	useEffect(() => {
-		if (!open || !data || data.runStatus === 'completed') return
-		const timer = setInterval(fetchLogs, POLL_INTERVAL)
+		if (!open || !inProgress) return
+		const timer = setInterval(() => {
+			fetchProgress()
+			fetchLive()
+		}, POLL_INTERVAL)
 		return () => clearInterval(timer)
-	}, [open, data, fetchLogs])
+	}, [open, inProgress, fetchProgress, fetchLive])
 
-	// 新日志到底时自动滚动到底部
+	// 新内容到底时自动滚动到底部
 	useEffect(() => {
 		const el = bodyRef.current
 		if (el) el.scrollTop = el.scrollHeight
-	}, [data?.logs])
+	}, [data?.logs, liveLines])
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -111,17 +179,19 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 						github-actions — run #{runId}
 					</DialogTitle>
 					<div className="ml-auto flex items-center gap-2">
-						{data && (
+						{(data ?? progress) && (
 							<span
 								className={`rounded px-1.5 py-0.5 font-mono text-[10px] ${
-									data.runStatus === 'completed'
-										? data.conclusion === 'success'
+									(data ?? progress)!.runStatus === 'completed'
+										? (data ?? progress)!.conclusion === 'success'
 											? 'bg-green-500/15 text-green-400'
 											: 'bg-red-500/15 text-red-400'
 										: 'bg-blue-500/15 text-blue-400'
 								}`}
 							>
-								{data.runStatus === 'completed' ? (data.conclusion ?? 'completed') : data.runStatus}
+								{(data ?? progress)!.runStatus === 'completed'
+									? ((data ?? progress)!.conclusion ?? 'completed')
+									: (data ?? progress)!.runStatus}
 							</span>
 						)}
 						<button
@@ -139,12 +209,9 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 						</button>
 						<button
 							type="button"
-							onClick={() => {
-								setLoading(true)
-								fetchLogs()
-							}}
+							onClick={handleRefresh}
 							className="text-zinc-500 transition-colors hover:text-zinc-200"
-							title="刷新日志"
+							title="刷新"
 						>
 							<RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
 						</button>
@@ -171,22 +238,24 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 						fullscreen ? 'min-h-0 flex-1' : 'h-[65vh]',
 					)}
 				>
-					{loading && !data ? (
+					{loading && !progress && !data ? (
 						<div className="flex items-center gap-2 text-zinc-500">
 							<Loader2 className="h-4 w-4 animate-spin" />
-							正在拉取日志...
+							正在拉取部署状态...
 						</div>
-					) : error ? (
-						<p className="text-red-400">$ fetch logs → error: {error}</p>
+					) : error && !progress && !data ? (
+						<p className="text-red-400">$ fetch status → error: {error}</p>
+					) : inProgress && progress ? (
+						<>
+							<DeployProgressView progress={progress} liveLines={liveLines} />
+							<p className="mt-3 animate-pulse text-blue-400">▊ 部署进行中，每 5s 自动刷新...</p>
+						</>
 					) : data ? (
 						// whitespace-pre 保持等宽对齐（如 PM2 表格），长行横向滚动而非折行错位
 						<pre className="whitespace-pre">
 							<Ansi linkify={false}>{data.logs}</Ansi>
 						</pre>
 					) : null}
-					{data && data.runStatus !== 'completed' && (
-						<p className="mt-2 animate-pulse text-blue-400">▊ 部署进行中，每 5s 自动刷新...</p>
-					)}
 				</div>
 			</DialogContent>
 		</Dialog>

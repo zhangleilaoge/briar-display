@@ -22,7 +22,7 @@ import {
 	Pencil,
 	Trash2,
 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import FileBreadcrumb from './FileBreadcrumb'
 import FileContextMenu, { type ContextMenuItem } from './FileContextMenu'
@@ -31,7 +31,7 @@ import { ConfirmDialog, type ConfirmState, MoveFileDialog, RenameFolderDialog } 
 import FileGrid from './FileGrid'
 import FileManagerLayout from './FileManagerLayout'
 import FileToolbar from './FileToolbar'
-import { useFileList } from './useFileList'
+import { splitSort, useFileList } from './useFileList'
 
 interface ContextMenuState {
 	x: number
@@ -77,9 +77,11 @@ function FileManagerPageInner() {
 		search,
 		keyword,
 		typeFilter,
+		sortValue,
 		currentFolderId,
 		sentinelRef,
 		setTypeFilter,
+		setSortValue,
 		setCurrentFolderId,
 		handleSearchChange,
 		refresh,
@@ -107,6 +109,12 @@ function FileManagerPageInner() {
 		refreshFolders()
 	}, [refreshFolders])
 
+	/** 文件增删移动后同时刷新文件列表与文件夹计数 */
+	const refreshAll = useCallback(() => {
+		refresh()
+		refreshFolders()
+	}, [refresh, refreshFolders])
+
 	// URL 中的文件夹 id 失效（被删除或链接错误）时回退到根目录
 	useEffect(() => {
 		if (currentFolderId && folders.length > 0 && !folders.some((f) => f.id === currentFolderId)) {
@@ -125,8 +133,45 @@ function FileManagerPageInner() {
 	}
 
 	// 当前文件夹下的子文件夹（搜索或类型筛选时为扁平结果视图，隐藏文件夹）
-	const subFolders =
-		keyword || typeFilter ? [] : folders.filter((f) => (f.parentId ?? null) === currentFolderId)
+	// fileCount 从直接文件数替换为递归总数（含所有子孙文件夹内的文件）
+	const folderTotalCounts = useMemo(() => {
+		const childrenMap = new Map<string | null, FolderItem[]>()
+		for (const f of folders) {
+			const list = childrenMap.get(f.parentId ?? null) || []
+			list.push(f)
+			childrenMap.set(f.parentId ?? null, list)
+		}
+		const totals = new Map<string, number>()
+		const sum = (folder: FolderItem): number => {
+			const cached = totals.get(folder.id)
+			if (cached !== undefined) return cached
+			totals.set(folder.id, folder.fileCount ?? 0) // 先占位，防止意外成环时死循环
+			const total = (childrenMap.get(folder.id) || []).reduce(
+				(acc, child) => acc + sum(child),
+				folder.fileCount ?? 0,
+			)
+			totals.set(folder.id, total)
+			return total
+		}
+		for (const f of folders) sum(f)
+		return totals
+	}, [folders])
+
+	const subFolders = useMemo(() => {
+		if (keyword || typeFilter) return []
+		const { sort, order } = splitSort(sortValue)
+		const dir = order === 'asc' ? 1 : -1
+		return folders
+			.filter((f) => (f.parentId ?? null) === currentFolderId)
+			.map((f) => ({ ...f, fileCount: folderTotalCounts.get(f.id) ?? 0 }))
+			.sort((a, b) => {
+				// 文件夹跟随名称/创建时间排序；按文件大小排序时保持默认（创建时间正序）
+				if (sort === 'name') return dir * a.name.localeCompare(b.name, 'zh-Hans-CN')
+				if (sort === 'createdAt')
+					return dir * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+				return 0
+			})
+	}, [folders, keyword, typeFilter, currentFolderId, folderTotalCounts, sortValue])
 
 	// ========== 选择 ==========
 
@@ -160,7 +205,7 @@ function FileManagerPageInner() {
 				}
 				toast.success('删除成功')
 				setSelected(new Set())
-				refresh()
+				refreshAll()
 			},
 		})
 	}
@@ -177,7 +222,7 @@ function FileManagerPageInner() {
 					toast.error('删除失败')
 				}
 				onDeleted?.()
-				refresh()
+				refreshAll()
 			},
 		})
 	}
@@ -215,7 +260,7 @@ function FileManagerPageInner() {
 		} catch {
 			toast.error('移动失败')
 		}
-		refresh()
+		refreshAll()
 	}
 
 	// ========== 拖拽文件进文件夹 ==========
@@ -336,11 +381,13 @@ function FileManagerPageInner() {
 					onSearchChange={handleSearchChange}
 					typeFilter={typeFilter}
 					onTypeFilterChange={setTypeFilter}
+					sortValue={sortValue}
+					onSortChange={setSortValue}
 					selectedCount={selected.size}
 					onBulkDelete={handleBulkDelete}
 					currentFolderId={currentFolderId}
 					onFolderCreated={refreshFolders}
-					onUploaded={refresh}
+					onUploaded={refreshAll}
 				/>
 
 				{/* 文件夹路径面包屑 */}
@@ -429,7 +476,7 @@ function FileManagerPageInner() {
 				file={moveTarget}
 				folders={folders}
 				onClose={() => setMoveTarget(null)}
-				onMoved={refresh}
+				onMoved={refreshAll}
 			/>
 		</FileManagerLayout>
 	)
