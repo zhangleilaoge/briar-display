@@ -123,7 +123,7 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 									src={file.cdnUrl}
 									alt={file.originalName}
 									title="点击全屏预览"
-									className="max-h-[50vh] max-w-full cursor-pointer object-contain"
+									className="max-h-[50vh] max-w-full cursor-zoom-in object-contain"
 									onClick={() => setPreviewOpen(true)}
 								/>
 							</div>
