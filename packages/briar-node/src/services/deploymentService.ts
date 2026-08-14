@@ -18,6 +18,35 @@ export interface DeployRunLogs {
 	logs: string
 }
 
+export interface DeployStepInfo {
+	name: string
+	number: number
+	status: string
+	conclusion: string | null
+	startedAt: string | null
+	completedAt: string | null
+}
+
+export interface DeployJobProgress {
+	name: string
+	status: string
+	conclusion: string | null
+	steps: DeployStepInfo[]
+}
+
+export interface DeployRunProgress {
+	runId: string
+	runStatus: string
+	conclusion: string | null
+	jobs: DeployJobProgress[]
+}
+
+export interface DeployLiveProgress {
+	available: boolean
+	runId: string | null
+	lines: string[]
+}
+
 const GITHUB_API = 'https://api.github.com'
 
 const resolveGithubRepo = () => process.env.BRIAR_GITHUB_REPO || 'zhangleilaoge/briar-display'
@@ -230,6 +259,55 @@ export const deploymentService = {
 	},
 
 	/**
+	 * 某次运行的步骤级实时进度（jobs API 在运行中即可用，日志接口只能完成后拉取）
+	 */
+	async getRunProgress(runId: string): Promise<DeployRunProgress> {
+		if (!/^\d+$/.test(runId)) {
+			throw new Error(`非法的 runId: ${runId}`)
+		}
+
+		const candidates = resolveGithubTokenCandidates()
+		if (candidates.length === 0) {
+			throw new Error(
+				'未找到 GitHub token（BRIAR_GITHUB_TOKEN 或 briar-assets/github/.env），无法拉取 CI 进度',
+			)
+		}
+
+		let lastError: Error | null = null
+		for (const { token, source } of candidates) {
+			try {
+				return await fetchRunProgressWithToken(runId, token)
+			} catch (error) {
+				lastError = error instanceof Error ? error : new Error(String(error))
+				console.warn(`⚠️  token 来源 ${source} 拉取进度失败: ${lastError.message}`)
+			}
+		}
+		throw new Error(
+			`${lastError?.message ?? '未知错误'}（已尝试 ${candidates.length} 个 token 来源均失败）`,
+		)
+	},
+
+	/**
+	 * 服务器端 deploy.sh 的行级实时进度（CI 与后端同机，进度文件写在服务器本地）
+	 * 进度文件格式：首行 `RUN <runId>`，之后每行 `HH:MM:SS 消息`
+	 */
+	getLiveProgress(): DeployLiveProgress {
+		const file = process.env.DEPLOY_PROGRESS_FILE || '/tmp/briar-deploy-progress.log'
+		try {
+			const content = fs.readFileSync(file, 'utf-8')
+			const lines = content.split('\n').filter((l) => l.length > 0)
+			const runMatch = lines[0]?.match(/^RUN (\d+)/)
+			return {
+				available: true,
+				runId: runMatch?.[1] ?? null,
+				lines: lines.slice(-200),
+			}
+		} catch {
+			return { available: false, runId: null, lines: [] }
+		}
+	},
+
+	/**
 	 * 拉取 GitHub Actions 某次运行的全部 job 日志（拼接为单文本）
 	 * 依次尝试所有可用的 token 来源，全部失败才报错
 	 */
@@ -305,6 +383,63 @@ const fetchRecentRuns = async (token: string, limit: number): Promise<DeployHist
 		at: run.created_at,
 		run: String(run.id),
 	}))
+}
+
+/** 用指定 token 拉取 run 状态 + job 步骤进度（steps 在运行中即可用） */
+const fetchRunProgressWithToken = async (
+	runId: string,
+	token: string,
+): Promise<DeployRunProgress> => {
+	const repo = resolveGithubRepo()
+	const headers = githubHeaders(token)
+
+	const runRes = await fetch(`${GITHUB_API}/repos/${repo}/actions/runs/${runId}`, { headers })
+	if (!runRes.ok) {
+		throw new Error(`查询 workflow run 失败: HTTP ${runRes.status}`)
+	}
+	const run = (await runRes.json()) as { status: string; conclusion: string | null }
+
+	const jobsRes = await fetch(
+		`${GITHUB_API}/repos/${repo}/actions/runs/${runId}/jobs?per_page=100`,
+		{ headers },
+	)
+	if (!jobsRes.ok) {
+		throw new Error(`查询 jobs 失败: HTTP ${jobsRes.status}`)
+	}
+	const { jobs } = (await jobsRes.json()) as {
+		jobs: Array<{
+			name: string
+			status: string
+			conclusion: string | null
+			steps: Array<{
+				name: string
+				number: number
+				status: string
+				conclusion: string | null
+				started_at: string | null
+				completed_at: string | null
+			}>
+		}>
+	}
+
+	return {
+		runId,
+		runStatus: run.status,
+		conclusion: run.conclusion,
+		jobs: jobs.map((job) => ({
+			name: job.name,
+			status: job.status,
+			conclusion: job.conclusion,
+			steps: (job.steps ?? []).map((s) => ({
+				name: s.name,
+				number: s.number,
+				status: s.status,
+				conclusion: s.conclusion,
+				startedAt: s.started_at,
+				completedAt: s.completed_at,
+			})),
+		})),
+	}
 }
 
 /** 用指定 token 拉取 run 状态 + 全部 job 日志 */
