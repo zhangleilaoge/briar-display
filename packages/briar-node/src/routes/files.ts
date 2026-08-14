@@ -263,18 +263,23 @@ fileRoutes.get('/stats', async (c) => {
 	})
 })
 
-/** GET /folders — 当前用户全部文件夹（前端拼树/面包屑），fileCount 为直接文件数（不含子文件夹） */
+/** GET /folders — 当前用户全部文件夹（前端拼树/面包屑），fileCount 为直接文件数（不含子文件夹），previews 为直接图片/视频预览图（最多 3 张） */
 fileRoutes.get('/folders', async (c) => {
 	const user = requireUser(c)
 	if (!user) return unauthorized(c)
 
-	const [folders, fileCounts] = await Promise.all([
+	const [folders, fileCounts, previewMap] = await Promise.all([
 		folderDal.listByUser(user.id),
 		folderDal.countFilesByFolder(user.id),
+		folderDal.previewUrlsByFolder(user.id),
 	])
 	return c.json<ApiResponse>({
 		success: true,
-		data: folders.map((f) => ({ ...f, fileCount: fileCounts.get(f.id) ?? 0 })),
+		data: folders.map((f) => ({
+			...f,
+			fileCount: fileCounts.get(f.id) ?? 0,
+			previews: previewMap.get(f.id) ?? [],
+		})),
 	})
 })
 
