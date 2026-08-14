@@ -263,7 +263,7 @@ fileRoutes.get('/stats', async (c) => {
 	})
 })
 
-/** GET /folders — 当前用户全部文件夹（前端拼树/面包屑），fileCount 为直接文件数（不含子文件夹），previews 为直接图片/视频预览图（最多 3 张） */
+/** GET /folders — 当前用户全部文件夹（前端拼树/面包屑），fileCount 为直接文件数（不含子文件夹），previews 为直接图片/视频预览（最多 3 张；isVideo=true 为无封面视频，前端用 video 首帧兜底） */
 fileRoutes.get('/folders', async (c) => {
 	const user = requireUser(c)
 	if (!user) return unauthorized(c)

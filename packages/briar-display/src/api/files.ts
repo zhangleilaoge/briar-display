@@ -18,6 +18,12 @@ export interface FileItem {
 	createdAt: string
 }
 
+/** 文件夹扇形预览项；isVideo=true 时 url 为无封面视频本身，用 <video preload="metadata"> 取首帧 */
+export interface FolderPreview {
+	url: string
+	isVideo: boolean
+}
+
 export interface FolderItem {
 	id: string
 	userId: string
@@ -26,8 +32,8 @@ export interface FolderItem {
 	createdAt: string
 	/** 直接文件数（不含子文件夹）；新建文件夹的响应里没有此字段 */
 	fileCount?: number
-	/** 文件夹内图片/视频的预览图 URL（直接文件，最多 3 张，新的在前） */
-	previews?: string[]
+	/** 文件夹内图片/视频的扇形预览（直接文件，最多 3 张，新的在前） */
+	previews?: FolderPreview[]
 }
 
 export interface FileStats {

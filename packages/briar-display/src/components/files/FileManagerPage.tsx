@@ -3,6 +3,7 @@
 import {
 	type FileItem,
 	type FolderItem,
+	type FolderPreview,
 	deleteFile,
 	deleteFolder,
 	getFolders,
@@ -168,19 +169,19 @@ function FileManagerPageInner() {
 			list.push(f)
 			childrenMap.set(f.parentId ?? null, list)
 		}
-		const previewCache = new Map<string, string[]>()
-		const collectPreviews = (folder: FolderItem): string[] => {
+		const previewCache = new Map<string, FolderPreview[]>()
+		const collectPreviews = (folder: FolderItem): FolderPreview[] => {
 			const cached = previewCache.get(folder.id)
 			if (cached) return cached
 			previewCache.set(folder.id, folder.previews ?? []) // 先占位，防止意外成环时死循环
-			const urls = [...(folder.previews ?? [])]
+			const items = [...(folder.previews ?? [])]
 			for (const child of childrenMap.get(folder.id) || []) {
-				for (const url of collectPreviews(child)) {
-					if (!urls.includes(url)) urls.push(url)
+				for (const item of collectPreviews(child)) {
+					if (!items.some((p) => p.url === item.url)) items.push(item)
 				}
 			}
-			previewCache.set(folder.id, urls)
-			return urls
+			previewCache.set(folder.id, items)
+			return items
 		}
 		return folders
 			.filter((f) => (f.parentId ?? null) === currentFolderId)
