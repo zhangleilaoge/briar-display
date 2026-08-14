@@ -1,6 +1,6 @@
 'use client'
 
-import { type FileItem, type FolderItem, moveFile, renameFolder } from '@/api/files'
+import { type FileItem, type FolderItem, moveFile } from '@/api/files'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -55,13 +55,17 @@ export function ConfirmDialog({
 	)
 }
 
-/** 重命名文件夹对话框 */
-export function RenameFolderDialog({
+/** 重命名对话框（文件夹/文件通用，target.name 为当前名称） */
+export function RenameDialog({
+	title,
 	target,
+	onSubmit,
 	onClose,
 	onRenamed,
 }: {
-	target: FolderItem | null
+	title: string
+	target: { id: string; name: string } | null
+	onSubmit: (id: string, name: string) => Promise<{ success: boolean; message?: string }>
 	onClose: () => void
 	onRenamed: () => void
 }) {
@@ -76,7 +80,7 @@ export function RenameFolderDialog({
 		const trimmed = name.trim()
 		if (!trimmed) return
 		try {
-			const res = await renameFolder(target.id, trimmed)
+			const res = await onSubmit(target.id, trimmed)
 			if (res.success) {
 				toast.success('重命名成功')
 				onClose()
@@ -93,7 +97,7 @@ export function RenameFolderDialog({
 		<Dialog open={!!target} onOpenChange={(open) => !open && onClose()}>
 			<DialogContent className="sm:max-w-sm">
 				<DialogHeader>
-					<DialogTitle>重命名文件夹</DialogTitle>
+					<DialogTitle>{title}</DialogTitle>
 				</DialogHeader>
 				<div className="space-y-3">
 					<Input
