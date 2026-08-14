@@ -59,3 +59,11 @@ export default function AdminXxxPage() {
 	)
 }
 ```
+
+## 8. 主仓库提交别把 briar-assets 子模块引用回退
+
+续期任务会把新证书提交到 briar-assets 并更新主仓库的子模块引用；但如果本地 briar-assets 检出停在旧 ref，`git add -A` / `git commit -a` 会把旧引用一起提交。下次部署 `git submodule update` 会把服务器子模块检出回旧 ref → **证书文件被删除** → 次日凌晨任务判定"证书不存在"重复申请（LE 同域名每周限 5 张），且 rebase 时与远端"both added"冲突，带冲突标记的证书会被 deploy-nginx.sh 拷进 `/etc/nginx` 导致 `nginx -t` 失败——此后任何 nginx reload/重启都会起不来。
+
+预防：推送主仓库前 `git submodule update` 保持本地子模块与远端一致；提交前检查 `git status` 里 briar-assets 的变更是否是预期的新 ref。
+
+另外本次事故暴露的两个流程问题已修复（2026-08-12）：`deployNginx()` 改为捕获脚本输出并拼进错误信息落库（之前 `stdio: 'inherit'` 在 Bree worker 里会丢输出，只剩 `Command failed`）；两处 git 同步由 rebase 改为 `merge -X ours`（冲突以本次新证书/gitlink 为准）+ 失败时 `merge --abort`，不再残留冲突现场。
