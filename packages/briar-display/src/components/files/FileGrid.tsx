@@ -1,11 +1,11 @@
 'use client'
 
-import type { FileItem, FolderItem } from '@/api/files'
+import type { FileItem, FolderItem, FolderPreview } from '@/api/files'
 import { Checkbox } from '@/components/ui/checkbox'
 import { FileIcon, FileText, Pencil, Play, Trash2 } from 'lucide-react'
 
-/** 文件夹外观：双色 SVG 文件夹；内部有图片/视频时前几张缩略图扇形露出 */
-function FolderVisual({ previews }: { previews: string[] }) {
+/** 文件夹外观：双色 SVG 文件夹；内部有图片/视频时前几张缩略图扇形露出（视频叠半透明播放图标） */
+function FolderVisual({ previews }: { previews: FolderPreview[] }) {
 	const thumbs = previews.slice(0, 3)
 	return (
 		<div className="relative h-24 w-28">
@@ -16,20 +16,38 @@ function FolderVisual({ previews }: { previews: string[] }) {
 					fill="#57A8F5"
 				/>
 			</svg>
-			{/* 扇形预览图（下半部被前板盖住，形成插在文件夹里的效果） */}
-			{thumbs.map((url, i) => {
+			{/* 扇形预览图（z-[1]：低于前板 z-[2]，下半部被前板盖住，形成插在文件夹里的效果） */}
+			{thumbs.map((item, i) => {
 				const offset = i - (thumbs.length - 1) / 2
+				const style = {
+					transform: `translateX(calc(-50% + ${offset * 14}px)) rotate(${offset * 10}deg)`,
+					transformOrigin: 'bottom center',
+				}
+				const cls =
+					'absolute bottom-9 left-1/2 z-[1] h-14 w-12 rounded-md border border-black/5 bg-white shadow-md'
+				if (item.isVideo) {
+					// 无封面视频：<video preload="metadata"> 取首帧；播放图标在视频之上，但随容器整体低于前板
+					return (
+						<div key={`${item.url}-${i}`} className={cls} style={style}>
+							<video
+								src={item.url}
+								muted
+								playsInline
+								preload="metadata"
+								className="h-full w-full rounded-md object-cover"
+							/>
+							<Play className="pointer-events-none absolute inset-0 m-auto h-4 w-4 fill-white/80 text-white/80 drop-shadow" />
+						</div>
+					)
+				}
 				return (
 					<img
-						key={`${url}-${i}`}
-						src={url}
+						key={`${item.url}-${i}`}
+						src={item.url}
 						alt=""
 						loading="lazy"
-						className="absolute bottom-9 left-1/2 z-[1] h-14 w-12 rounded-md border border-black/5 bg-white object-cover shadow-md"
-						style={{
-							transform: `translateX(calc(-50% + ${offset * 14}px)) rotate(${offset * 10}deg)`,
-							transformOrigin: 'bottom center',
-						}}
+						className={`${cls} object-cover`}
+						style={style}
 					/>
 				)
 			})}
