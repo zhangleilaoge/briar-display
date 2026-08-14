@@ -402,13 +402,8 @@ function FileManagerPageInner() {
 			{detailFile && (
 				<FileDetailModal
 					file={detailFile}
-					folders={folders}
 					onClose={() => setDetailFile(null)}
 					onDelete={() => confirmDeleteFile(detailFile, () => setDetailFile(null))}
-					onMoved={() => {
-						setDetailFile(null)
-						refresh()
-					}}
 				/>
 			)}
 

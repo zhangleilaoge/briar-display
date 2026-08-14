@@ -111,7 +111,7 @@ export default function FileGrid({
 							dropFolderId === folder.id ? 'border-primary bg-primary/10 shadow-md' : ''
 						}`}
 					>
-						<FolderIcon className="h-12 w-12 text-yellow-500" />
+						<FolderIcon className="h-24 w-24 text-yellow-500" fill="currentColor" />
 					</button>
 					<div className="mt-1">
 						<p className="truncate text-xs font-medium" title={folder.name}>
