@@ -65,6 +65,27 @@ export const folderDal = {
 		return new Map(rows.map((r) => [r.folder_id, Number(r.cnt)]))
 	},
 
+	/** 各文件夹的图片/视频预览图 URL（直接文件；每文件夹最多 perFolder 张，新的在前） */
+	async previewUrlsByFolder(userId: string, perFolder = 3): Promise<Map<string, string[]>> {
+		const rows = await query<{ folder_id: string; url: string }>(
+			`SELECT folder_id, COALESCE(thumbnail_url, cdn_url) AS url FROM files
+			 WHERE user_id = ? AND deleted_at IS NULL AND folder_id IS NOT NULL
+			   AND (mime_type LIKE 'image/%' OR (mime_type LIKE 'video/%' AND thumbnail_url IS NOT NULL))
+			 ORDER BY created_at DESC`,
+			[userId],
+		)
+		const map = new Map<string, string[]>()
+		for (const row of rows) {
+			const list = map.get(row.folder_id)
+			if (list) {
+				if (list.length < perFolder) list.push(row.url)
+			} else {
+				map.set(row.folder_id, [row.url])
+			}
+		}
+		return map
+	},
+
 	async rename(id: string, userId: string, name: string): Promise<boolean> {
 		const result = await execute('UPDATE folders SET name = ? WHERE id = ? AND user_id = ?', [
 			name,

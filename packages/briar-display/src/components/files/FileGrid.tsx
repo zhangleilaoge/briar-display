@@ -2,7 +2,44 @@
 
 import type { FileItem, FolderItem } from '@/api/files'
 import { Checkbox } from '@/components/ui/checkbox'
-import { FileIcon, FileText, Folder as FolderIcon, Pencil, Play, Trash2 } from 'lucide-react'
+import { FileIcon, FileText, Pencil, Play, Trash2 } from 'lucide-react'
+
+/** 文件夹外观：双色 SVG 文件夹；内部有图片/视频时前几张缩略图扇形露出 */
+function FolderVisual({ previews }: { previews: string[] }) {
+	const thumbs = previews.slice(0, 3)
+	return (
+		<div className="relative h-24 w-28">
+			{/* 后板（含标签页凸起） */}
+			<svg viewBox="0 0 112 84" aria-hidden className="absolute bottom-0 left-0 h-20 w-28">
+				<path
+					d="M8 20a8 8 0 0 1 8-8h22l10 10h48a8 8 0 0 1 8 8v46a8 8 0 0 1-8 8H16a8 8 0 0 1-8-8Z"
+					fill="#57A8F5"
+				/>
+			</svg>
+			{/* 扇形预览图（下半部被前板盖住，形成插在文件夹里的效果） */}
+			{thumbs.map((url, i) => {
+				const offset = i - (thumbs.length - 1) / 2
+				return (
+					<img
+						key={`${url}-${i}`}
+						src={url}
+						alt=""
+						loading="lazy"
+						className="absolute bottom-9 left-1/2 z-[1] h-14 w-12 rounded-md border border-black/5 bg-white object-cover shadow-md"
+						style={{
+							transform: `translateX(calc(-50% + ${offset * 14}px)) rotate(${offset * 10}deg)`,
+							transformOrigin: 'bottom center',
+						}}
+					/>
+				)
+			})}
+			{/* 前板 */}
+			<svg viewBox="0 0 112 84" aria-hidden className="absolute bottom-0 left-0 z-[2] h-20 w-28">
+				<path d="M4 32h104v44a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8Z" fill="#8CC8FA" />
+			</svg>
+		</div>
+	)
+}
 
 function formatSize(bytes: number): string {
 	if (bytes < 1024) return `${bytes} B`
@@ -111,7 +148,7 @@ export default function FileGrid({
 							dropFolderId === folder.id ? 'border-primary bg-primary/10 shadow-md' : ''
 						}`}
 					>
-						<FolderIcon className="h-24 w-24 text-yellow-500" fill="currentColor" />
+						<FolderVisual previews={folder.previews ?? []} />
 					</button>
 					<div className="mt-1">
 						<p className="truncate text-xs font-medium" title={folder.name}>

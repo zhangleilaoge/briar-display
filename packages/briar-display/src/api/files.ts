@@ -26,6 +26,8 @@ export interface FolderItem {
 	createdAt: string
 	/** 直接文件数（不含子文件夹）；新建文件夹的响应里没有此字段 */
 	fileCount?: number
+	/** 文件夹内图片/视频的预览图 URL（直接文件，最多 3 张，新的在前） */
+	previews?: string[]
 }
 
 export interface FileStats {

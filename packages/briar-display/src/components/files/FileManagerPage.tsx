@@ -161,9 +161,34 @@ function FileManagerPageInner() {
 		if (keyword || typeFilter) return []
 		const { sort, order } = splitSort(sortValue)
 		const dir = order === 'asc' ? 1 : -1
+		// 预览图同样递归：子文件夹的图也算进父文件夹的扇形预览（去重，取前 3 张）
+		const childrenMap = new Map<string | null, FolderItem[]>()
+		for (const f of folders) {
+			const list = childrenMap.get(f.parentId ?? null) || []
+			list.push(f)
+			childrenMap.set(f.parentId ?? null, list)
+		}
+		const previewCache = new Map<string, string[]>()
+		const collectPreviews = (folder: FolderItem): string[] => {
+			const cached = previewCache.get(folder.id)
+			if (cached) return cached
+			previewCache.set(folder.id, folder.previews ?? []) // 先占位，防止意外成环时死循环
+			const urls = [...(folder.previews ?? [])]
+			for (const child of childrenMap.get(folder.id) || []) {
+				for (const url of collectPreviews(child)) {
+					if (!urls.includes(url)) urls.push(url)
+				}
+			}
+			previewCache.set(folder.id, urls)
+			return urls
+		}
 		return folders
 			.filter((f) => (f.parentId ?? null) === currentFolderId)
-			.map((f) => ({ ...f, fileCount: folderTotalCounts.get(f.id) ?? 0 }))
+			.map((f) => ({
+				...f,
+				fileCount: folderTotalCounts.get(f.id) ?? 0,
+				previews: collectPreviews(f).slice(0, 3),
+			}))
 			.sort((a, b) => {
 				// 文件夹跟随名称/创建时间排序；按文件大小排序时保持默认（创建时间正序）
 				if (sort === 'name') return dir * a.name.localeCompare(b.name, 'zh-Hans-CN')

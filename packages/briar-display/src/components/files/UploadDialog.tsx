@@ -143,6 +143,9 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 						type="file"
 						multiple
 						className="hidden"
+						// 阻止 input 的程序化 click 冒泡回外层区域再次触发 onClick，
+						// 否则重入的 input.click() 会被浏览器拦截，导致文件选择框打不开
+						onClick={(e) => e.stopPropagation()}
 						onChange={(e) => {
 							if (e.target.files) handleUploadFiles(e.target.files)
 							e.target.value = ''
