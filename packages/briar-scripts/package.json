@@ -6,6 +6,7 @@
 		"zip": "bash ./scripts/clone-and-zip.sh",
 		"upload:image": "tsx ./scripts/upload-image.ts",
 		"cos:cors": "tsx ./scripts/setup-cos-cors.ts",
+		"cos:migrate-files": "tsx ./scripts/migrate-files-to-private-bucket.ts",
 		"bid-compare": "bun ./scripts/bid-compare/src/index.ts",
 		"briarstock": "bash ./scripts/astock-ticker/briarstock",
 		"briarstock:demo": "bash ./scripts/astock-ticker/briarstock --demo"

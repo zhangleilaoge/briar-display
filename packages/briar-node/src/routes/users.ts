@@ -132,7 +132,7 @@ userRoutes.post('/me/avatar', async (c) => {
 		try {
 			const oldKey = oldUser.avatar.split('/').slice(-3).join('/')
 			if (oldKey.startsWith('avatars/')) {
-				await cosService.deleteObject(oldKey)
+				await cosService.deletePublicObject(oldKey)
 			}
 		} catch {
 			// 旧头像删除失败不影响新头像保存
