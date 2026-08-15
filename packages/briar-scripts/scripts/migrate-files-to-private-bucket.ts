@@ -4,7 +4,8 @@ import COS from 'cos-nodejs-sdk-v5'
 import dotenv from 'dotenv'
 
 /**
- * 一次性迁移：把公开桶 files/ 前缀下的所有对象（含视频封面 .cover.jpg）
+ * 一次性迁移：把公开桶 files/ 与 images/（图床时代遗留前缀，DB 里仍有
+ * filename 以 images/ 开头的记录）下的所有对象（含视频封面 .cover.jpg）
  * 拷贝到私有读桶，key 保持不变。幂等可重跑（目标已存在且大小一致则跳过），
  * 不删除源桶对象，验证无误后由人工清理。
  * 用法：bun run --filter @briar/scripts cos:migrate-files
@@ -57,8 +58,11 @@ interface CosObject {
 	Size: string
 }
 
-/** 分页列出源桶 files/ 前缀下全部对象 */
-async function listAllObjects(): Promise<CosObject[]> {
+/** 需要迁移的前缀：files/ 为现行前缀，images/ 为图床时代遗留前缀 */
+const PREFIXES = ['files/', 'images/']
+
+/** 分页列出源桶指定前缀下全部对象 */
+async function listAllObjects(prefix: string): Promise<CosObject[]> {
 	const all: CosObject[] = []
 	let marker: string | undefined
 	while (true) {
@@ -67,7 +71,7 @@ async function listAllObjects(): Promise<CosObject[]> {
 				{
 					Bucket: srcBucket!,
 					Region: region!,
-					Prefix: 'files/',
+					Prefix: prefix,
 					Marker: marker,
 					MaxKeys: 1000,
 				},
@@ -114,8 +118,10 @@ async function copyObject(obj: CosObject): Promise<'copied' | 'skipped'> {
 }
 
 async function main() {
-	const objects = await listAllObjects()
-	console.log(`源桶 files/ 共 ${objects.length} 个对象，开始迁移到 ${dstBucket} ...`)
+	const objects = (await Promise.all(PREFIXES.map(listAllObjects))).flat()
+	console.log(
+		`源桶 ${PREFIXES.join(' + ')} 共 ${objects.length} 个对象，开始迁移到 ${dstBucket} ...`,
+	)
 
 	let copied = 0
 	let skipped = 0
