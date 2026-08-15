@@ -82,8 +82,11 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 ### 文件管理（原图床）
 
 - 页面 `/briar/files`（旧 `/briar/images/*` 重定向至此），API `/api/files`
-- 上传走**前端分片直传 COS**：`POST /api/files/precheck`（配额/去重/发 cosKey）→ cos-js-sdk-v5 `sliceUploadFile` 直传（分片签名由 `POST /api/files/cos-sign` 下发，仅放行 `files/{userId}/` 前缀）→ `POST /api/files/confirm` 写库。文件不经过 nginx/服务器，`client_max_body_size 10m` 不影响上传
-- 直传依赖 COS bucket CORS，一次性配置：`make cos-cors`
+- **双 bucket**：公开桶 `BRIAR_TX_BUCKET_NAME` 放前端静态资源和头像；用户文件（`files/` 前缀）放私有读桶 `BRIAR_TX_PRIVATE_BUCKET_NAME`，**访问一律走后端签名 URL**（`cosService.signFileUrls`，6h 有效，读取时按 `filename` 现算，DB 留存的 `cdn_url`/`thumbnail_url` 裸 URL 不外发）
+- 上传走**前端分片直传 COS**（私有桶）：`POST /api/files/precheck`（配额/去重/发 cosKey）→ cos-js-sdk-v5 `sliceUploadFile` 直传（分片签名由 `POST /api/files/cos-sign` 下发，仅放行 `files/{userId}/` 前缀）→ `POST /api/files/confirm` 写库。文件不经过 nginx/服务器，`client_max_body_size 10m` 不影响上传
+- 直传依赖 COS bucket CORS，一次性配置（覆盖双桶）：`make cos-cors`
+- 存量文件从公开桶迁到私有桶：`make cos-migrate-files`（幂等，不删源桶）
+- 封禁扫描（fileModerationService）必须签 URL 再 fetch：私有桶未签名恒 403，直接 fetch 裸 URL 会把全部图片误判为封禁并删除
 - 视频封面：上传完成后客户端用 video+canvas 截首帧，直传为 `{cosKey去扩展名}.cover.jpg` 并在 confirm 时传 `thumbnailKey`；网格有封面用 `<img>`，存量无封面视频 fallback 到 `<video preload="metadata">`；删除文件/文件夹时连带删封面
 - 数据表：`files`（原 `images` 表改名）+ `folders`（嵌套文件夹），迁移见 `migrate.sql`
 
