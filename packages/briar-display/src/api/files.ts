@@ -107,6 +107,9 @@ function guessMimeType(file: File): string {
 	return 'application/octet-stream'
 }
 
+/** 对象浏览器缓存：一个月（cosKey 带随机 id，内容不可变，可放心长缓存） */
+const CACHE_CONTROL = 'max-age=2592000'
+
 function sliceUpload(
 	cos: COS,
 	params: { Bucket: string; Region: string; Key: string; Body: File; ContentType: string },
@@ -117,6 +120,7 @@ function sliceUpload(
 			{
 				...params,
 				ContentDisposition: 'inline',
+				CacheControl: CACHE_CONTROL,
 				onProgress: (progressData) => {
 					onProgress?.(Math.round(progressData.percent * 100))
 				},
@@ -134,10 +138,13 @@ function putObject(
 	params: { Bucket: string; Region: string; Key: string; Body: Blob; ContentType: string },
 ): Promise<void> {
 	return new Promise((resolve, reject) => {
-		cos.putObject({ ...params, ContentDisposition: 'inline' }, (err) => {
-			if (err) return reject(err)
-			resolve()
-		})
+		cos.putObject(
+			{ ...params, ContentDisposition: 'inline', CacheControl: CACHE_CONTROL },
+			(err) => {
+				if (err) return reject(err)
+				resolve()
+			},
+		)
 	})
 }
 

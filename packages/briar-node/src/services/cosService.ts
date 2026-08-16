@@ -12,6 +12,9 @@ const bucket = process.env.BRIAR_TX_PRIVATE_BUCKET_NAME
 /** 签名 URL 有效期（秒），覆盖长页面停留场景 */
 const SIGNED_URL_EXPIRES = 6 * 3600
 
+/** 签名结果缓存（key+query → url），进程内有效，保证窗口期内 URL 稳定 */
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>()
+
 if (!bucket) {
 	console.error('[COS] 缺少 BRIAR_TX_PRIVATE_BUCKET_NAME，文件功能将不可用')
 }
@@ -23,7 +26,8 @@ const cos = new COS({
 
 export const cosService = {
 	/**
-	 * Upload a buffer to the public bucket（头像等公开读资源）
+	 * Upload a buffer to the public bucket（头像等公开读资源）。
+	 * key 每次生成都带 uuid（内容不可变），放心给一个月浏览器缓存。
 	 */
 	async uploadBuffer(buffer: Buffer, key: string, mimeType: string): Promise<string> {
 		return new Promise((resolve, reject) => {
@@ -35,6 +39,7 @@ export const cosService = {
 					StorageClass: 'STANDARD',
 					Body: buffer,
 					ContentType: mimeType,
+					CacheControl: 'max-age=2592000',
 					// 强制内联展示，避免 COS 在 GET 时按 Accept 动态注入
 					// Content-Disposition: attachment 导致"新窗口打开"变成下载
 					Headers: {
@@ -205,8 +210,14 @@ export const cosService = {
 	/**
 	 * 生成私有 bucket 对象的签名 URL（有效期 SIGNED_URL_EXPIRES）。
 	 * 静态密钥下 getObjectUrl 同步返回字符串。
+	 * 结果按 key+query 缓存至过期前 10 分钟：浏览器缓存以完整 URL 为 key，
+	 * 每次重新签名会导致缓存失效，缓存签名结果可保证窗口期内 URL 稳定。
 	 */
 	getSignedUrl(key: string, query?: Record<string, string>): string {
+		const cacheKey = query ? `${key}?${JSON.stringify(query)}` : key
+		const hit = signedUrlCache.get(cacheKey)
+		if (hit && hit.expiresAt > Date.now()) return hit.url
+
 		const ret = cos.getObjectUrl({
 			Bucket: bucket!,
 			Region: region!,
@@ -215,15 +226,21 @@ export const cosService = {
 			Expires: SIGNED_URL_EXPIRES,
 			Query: query,
 		}) as unknown
-		const url = typeof ret === 'string' ? ret : (ret as { Url: string }).Url
+		let url = typeof ret === 'string' ? ret : (ret as { Url: string }).Url
 		// SDK 同步返回路径漏了数据万象参数的 q-url-param-list 二次编码（仅异步回调路径有），
 		// 不修复带 Query 的签名 URL 会报 SignatureDoesNotMatch
 		const m = url.match(/q-url-param-list.*?(?=&)/g)
-		if (!m) return url
-		return url.replace(
-			new RegExp(m[0], 'g'),
-			`q-url-param-list=${encodeURIComponent(m[0].replace('q-url-param-list=', '')).toLowerCase()}`,
-		)
+		if (m) {
+			url = url.replace(
+				new RegExp(m[0], 'g'),
+				`q-url-param-list=${encodeURIComponent(m[0].replace('q-url-param-list=', '')).toLowerCase()}`,
+			)
+		}
+		signedUrlCache.set(cacheKey, {
+			url,
+			expiresAt: Date.now() + (SIGNED_URL_EXPIRES - 600) * 1000,
+		})
+		return url
 	},
 
 	/** 图片缩略图签名 URL（数据万象 imageMogr2 参数纳入签名） */
