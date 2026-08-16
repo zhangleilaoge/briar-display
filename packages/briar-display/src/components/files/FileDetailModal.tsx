@@ -4,6 +4,7 @@ import { type FileItem, getFileContent } from '@/api/files'
 import { Button } from '@/components/ui/button'
 import { Check, Clipboard, Download, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import ExcelPreview from './ExcelPreview'
 import FileTypeIcon from './FileTypeIcon'
 import MarkdownPreview from './MarkdownPreview'
 
@@ -19,13 +20,19 @@ function isMarkdown(name: string): boolean {
 	return lower.endsWith('.md') || lower.endsWith('.markdown')
 }
 
-type PreviewKind = 'image' | 'video' | 'markdown' | 'text' | 'none'
+type PreviewKind = 'image' | 'video' | 'markdown' | 'text' | 'pdf' | 'excel' | 'none'
+
+const EXCEL_EXTENSIONS = ['.xls', '.xlsx']
 
 function getPreviewKind(file: FileItem): PreviewKind {
 	if (file.mimeType.startsWith('image/')) return 'image'
 	if (file.mimeType.startsWith('video/')) return 'video'
 	if (isMarkdown(file.originalName)) return 'markdown'
 	if (file.mimeType.startsWith('text/') || file.mimeType === 'application/json') return 'text'
+	if (file.mimeType === 'application/pdf' || file.originalName.toLowerCase().endsWith('.pdf'))
+		return 'pdf'
+	const lower = file.originalName.toLowerCase()
+	if (EXCEL_EXTENSIONS.some((ext) => lower.endsWith(ext))) return 'excel'
 	return 'none'
 }
 
@@ -157,6 +164,14 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 								)}
 							</>
 						)}
+						{kind === 'pdf' && (
+							<iframe
+								src={file.cdnUrl}
+								title={file.originalName}
+								className="h-[60vh] w-full rounded-lg border bg-muted"
+							/>
+						)}
+						{kind === 'excel' && <ExcelPreview file={file} />}
 						{kind === 'none' && (
 							<div className="flex flex-col items-center gap-2 rounded-lg bg-muted py-10 text-muted-foreground">
 								<FileTypeIcon fileName={file.originalName} mimeType={file.mimeType} />
