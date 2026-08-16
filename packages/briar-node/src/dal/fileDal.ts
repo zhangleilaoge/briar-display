@@ -63,8 +63,40 @@ const mapRow = (row: FileRow): FileRecord => ({
 	createdAt: row.created_at,
 })
 
-/** 可在线预览的文本类型（md / txt 等） */
-const TEXT_EXTS = new Set(['.md', '.markdown', '.txt', '.log', '.csv', '.json'])
+/** 可在线预览的文本类型（md / txt / 代码 / 配置文件等，按扩展名兜底） */
+const TEXT_EXTS = new Set([
+	'.md',
+	'.markdown',
+	'.txt',
+	'.log',
+	'.csv',
+	'.json',
+	'.js',
+	'.jsx',
+	'.ts',
+	'.tsx',
+	'.css',
+	'.html',
+	'.vue',
+	'.py',
+	'.java',
+	'.c',
+	'.cpp',
+	'.h',
+	'.go',
+	'.rs',
+	'.sh',
+	'.php',
+	'.rb',
+	'.swift',
+	'.kt',
+	'.sql',
+	'.xml',
+	'.yaml',
+	'.yml',
+	'.toml',
+	'.ini',
+])
 
 export function isTextLike(mimeType: string, name: string): boolean {
 	if (mimeType.startsWith('text/')) return true
