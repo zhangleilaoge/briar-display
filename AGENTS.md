@@ -82,7 +82,8 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 ### 文件管理（原图床）
 
 - 页面 `/briar/files`（旧 `/briar/images/*` 重定向至此），API `/api/files`
-- **双 bucket**：公开桶 `BRIAR_TX_BUCKET_NAME` 放前端静态资源和头像；用户文件（`files/` 前缀）放私有读桶 `BRIAR_TX_PRIVATE_BUCKET_NAME`，**访问一律走后端签名 URL**（`cosService.signFileUrls`，6h 有效，读取时按 `filename` 现算，DB 留存的 `cdn_url`/`thumbnail_url` 裸 URL 不外发）
+- **双 bucket**：公开桶 `BRIAR_TX_BUCKET_NAME` 放前端静态资源和头像；用户文件（`files/` 前缀）放私有读桶 `BRIAR_TX_PRIVATE_BUCKET_NAME`，**访问一律走后端签名 URL**（`cosService.signFileUrls`，6h 有效，读取时按 `filename` 现算，DB 留存的 `cdn_url`/`thumbnail_url` 裸 URL 不外发；签名结果进程内缓存至过期前 10 分钟，保证窗口期内 URL 稳定以命中浏览器缓存）
+- 浏览器缓存：对象上传时写 `Cache-Control: max-age=2592000`（cosKey 带随机 id 内容不可变）；静态资源由 upload-cdn.ts 设一年 immutable；存量对象补 header 用 `bun run --filter @briar/scripts cos:cache-control`（幂等）
 - 上传走**前端分片直传 COS**（私有桶）：`POST /api/files/precheck`（配额/去重/发 cosKey）→ cos-js-sdk-v5 `sliceUploadFile` 直传（分片签名由 `POST /api/files/cos-sign` 下发，仅放行 `files/{userId}/` 前缀）→ `POST /api/files/confirm` 写库。文件不经过 nginx/服务器，`client_max_body_size 10m` 不影响上传
 - 直传依赖 COS bucket CORS，一次性配置（覆盖双桶）：`make cos-cors`
 - 存量文件从公开桶迁到私有桶：`make cos-migrate-files`（幂等，不删源桶）
