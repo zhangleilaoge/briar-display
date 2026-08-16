@@ -2,8 +2,9 @@
 
 import { type FileItem, getFileContent } from '@/api/files'
 import { Button } from '@/components/ui/button'
-import { Check, Clipboard, Download, FileIcon, X } from 'lucide-react'
+import { Check, Clipboard, Download, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import FileTypeIcon from './FileTypeIcon'
 import MarkdownPreview from './MarkdownPreview'
 
 function formatSize(bytes: number): string {
@@ -158,7 +159,7 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 						)}
 						{kind === 'none' && (
 							<div className="flex flex-col items-center gap-2 rounded-lg bg-muted py-10 text-muted-foreground">
-								<FileIcon className="h-12 w-12" />
+								<FileTypeIcon fileName={file.originalName} mimeType={file.mimeType} />
 								<p className="text-sm">该类型不支持预览</p>
 							</div>
 						)}
