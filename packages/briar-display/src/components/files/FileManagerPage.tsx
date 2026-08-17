@@ -247,6 +247,13 @@ function FileManagerPageInner() {
 				try {
 					await deleteFile(file.id)
 					toast.success('删除成功')
+					// 删除成功后同步清掉该文件的勾选态，避免工具栏残留「删除 (n)」
+					setSelected((prev) => {
+						if (!prev.has(file.id)) return prev
+						const next = new Set(prev)
+						next.delete(file.id)
+						return next
+					})
 				} catch {
 					toast.error('删除失败')
 				}
