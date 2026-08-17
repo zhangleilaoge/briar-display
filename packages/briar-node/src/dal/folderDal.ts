@@ -9,9 +9,13 @@ export interface FolderRecord {
 	createdAt: Date
 }
 
-export interface FolderPreview {
-	url: string
-	/** true 表示无封面视频（url 为视频本身），前端用 <video preload="metadata"> 取首帧兜底 */
+/** 文件夹预览的原始文件信息（URL 由路由层签名生成，DB 裸 URL 不直接外发） */
+export interface FolderPreviewFile {
+	filename: string
+	mimeType: string
+	/** 是否有封面图（视频截帧 .cover.jpg） */
+	hasCover: boolean
+	/** true 表示无封面视频，前端用 <video preload="metadata"> 取首帧兜底 */
 	isVideo: boolean
 }
 
@@ -71,10 +75,20 @@ export const folderDal = {
 		return new Map(rows.map((r) => [r.folder_id, Number(r.cnt)]))
 	},
 
-	/** 各文件夹的图片/视频预览（直接文件；每文件夹最多 perFolder 张，新的在前） */
-	async previewUrlsByFolder(userId: string, perFolder = 3): Promise<Map<string, FolderPreview[]>> {
-		const rows = await query<{ folder_id: string; url: string; is_video: number }>(
-			`SELECT folder_id, COALESCE(thumbnail_url, cdn_url) AS url,
+	/** 各文件夹的图片/视频预览文件信息（直接文件；每文件夹最多 perFolder 张，新的在前） */
+	async previewFilesByFolder(
+		userId: string,
+		perFolder = 3,
+	): Promise<Map<string, FolderPreviewFile[]>> {
+		const rows = await query<{
+			folder_id: string
+			filename: string
+			mime_type: string
+			has_cover: number
+			is_video: number
+		}>(
+			`SELECT folder_id, filename, mime_type,
+			        (thumbnail_url IS NOT NULL) AS has_cover,
 			        (mime_type LIKE 'video/%' AND thumbnail_url IS NULL) AS is_video
 			 FROM files
 			 WHERE user_id = ? AND deleted_at IS NULL AND folder_id IS NOT NULL
@@ -82,9 +96,14 @@ export const folderDal = {
 			 ORDER BY created_at DESC`,
 			[userId],
 		)
-		const map = new Map<string, FolderPreview[]>()
+		const map = new Map<string, FolderPreviewFile[]>()
 		for (const row of rows) {
-			const item: FolderPreview = { url: row.url, isVideo: Boolean(row.is_video) }
+			const item: FolderPreviewFile = {
+				filename: row.filename,
+				mimeType: row.mime_type,
+				hasCover: Boolean(row.has_cover),
+				isVideo: Boolean(row.is_video),
+			}
 			const list = map.get(row.folder_id)
 			if (list) {
 				if (list.length < perFolder) list.push(item)

@@ -2,8 +2,11 @@
 
 import { type FileItem, getFileContent } from '@/api/files'
 import { Button } from '@/components/ui/button'
-import { Check, Clipboard, Download, FileIcon, X } from 'lucide-react'
+import { Check, Clipboard, Download, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import DocxPreview from './DocxPreview'
+import ExcelPreview from './ExcelPreview'
+import FileTypeIcon from './FileTypeIcon'
 import MarkdownPreview from './MarkdownPreview'
 
 function formatSize(bytes: number): string {
@@ -18,13 +21,65 @@ function isMarkdown(name: string): boolean {
 	return lower.endsWith('.md') || lower.endsWith('.markdown')
 }
 
-type PreviewKind = 'image' | 'video' | 'markdown' | 'text' | 'none'
+type PreviewKind =
+	| 'image'
+	| 'video'
+	| 'audio'
+	| 'markdown'
+	| 'text'
+	| 'pdf'
+	| 'excel'
+	| 'docx'
+	| 'none'
+
+const EXCEL_EXTENSIONS = ['.xls', '.xlsx', '.csv']
+
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+
+// 与后端 fileDal.isTextLike 的 TEXT_EXTS 保持一致：mimeType 非 text/* 时按扩展名兜底当文本预览
+const TEXT_EXTENSIONS = [
+	'.txt',
+	'.log',
+	'.json',
+	'.js',
+	'.jsx',
+	'.ts',
+	'.tsx',
+	'.css',
+	'.html',
+	'.vue',
+	'.py',
+	'.java',
+	'.c',
+	'.cpp',
+	'.h',
+	'.go',
+	'.rs',
+	'.sh',
+	'.php',
+	'.rb',
+	'.swift',
+	'.kt',
+	'.sql',
+	'.xml',
+	'.yaml',
+	'.yml',
+	'.toml',
+	'.ini',
+]
 
 function getPreviewKind(file: FileItem): PreviewKind {
 	if (file.mimeType.startsWith('image/')) return 'image'
 	if (file.mimeType.startsWith('video/')) return 'video'
+	if (file.mimeType.startsWith('audio/')) return 'audio'
 	if (isMarkdown(file.originalName)) return 'markdown'
+	const lower = file.originalName.toLowerCase()
+	// csv 也走表格预览（SheetJS 可读 csv），注意要在 text/* 判断之前（text/csv 命中 text/）
+	if (EXCEL_EXTENSIONS.some((ext) => lower.endsWith(ext))) return 'excel'
+	if (file.mimeType === 'application/pdf' || lower.endsWith('.pdf')) return 'pdf'
+	if (file.mimeType === DOCX_MIME || lower.endsWith('.docx')) return 'docx'
 	if (file.mimeType.startsWith('text/') || file.mimeType === 'application/json') return 'text'
+	if (TEXT_EXTENSIONS.some((ext) => lower.endsWith(ext))) return 'text'
 	return 'none'
 }
 
@@ -156,9 +211,24 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 								)}
 							</>
 						)}
+						{kind === 'pdf' && (
+							<iframe
+								src={file.cdnUrl}
+								title={file.originalName}
+								className="h-[60vh] w-full rounded-lg border bg-muted"
+							/>
+						)}
+						{kind === 'excel' && <ExcelPreview file={file} />}
+						{kind === 'docx' && <DocxPreview file={file} />}
+						{kind === 'audio' && (
+							<div className="flex justify-center rounded-lg bg-muted p-6">
+								{/* biome-ignore lint/a11y/useMediaCaption: 用户上传的音频没有字幕文件 */}
+								<audio src={file.cdnUrl} controls className="w-full max-w-md" />
+							</div>
+						)}
 						{kind === 'none' && (
 							<div className="flex flex-col items-center gap-2 rounded-lg bg-muted py-10 text-muted-foreground">
-								<FileIcon className="h-12 w-12" />
+								<FileTypeIcon fileName={file.originalName} mimeType={file.mimeType} />
 								<p className="text-sm">该类型不支持预览</p>
 							</div>
 						)}

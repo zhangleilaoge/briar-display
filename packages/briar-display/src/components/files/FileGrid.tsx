@@ -2,7 +2,8 @@
 
 import type { FileItem, FolderItem, FolderPreview } from '@/api/files'
 import { Checkbox } from '@/components/ui/checkbox'
-import { FileIcon, FileText, Pencil, Play, Trash2 } from 'lucide-react'
+import { Pencil, Play, Trash2 } from 'lucide-react'
+import FileTypeIcon from './FileTypeIcon'
 
 /** 文件夹外观：双色 SVG 文件夹；内部有图片/视频时前几张缩略图扇形露出（视频叠半透明播放图标） */
 function FolderVisual({ previews }: { previews: FolderPreview[] }) {
@@ -231,11 +232,7 @@ export default function FileGrid({
 							</>
 						) : (
 							<span className="flex h-full w-full items-center justify-center">
-								{file.mimeType.startsWith('text/') || file.mimeType === 'application/json' ? (
-									<FileText className="h-12 w-12 text-muted-foreground/60" />
-								) : (
-									<FileIcon className="h-12 w-12 text-muted-foreground/60" />
-								)}
+								<FileTypeIcon fileName={file.originalName} mimeType={file.mimeType} />
 							</span>
 						)}
 					</button>

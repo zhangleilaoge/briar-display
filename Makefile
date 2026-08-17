@@ -60,9 +60,13 @@ db-setup:
 	@echo "🗄️  初始化数据库..."
 	@bun run --filter @briar/node db:setup
 
-# 配置 COS bucket CORS（前端分片直传需要，一次性）
+# 配置 COS bucket CORS（前端分片直传需要，一次性；覆盖公开桶与私有桶）
 cos-cors:
 	@bun run --filter @briar/scripts cos:cors
+
+# 迁移存量文件到私有读 bucket（一次性，幂等可重跑）
+cos-migrate-files:
+	@bun run --filter @briar/scripts cos:migrate-files
 
 # 启动全量开发服务（shared + display + node）
 dev:
