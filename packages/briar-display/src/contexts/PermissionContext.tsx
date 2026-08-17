@@ -26,8 +26,26 @@ export function syncUserToStorage(user: UserWithRoles | null) {
 	if (user) {
 		localStorage.setItem(
 			'briar_user',
-			JSON.stringify({ name: user.name, email: user.email, avatar: user.avatar, id: user.id }),
+			JSON.stringify({
+				name: user.name,
+				email: user.email,
+				avatar: user.avatar,
+				id: user.id,
+				isAdmin: user.roles?.some((r) => r.name === 'admin') ?? false,
+			}),
 		)
+	}
+}
+
+/** 首帧乐观值：用上次缓存的 isAdmin 避免入口卡片/菜单项等请求回来后才弹出（仅 loading 期间生效，请求回来以服务端为准） */
+const readCachedIsAdmin = (): boolean => {
+	if (!isBrowser()) return false
+	if (!localStorage.getItem('briar_token')) return false // 未登录不乐观展示
+	try {
+		const raw = localStorage.getItem('briar_user')
+		return raw ? JSON.parse(raw).isAdmin === true : false
+	} catch {
+		return false
 	}
 }
 
@@ -37,6 +55,7 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
 	const [user, setUser] = useState<UserWithRoles | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [isLoggedIn, setIsLoggedIn] = useState(false)
+	const [cachedIsAdmin] = useState(readCachedIsAdmin)
 
 	const fetchPermissions = useCallback(async () => {
 		if (!isBrowser()) {
@@ -96,7 +115,8 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
 		[permissions],
 	)
 
-	const isAdmin = roles.some((r) => r.name === 'admin')
+	// loading 期间用上次缓存的 isAdmin 乐观展示；请求回来以服务端角色为准（降级用户会被纠正）
+	const isAdmin = roles.some((r) => r.name === 'admin') || (loading && cachedIsAdmin)
 
 	const value: PermissionContextValue = {
 		permissions,
