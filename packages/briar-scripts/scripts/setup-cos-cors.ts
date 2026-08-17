@@ -28,11 +28,14 @@ dotenv.config({ path: path.join(repoRoot, '.env') })
 const region = process.env.BRIAR_TX_BUCKET_REGION
 const secretId = process.env.BRIAR_TX_SEC_ID
 const secretKey = process.env.BRIAR_TX_SEC_KEY
-const bucket = process.env.BRIAR_TX_BUCKET_NAME
+// 公开桶（静态资源）+ 私有桶（用户文件直传）都需要 CORS
+const buckets = [process.env.BRIAR_TX_BUCKET_NAME, process.env.BRIAR_TX_PRIVATE_BUCKET_NAME].filter(
+	(b): b is string => Boolean(b),
+)
 
-if (!region || !secretId || !secretKey || !bucket) {
+if (!region || !secretId || !secretKey || buckets.length === 0) {
 	console.error(
-		'Missing COS env vars. Required: BRIAR_TX_BUCKET_REGION, BRIAR_TX_SEC_ID, BRIAR_TX_SEC_KEY, BRIAR_TX_BUCKET_NAME',
+		'Missing COS env vars. Required: BRIAR_TX_BUCKET_REGION, BRIAR_TX_SEC_ID, BRIAR_TX_SEC_KEY, BRIAR_TX_BUCKET_NAME / BRIAR_TX_PRIVATE_BUCKET_NAME',
 	)
 	process.exit(1)
 }
@@ -42,25 +45,27 @@ const cos = new COS({
 	SecretKey: secretKey,
 })
 
-cos.putBucketCors(
-	{
-		Bucket: bucket,
-		Region: region,
-		CORSRules: [
-			{
-				AllowedOrigins: ['https://xiaobuzi.cn', 'http://localhost:4321', 'http://127.0.0.1:4321'],
-				AllowedMethods: ['GET', 'PUT', 'POST', 'HEAD'],
-				AllowedHeaders: ['*'],
-				ExposeHeaders: ['ETag', 'x-cos-request-id'],
-				MaxAgeSeconds: 600,
-			},
-		],
-	},
-	(err) => {
-		if (err) {
-			console.error('配置 CORS 失败:', err)
-			process.exit(1)
-		}
-		console.log('✅ COS bucket CORS 配置完成')
-	},
-)
+for (const bucket of buckets) {
+	cos.putBucketCors(
+		{
+			Bucket: bucket,
+			Region: region,
+			CORSRules: [
+				{
+					AllowedOrigins: ['https://xiaobuzi.cn', 'http://localhost:4321', 'http://127.0.0.1:4321'],
+					AllowedMethods: ['GET', 'PUT', 'POST', 'HEAD'],
+					AllowedHeaders: ['*'],
+					ExposeHeaders: ['ETag', 'x-cos-request-id'],
+					MaxAgeSeconds: 600,
+				},
+			],
+		},
+		(err) => {
+			if (err) {
+				console.error(`配置 CORS 失败 (${bucket}):`, err)
+				process.exit(1)
+			}
+			console.log(`✅ COS bucket CORS 配置完成: ${bucket}`)
+		},
+	)
+}

@@ -95,7 +95,13 @@ fileRoutes.post('/precheck', async (c) => {
 	if (body.fileHash) {
 		const existing = await fileDal.findByUserAndHash(user.id, body.fileHash)
 		if (existing) {
-			return c.json<ApiResponse>({ success: true, data: { deduplicated: true, file: existing } })
+			return c.json<ApiResponse>({
+				success: true,
+				data: {
+					deduplicated: true,
+					file: { ...existing, ...cosService.signFileUrls(existing) },
+				},
+			})
 		}
 	}
 
@@ -245,7 +251,10 @@ fileRoutes.post('/confirm', async (c) => {
 		folderId: folder?.id ?? null,
 	})
 
-	return c.json<ApiResponse>({ success: true, data: record })
+	return c.json<ApiResponse>({
+		success: true,
+		data: { ...record, ...cosService.signFileUrls(record) },
+	})
 })
 
 /** GET /stats — storage usage stats */
@@ -263,7 +272,7 @@ fileRoutes.get('/stats', async (c) => {
 	})
 })
 
-/** GET /folders — 当前用户全部文件夹（前端拼树/面包屑），fileCount 为直接文件数（不含子文件夹），previews 为直接图片/视频预览（最多 3 张；isVideo=true 为无封面视频，前端用 video 首帧兜底） */
+/** GET /folders — 当前用户全部文件夹（前端拼树/面包屑），fileCount 为直接文件数（不含子文件夹），previews 为直接图片/视频预览（最多 3 张，私有桶签名 URL；isVideo=true 为无封面视频，前端用 video 首帧兜底） */
 fileRoutes.get('/folders', async (c) => {
 	const user = requireUser(c)
 	if (!user) return unauthorized(c)
@@ -271,14 +280,21 @@ fileRoutes.get('/folders', async (c) => {
 	const [folders, fileCounts, previewMap] = await Promise.all([
 		folderDal.listByUser(user.id),
 		folderDal.countFilesByFolder(user.id),
-		folderDal.previewUrlsByFolder(user.id),
+		folderDal.previewFilesByFolder(user.id),
 	])
 	return c.json<ApiResponse>({
 		success: true,
 		data: folders.map((f) => ({
 			...f,
 			fileCount: fileCounts.get(f.id) ?? 0,
-			previews: previewMap.get(f.id) ?? [],
+			previews: (previewMap.get(f.id) ?? []).map((p) => {
+				const signed = cosService.signFileUrls({
+					filename: p.filename,
+					mimeType: p.mimeType,
+					thumbnailUrl: p.hasCover ? 'cover' : null,
+				})
+				return { url: signed.thumbnailUrl ?? signed.cdnUrl, isVideo: p.isVideo }
+			}),
 		})),
 	})
 })
@@ -391,9 +407,15 @@ fileRoutes.get('/', async (c) => {
 		order,
 	})
 
+	// 私有桶：对外一律返回签名 URL（按 filename 现算，不用 DB 留存的裸 URL）
 	return c.json<ApiResponse>({
 		success: true,
-		data: { items, total, page, pageSize },
+		data: {
+			items: items.map((f) => ({ ...f, ...cosService.signFileUrls(f) })),
+			total,
+			page,
+			pageSize,
+		},
 	})
 })
 
@@ -414,7 +436,10 @@ fileRoutes.get('/:id', async (c) => {
 		}
 	}
 
-	return c.json<ApiResponse>({ success: true, data: file })
+	return c.json<ApiResponse>({
+		success: true,
+		data: { ...file, ...cosService.signFileUrls(file) },
+	})
 })
 
 /** GET /:id/content — 文本内容预览代理（md / txt 等） */

@@ -38,7 +38,7 @@ function ProfilePageInner() {
 		PERMISSIONS.PAGE_BUSINESS,
 		PERMISSIONS.PAGE_ADMIN,
 	])
-	const { user, roles, permissions, isAdmin, loading: permsLoading, refresh } = usePermissions()
+	const { user, roles, permissions, loading: permsLoading, refresh } = usePermissions()
 	const { unread } = useUnreadMessages()
 	const [uploading, setUploading] = useState(false)
 	const [uploadError, setUploadError] = useState<string | null>(null)
@@ -233,11 +233,6 @@ function ProfilePageInner() {
 									<CardTitle className="flex items-center gap-2 text-base">
 										<Shield className="h-4 w-4" />
 										角色
-										{isAdmin && (
-											<span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary">
-												管理员
-											</span>
-										)}
 									</CardTitle>
 									<CardDescription>你当前被分配的角色</CardDescription>
 								</CardHeader>

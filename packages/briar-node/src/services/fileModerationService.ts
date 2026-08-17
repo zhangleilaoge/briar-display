@@ -7,8 +7,9 @@ const CONCURRENCY = 5
 const FETCH_TIMEOUT = 10_000
 
 /**
- * 检测图片 URL 是否被腾讯封禁。
- * 公有读 bucket 正常访问不会返回 403/451；404（对象已不存在）不视为封禁，避免误删。
+ * 检测图片是否被腾讯封禁。
+ * 私有读 bucket 下未签名 URL 恒返回 403，必须先签发签名 URL 再请求；
+ * 签名 URL 正常返回 2xx/206，403/451 才视为封禁。404（对象已不存在）不视为封禁，避免误删。
  * 网络异常返回 false（下轮扫描再试）。
  */
 async function isBlocked(url: string): Promise<boolean> {
@@ -47,7 +48,10 @@ export const fileModerationService = {
 		for (let i = 0; i < images.length; i += CONCURRENCY) {
 			const batch = images.slice(i, i + CONCURRENCY)
 			const results = await Promise.all(
-				batch.map(async (file) => ({ file, blocked: await isBlocked(file.cdnUrl) })),
+				batch.map(async (file) => ({
+					file,
+					blocked: await isBlocked(cosService.getSignedUrl(file.filename)),
+				})),
 			)
 
 			for (const { file, blocked } of results) {

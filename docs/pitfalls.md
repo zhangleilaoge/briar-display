@@ -67,3 +67,9 @@ export default function AdminXxxPage() {
 预防：推送主仓库前 `git submodule update` 保持本地子模块与远端一致；提交前检查 `git status` 里 briar-assets 的变更是否是预期的新 ref。
 
 另外本次事故暴露的两个流程问题已修复（2026-08-12）：`deployNginx()` 改为捕获脚本输出并拼进错误信息落库（之前 `stdio: 'inherit'` 在 Bree worker 里会丢输出，只剩 `Command failed`）；两处 git 同步由 rebase 改为 `merge -X ours`（冲突以本次新证书/gitlink 为准）+ 失败时 `merge --abort`，不再残留冲突现场。
+
+## 9. cos-nodejs-sdk-v5 的 `getObjectUrl` 同步返回值带 Query 时签名无效
+
+静态密钥下 `getObjectUrl({ Sign: true, Query: {...} })` 同步返回字符串，但 SDK 只在异步回调路径里对 `q-url-param-list` 做二次编码（`replaceUrlParamList`），同步路径漏了——带数据万象参数（如 `imageMogr2/...`）的签名 URL 直接 403 `SignatureDoesNotMatch`，不带 Query 的则正常。
+
+修复：拿到同步返回的 URL 后手动套用同款二次编码（见 `cosService.getSignedUrl`）。验证方式：对签名 URL 发 `Range: bytes=0-0` 请求，206 为有效。
