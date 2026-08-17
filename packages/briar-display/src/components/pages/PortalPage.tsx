@@ -108,7 +108,7 @@ function PortalPageInner() {
 							href="/briar/files"
 							gradient="from-pink-500 to-rose-500"
 						/>
-						{!loading && isAdmin && (
+						{isAdmin && (
 							<EntryCard
 								icon={<Shield className="h-5 w-5" />}
 								title="管理后台"
