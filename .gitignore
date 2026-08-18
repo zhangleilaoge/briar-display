@@ -2,6 +2,7 @@
 dist/
 dist-electron/
 packages/briar-display/web/
+packages/briar-node/jobs/
 
 # generated types
 .astro/
