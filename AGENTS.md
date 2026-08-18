@@ -91,6 +91,13 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 - 视频封面：上传完成后客户端用 video+canvas 截首帧，直传为 `{cosKey去扩展名}.cover.jpg` 并在 confirm 时传 `thumbnailKey`；网格有封面用 `<img>`，存量无封面视频 fallback 到 `<video preload="metadata">`；删除文件/文件夹时连带删封面
 - 数据表：`files`（原 `images` 表改名）+ `folders`（嵌套文件夹），迁移见 `migrate.sql`
 
+### 个人博客
+
+- 页面 `/briar/blog/`（列表，按年分组）+ `/briar/blog/{slug}/`（详情），纯静态、**无登录**，与 wiki 完全独立（无在线编辑、无后端 API）
+- 文章放在 `packages/briar-display/src/content/blog/*.md`（Astro content collection，glob loader；文件名即 slug，建议英文短横线命名），frontmatter：`title` / `date` / `description?` / `tags?` / `draft?`（draft: true 不发布）；写完 `git push` 走 CI 即上线
+- 布局 `src/layouts/BlogLayout.astro`，样式集中在 `src/styles/blog.css`（暖纸 + 朱砂主题，`prefers-color-scheme: dark` 自动切墨黑 + 金）；字数/阅读时长工具在 `src/lib/blog.ts`
+- 站点名/签名在 `src/pages/briar/blog/index.astro` 顶部 `BLOG_NAME` / `BLOG_SLOGAN` 常量
+
 ### SSH 控制台
 
 - 页面 `/briar/admin/terminal`（AdminLayout 侧边栏「SSH 控制台」），前端 xterm.js（**必须动态 import**，静态导入 CJS 包会让 Astro build 失败）；多标签会话（每个 tab 独立 WS + SSH 连接，切换仅隐藏容器保持存活）

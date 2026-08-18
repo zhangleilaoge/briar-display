@@ -1,0 +1,26 @@
+---
+import '../styles/globals.css'
+import '../styles/blog.css'
+
+interface Props {
+	title?: string
+	description?: string
+}
+
+const { title = '博客', description } = Astro.props
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/png" href="/briar/favicons/favicon.png" />
+		<meta name="generator" content={Astro.generator} />
+		{description && <meta name="description" content={description} />}
+		<title>{title}</title>
+	</head>
+	<body class="blog-theme">
+		<slot />
+	</body>
+</html>

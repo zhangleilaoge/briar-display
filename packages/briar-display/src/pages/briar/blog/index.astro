@@ -1,0 +1,75 @@
+---
+import { getCollection } from 'astro:content'
+import BlogLayout from '../../../layouts/BlogLayout.astro'
+import { formatDateShort, getReadingStats } from '../../../lib/blog'
+
+/** 站点名与签名，改这里即可 */
+const BLOG_NAME = '博客'
+const BLOG_SLOGAN = '记录、思考与分享'
+
+const posts = (await getCollection('blog'))
+	.filter((p) => !p.data.draft)
+	.sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+
+const groups = new Map<number, typeof posts>()
+for (const p of posts) {
+	const year = p.data.date.getFullYear()
+	const list = groups.get(year) ?? []
+	list.push(p)
+	groups.set(year, list)
+}
+const years = [...groups.keys()].sort((a, b) => b - a)
+const totalWords = posts.reduce((acc, p) => acc + getReadingStats(p.body).words, 0)
+---
+
+<BlogLayout title={BLOG_NAME} description={BLOG_SLOGAN}>
+	<div class="blog-shell">
+		<header class="blog-hero blog-rise">
+			<p class="blog-hero-eyebrow">PERSONAL BLOG</p>
+			<h1 class="blog-hero-title">{BLOG_NAME}</h1>
+			<p class="blog-hero-slogan">{BLOG_SLOGAN}</p>
+			<p class="blog-hero-stats">共 {posts.length} 篇 · 累计 {totalWords.toLocaleString()} 字</p>
+			<div class="blog-ornament" aria-hidden="true"><span></span></div>
+		</header>
+
+		<main>
+			{
+				years.map((year, gi) => (
+					<section class="blog-year-group">
+						<h2 class="blog-year blog-rise" style={`--i:${gi}`}>
+							{year}
+						</h2>
+						<ul class="blog-post-list">
+							{groups.get(year)!.map((post, i) => {
+								const stats = getReadingStats(post.body)
+								return (
+									<li class="post-item blog-rise" style={`--i:${gi + i + 1}`}>
+										<a href={`/briar/blog/${post.id}/`}>
+											<span class="post-item-title">{post.data.title}</span>
+											<span class="post-item-meta">
+												<time>{formatDateShort(post.data.date)}</time>
+												<span class="post-item-extra">
+													<span class="post-item-dot" />
+													<span>{stats.words} 字</span>
+													<span class="post-item-dot" />
+													<span>约 {stats.minutes} 分钟</span>
+												</span>
+											</span>
+											<span class="post-item-go" aria-hidden="true">
+												→
+											</span>
+										</a>
+									</li>
+								)
+							})}
+						</ul>
+					</section>
+				))
+			}
+		</main>
+
+		<footer class="blog-footer">
+			<a href="/briar/">← 返回 Briar</a>
+		</footer>
+	</div>
+</BlogLayout>
