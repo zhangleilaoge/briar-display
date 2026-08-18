@@ -10,7 +10,7 @@ import {
 	DialogTrigger,
 } from '@/components/ui/dialog'
 import { Loader2, Upload } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 interface UploadTask {
@@ -93,6 +93,27 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 		[handleUploadFiles],
 	)
 
+	// 剪贴板粘贴上传：div 的 onPaste 依赖焦点（div 不可聚焦时收不到），
+	// 改为弹窗打开期间挂 document 级监听
+	useEffect(() => {
+		if (!open) return
+		const onPaste = (e: ClipboardEvent) => {
+			const target = e.target as HTMLElement | null
+			// 不抢文本输入框自身的粘贴行为
+			if (target?.closest('input, textarea, [contenteditable="true"]')) return
+			const pasted = Array.from(e.clipboardData?.items ?? [])
+				.filter((item) => item.kind === 'file')
+				.map((item) => item.getAsFile())
+				.filter(Boolean) as File[]
+			if (pasted.length > 0) {
+				e.preventDefault()
+				handleUploadFiles(pasted)
+			}
+		}
+		document.addEventListener('paste', onPaste)
+		return () => document.removeEventListener('paste', onPaste)
+	}, [open, handleUploadFiles])
+
 	return (
 		<Dialog
 			open={open}
@@ -123,13 +144,6 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 						if (!e.currentTarget.contains(e.relatedTarget as Node)) {
 							setDragging(false)
 						}
-					}}
-					onPaste={(e) => {
-						const pasted = Array.from(e.clipboardData.items)
-							.filter((item) => item.kind === 'file')
-							.map((item) => item.getAsFile())
-							.filter(Boolean) as File[]
-						if (pasted.length > 0) handleUploadFiles(pasted)
 					}}
 					onClick={() => fileInputRef.current?.click()}
 					className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-10 transition-all ${
