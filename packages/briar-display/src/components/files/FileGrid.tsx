@@ -136,7 +136,13 @@ export default function FileGrid({
 					className="group relative"
 					onContextMenu={(e) => onFolderContextMenu(e, folder)}
 				>
-					<div className="absolute left-2 top-2 z-10 opacity-0 transition-opacity group-hover:opacity-100">
+					<div
+						className={`absolute left-2 top-2 z-10 transition-opacity ${
+							selected.has(folderSelectKey(folder.id))
+								? 'opacity-100'
+								: 'opacity-0 group-hover:opacity-100'
+						}`}
+					>
 						<Checkbox
 							checked={selected.has(folderSelectKey(folder.id))}
 							onCheckedChange={() => onToggleSelect(folderSelectKey(folder.id))}
@@ -196,7 +202,11 @@ export default function FileGrid({
 					className="group relative"
 					onContextMenu={(e) => onFileContextMenu(e, file)}
 				>
-					<div className="absolute left-2 top-2 z-10 opacity-0 transition-opacity group-hover:opacity-100">
+					<div
+						className={`absolute left-2 top-2 z-10 transition-opacity ${
+							selected.has(file.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+						}`}
+					>
 						<Checkbox
 							checked={selected.has(file.id)}
 							onCheckedChange={() => onToggleSelect(file.id)}
