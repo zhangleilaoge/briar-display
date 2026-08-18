@@ -4,7 +4,7 @@ import UserMenu from '@/components/common/UserMenu'
 import { Card, CardContent } from '@/components/ui/card'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { BookOpen, Folder, Shield, Wrench } from 'lucide-react'
+import { BookOpen, Folder, PenLine, Shield, Wrench } from 'lucide-react'
 
 interface EntryCardProps {
 	icon: React.ReactNode
@@ -107,6 +107,13 @@ function PortalPageInner() {
 							description="文件、图片与视频的云端管理"
 							href="/briar/files"
 							gradient="from-pink-500 to-rose-500"
+						/>
+						<EntryCard
+							icon={<PenLine className="h-5 w-5" />}
+							title="博客"
+							description="个人随笔与文章"
+							href="/briar/blog/"
+							gradient="from-orange-500 to-red-500"
 						/>
 						{isAdmin && (
 							<EntryCard

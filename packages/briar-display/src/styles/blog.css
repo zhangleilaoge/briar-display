@@ -1,0 +1,550 @@
+/* ============================================================
+   个人博客主题：暖纸 + 朱砂（暗色自动切换为墨黑 + 金）
+   仅作用于 .blog-theme 内部，不影响站点其他页面
+   ============================================================ */
+
+:root {
+	--blog-bg: #f7f4ee;
+	--blog-bg-soft: #efeae0;
+	--blog-ink: #2b2520;
+	--blog-muted: #8d8272;
+	--blog-accent: #b0482e;
+	--blog-accent-soft: rgba(176, 72, 46, 0.1);
+	--blog-line: #e3dccd;
+	--blog-dot: rgba(43, 37, 32, 0.045);
+	--blog-glow: rgba(176, 72, 46, 0.05);
+	--blog-serif: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--blog-bg: #15120d;
+		--blog-bg-soft: #1e1a13;
+		--blog-ink: #e8e1d2;
+		--blog-muted: #998e7b;
+		--blog-accent: #d9a441;
+		--blog-accent-soft: rgba(217, 164, 65, 0.12);
+		--blog-line: #2f2a1f;
+		--blog-dot: rgba(232, 225, 210, 0.04);
+		--blog-glow: rgba(217, 164, 65, 0.06);
+	}
+}
+
+.blog-theme {
+	min-height: 100vh;
+	background-color: var(--blog-bg);
+	background-image: radial-gradient(ellipse 80% 50% at 50% -10%, var(--blog-glow), transparent),
+		radial-gradient(var(--blog-dot) 1px, transparent 1px);
+	background-size: auto, 26px 26px;
+	background-attachment: fixed;
+	color: var(--blog-ink);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+		"Microsoft YaHei", sans-serif;
+}
+
+.blog-theme ::selection {
+	background: var(--blog-accent);
+	color: #fff;
+}
+
+/* ---------- 入场动画（staggered，配合 style="--i:n"） ---------- */
+
+@keyframes blog-rise {
+	from {
+		opacity: 0;
+		transform: translateY(16px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+.blog-rise {
+	animation: blog-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+	animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.blog-rise {
+		animation: none;
+	}
+}
+
+/* ---------- 布局骨架 ---------- */
+
+.blog-shell {
+	max-width: 44rem;
+	margin: 0 auto;
+	padding: 0 1.5rem;
+}
+
+.blog-footer {
+	padding: 4.5rem 0 3rem;
+	text-align: center;
+	font-size: 0.85rem;
+}
+
+.blog-footer a {
+	color: var(--blog-muted);
+	text-decoration: none;
+	transition: color 0.3s;
+}
+
+.blog-footer a:hover {
+	color: var(--blog-accent);
+}
+
+/* 装饰分隔：— ◆ — */
+.blog-ornament {
+	display: flex;
+	align-items: center;
+	gap: 0.9rem;
+	max-width: 300px;
+	margin: 2.4rem auto 0;
+}
+
+.blog-ornament::before,
+.blog-ornament::after {
+	content: "";
+	height: 1px;
+	flex: 1;
+	background: linear-gradient(90deg, transparent, var(--blog-line));
+}
+
+.blog-ornament::after {
+	background: linear-gradient(90deg, var(--blog-line), transparent);
+}
+
+.blog-ornament span {
+	width: 7px;
+	height: 7px;
+	transform: rotate(45deg);
+	background: var(--blog-accent);
+}
+
+/* ---------- 列表页 Hero ---------- */
+
+.blog-hero {
+	padding: 5.5rem 0 1rem;
+	text-align: center;
+}
+
+.blog-hero-eyebrow {
+	font-size: 0.72rem;
+	letter-spacing: 0.4em;
+	text-indent: 0.4em;
+	color: var(--blog-muted);
+}
+
+.blog-hero-title {
+	margin: 0.8rem 0 0.6rem;
+	font-family: var(--blog-serif);
+	font-size: clamp(2.8rem, 7vw, 4rem);
+	font-weight: 700;
+	letter-spacing: 0.08em;
+}
+
+.blog-hero-slogan {
+	font-family: var(--blog-serif);
+	font-size: 1.05rem;
+	color: var(--blog-muted);
+	letter-spacing: 0.15em;
+}
+
+.blog-hero-stats {
+	margin-top: 1.1rem;
+	font-size: 0.8rem;
+	color: var(--blog-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 列表页：年份分组 + 文章条目 ---------- */
+
+.blog-year-group {
+	margin-top: 3.5rem;
+}
+
+.blog-year {
+	margin: 0 0 0.4rem;
+	font-family: var(--blog-serif);
+	font-size: 2.4rem;
+	font-weight: 700;
+	line-height: 1;
+	color: transparent;
+	-webkit-text-stroke: 1px var(--blog-muted);
+	opacity: 0.45;
+}
+
+@supports not (-webkit-text-stroke: 1px black) {
+	.blog-year {
+		color: var(--blog-muted);
+	}
+}
+
+.blog-post-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.post-item a {
+	display: flex;
+	align-items: baseline;
+	gap: 1rem;
+	padding: 1.05rem 0.5rem;
+	border-bottom: 1px solid var(--blog-line);
+	border-radius: 8px;
+	color: inherit;
+	text-decoration: none;
+	transition: background 0.3s;
+}
+
+.post-item a:hover {
+	background: var(--blog-accent-soft);
+}
+
+.post-item-title {
+	font-family: var(--blog-serif);
+	font-size: 1.3rem;
+	transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), color 0.35s;
+}
+
+.post-item a:hover .post-item-title {
+	color: var(--blog-accent);
+	transform: translateX(5px);
+}
+
+.post-item-meta {
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	white-space: nowrap;
+	font-size: 0.78rem;
+	color: var(--blog-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.post-item-dot {
+	width: 3px;
+	height: 3px;
+	border-radius: 50%;
+	background: var(--blog-muted);
+	opacity: 0.6;
+}
+
+.post-item-go {
+	color: var(--blog-accent);
+	opacity: 0;
+	transform: translateX(-8px);
+	transition: opacity 0.35s, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.post-item a:hover .post-item-go {
+	opacity: 1;
+	transform: none;
+}
+
+.post-item-extra {
+	display: contents;
+}
+
+@media (max-width: 640px) {
+	.post-item-extra {
+		display: none;
+	}
+}
+
+/* ---------- 详情页：阅读进度条 ---------- */
+
+.blog-progress {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 3px;
+	z-index: 50;
+	background: linear-gradient(
+		90deg,
+		var(--blog-accent),
+		color-mix(in srgb, var(--blog-accent) 60%, #f2b880)
+	);
+	transform: scaleX(0);
+	transform-origin: 0 50%;
+}
+
+/* ---------- 详情页：文章头 ---------- */
+
+.article-header {
+	padding: 3.5rem 0 0;
+	text-align: center;
+}
+
+.article-back {
+	font-size: 0.82rem;
+	color: var(--blog-muted);
+	text-decoration: none;
+	transition: color 0.3s;
+}
+
+.article-back:hover {
+	color: var(--blog-accent);
+}
+
+.article-title {
+	margin: 1.4rem 0 1rem;
+	font-family: var(--blog-serif);
+	font-size: clamp(1.9rem, 5vw, 2.7rem);
+	font-weight: 700;
+	line-height: 1.35;
+}
+
+.article-meta {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.6rem;
+	font-size: 0.85rem;
+	color: var(--blog-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.article-tags {
+	display: flex;
+	justify-content: center;
+	gap: 0.5rem;
+	margin: 1rem 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.article-tags li {
+	padding: 0.2rem 0.75rem;
+	border-radius: 999px;
+	background: var(--blog-accent-soft);
+	color: var(--blog-accent);
+	font-size: 0.75rem;
+}
+
+/* ---------- 详情页：正文排版 ---------- */
+
+.blog-article {
+	margin-top: 3rem;
+	font-family: var(--blog-serif);
+	font-size: 1.06rem;
+	line-height: 1.95;
+	color: var(--blog-ink);
+}
+
+/* 首字下沉 */
+.blog-article > p:first-of-type::first-letter {
+	float: left;
+	padding: 0.1em 0.14em 0 0;
+	font-size: 2.7em;
+	font-weight: 600;
+	line-height: 1;
+	color: var(--blog-accent);
+}
+
+.blog-article p {
+	margin: 1.1em 0;
+	text-align: justify;
+}
+
+.blog-article h2,
+.blog-article h3,
+.blog-article h4 {
+	font-family: var(--blog-serif);
+	font-weight: 700;
+	line-height: 1.4;
+}
+
+.blog-article h2 {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	margin: 2.4em 0 0.9em;
+	font-size: 1.45rem;
+}
+
+.blog-article h2::before {
+	content: "";
+	flex: none;
+	width: 0.45rem;
+	height: 0.45rem;
+	transform: rotate(45deg);
+	background: var(--blog-accent);
+}
+
+.blog-article h3 {
+	margin: 2em 0 0.7em;
+	font-size: 1.2rem;
+}
+
+.blog-article h4 {
+	margin: 1.6em 0 0.5em;
+	font-size: 1.05rem;
+}
+
+.blog-article a {
+	color: var(--blog-accent);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	text-decoration-color: color-mix(in srgb, var(--blog-accent) 40%, transparent);
+	border-radius: 3px;
+	transition: background 0.25s, text-decoration-color 0.25s;
+}
+
+.blog-article a:hover {
+	background: var(--blog-accent-soft);
+	text-decoration-color: var(--blog-accent);
+}
+
+.blog-article strong {
+	font-weight: 700;
+}
+
+.blog-article blockquote {
+	margin: 1.4em 0;
+	padding: 0.9em 1.2em;
+	border-left: 3px solid var(--blog-accent);
+	border-radius: 0 10px 10px 0;
+	background: var(--blog-accent-soft);
+	color: color-mix(in srgb, var(--blog-ink) 82%, var(--blog-muted));
+}
+
+.blog-article blockquote p {
+	margin: 0.4em 0;
+}
+
+.blog-article ul,
+.blog-article ol {
+	margin: 1em 0;
+	padding-left: 1.6em;
+}
+
+.blog-article li {
+	margin: 0.35em 0;
+}
+
+.blog-article li::marker {
+	color: var(--blog-accent);
+}
+
+.blog-article :not(pre) > code {
+	padding: 0.15em 0.45em;
+	border-radius: 6px;
+	background: var(--blog-accent-soft);
+	color: var(--blog-accent);
+	font-size: 0.88em;
+}
+
+.blog-article pre {
+	margin: 1.5em 0;
+	padding: 1.1rem 1.3rem;
+	border-radius: 12px;
+	font-size: 0.88rem;
+	line-height: 1.7;
+	overflow-x: auto;
+}
+
+.blog-article img {
+	display: block;
+	margin: 1.8rem auto;
+	max-width: 100%;
+	border-radius: 12px;
+	box-shadow: 0 10px 34px rgba(0, 0, 0, 0.1);
+}
+
+.blog-article hr {
+	display: flex;
+	justify-content: center;
+	margin: 2.8rem 0;
+	border: none;
+}
+
+.blog-article hr::after {
+	content: "✦ ✦ ✦";
+	letter-spacing: 0.6em;
+	color: var(--blog-accent);
+	opacity: 0.55;
+	font-size: 0.8rem;
+}
+
+.blog-article table {
+	width: 100%;
+	margin: 1.6rem 0;
+	border-collapse: collapse;
+	font-size: 0.92rem;
+}
+
+.blog-article th,
+.blog-article td {
+	padding: 0.55em 0.9em;
+	border: 1px solid var(--blog-line);
+	text-align: left;
+}
+
+.blog-article th {
+	background: var(--blog-bg-soft);
+	font-weight: 600;
+}
+
+/* ---------- 详情页：上一篇 / 下一篇 ---------- */
+
+.article-nav {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1rem;
+	margin-top: 4.5rem;
+}
+
+.article-nav-card {
+	display: block;
+	padding: 1.05rem 1.25rem;
+	border: 1px solid var(--blog-line);
+	border-radius: 12px;
+	background: color-mix(in srgb, var(--blog-bg-soft) 60%, transparent);
+	color: inherit;
+	text-decoration: none;
+	transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.35s, box-shadow 0.35s;
+}
+
+.article-nav-card:hover {
+	transform: translateY(-3px);
+	border-color: var(--blog-accent);
+	box-shadow: 0 12px 32px -14px rgba(0, 0, 0, 0.2);
+}
+
+.article-nav-card.newer {
+	text-align: right;
+}
+
+.article-nav-label {
+	font-size: 0.74rem;
+	letter-spacing: 0.12em;
+	color: var(--blog-muted);
+}
+
+.article-nav-title {
+	display: block;
+	margin-top: 0.4rem;
+	font-family: var(--blog-serif);
+	font-size: 1.05rem;
+	transition: color 0.3s;
+}
+
+.article-nav-card:hover .article-nav-title {
+	color: var(--blog-accent);
+}
+
+@media (max-width: 640px) {
+	.article-nav {
+		grid-template-columns: 1fr;
+	}
+
+	.article-nav-card.newer {
+		text-align: left;
+	}
+}
