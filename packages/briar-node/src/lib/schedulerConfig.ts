@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'url'
+import { logDal } from '../dal/logDal'
 import { certificateService } from '../services/certificateService'
 import { fileModerationService } from '../services/fileModerationService'
 import { maintenanceService } from '../services/maintenanceService'
@@ -55,6 +56,19 @@ export const schedulerTasks: SchedulerTask[] = [
 		run: async () => {
 			const cleaned = await fileModerationService.scanAndCleanBlockedImages()
 			return `扫描完成，清理 ${cleaned} 张被封禁图片`
+		},
+	},
+	{
+		name: 'cleanup-request-logs',
+		label: '清理请求日志',
+		description: '删除 90 天前的请求日志（request_logs），控制表体积',
+		scheduleText: '每日 02:37',
+		cron: resolveCron('BRIAR_CLEANUP_LOGS_CRON', '37 2 * * *'),
+		runOnStart: false,
+		path: fileURLToPath(new URL('../jobs/cleanup-request-logs.mjs', import.meta.url)),
+		run: async () => {
+			const deleted = await logDal.cleanup(90)
+			return `已清理 90 天前的请求日志 ${deleted} 条`
 		},
 	},
 ]

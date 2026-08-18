@@ -167,3 +167,16 @@ ON DUPLICATE KEY UPDATE role_id=role_id;
 
 -- readme_ai 功能已下线，删除遗留表
 DROP TABLE IF EXISTS readme_ai;
+
+-- request_logs 增强：响应体（截断）+ 错误堆栈
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'request_logs' AND COLUMN_NAME = 'response_body');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE request_logs ADD COLUMN response_body TEXT NULL COMMENT ''响应体（截断 2000 字符，敏感字段脱敏）'' AFTER request_params', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'request_logs' AND COLUMN_NAME = 'error_stack');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE request_logs ADD COLUMN error_stack TEXT NULL COMMENT ''错误堆栈（仅未捕获异常）'' AFTER error_message', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

@@ -23,10 +23,12 @@ import {
 	ChevronDown,
 	ChevronRight,
 	Copy,
+	FoldVertical,
 	Loader2,
 	Radio,
 	Search,
 	Timer,
+	UnfoldVertical,
 	Zap,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -83,7 +85,8 @@ function AdminLogsPageInner() {
 	const [total, setTotal] = useState(0)
 	const [offset, setOffset] = useState(0)
 	const [loading, setLoading] = useState(true)
-	const [expandedId, setExpandedId] = useState<string | null>(null)
+	// 默认全部展开；collapsedIds 记录被手动折叠的行（新查询结果自然恢复全展开）
+	const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set())
 	const [copiedTraceId, setCopiedTraceId] = useState<string | null>(null)
 
 	// Query summary
@@ -385,6 +388,24 @@ function AdminLogsPageInner() {
 					<Button
 						variant="outline"
 						size="sm"
+						title="全部展开"
+						onClick={() => setCollapsedIds(new Set())}
+						className="h-8 w-8 p-0"
+					>
+						<UnfoldVertical className="h-3.5 w-3.5" />
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						title="全部折叠"
+						onClick={() => setCollapsedIds(new Set(logs.map((l) => l.id)))}
+						className="h-8 w-8 p-0"
+					>
+						<FoldVertical className="h-3.5 w-3.5" />
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
 						onClick={() => {
 							setTraceId('')
 							setMethod('all')
@@ -459,13 +480,20 @@ function AdminLogsPageInner() {
 						</thead>
 						<tbody className="divide-y">
 							{logs.map((log) => {
-								const isExpanded = expandedId === log.id
+								const isExpanded = !collapsedIds.has(log.id)
+								const toggleRow = () =>
+									setCollapsedIds((prev) => {
+										const next = new Set(prev)
+										if (next.has(log.id)) next.delete(log.id)
+										else next.add(log.id)
+										return next
+									})
 								return (
 									<>
 										<tr
 											key={log.id}
 											className={`cursor-pointer transition-colors hover:bg-muted/30 ${isExpanded ? 'bg-muted/20' : ''}`}
-											onClick={() => setExpandedId(isExpanded ? null : log.id)}
+											onClick={toggleRow}
 										>
 											<td className="px-2 py-2 text-muted-foreground">
 												{isExpanded ? (
@@ -563,11 +591,29 @@ function AdminLogsPageInner() {
 																	</pre>
 																</div>
 															)}
+															{log.responseBody && (
+																<div className="mt-2">
+																	<p className="mb-0.5 font-medium text-muted-foreground">
+																		响应体（截断 2000 字符）
+																	</p>
+																	<pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-2 font-mono">
+																		{log.responseBody}
+																	</pre>
+																</div>
+															)}
 															{log.errorMessage && (
 																<div className="mt-2">
 																	<p className="mb-0.5 font-medium text-red-600">错误信息</p>
 																	<pre className="rounded border border-red-200 bg-red-50 p-2 text-red-700">
 																		{log.errorMessage}
+																	</pre>
+																</div>
+															)}
+															{log.errorStack && (
+																<div className="mt-2">
+																	<p className="mb-0.5 font-medium text-red-600">错误堆栈</p>
+																	<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-all rounded border border-red-200 bg-red-50 p-2 font-mono text-[11px] text-red-700">
+																		{log.errorStack}
 																	</pre>
 																</div>
 															)}
