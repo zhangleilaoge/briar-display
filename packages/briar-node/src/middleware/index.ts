@@ -3,6 +3,7 @@ import { getCookie } from 'hono/cookie'
 import { cors } from 'hono/cors'
 import { isApiPublicPath } from '../config/routes'
 import { logDal } from '../dal/logDal'
+import { redactSensitive, truncateForLog } from '../lib/logger'
 import { authService } from '../services/authService'
 import { authMiddleware } from './authMiddleware'
 import { errorHandler } from './errorHandler'
@@ -100,6 +101,9 @@ export const loggerMiddleware = (): MiddlewareHandler => {
 			await next()
 		} catch (err) {
 			errorMessage = err instanceof Error ? err.message : String(err)
+			// 未捕获异常由 errorHandler 落库，这里把耗时和堆栈捎到 context 上
+			c.set('logDuration', Date.now() - start)
+			c.set('logErrorStack', err instanceof Error ? err.stack : undefined)
 			throw err
 		}
 
@@ -141,7 +145,7 @@ export const loggerMiddleware = (): MiddlewareHandler => {
 			),
 		)
 
-		// API 请求写入数据库（异步，不阻塞响应）
+		// API 请求写入数据库（异步，不阻塞响应；入参/出参脱敏，出参截断 2000 字符）
 		if (isApiRequest && traceId) {
 			const user = c.get('user') as { id: string } | undefined
 			logDal
@@ -154,7 +158,12 @@ export const loggerMiddleware = (): MiddlewareHandler => {
 					ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || undefined,
 					userAgent: c.req.header('user-agent') || undefined,
 					userId: user?.id,
-					requestParams: Object.keys(params).length > 0 ? params : undefined,
+					requestParams:
+						Object.keys(params).length > 0
+							? (redactSensitive(params) as Record<string, unknown>)
+							: undefined,
+					responseBody:
+						responseData !== undefined ? truncateForLog(redactSensitive(responseData)) : undefined,
 					errorMessage,
 				})
 				.catch((err) => {

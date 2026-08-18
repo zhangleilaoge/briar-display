@@ -12,7 +12,9 @@ export interface RequestLogRecord {
 	userAgent: string | null
 	userId: string | null
 	requestParams: Record<string, unknown> | null
+	responseBody: string | null
 	errorMessage: string | null
+	errorStack: string | null
 	createdAt: Date
 }
 
@@ -27,7 +29,9 @@ interface RequestLogRow {
 	user_agent: string | null
 	user_id: string | null
 	request_params: string | null
+	response_body: string | null
 	error_message: string | null
+	error_stack: string | null
 	created_at: Date
 }
 
@@ -47,6 +51,8 @@ const mapRow = (row: RequestLogRow): RequestLogRecord => ({
 			: row.request_params
 		: null,
 	errorMessage: row.error_message,
+	errorStack: row.error_stack,
+	responseBody: row.response_body,
 	createdAt: row.created_at,
 })
 
@@ -61,12 +67,14 @@ export const logDal = {
 		userAgent?: string
 		userId?: string
 		requestParams?: Record<string, unknown>
+		responseBody?: string
 		errorMessage?: string
+		errorStack?: string
 	}): Promise<void> {
 		const id = generateId()
 		await execute(
-			`INSERT INTO request_logs (id, trace_id, method, path, status, duration, ip, user_agent, user_id, request_params, error_message)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO request_logs (id, trace_id, method, path, status, duration, ip, user_agent, user_id, request_params, response_body, error_message, error_stack)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			[
 				id,
 				data.traceId,
@@ -78,14 +86,16 @@ export const logDal = {
 				data.userAgent || null,
 				data.userId || null,
 				data.requestParams ? JSON.stringify(data.requestParams) : null,
+				data.responseBody || null,
 				data.errorMessage || null,
+				data.errorStack || null,
 			],
 		)
 	},
 
 	async findByTraceId(traceId: string): Promise<RequestLogRecord[]> {
 		const rows = await query<RequestLogRow>(
-			`SELECT id, trace_id, method, path, status, duration, ip, user_agent, user_id, request_params, error_message, created_at
+			`SELECT id, trace_id, method, path, status, duration, ip, user_agent, user_id, request_params, response_body, error_message, error_stack, created_at
 			FROM request_logs
 			WHERE trace_id = ?
 			ORDER BY created_at DESC`,
@@ -96,7 +106,7 @@ export const logDal = {
 
 	async findSlowRequests(limit = 20): Promise<RequestLogRecord[]> {
 		const rows = await query<RequestLogRow>(
-			`SELECT id, trace_id, method, path, status, duration, ip, user_agent, user_id, request_params, error_message, created_at
+			`SELECT id, trace_id, method, path, status, duration, ip, user_agent, user_id, request_params, response_body, error_message, error_stack, created_at
 			FROM request_logs
 			ORDER BY duration DESC
 			LIMIT ${Math.floor(limit)}`,
@@ -106,7 +116,7 @@ export const logDal = {
 
 	async findErrors(limit = 20): Promise<RequestLogRecord[]> {
 		const rows = await query<RequestLogRow>(
-			`SELECT id, trace_id, method, path, status, duration, ip, user_agent, user_id, request_params, error_message, created_at
+			`SELECT id, trace_id, method, path, status, duration, ip, user_agent, user_id, request_params, response_body, error_message, error_stack, created_at
 			FROM request_logs
 			WHERE status >= 400
 			ORDER BY created_at DESC
@@ -167,10 +177,10 @@ export const logDal = {
 		}
 		if (filters.keyword) {
 			conditions.push(
-				'(path LIKE ? OR error_message LIKE ? OR request_params LIKE ? OR trace_id LIKE ?)',
+				'(path LIKE ? OR error_message LIKE ? OR request_params LIKE ? OR response_body LIKE ? OR trace_id LIKE ?)',
 			)
 			const kw = `%${filters.keyword}%`
-			values.push(kw, kw, kw, kw)
+			values.push(kw, kw, kw, kw, kw)
 		}
 		if (filters.startTime) {
 			conditions.push('created_at >= ?')
@@ -192,7 +202,7 @@ export const logDal = {
 		const total = countRow[0]?.cnt || 0
 
 		const rows = await query<RequestLogRow>(
-			`SELECT id, trace_id, method, path, status, duration, ip, user_agent, user_id, request_params, error_message, created_at
+			`SELECT id, trace_id, method, path, status, duration, ip, user_agent, user_id, request_params, response_body, error_message, error_stack, created_at
 			FROM request_logs ${where}
 			ORDER BY created_at DESC
 			LIMIT ${limit} OFFSET ${offset}`,

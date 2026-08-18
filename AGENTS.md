@@ -161,6 +161,10 @@ SELECT * FROM request_logs WHERE trace_id = 'xxx';
 SELECT * FROM request_logs WHERE status >= 400 ORDER BY created_at DESC LIMIT 20;
 ```
 
-或 API：`GET /api/admin/logs?statusGroup=5xx&limit=20`
+`request_logs` 含 `request_params`（脱敏）、`response_body`（脱敏 + 截断 2000 字符）、`error_message`、`error_stack`（未捕获异常）。代码里主动打的 `console.*` 会被 `lib/logger.ts` 的 `patchConsoleWithTrace` 自动加上 `[traceId]` 前缀（ALS 注入，traceIdMiddleware 包住请求链），PM2 日志可 `grep '<traceId>'` 关联一个请求的全部日志。敏感字段（token/password 等 key）入库前由 `redactSensitive` 替换为 `***`。
+
+`request_logs` 保留 90 天，定时任务 `cleanup-request-logs` 每日清理（`BRIAR_CLEANUP_LOGS_CRON` 可覆盖）。
+
+或 API：`GET /api/admin/logs?statusGroup=5xx&limit=20`（关键词搜索覆盖路径/参数/响应体/错误/trace）
 
 管理页面：`/briar/admin/logs`

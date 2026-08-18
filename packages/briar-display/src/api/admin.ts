@@ -135,7 +135,9 @@ export interface RequestLogItem {
 	userAgent: string | null
 	userId: string | null
 	requestParams: Record<string, unknown> | null
+	responseBody: string | null
 	errorMessage: string | null
+	errorStack: string | null
 	createdAt: string
 }
 

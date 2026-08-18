@@ -2,6 +2,7 @@ import { type ApiResponse, HTTP_STATUS } from '@briar/shared'
 import type { Context, MiddlewareHandler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { logDal } from '../dal/logDal'
+import { redactSensitive, truncateForLog } from '../lib/logger'
 
 /**
  * 全局错误处理中间件
@@ -14,9 +15,10 @@ export const errorHandler = (): MiddlewareHandler => {
 		} catch (error) {
 			const traceId = c.get('traceId') as string | undefined
 			const errorMsg = error instanceof Error ? error.message : String(error)
-			console.error(`🔴 Unhandled error [${traceId || 'no-trace'}]:`, error)
+			// console 已被 patchConsoleWithTrace 包装，请求上下文内自动带 [traceId] 前缀
+			console.error('🔴 Unhandled error:', error)
 
-			// 写入数据库
+			// 写入数据库（耗时/堆栈由 loggerMiddleware 抛出前捎到 context；无则现场取）
 			if (traceId) {
 				logDal
 					.create({
@@ -24,11 +26,15 @@ export const errorHandler = (): MiddlewareHandler => {
 						method: c.req.method,
 						path: c.req.path,
 						status: error instanceof HTTPException ? error.status : 500,
-						duration: 0,
+						duration: (c.get('logDuration') as number | undefined) ?? 0,
 						ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || undefined,
 						userAgent: c.req.header('user-agent') || undefined,
 						userId: (c.get('user') as { id: string } | undefined)?.id,
+						responseBody: truncateForLog(redactSensitive({ success: false, message: errorMsg })),
 						errorMessage: errorMsg,
+						errorStack:
+							(c.get('logErrorStack') as string | undefined) ??
+							(error instanceof Error ? error.stack : undefined),
 					})
 					.catch(() => {})
 			}

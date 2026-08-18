@@ -5,6 +5,7 @@ import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
 import { checkDatabase } from './db/init'
+import { patchConsoleWithTrace } from './lib/logger'
 import { releasePort } from './lib/port'
 import { startScheduler } from './lib/scheduler'
 import { schedulerTasks } from './lib/schedulerConfig'
@@ -12,6 +13,9 @@ import { applyConfiguredMiddlewares, globalMiddlewares } from './middleware/conf
 import apiRoutes from './routes/api'
 import { rootHandler } from './routes/root'
 import { setupTerminalWebSocket } from './routes/terminalWs'
+
+// 包装 console.*：请求上下文内的主动日志自动带 [traceId] 前缀（配合 traceIdMiddleware 的 ALS）
+patchConsoleWithTrace()
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
