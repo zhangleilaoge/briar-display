@@ -60,6 +60,9 @@ function FolderVisual({ previews }: { previews: FolderPreview[] }) {
 	)
 }
 
+/** 文件夹在勾选集合中的 key（加前缀避免与文件 id 冲突） */
+export const folderSelectKey = (id: string) => `folder:${id}`
+
 function formatSize(bytes: number): string {
 	if (bytes < 1024) return `${bytes} B`
 	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -114,14 +117,14 @@ export default function FileGrid({
 	return (
 		<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
 			{/* Select all */}
-			{files.length > 0 && (
+			{files.length + subFolders.length > 0 && (
 				<div className="col-span-full flex items-center gap-2 pb-1">
 					<Checkbox
-						checked={selected.size === files.length && files.length > 0}
+						checked={selected.size === files.length + subFolders.length && selected.size > 0}
 						onCheckedChange={onToggleSelectAll}
 					/>
 					<span className="text-xs text-muted-foreground">
-						全选（已选 {selected.size} / 当前 {files.length}，共 {total}）
+						全选（已选 {selected.size} / 当前 {files.length + subFolders.length}，共 {total}）
 					</span>
 				</div>
 			)}
@@ -133,6 +136,12 @@ export default function FileGrid({
 					className="group relative"
 					onContextMenu={(e) => onFolderContextMenu(e, folder)}
 				>
+					<div className="absolute left-2 top-2 z-10 opacity-0 transition-opacity group-hover:opacity-100">
+						<Checkbox
+							checked={selected.has(folderSelectKey(folder.id))}
+							onCheckedChange={() => onToggleSelect(folderSelectKey(folder.id))}
+						/>
+					</div>
 					<div className="absolute right-2 top-2 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
 						<button
 							type="button"

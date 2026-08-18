@@ -31,7 +31,7 @@ import FileBreadcrumb from './FileBreadcrumb'
 import FileContextMenu, { type ContextMenuItem } from './FileContextMenu'
 import FileDetailModal from './FileDetailModal'
 import { ConfirmDialog, type ConfirmState, MoveFileDialog, RenameDialog } from './FileDialogs'
-import FileGrid from './FileGrid'
+import FileGrid, { folderSelectKey } from './FileGrid'
 import FileManagerLayout from './FileManagerLayout'
 import FileToolbar from './FileToolbar'
 import { splitSort, useFileList } from './useFileList'
@@ -214,18 +214,38 @@ function FileManagerPageInner() {
 	}
 
 	const toggleSelectAll = () => {
-		if (selected.size === files.length) setSelected(new Set())
-		else setSelected(new Set(files.map((i) => i.id)))
+		const allKeys = [...subFolders.map((f) => folderSelectKey(f.id)), ...files.map((i) => i.id)]
+		if (selected.size === allKeys.length) setSelected(new Set())
+		else setSelected(new Set(allKeys))
 	}
 
 	// ========== 删除 ==========
 
 	const handleBulkDelete = () => {
+		const fileIds: string[] = []
+		const folderIds: string[] = []
+		for (const key of selected) {
+			if (key.startsWith('folder:')) folderIds.push(key.slice('folder:'.length))
+			else fileIds.push(key)
+		}
+		const parts: string[] = []
+		if (fileIds.length > 0) parts.push(`${fileIds.length} 个文件`)
+		if (folderIds.length > 0) parts.push(`${folderIds.length} 个文件夹`)
 		setConfirmState({
-			title: `删除 ${selected.size} 个文件`,
-			description: '删除后不可恢复，确定继续？',
+			title: `删除 ${parts.join('和')}`,
+			description:
+				folderIds.length > 0
+					? '文件夹内的所有子文件夹和文件将一并删除，删除后不可恢复，确定继续？'
+					: '删除后不可恢复，确定继续？',
 			onConfirm: async () => {
-				for (const id of selected) {
+				for (const id of folderIds) {
+					try {
+						await deleteFolder(id)
+					} catch {
+						/* ignore */
+					}
+				}
+				for (const id of fileIds) {
 					try {
 						await deleteFile(id)
 					} catch {
@@ -272,6 +292,14 @@ function FileManagerPageInner() {
 					const res = await deleteFolder(folder.id)
 					if (res.success) {
 						toast.success(res.message || '删除成功')
+						// 删除成功后同步清掉该文件夹的勾选态，避免工具栏残留「删除 (n)」
+						setSelected((prev) => {
+							const key = folderSelectKey(folder.id)
+							if (!prev.has(key)) return prev
+							const next = new Set(prev)
+							next.delete(key)
+							return next
+						})
 					} else {
 						toast.error(res.message || '删除失败')
 					}
