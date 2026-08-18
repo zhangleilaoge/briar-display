@@ -134,6 +134,14 @@ restore_backup() {
 
 # 同步代码：支持 DEPLOY_COMMIT 精确部署，否则 git pull（重试 3 次应对网络抖动）
 sync_code() {
+  # 部署前先保证工作区干净：重置本地改动 + 删除未跟踪文件
+  # （git clean 默认跳过 .gitignore 里的 .env/web/dist/node_modules；
+  #   -e 保留 packages/briar-node/jobs —— tsup 构建产物，--skip-build 时仍要供 Bree 运行；
+  #   子模块不受影响，briar-assets/deploy-history.jsonl 审计记录会保留）
+  log_info "清理工作区（reset --hard + clean -fd）..."
+  git reset --hard HEAD >/dev/null
+  git clean -fd -e packages/briar-node/jobs
+
   if [ -n "$DEPLOY_COMMIT" ]; then
     log_info "拉取指定 commit: $DEPLOY_COMMIT"
     if ! git fetch origin; then
