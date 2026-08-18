@@ -134,7 +134,7 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 ## 部署
 
 **自动部署**：`git push` 到 master/main → GitHub Actions 一条流水线完成：
-构建前端 + 上传 CDN → rsync 到服务器 `web/` → SSH 调用 `deploy.sh`（更新代码、build shared+node、migrate、写 version、PM2 重启）→ 健康检查 `GET /api/version` → 记录到 `briar-assets/deploy-history.jsonl`。
+构建前端 + 上传 CDN → rsync 到服务器 `web/` → SSH 调用 `deploy.sh`（清理工作区、更新代码、build shared+node、migrate、写 version、PM2 重启）→ 健康检查 `GET /api/version`（8 次重试，中途自动 `pm2 resurrect` 兜底）→ 记录到 `briar-assets/deploy-history.jsonl`。
 
 **触发范围**：CI 仅对 `packages/briar-{node,display,shared,scripts}`、`scripts/deploy.sh` 及根构建文件（`package.json`/`bun.lock`/`Makefile`/`biome.json`）的改动触发；其他改动（如 briar-agent、briar-skills、docs）不触发，如需部署可在 Actions 页面手动 `workflow_dispatch`。
 
@@ -146,7 +146,9 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 | `default.conf` | `./scripts/deploy-nginx.sh`（手动） |
 | `.env` | `pm2 restart briar-node`（手动，.env 不在 git） |
 
-**手动兜底**：服务器上 `./scripts/deploy.sh`（支持 `--skip-install`/`--skip-build`/`--full-build`，支持 `DEPLOY_COMMIT=<sha>` 精确部署）。
+**手动兜底**：服务器上 `./scripts/deploy.sh`（支持 `--skip-install`/`--skip-build`/`--full-build`，支持 `DEPLOY_COMMIT=<sha>` 精确部署）。同步代码前会 `git reset --hard` + `git clean -fd`（跳过 .gitignore 内容与 `packages/briar-node/jobs` 构建产物，不碰子模块），保证工作区干净。
+
+**PM2 开机自启**：已配置 `pm2 startup`（systemd unit `pm2-ubuntu`，enabled）+ `pm2 save`，服务器重启后自动恢复进程。
 
 **版本校验**：访问 `https://xiaobuzi.cn/api/version` 查看 `backend.commit` 与 `frontend.commit` 是否一致。
 

@@ -42,7 +42,9 @@ const main = () => {
 	const info: VersionInfo = {
 		commit: git('rev-parse HEAD'),
 		branch: git('rev-parse --abbrev-ref HEAD'),
-		dirty: git('status --porcelain').length > 0,
+		// --ignore-submodules=untracked：briar-assets 里的 deploy-history.jsonl 审计记录
+		// 是 CI 追加的未跟踪文件，不应让版本指纹永远 dirty
+		dirty: git('status --porcelain --ignore-submodules=untracked').length > 0,
 		builtAt: new Date().toISOString(),
 		builder: process.env.USER || process.env.USERNAME || 'ci',
 	}
