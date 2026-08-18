@@ -30,7 +30,9 @@ export function ConfirmDialog({
 }) {
 	return (
 		<Dialog open={!!confirm} onOpenChange={(open) => !open && onClose()}>
-			<DialogContent className="sm:max-w-sm">
+			{/* z-[120]：需盖过手写的 FileDetailModal（z-[100]），否则确认框被压在详情弹窗下且
+			    Radix 锁定 body pointer-events 会导致详情弹窗点击穿透 */}
+			<DialogContent className="z-[120] sm:max-w-sm">
 				<DialogHeader>
 					<DialogTitle>{confirm?.title}</DialogTitle>
 				</DialogHeader>
