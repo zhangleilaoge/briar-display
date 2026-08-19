@@ -47,7 +47,6 @@ const LANDING_HTML = `<!DOCTYPE html>
 			transition: opacity 0.2s;
 		}
 		.links a:hover { opacity: 0.8; }
-		.links a.secondary { background: #fff; color: #1a1a1a; border: 1px solid #ddd; }
 		footer {
 			padding: 20px;
 			text-align: center;
