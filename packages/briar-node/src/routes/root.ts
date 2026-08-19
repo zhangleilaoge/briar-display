@@ -6,7 +6,7 @@ import type { Context } from 'hono'
  */
 // 标题需与备案网站名称保持一致（管局审核要求）
 const SITE_TITLE = '个人学习'
-const ICP_NUMBER = '浙ICP备20241116093号-3'
+const ICP_NUMBER = '浙ICP备2024116093号-3'
 
 const LANDING_HTML = `<!DOCTYPE html>
 <html lang="zh-CN">
