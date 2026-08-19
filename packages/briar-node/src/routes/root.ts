@@ -63,7 +63,7 @@ const LANDING_HTML = `<!DOCTYPE html>
 		<h1>${SITE_TITLE}</h1>
 		<p class="subtitle">个人技术站点，记录与分享编程技术相关的学习与实践。</p>
 		<div class="links">
-			<a href="/briar/">进入 Wiki</a>
+			<a href="/briar/">进入主页</a>
 			<a class="secondary" href="/briar/login">登录</a>
 		</div>
 	</main>
