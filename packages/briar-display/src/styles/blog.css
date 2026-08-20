@@ -424,6 +424,15 @@
 	padding-left: 1.6em;
 }
 
+/* Tailwind preflight 会把 list-style 重置为 none，这里恢复标记（颜色由 li::marker 统一为主题色） */
+.blog-article ul {
+	list-style: disc;
+}
+
+.blog-article ol {
+	list-style: decimal;
+}
+
 .blog-article li {
 	margin: 0.35em 0;
 }

@@ -83,10 +83,13 @@ const stats = getReadingStats(post.body)
 	<script
 		id="blog-md-source"
 		type="application/json"
-		set:html={JSON.stringify({ title: post.data.title, body: post.body ?? '' }).replace(
-			/</g,
-			'\\u003c',
-		)}
+		set:html={JSON.stringify({
+			title: post.data.title,
+			body: post.body ?? '',
+			date: post.data.date.toISOString(),
+			tags: post.data.tags,
+			description: post.data.description ?? '',
+		}).replace(/</g, '\\u003c')}
 	/>
 	<BlogEditorLauncher client:load />
 
