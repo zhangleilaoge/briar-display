@@ -1,5 +1,6 @@
 ---
 import { getCollection, render } from 'astro:content'
+import BlogEditorLauncher from '../../../components/blog/BlogEditorLauncher'
 import BlogLayout from '../../../layouts/BlogLayout.astro'
 import { formatDate, getReadingStats } from '../../../lib/blog'
 
@@ -77,6 +78,17 @@ const stats = getReadingStats(post.body)
 			<a href="/briar/blog/">← 全部文章</a>
 		</footer>
 	</div>
+
+	{/* 文章 md 原文（供超管编辑预览读取；转义 < 防止 </script> 提前闭合） */}
+	<script
+		id="blog-md-source"
+		type="application/json"
+		set:html={JSON.stringify({ title: post.data.title, body: post.body ?? '' }).replace(
+			/</g,
+			'\\u003c',
+		)}
+	/>
+	<BlogEditorLauncher client:load />
 
 	<script>
 		const bar = document.getElementById('blog-progress')
