@@ -6,7 +6,7 @@ import type { Context } from 'hono'
  */
 // 标题需与备案网站名称保持一致（管局审核要求）
 const SITE_TITLE = '个人学习'
-const ICP_NUMBER = '浙ICP备20241116093号-3'
+const ICP_NUMBER = '浙ICP备2024116093号-3'
 
 const LANDING_HTML = `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -47,7 +47,6 @@ const LANDING_HTML = `<!DOCTYPE html>
 			transition: opacity 0.2s;
 		}
 		.links a:hover { opacity: 0.8; }
-		.links a.secondary { background: #fff; color: #1a1a1a; border: 1px solid #ddd; }
 		footer {
 			padding: 20px;
 			text-align: center;
@@ -63,8 +62,7 @@ const LANDING_HTML = `<!DOCTYPE html>
 		<h1>${SITE_TITLE}</h1>
 		<p class="subtitle">个人技术站点，记录与分享编程技术相关的学习与实践。</p>
 		<div class="links">
-			<a href="/briar/">进入 Wiki</a>
-			<a class="secondary" href="/briar/login">登录</a>
+			<a href="/briar/">进入主页</a>
 		</div>
 	</main>
 	<footer>
