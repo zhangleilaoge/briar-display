@@ -18,7 +18,7 @@ tags: [随笔]
 title: 文章标题
 date: 2026-08-18
 description: 一句话简介（可选，用于 meta description）
-tags: [随笔, 技术]
+tags: [标签一, 标签二]
 draft: false
 ---
 ```
