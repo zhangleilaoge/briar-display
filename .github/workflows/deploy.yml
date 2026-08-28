@@ -1,4 +1,4 @@
-name: Build and Deploy to CDN
+name: Build and Deploy
 
 on:
   push:
@@ -13,13 +13,19 @@ on:
       - 'packages/briar-display/**'
       - 'packages/briar-shared/**'
       - 'packages/briar-scripts/**' # write-version.ts 被 CI 使用
-      - 'scripts/deploy.sh' # 部署脚本本身
+      - 'scripts/deploy-docker.sh' # 部署脚本本身
+      - 'Dockerfile' # 镜像定义
+      - '.dockerignore'
+      - 'docker-compose.yml'
       - 'package.json' # 根依赖/脚本变化影响构建
       - 'bun.lock' # 锁定文件变化影响构建
       - 'Makefile'
       - 'biome.json'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
+
+env:
+  IMAGE: ccr.ccs.tencentyun.com/briar/briar-app
 
 jobs:
   build-and-deploy:
@@ -40,15 +46,29 @@ jobs:
       - name: Initialize project
         run: make init
 
+      # CDN 上传流程不变：前端 dist 上传 COS 公开桶
       - name: Build and upload to CDN
         run: make build-cdn
 
-      - name: Write frontend version fingerprint
-        run: bun run packages/briar-scripts/scripts/write-version.ts packages/briar-display/dist
+      # ============ 镜像：构建并推送 CCR ============
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Show runner public IP
+      - name: Login to Tencent CCR
+        uses: docker/login-action@v3
+        with:
+          registry: ccr.ccs.tencentyun.com
+          username: ${{ secrets.CCR_USERNAME }}
+          password: ${{ secrets.CCR_PASSWORD }}
+
+      - name: Build and push image
         run: |
-          echo "Runner public IP: $(curl -s https://api.ipify.org)"
+          docker buildx build \
+            --build-arg BRIAR_COMMIT=${{ github.sha }} \
+            --build-arg BRIAR_BRANCH=${{ github.ref_name }} \
+            -t $IMAGE:${{ github.sha }} \
+            -t $IMAGE:latest \
+            --push .
 
       - name: Setup SSH
         run: |
@@ -57,32 +77,17 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
-      # ============ 前端：同步到服务器 web/ ============
-      - name: Sync web assets to server
-        env:
-          REMOTE_DIR: ${{ secrets.DEPLOY_REMOTE_DIR }}
-        run: |
-          REMOTE_DIR="${REMOTE_DIR:-/home/ubuntu/github/briar-display/packages/briar-display/web}"
-          SSH_OPTS="-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3"
-          echo "同步前端到 $REMOTE_DIR"
-          ssh $SSH_OPTS ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p $REMOTE_DIR"
-          rsync -avz --delete \
-            -e "ssh $SSH_OPTS" \
-            packages/briar-display/dist/ \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:$REMOTE_DIR
-
-      # ============ 后端：SSH 调用 deploy.sh ============
-      - name: Deploy backend (SSH)
+      # ============ 服务器：更新代码 + docker compose 部署 ============
+      - name: Deploy to server (SSH)
         env:
           PROJECT_DIR: ${{ secrets.DEPLOY_PROJECT_DIR }}
         run: |
           SSH_OPTS="-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3"
           PROJECT_DIR="${PROJECT_DIR:-/home/ubuntu/github/briar-display}"
-          echo "部署后端到 $PROJECT_DIR，commit=${{ github.sha }}"
-          # 先把服务器代码更新到目标 commit，确保执行的是新版 deploy.sh
-          # （否则跑的是上次部署遗留的旧脚本，中途 git pull 不会重载当前进程）
+          echo "部署到 $PROJECT_DIR，commit=${{ github.sha }}"
+          # 先把服务器代码更新到目标 commit，确保执行的是新版 deploy-docker.sh 与 compose 文件
           ssh $SSH_OPTS ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
-            "cd $PROJECT_DIR && git fetch origin && (git checkout master 2>/dev/null || true) && git reset --hard origin/master && DEPLOY_RUN_ID=${{ github.run_id }} bash scripts/deploy.sh"
+            "cd $PROJECT_DIR && git fetch origin && (git checkout master 2>/dev/null || true) && git reset --hard origin/master && DEPLOY_RUN_ID=${{ github.run_id }} BRIAR_IMAGE_TAG=${{ github.sha }} bash scripts/deploy-docker.sh"
 
       # ============ 健康检查 ============
       - name: Health check
@@ -101,16 +106,9 @@ jobs:
               echo "frontend.commit=$FE backend.commit=$BE"
               exit 0
             fi
-            # 第 4 次仍失败：PM2 daemon 可能已挂（部署时内存压力大曾被杀），尝试 resurrect 从 dump 恢复
-            if [ "$i" = "4" ]; then
-              echo "⚠️ 连续失败，尝试 pm2 resurrect 恢复进程列表..."
-              ssh $SSH_OPTS ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
-                'export PATH="$HOME/.bun/bin:$PATH"; [ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh" >/dev/null 2>&1; pm2 resurrect && pm2 save' || true
-              sleep 5
-            fi
             sleep 4
           done
-          echo "❌ 健康检查失败，/api/version 无响应，请检查 pm2 logs briar-node"
+          echo "❌ 健康检查失败，/api/version 无响应，请到服务器检查: docker compose logs app"
           exit 1
 
       # ============ 部署历史（写入 briar-assets 审计） ============

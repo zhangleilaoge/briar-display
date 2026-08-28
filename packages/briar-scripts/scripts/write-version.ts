@@ -39,14 +39,18 @@ const resolveTarget = (arg: string | undefined): string => {
 const main = () => {
 	const target = resolveTarget(process.argv[2])
 
+	// Docker 镜像内无 .git，CI 通过 --build-arg 注入环境变量；env 优先于 git 命令
+	const envCommit = process.env.BRIAR_GIT_COMMIT
+
 	const info: VersionInfo = {
-		commit: git('rev-parse HEAD'),
-		branch: git('rev-parse --abbrev-ref HEAD'),
+		commit: envCommit || git('rev-parse HEAD'),
+		branch: process.env.BRIAR_GIT_BRANCH || git('rev-parse --abbrev-ref HEAD'),
 		// --ignore-submodules=untracked：briar-assets 里的 deploy-history.jsonl 审计记录
 		// 是 CI 追加的未跟踪文件，不应让版本指纹永远 dirty
-		dirty: git('status --porcelain --ignore-submodules=untracked').length > 0,
+		// env 模式下工作区即构建上下文快照，无 dirty 概念
+		dirty: envCommit ? false : git('status --porcelain --ignore-submodules=untracked').length > 0,
 		builtAt: new Date().toISOString(),
-		builder: process.env.USER || process.env.USERNAME || 'ci',
+		builder: process.env.BRIAR_BUILDER || process.env.USER || process.env.USERNAME || 'ci',
 	}
 
 	fs.mkdirSync(path.dirname(target), { recursive: true })

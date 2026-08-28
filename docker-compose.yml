@@ -1,0 +1,62 @@
+# Briar Display 一体化编排（仅服务器使用，本地开发仍走 make dev）
+# 用法：
+#   docker compose up -d                           # 启动/更新
+#   BRIAR_IMAGE_TAG=<sha> docker compose up -d     # 部署指定版本
+# 变量插值读取同目录 .env（compose 默认行为）
+name: briar
+
+services:
+  app:
+    image: ccr.ccs.tencentyun.com/briar/briar-app:${BRIAR_IMAGE_TAG:-latest}
+    container_name: briar-app
+    # 只对宿主机 nginx 暴露（default.conf 反代 127.0.0.1:3888），外部直连被挡
+    ports:
+      - '127.0.0.1:3888:3888'
+    volumes:
+      # dotenv 从 /app/.env 读配置；不覆盖 environment 里已有的变量
+      - ./.env:/app/.env:ro
+      # SSH 私钥（终端控制台）、证书续期写 ssl/、GitHub token 兜底
+      - ./briar-assets:/app/briar-assets
+      # /api/deployment/live 实时读取的部署进度文件（宿主机 deploy-docker.sh 写入）
+      - /tmp/briar-deploy-progress.log:/tmp/briar-deploy-progress.log
+    environment:
+      # 覆盖 .env 里的数据库地址：容器网络内走服务名
+      BRIAR_DATABASE_HOST: mysql
+      # 证书续期依赖宿主机 git/nginx，容器内关闭，由宿主机 cron 兜底（见 AGENTS.md 部署章节）
+      BRIAR_CERT_RENEWAL: 'off'
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3888/api/version').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  mysql:
+    image: mysql:8.0
+    container_name: briar-mysql
+    # 保持 3306 对外可达（本地开发 .env 直连服务器数据库，与现状一致）
+    ports:
+      - '3306:3306'
+    volumes:
+      # 数据落宿主机外部目录，容器重建不丢数据
+      - ${BRIAR_MYSQL_DATA_DIR:-/home/ubuntu/data/briar-mysql}:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: briar_display
+      MYSQL_USER: ${BRIAR_DATABASE_USER}
+      MYSQL_PASSWORD: ${BRIAR_DATABASE_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    # 3.6G 小内存机器调优
+    command: --performance-schema=OFF --innodb-buffer-pool-size=256M
+    restart: unless-stopped
+    mem_limit: 768m
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s

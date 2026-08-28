@@ -64,8 +64,11 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 | `packages/briar-node/src/services/schedulerRunService.ts` | `runWithLog`：执行包装器，定时/手动运行统一落 `scheduler_runs` 表 |
 | `packages/briar-display/src/hooks/useUnreadMessages.ts` | 站内信未读数 hook（60s 轮询），UserMenu 红点与菜单角标共用 |
 | `packages/briar-display/src/components/profile/MessagesPanel.tsx` | 站内信面板（个人中心「站内信」页签）：分页列表 + 详情弹窗 |
-| `packages/briar-scripts/scripts/write-version.ts` | 构建时写入 `version.json` 的脚本 |
-| `.github/workflows/deploy.yml` | CI：构建前端 + 上传 CDN + SSH 部署后端 + 健康检查 |
+| `packages/briar-scripts/scripts/write-version.ts` | 构建时写入 `version.json` 的脚本（支持 `BRIAR_GIT_COMMIT`/`BRIAR_GIT_BRANCH` env 覆盖，镜像内无 .git） |
+| `.github/workflows/deploy.yml` | CI：构建前端 + 上传 CDN + docker build 推 CCR + SSH compose 部署 + 健康检查 |
+| `Dockerfile` / `.dockerignore` | 一体化镜像定义（display 产物 + node 后端，多阶段） |
+| `docker-compose.yml` | 服务器编排：app + mysql（数据挂宿主机外部目录），仅服务器使用 |
+| `scripts/deploy-docker.sh` | 服务器端 Docker 部署脚本（compose pull → migrate → up -d），CI 通过 SSH 调用 |
 | `default.conf` | Nginx 配置 |
 | `ecosystem.config.cjs` | PM2 配置（cwd 为绝对路径） |
 
@@ -141,26 +144,28 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 
 ## 部署
 
-**自动部署**：`git push` 到 master/main → GitHub Actions 一条流水线完成：
-构建前端 + 上传 CDN → rsync 到服务器 `web/` → SSH 调用 `deploy.sh`（清理工作区、更新代码、build shared+node、migrate、写 version、PM2 重启）→ 健康检查 `GET /api/version`（8 次重试，中途自动 `pm2 resurrect` 兜底）→ 记录到 `briar-assets/deploy-history.jsonl`。
+**自动部署（Docker）**：`git push` 到 master/main → GitHub Actions 一条流水线完成：
+构建前端 + 上传 CDN（不变）→ `docker buildx build` 多阶段镜像（display 静态产物 + node 后端合一，`Dockerfile`）→ 推送腾讯云 CCR（`ccr.ccs.tencentyun.com/briar/briar-app:<sha>` + `:latest`）→ SSH 调用 `scripts/deploy-docker.sh`（compose pull → 一次性容器跑 migrate → `docker compose up -d` → 清理旧镜像）→ 健康检查 `GET /api/version`（8 次重试）→ 记录到 `briar-assets/deploy-history.jsonl`。
 
-**触发范围**：CI 仅对 `packages/briar-{node,display,shared,scripts}`、`scripts/deploy.sh` 及根构建文件（`package.json`/`bun.lock`/`Makefile`/`biome.json`）的改动触发；其他改动（如 briar-agent、briar-skills、docs）不触发，如需部署可在 Actions 页面手动 `workflow_dispatch`。
+**运行时架构**：宿主机 nginx 反代 `127.0.0.1:3888` 不变；`docker-compose.yml` 两个服务——`app`（镜像内含前端 `web/` 产物，绑定 127.0.0.1:3888）+ `mysql`（官方 mysql:8.0，数据挂宿主机 `/home/ubuntu/data/briar-mysql`，3306 对外保持可达）。PM2 仅作回滚保留。服务器拉 docker.io 走 `mirror.ccs.tencentyun.com` 加速器（`/etc/docker/daemon.json`）。
+
+**触发范围**：CI 仅对 `packages/briar-{node,display,shared,scripts}`、`scripts/deploy-docker.sh`、`Dockerfile`/`.dockerignore`/`docker-compose.yml` 及根构建文件（`package.json`/`bun.lock`/`Makefile`/`biome.json`）的改动触发；其他改动（如 briar-agent、briar-skills、docs）不触发，如需部署可在 Actions 页面手动 `workflow_dispatch`。
 
 | 修改内容 | 执行 |
 | :--- | :--- |
-| `packages/briar-node/src/**/*.ts` | git push，CI 自动部署（含 migrate） |
-| `packages/briar-display/src/**/*.{tsx,astro}` | git push，CI 自动同步 |
-| `packages/briar-shared/src/**/*.ts` | git push，CI 自动（deploy.sh 默认 build shared+node） |
+| `packages/briar-node/src/**/*.ts` | git push，CI 构建镜像自动部署（含 migrate） |
+| `packages/briar-display/src/**/*.{tsx,astro}` | git push，CI 自动（CDN + 镜像内 web/） |
+| `packages/briar-shared/src/**/*.ts` | git push，CI 自动 |
 | `default.conf` | `./scripts/deploy-nginx.sh`（手动） |
-| `.env` | `pm2 restart briar-node`（手动，.env 不在 git） |
+| `.env` | `docker compose up -d --force-recreate app`（手动，.env 不在 git，以挂载方式进容器） |
 
-**手动兜底**：服务器上 `./scripts/deploy.sh`（支持 `--skip-install`/`--skip-build`/`--full-build`，支持 `DEPLOY_COMMIT=<sha>` 精确部署）。同步代码前会 `git reset --hard` + `git clean -fd`（跳过 .gitignore 内容与 `packages/briar-node/jobs` 构建产物，不碰子模块），保证工作区干净。
-
-**PM2 开机自启**：已配置 `pm2 startup`（systemd unit `pm2-ubuntu`，enabled）+ `pm2 save`，服务器重启后自动恢复进程。
+**手动兜底**：服务器上 `BRIAR_IMAGE_TAG=<sha> bash scripts/deploy-docker.sh`。PM2 方案完全回滚：`docker compose stop app` + `pm2 resurrect`（旧 `scripts/deploy.sh` 保留可用）。
 
 **版本校验**：访问 `https://xiaobuzi.cn/api/version` 查看 `backend.commit` 与 `frontend.commit` 是否一致。
 
-**所需 GitHub Secrets**：`DOCKER_GITHUB_TOKEN`、`DEPLOY_KEY`、`DEPLOY_HOST`、`DEPLOY_USER`、`DEPLOY_REMOTE_DIR`（默认 `~/github/briar-display/packages/briar-display/web`）、`DEPLOY_PROJECT_DIR`（默认 `~/github/briar-display`）、`BRIAR_TX_*`（CDN）。
+**证书续期**：容器内已禁用（`BRIAR_CERT_RENEWAL=off`，续期要 git push briar-assets + sudo 操作宿主机 nginx），由宿主机 crontab 兜底，详见 `docs/pitfalls.md` #10。
+
+**所需 GitHub Secrets**：`DOCKER_GITHUB_TOKEN`、`DEPLOY_KEY`、`DEPLOY_HOST`、`DEPLOY_USER`、`DEPLOY_PROJECT_DIR`（默认 `~/github/briar-display`）、`CCR_USERNAME`/`CCR_PASSWORD`（腾讯云 CCR 登录）、`BRIAR_TX_*`（CDN）。`DEPLOY_REMOTE_DIR` 已废弃（不再 rsync web/）。
 
 ## AI 排查日志
 
