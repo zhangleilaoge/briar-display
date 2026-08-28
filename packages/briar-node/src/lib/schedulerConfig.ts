@@ -37,6 +37,9 @@ export const schedulerTasks: SchedulerTask[] = [
 		description: '临期 30 天内自动续期并部署 SSL 证书；手动触发为强制续期',
 		scheduleText: '每日 03:17',
 		cron: resolveCron('BRIAR_RENEW_CERT_CRON', '17 3 * * *'), // 每日 03:17 检查，临期 30 天内才续期
+		// 续期依赖宿主机 git 推送 briar-assets + deploy-nginx.sh（sudo/nginx），
+		// Docker 容器内不可用 —— 容器化部署时置 off，改由宿主机 cron 跑同名 job 兜底
+		enabled: process.env.BRIAR_CERT_RENEWAL !== 'off',
 		runOnStart: false,
 		path: fileURLToPath(new URL('../jobs/renew-certificates.mjs', import.meta.url)),
 		run: async () => {
