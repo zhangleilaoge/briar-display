@@ -69,10 +69,13 @@ jobs:
       - name: Build and push image
         run: |
           # --provenance=false：buildx 默认附带的 attestation manifest 会让 CCR 推送卡死
+          # BRIAR_TX_BUCKET_DOMAIN：从 .env（make init 拷入）读桶域名，让镜像内前端构建带 CDN 前缀
+          CDN_DOMAIN=$(grep -E '^BRIAR_TX_BUCKET_DOMAIN=' .env | cut -d= -f2- | tr -d '"' | tr -d ' ')
           docker buildx build \
             --provenance=false \
             --build-arg BRIAR_COMMIT=${{ github.sha }} \
             --build-arg BRIAR_BRANCH=${{ github.ref_name }} \
+            --build-arg BRIAR_TX_BUCKET_DOMAIN="$CDN_DOMAIN" \
             -t $IMAGE:${{ github.sha }} \
             -t $IMAGE:latest \
             --push .
