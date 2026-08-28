@@ -35,21 +35,38 @@ ENV BRIAR_GIT_COMMIT=$BRIAR_COMMIT \
 RUN bun packages/briar-scripts/scripts/write-version.ts packages/briar-node/dist \
 	&& bun packages/briar-scripts/scripts/write-version.ts packages/briar-display/dist
 
+# ============ 生产依赖阶段（独立于构建依赖，镜像瘦身） ============
+# 全量 node_modules 约 1G（含 astro/vite 等构建期 devDeps），运行时用不到；
+# 生产安装只留后端运行 + Bree jobs（tsx tsImport src TS 源码）所需依赖
+FROM oven/bun:1.2 AS runtime-deps
+WORKDIR /app
+
+COPY package.json bun.lock ./
+COPY patches/ ./patches/
+COPY packages/briar-shared/package.json packages/briar-shared/
+COPY packages/briar-display/package.json packages/briar-display/
+COPY packages/briar-node/package.json packages/briar-node/
+COPY packages/briar-scripts/package.json packages/briar-scripts/
+COPY packages/briar-skills/package.json packages/briar-skills/
+COPY scripts/remove-ssh2-native.mjs scripts/remove-ssh2-native.mjs
+RUN bun install --production --ignore-scripts \
+	&& bun scripts/remove-ssh2-native.mjs
+
 # ============ 运行阶段 ============
 # node:22-slim 对齐服务器生产版本（v22.22.1）
 FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-# 完整 node_modules：Bree 定时任务运行时依赖 tsx（tsx/esm/api）与 src TS 源码，不能裁剪。
+# 生产依赖（含 tsx）：Bree 定时任务运行时 tsImport src TS 源码，需要 packages/briar-node/src。
 # bun 隔离布局下 packages/*/node_modules 是指向根 node_modules/.bun store 的相对符号链接，
 # 保持 repo 目录布局原样拷贝即可保证链接有效。
-COPY --from=build /app/node_modules ./node_modules
+COPY --from=runtime-deps /app/node_modules ./node_modules
+COPY --from=runtime-deps /app/packages/briar-shared/node_modules ./packages/briar-shared/node_modules
+COPY --from=runtime-deps /app/packages/briar-node/node_modules ./packages/briar-node/node_modules
 COPY --from=build /app/packages/briar-shared/package.json ./packages/briar-shared/package.json
-COPY --from=build /app/packages/briar-shared/node_modules ./packages/briar-shared/node_modules
 COPY --from=build /app/packages/briar-shared/dist ./packages/briar-shared/dist
 COPY --from=build /app/packages/briar-node/package.json ./packages/briar-node/package.json
-COPY --from=build /app/packages/briar-node/node_modules ./packages/briar-node/node_modules
 COPY --from=build /app/packages/briar-node/dist ./packages/briar-node/dist
 COPY --from=build /app/packages/briar-node/jobs ./packages/briar-node/jobs
 COPY --from=build /app/packages/briar-node/src ./packages/briar-node/src

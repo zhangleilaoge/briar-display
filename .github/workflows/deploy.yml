@@ -27,6 +27,11 @@ on:
 env:
   IMAGE: ccr.ccs.tencentyun.com/briar/briar-app
 
+# 同一时刻只允许一个部署：新 push 取消卡住的旧 run（如推送镜像卡死）
+concurrency:
+  group: briar-deploy
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -63,7 +68,9 @@ jobs:
 
       - name: Build and push image
         run: |
+          # --provenance=false：buildx 默认附带的 attestation manifest 会让 CCR 推送卡死
           docker buildx build \
+            --provenance=false \
             --build-arg BRIAR_COMMIT=${{ github.sha }} \
             --build-arg BRIAR_BRANCH=${{ github.ref_name }} \
             -t $IMAGE:${{ github.sha }} \
