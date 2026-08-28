@@ -21,6 +21,10 @@ COPY scripts/remove-ssh2-native.mjs scripts/remove-ssh2-native.mjs
 RUN bun scripts/remove-ssh2-native.mjs
 
 # 源码与构建
+# BRIAR_TX_BUCKET_DOMAIN：astro.config.mjs 构建期读取，生成静态资源 CDN 前缀
+# （只是桶域名，非敏感信息；不传则资源由后端容器直接托管，功能正常但不走 CDN）
+ARG BRIAR_TX_BUCKET_DOMAIN=""
+ENV BRIAR_TX_BUCKET_DOMAIN=$BRIAR_TX_BUCKET_DOMAIN
 COPY packages/ ./packages/
 RUN bun run --filter @briar/shared build \
 	&& bun run --filter @briar/display build \
