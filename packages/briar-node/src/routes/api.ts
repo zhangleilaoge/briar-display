@@ -5,6 +5,7 @@ import certRoutes from './cert'
 import deploymentRoutes from './deployment'
 import fileRoutes from './files'
 import logRoutes from './log'
+import mediaRoutes from './media'
 import messageRoutes from './messages'
 import schedulerRoutes from './scheduler'
 import sqlConsoleRoutes from './sqlConsole'
@@ -25,6 +26,7 @@ api.route('/cert', certRoutes)
 api.route('/deployment', deploymentRoutes)
 api.route('/wiki', wikiRoutes)
 api.route('/logs', logRoutes)
+api.route('/media', mediaRoutes)
 api.route('/messages', messageRoutes)
 api.route('/scheduler', schedulerRoutes)
 api.route('/terminal', terminalRoutes)
