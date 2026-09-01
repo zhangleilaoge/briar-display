@@ -34,7 +34,7 @@ export function ConfirmDialog({
 			    Radix 锁定 body pointer-events 会导致详情弹窗点击穿透 */}
 			<DialogContent className="z-[120] sm:max-w-sm">
 				<DialogHeader>
-					<DialogTitle>{confirm?.title}</DialogTitle>
+					<DialogTitle className="break-all">{confirm?.title}</DialogTitle>
 				</DialogHeader>
 				<p className="text-sm text-muted-foreground">{confirm?.description}</p>
 				<div className="flex justify-end gap-2">
@@ -156,7 +156,7 @@ export function MoveFileDialog({
 		<Dialog open={!!file} onOpenChange={(open) => !open && onClose()}>
 			<DialogContent className="sm:max-w-sm">
 				<DialogHeader>
-					<DialogTitle>移动「{file?.originalName}」到</DialogTitle>
+					<DialogTitle className="break-all">移动「{file?.originalName}」到</DialogTitle>
 				</DialogHeader>
 				<div className="space-y-3">
 					<Select value={folderId} onValueChange={setFolderId}>
