@@ -224,10 +224,10 @@ mediaRoutes.get('/proxy', async (c) => {
 		// 透传 Range（<video> 流式播放依赖 206 分段）
 		const range = c.req.header('range')
 		if (range) reqHeaders.Range = range
-		// undici 偶发 "fetch failed"（连接池/网络抖动），重试一次
+		// undici 偶发 "fetch failed"（连接池/网络抖动、CDN 边缘节点抽风），最多重试 3 次
 		let upstream: Response | null = null
 		let lastErr: unknown = null
-		for (let attempt = 0; attempt < 2 && !upstream; attempt++) {
+		for (let attempt = 0; attempt < 3 && !upstream; attempt++) {
 			try {
 				upstream = await fetch(url, {
 					headers: reqHeaders,
@@ -236,6 +236,7 @@ mediaRoutes.get('/proxy', async (c) => {
 				})
 			} catch (err) {
 				lastErr = err
+				if (attempt < 2) await new Promise((r) => setTimeout(r, 500 * (attempt + 1)))
 			}
 		}
 		if (!upstream) throw lastErr
