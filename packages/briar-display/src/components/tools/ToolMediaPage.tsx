@@ -36,10 +36,13 @@ export default function ToolMediaPage() {
 	// 「添加到文件」弹窗目标（单个或多个媒体项）
 	const [addTarget, setAddTarget] = useState<MediaItem[] | null>(null)
 	const [history, setHistory] = useState<MediaHistoryItem[]>([])
+	// 未登录时隐藏「添加到」（上传文件需要登录态），下载/打包不受影响
+	const [canAddTo, setCanAddTo] = useState(false)
 
 	// 客户端加载历史记录（避免 SSR hydration 不匹配），变更时持久化
 	useEffect(() => {
 		setHistory(loadMediaHistory())
+		setCanAddTo(!!localStorage.getItem('briar_token'))
 	}, [])
 	useEffect(() => {
 		saveMediaHistory(history)
@@ -194,6 +197,7 @@ export default function ToolMediaPage() {
 						progress={progress}
 						zipping={zipping}
 						zipPercent={zipPercent}
+						canAddTo={canAddTo}
 						onDownload={handleDownload}
 						onAddTo={setAddTarget}
 						onToggle={handleToggle}

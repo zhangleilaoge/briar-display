@@ -1,7 +1,10 @@
 import type { ApiResponse, MediaParseResult } from '@briar/shared'
 import { HTTP_STATUS } from '@briar/shared'
 import { type Context, Hono } from 'hono'
-import { parseWechatArticle } from '../services/wechatMediaService'
+import { getCookie } from 'hono/cookie'
+import { authService } from '../services/authService'
+import { permissionService } from '../services/permissionService'
+import { getWechatCookieHeader, parseWechatArticle } from '../services/wechatMediaService'
 
 const mediaRoutes = new Hono()
 
@@ -10,6 +13,10 @@ const PARSE_API_URL = 'https://catsapi.com/api/labs/media-parser/parse'
 const PARSE_TIMEOUT_MS = 60_000
 const PROXY_TIMEOUT_MS = 120_000
 const MAX_INPUT_LENGTH = 2000
+/** 限频：parse 每 IP 每分钟 6 次；proxy 宽松些（视频 Range 流式 + 批量下载有突发） */
+const PARSE_RATE_LIMIT = 6
+const PROXY_RATE_LIMIT = 60
+const RATE_WINDOW_MS = 60_000
 
 const UPSTREAM_UA =
 	'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
@@ -19,12 +26,64 @@ const ALLOWED_PROXY_HOST_SUFFIXES = ['.xhscdn.com', '.xiaohongshu.com', '.qpic.c
 
 type AuthedUser = { id: string }
 
-function requireUser(c: Context): AuthedUser | null {
-	return (c.get('user') as AuthedUser | undefined) ?? null
+/** 可选登录态：媒体解析免登录，但登录用户仍需识别（超管豁免限频） */
+async function resolveOptionalUser(c: Context): Promise<AuthedUser | null> {
+	const existing = c.get('user') as AuthedUser | undefined
+	if (existing) return existing
+	const token =
+		c.req.header('Authorization')?.replace(/^Bearer\s+/i, '') || getCookie(c, 'briar_token')
+	if (!token) return null
+	try {
+		const payload = authService.verifyToken(token)
+		return { id: payload.sub }
+	} catch {
+		return null
+	}
 }
 
-function unauthorized(c: Context) {
-	return c.json<ApiResponse>({ success: false, message: '请先登录' }, HTTP_STATUS.UNAUTHORIZED)
+/** 滑动窗口限频（模块级，进程内有效），key 已含 scope 前缀 */
+const rateBuckets = new Map<string, number[]>()
+
+function hitRateLimit(key: string, limit: number): boolean {
+	const now = Date.now()
+	// 兜底清理，避免 map 无限增长
+	if (rateBuckets.size > 5000) {
+		for (const [k, list] of rateBuckets) {
+			const alive = list.filter((t) => now - t < RATE_WINDOW_MS)
+			if (alive.length === 0) rateBuckets.delete(k)
+			else rateBuckets.set(k, alive)
+		}
+	}
+	const list = (rateBuckets.get(key) || []).filter((t) => now - t < RATE_WINDOW_MS)
+	if (list.length >= limit) {
+		rateBuckets.set(key, list)
+		return true
+	}
+	list.push(now)
+	rateBuckets.set(key, list)
+	return false
+}
+
+/** 超管豁免限频；其余按 IP 计数 */
+async function isRateLimited(
+	c: Context,
+	user: AuthedUser | null,
+	scope: 'parse' | 'proxy',
+	limit: number,
+): Promise<boolean> {
+	if (user && (await permissionService.isAdmin(user.id))) return false
+	const ip =
+		(c.req.header('x-forwarded-for') || '').split(',')[0].trim() ||
+		c.req.header('x-real-ip') ||
+		'unknown'
+	return hitRateLimit(`${scope}:${ip}`, limit)
+}
+
+function tooManyRequests(c: Context) {
+	return c.json<ApiResponse>(
+		{ success: false, message: '操作太频繁，请稍后再试' },
+		HTTP_STATUS.TOO_MANY_REQUESTS,
+	)
 }
 
 /** 从分享文案中提取第一个 URL */
@@ -63,10 +122,10 @@ function isAllowedProxyUrl(url: string): boolean {
 	return ALLOWED_PROXY_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))
 }
 
-/** POST /parse — 解析小红书分享链接，返回无水印媒体地址 */
+/** POST /parse — 解析小红书分享链接，返回无水印媒体地址（免登录，IP 限频） */
 mediaRoutes.post('/parse', async (c) => {
-	const user = requireUser(c)
-	if (!user) return unauthorized(c)
+	const user = await resolveOptionalUser(c)
+	if (await isRateLimited(c, user, 'parse', PARSE_RATE_LIMIT)) return tooManyRequests(c)
 
 	const body = await c.req.json<{ url?: string }>().catch(() => ({}) as { url?: string })
 	const input = (body.url || '').trim()
@@ -133,10 +192,13 @@ mediaRoutes.post('/parse', async (c) => {
 	}
 })
 
-/** GET /proxy?url=...&name=... — 媒体下载代理（解决 CDN 防盗链/跨域，附件形式返回） */
+/**
+ * GET /proxy?url=...&name=...&inline=1 — 媒体代理（解决 CDN 防盗链/跨域，免登录，IP 限频）
+ * 默认附件形式返回（下载）；inline=1 时不带 Content-Disposition（<video>/<img> 预览用）
+ */
 mediaRoutes.get('/proxy', async (c) => {
-	const user = requireUser(c)
-	if (!user) return unauthorized(c)
+	const user = await resolveOptionalUser(c)
+	if (await isRateLimited(c, user, 'proxy', PROXY_RATE_LIMIT)) return tooManyRequests(c)
 
 	// 小红书 CDN 多为 http 链接，服务端统一直连 https
 	const url = (c.req.query('url') || '').replace(/^http:\/\//i, 'https://')
@@ -153,13 +215,22 @@ mediaRoutes.get('/proxy', async (c) => {
 		const referer = host.endsWith('.xhscdn.com')
 			? 'https://www.xiaohongshu.com/'
 			: 'https://mp.weixin.qq.com/'
+		const reqHeaders: Record<string, string> = { 'User-Agent': UPSTREAM_UA, Referer: referer }
+		// 实况图（bcvideo.qpic.cn）的 auth 参数绑定文章页下发的 Cookie，需回带否则 403
+		if (host.endsWith('.qpic.cn')) {
+			const cookie = getWechatCookieHeader()
+			if (cookie) reqHeaders.Cookie = cookie
+		}
+		// 透传 Range（<video> 流式播放依赖 206 分段）
+		const range = c.req.header('range')
+		if (range) reqHeaders.Range = range
 		// undici 偶发 "fetch failed"（连接池/网络抖动），重试一次
 		let upstream: Response | null = null
 		let lastErr: unknown = null
 		for (let attempt = 0; attempt < 2 && !upstream; attempt++) {
 			try {
 				upstream = await fetch(url, {
-					headers: { 'User-Agent': UPSTREAM_UA, Referer: referer },
+					headers: reqHeaders,
 					signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
 					redirect: 'follow',
 				})
@@ -168,6 +239,12 @@ mediaRoutes.get('/proxy', async (c) => {
 			}
 		}
 		if (!upstream) throw lastErr
+		if (upstream.status === 403) {
+			return c.json<ApiResponse>(
+				{ success: false, message: '链接已过期，请重新解析' },
+				HTTP_STATUS.FORBIDDEN,
+			)
+		}
 		if (!upstream.ok || !upstream.body) {
 			return c.json<ApiResponse>(
 				{ success: false, message: `媒体拉取失败（HTTP ${upstream.status}）` },
@@ -175,16 +252,21 @@ mediaRoutes.get('/proxy', async (c) => {
 			)
 		}
 
+		const inline = c.req.query('inline') === '1'
 		const rawName = (c.req.query('name') || 'media').replace(/[^\w.一-龥-]+/g, '_').slice(-120)
 		const headers: Record<string, string> = {
 			'Content-Type': upstream.headers.get('Content-Type') || 'application/octet-stream',
-			'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(rawName)}`,
 			'Cache-Control': 'no-store',
 		}
-		const contentLength = upstream.headers.get('Content-Length')
-		if (contentLength) headers['Content-Length'] = contentLength
+		if (!inline) {
+			headers['Content-Disposition'] = `attachment; filename*=UTF-8''${encodeURIComponent(rawName)}`
+		}
+		for (const key of ['Content-Length', 'Content-Range', 'Accept-Ranges']) {
+			const value = upstream.headers.get(key)
+			if (value) headers[key] = value
+		}
 
-		return new Response(upstream.body, { status: 200, headers })
+		return new Response(upstream.body, { status: upstream.status, headers })
 	} catch (err) {
 		// undici 的真实原因藏在 cause 里（fetch failed 本身没有信息量）
 		const cause = err instanceof Error ? err.cause : null

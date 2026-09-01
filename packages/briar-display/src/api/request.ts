@@ -6,7 +6,8 @@ let lastTraceId: string | null = null
 
 export const getLastTraceId = () => lastTraceId
 
-const getApiBaseUrl = () => {
+/** 计算 API 基础地址（本地直连 node 端口，生产走 Nginx 代理） */
+export const getApiBaseUrl = () => {
 	// 允许通过环境变量强制指定 API 地址（本地调远程时用）
 	const envUrl =
 		typeof import.meta.env !== 'undefined' ? import.meta.env.PUBLIC_API_BASE_URL : undefined

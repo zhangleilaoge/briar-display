@@ -7,7 +7,7 @@ import type { MediaParseResult } from '@briar/shared'
 import { Download, FolderPlus, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import ToolMediaLightbox from './ToolMediaLightbox'
-import { type MediaItem, type MediaSections, platformLabel } from './toolMediaUtils'
+import { type MediaItem, type MediaSections, platformIcon, platformLabel } from './toolMediaUtils'
 
 interface ToolMediaResultProps {
 	result: MediaParseResult
@@ -16,6 +16,8 @@ interface ToolMediaResultProps {
 	progress: Record<string, number>
 	zipping: boolean
 	zipPercent: number
+	/** 是否已登录（未登录隐藏「添加到」按钮，下载/打包仍可用） */
+	canAddTo: boolean
 	onDownload: (item: MediaItem) => void
 	onAddTo: (items: MediaItem[]) => void
 	onToggle: (id: string) => void
@@ -28,12 +30,14 @@ function ItemActions({
 	item,
 	percent,
 	disabled,
+	canAddTo,
 	onDownload,
 	onAddTo,
 }: {
 	item: MediaItem
 	percent: number | undefined
 	disabled: boolean
+	canAddTo: boolean
 	onDownload: (item: MediaItem) => void
 	onAddTo: (items: MediaItem[]) => void
 }) {
@@ -53,15 +57,17 @@ function ItemActions({
 				)}
 				{downloading ? `${percent}%` : '下载'}
 			</Button>
-			<Button
-				variant="outline"
-				size="sm"
-				disabled={downloading || disabled}
-				onClick={() => onAddTo([item])}
-			>
-				<FolderPlus className="mr-1.5 h-4 w-4" />
-				添加到
-			</Button>
+			{canAddTo && (
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={downloading || disabled}
+					onClick={() => onAddTo([item])}
+				>
+					<FolderPlus className="mr-1.5 h-4 w-4" />
+					添加到
+				</Button>
+			)}
 		</div>
 	)
 }
@@ -73,6 +79,7 @@ export default function ToolMediaResult({
 	progress,
 	zipping,
 	zipPercent,
+	canAddTo,
 	onDownload,
 	onAddTo,
 	onToggle,
@@ -97,7 +104,16 @@ export default function ToolMediaResult({
 				)}
 				<div className="flex min-w-0 flex-1 flex-col gap-2">
 					<div className="flex items-center gap-2">
-						<Badge variant="secondary">{platformLabel(result.platform)}</Badge>
+						<Badge variant="secondary" className="gap-1">
+							{platformIcon(result.platform) && (
+								<img
+									src={platformIcon(result.platform)}
+									alt=""
+									className="h-3.5 w-3.5 rounded-[3px]"
+								/>
+							)}
+							{platformLabel(result.platform)}
+						</Badge>
 						{result.author?.name && (
 							<span className="text-sm text-muted-foreground">@{result.author.name}</span>
 						)}
@@ -109,6 +125,7 @@ export default function ToolMediaResult({
 								item={sections.cover}
 								percent={progress[sections.cover.id]}
 								disabled={zipping}
+								canAddTo={canAddTo}
 								onDownload={onDownload}
 								onAddTo={onAddTo}
 							/>
@@ -126,13 +143,14 @@ export default function ToolMediaResult({
 							item={video}
 							percent={progress[video.id]}
 							disabled={zipping}
+							canAddTo={canAddTo}
 							onDownload={onDownload}
 							onAddTo={onAddTo}
 						/>
 					</div>
 					{/* biome-ignore lint/a11y/useMediaCaption: 外链抓取的媒体没有字幕文件 */}
 					<video
-						src={video.url}
+						src={video.previewUrl ?? video.url}
 						controls
 						preload="metadata"
 						referrerPolicy="no-referrer"
@@ -155,15 +173,17 @@ export default function ToolMediaResult({
 							<Button variant="outline" size="sm" onClick={onToggleAll} disabled={zipping}>
 								{allChecked ? '取消全选' : '全选'}
 							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => onAddTo(selectedImages)}
-								disabled={zipping || selected.size === 0}
-							>
-								<FolderPlus className="mr-1.5 h-4 w-4" />
-								添加所选到文件 · {selected.size}
-							</Button>
+							{canAddTo && (
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => onAddTo(selectedImages)}
+									disabled={zipping || selected.size === 0}
+								>
+									<FolderPlus className="mr-1.5 h-4 w-4" />
+									添加所选到文件 · {selected.size}
+								</Button>
+							)}
 							<Button size="sm" onClick={onZip} disabled={zipping || selected.size === 0}>
 								{zipping && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
 								{zipping ? `打包中 ${zipPercent}%` : `打包下载所选图片 · ${selected.size}`}
@@ -197,6 +217,7 @@ export default function ToolMediaResult({
 											item={image}
 											percent={progress[image.id]}
 											disabled={zipping}
+											canAddTo={canAddTo}
 											onDownload={onDownload}
 											onAddTo={onAddTo}
 										/>
@@ -217,7 +238,7 @@ export default function ToolMediaResult({
 							<div key={live.id} className="flex flex-col overflow-hidden rounded-lg border">
 								{/* biome-ignore lint/a11y/useMediaCaption: 外链抓取的媒体没有字幕文件 */}
 								<video
-									src={live.url}
+									src={live.previewUrl ?? live.url}
 									controls
 									preload="metadata"
 									referrerPolicy="no-referrer"
@@ -229,6 +250,7 @@ export default function ToolMediaResult({
 										item={live}
 										percent={progress[live.id]}
 										disabled={zipping}
+										canAddTo={canAddTo}
 										onDownload={onDownload}
 										onAddTo={onAddTo}
 									/>
@@ -247,6 +269,7 @@ export default function ToolMediaResult({
 						item={sections.audio}
 						percent={progress[sections.audio.id]}
 						disabled={zipping}
+						canAddTo={canAddTo}
 						onDownload={onDownload}
 						onAddTo={onAddTo}
 					/>

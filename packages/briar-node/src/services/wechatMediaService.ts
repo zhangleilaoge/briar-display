@@ -6,6 +6,16 @@ const FETCH_TIMEOUT_MS = 30_000
 /** 单篇文章最多提取的视频数（每个都要二次请求播放地址接口） */
 const MAX_VIDEOS = 5
 
+/**
+ * 文章页下发的 Cookie：实况图（bcvideo.qpic.cn）的 auth 参数绑定该 Cookie 且短时有效，
+ * 下载/预览时需回带，否则 403
+ */
+let cookieJar: { header: string; expiresAt: number } | null = null
+const COOKIE_TTL_MS = 10 * 60_000
+
+export const getWechatCookieHeader = (): string | null =>
+	cookieJar && cookieJar.expiresAt > Date.now() ? cookieJar.header : null
+
 /** 微信 HTML/JS 里的 URL 转义还原（\x26amp; → &） */
 const decodeWxUrl = (url: string) =>
 	url
@@ -165,6 +175,17 @@ export const parseWechatArticle = async (url: string): Promise<MediaParseResult>
 		redirect: 'follow',
 	})
 	if (!res.ok) throw new Error(`文章抓取失败（HTTP ${res.status}）`)
+
+	// 抓文章响应的 Set-Cookie 存入 jar（供 qpic.cn 媒体回带）
+	const setCookies =
+		(res.headers as Headers & { getSetCookie?: () => string[] }).getSetCookie?.() ?? []
+	if (setCookies.length > 0) {
+		cookieJar = {
+			header: setCookies.map((cookie) => cookie.split(';')[0]).join('; '),
+			expiresAt: Date.now() + COOKIE_TTL_MS,
+		}
+	}
+
 	const html = await res.text()
 	if (!html.includes('js_content') && !html.includes('picture_page_info_list')) {
 		throw new Error('文章抓取失败（可能触发微信风控），请稍后重试')

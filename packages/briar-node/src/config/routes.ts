@@ -13,7 +13,7 @@ export const RouteConfig = {
 	]),
 
 	/** 公开的路径前缀 */
-	PUBLIC_PREFIXES: ['/demo'],
+	PUBLIC_PREFIXES: ['/demo', '/briar/tools'],
 
 	/** 所有方法都公开的 API 路径（跳过 JWT 验证，如登录/注册）
 	 *  与 apiPermissions.ts 中标记为 null 的条目保持一致 */
@@ -22,6 +22,9 @@ export const RouteConfig = {
 		'/api/auth/register',
 		'/api/auth/send-reset-code',
 		'/api/auth/reset-password',
+		// 媒体解析免登录（路由内自带 IP 限频），「添加到文件」仍需登录
+		'/api/media/parse',
+		'/api/media/proxy',
 	],
 
 	/** API GET 公开的路径（写操作仍需认证） */
