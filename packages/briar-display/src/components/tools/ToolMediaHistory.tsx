@@ -2,7 +2,12 @@
 
 import { Button } from '@/components/ui/button'
 import { History, Trash2, X } from 'lucide-react'
-import type { MediaHistoryItem } from './toolMediaUtils'
+import {
+	type MediaHistoryItem,
+	platformFromUrl,
+	platformIcon,
+	platformLabel,
+} from './toolMediaUtils'
 
 interface ToolMediaHistoryProps {
 	items: MediaHistoryItem[]
@@ -38,28 +43,43 @@ export default function ToolMediaHistory({
 				</Button>
 			</div>
 			<ul className="flex flex-col divide-y">
-				{items.map((item) => (
-					<li key={item.url} className="group flex items-center gap-2 py-2">
-						<button
-							type="button"
-							className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-left"
-							onClick={() => onSelect(item.url)}
-							title="重新解析该链接"
-						>
-							<span className="w-full truncate text-sm">{item.title || '（无标题）'}</span>
-							<span className="w-full truncate text-xs text-muted-foreground">{item.url}</span>
-						</button>
-						<Button
-							variant="ghost"
-							size="sm"
-							aria-label="移除该条历史"
-							className="h-auto p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
-							onClick={() => onRemove(item.url)}
-						>
-							<X className="h-3.5 w-3.5" />
-						</Button>
-					</li>
-				))}
+				{items.map((item) => {
+					const platform = platformFromUrl(item.url)
+					return (
+						<li key={item.url} className="group flex items-center gap-2 py-2">
+							<button
+								type="button"
+								className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-left"
+								onClick={() => onSelect(item.url)}
+								title="重新解析该链接"
+							>
+								<span className="flex w-full items-center gap-1.5">
+									<span className="truncate text-sm">{item.title || '（无标题）'}</span>
+									{platformIcon(platform) && (
+										<span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+											<img
+												src={platformIcon(platform)}
+												alt=""
+												className="h-3.5 w-3.5 rounded-[3px]"
+											/>
+											{platformLabel(platform)}
+										</span>
+									)}
+								</span>
+								<span className="w-full truncate text-xs text-muted-foreground">{item.url}</span>
+							</button>
+							<Button
+								variant="ghost"
+								size="sm"
+								aria-label="移除该条历史"
+								className="h-auto p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+								onClick={() => onRemove(item.url)}
+							>
+								<X className="h-3.5 w-3.5" />
+							</Button>
+						</li>
+					)
+				})}
 			</ul>
 		</div>
 	)

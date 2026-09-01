@@ -1,3 +1,6 @@
+import { getApiBaseUrl } from '@/api/request'
+import wechatIcon from '@/assets/platforms/wechat.png'
+import xiaohongshuIcon from '@/assets/platforms/xiaohongshu.png'
 import type { MediaParseResult } from '@briar/shared'
 
 export type MediaKind = 'cover' | 'video' | 'image' | 'live' | 'audio'
@@ -7,6 +10,8 @@ export interface MediaItem {
 	kind: MediaKind
 	/** https 升级后的 CDN 地址 */
 	url: string
+	/** 需要后端代理才能预览的地址（如公众号实况图，auth 参数绑定微信 Cookie，直连 403） */
+	previewUrl?: string
 	label: string
 	filename: string
 }
@@ -25,6 +30,18 @@ const PLATFORM_LABELS: Record<string, string> = {
 }
 
 export const platformLabel = (platform: string) => PLATFORM_LABELS[platform] || platform
+
+const PLATFORM_ICONS: Record<string, string> = {
+	xiaohongshu: xiaohongshuIcon.src,
+	wechat: wechatIcon.src,
+}
+
+/** 平台 favicon（取自官网 favicon，本地资源避免跨域/防盗链问题） */
+export const platformIcon = (platform: string) => PLATFORM_ICONS[platform]
+
+/** 从链接推断平台（历史记录未存平台字段，按 URL 推导） */
+export const platformFromUrl = (url: string) =>
+	url.includes('mp.weixin.qq.com') ? 'wechat' : 'xiaohongshu'
 
 /** 小红书 CDN 多为 http 链接，页面在 https 下需升级，否则被浏览器拦截 */
 export const upgradeToHttps = (url: string) => url.replace(/^http:\/\//i, 'https://')
@@ -49,16 +66,35 @@ const resolveExt = (url: string, kind: MediaKind) => {
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
+/**
+ * qpic.cn 的实况图/视频 auth 参数绑定文章页 Cookie，浏览器直连 403，
+ * 预览需走后端代理（inline 模式，服务端回带 Cookie）
+ */
+const needsProxyPreview = (url: string) => {
+	try {
+		return new URL(upgradeToHttps(url)).hostname.endsWith('.qpic.cn')
+	} catch {
+		return false
+	}
+}
+
+const toProxyPreviewUrl = (url: string) =>
+	`${getApiBaseUrl()}/media/proxy?inline=1&url=${encodeURIComponent(upgradeToHttps(url))}`
+
 /** 把上游解析结果整理成按类型分组的下载项 */
 export const buildMediaSections = (result: MediaParseResult): MediaSections => {
 	const base = sanitizeFilename(result.title || result.platform || 'xhs-media')
-	const toItem = (kind: MediaKind, url: string, index: number, label: string): MediaItem => ({
-		id: `${kind}-${index}-${url}`,
-		kind,
-		url: upgradeToHttps(url),
-		label,
-		filename: `${base}-${label.replace(/\s/g, '')}.${resolveExt(url, kind)}`,
-	})
+	const toItem = (kind: MediaKind, url: string, index: number, label: string): MediaItem => {
+		const httpsUrl = upgradeToHttps(url)
+		return {
+			id: `${kind}-${index}-${url}`,
+			kind,
+			url: httpsUrl,
+			previewUrl: needsProxyPreview(httpsUrl) ? toProxyPreviewUrl(httpsUrl) : undefined,
+			label,
+			filename: `${base}-${label.replace(/\s/g, '')}.${resolveExt(url, kind)}`,
+		}
+	}
 
 	// videos 去重（上游 video_url 常与会重复出现在 videos 里）
 	const videoUrls = [...new Set(result.videos || [])].filter(Boolean)
