@@ -7,7 +7,7 @@ import type { MediaParseResult } from '@briar/shared'
 import { Download, FolderPlus, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import ToolMediaLightbox from './ToolMediaLightbox'
-import type { MediaItem, MediaSections } from './toolMediaUtils'
+import { type MediaItem, type MediaSections, platformLabel } from './toolMediaUtils'
 
 interface ToolMediaResultProps {
 	result: MediaParseResult
@@ -97,7 +97,7 @@ export default function ToolMediaResult({
 				)}
 				<div className="flex min-w-0 flex-1 flex-col gap-2">
 					<div className="flex items-center gap-2">
-						<Badge variant="secondary">小红书</Badge>
+						<Badge variant="secondary">{platformLabel(result.platform)}</Badge>
 						{result.author?.name && (
 							<span className="text-sm text-muted-foreground">@{result.author.name}</span>
 						)}
