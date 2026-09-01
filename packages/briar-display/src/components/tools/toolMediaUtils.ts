@@ -19,6 +19,13 @@ export interface MediaSections {
 	audio: MediaItem | null
 }
 
+const PLATFORM_LABELS: Record<string, string> = {
+	xiaohongshu: '小红书',
+	wechat: '微信公众号',
+}
+
+export const platformLabel = (platform: string) => PLATFORM_LABELS[platform] || platform
+
 /** 小红书 CDN 多为 http 链接，页面在 https 下需升级，否则被浏览器拦截 */
 export const upgradeToHttps = (url: string) => url.replace(/^http:\/\//i, 'https://')
 

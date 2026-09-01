@@ -57,7 +57,8 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 | `packages/briar-node/src/routes/files.ts` | 文件管理 API（`/api/files`，原图床）：上传 precheck/cos-sign/confirm、文件夹 CRUD、文本预览代理 |
 | `packages/briar-display/src/api/files.ts` | 前端文件 API + cos-js-sdk-v5 分片直传封装 |
 | `packages/briar-node/src/routes/messages.ts` | 站内信 API（`/api/messages`）：列表/未读数/标记已读 |
-| `packages/briar-node/src/routes/media.ts` | 媒体解析 API（`/api/media`，工具箱「媒体解析」，登录用户可用）：`POST /parse` 转发 catsapi 解析小红书链接（仅放行 xiaohongshu.com/xhslink.com），`GET /proxy` 媒体下载代理（仅放行 xhscdn.com 白名单，附件形式流式返回） |
+| `packages/briar-node/src/routes/media.ts` | 媒体解析 API（`/api/media`，工具箱「媒体解析」，登录用户可用）：`POST /parse` 支持小红书（转发 catsapi，仅放行 xiaohongshu.com/xhslink.com）和微信公众号文章（自研解析，见 wechatMediaService），`GET /proxy` 媒体下载代理（白名单 xhscdn.com/qpic.cn/tc.qq.com，附件形式流式返回） |
+| `packages/briar-node/src/services/wechatMediaService.ts` | 公众号文章解析：正则解析 HTML（og:title/author 元信息、图片消息 `picture_page_info_list` 的 cdn_url + 实况图 format_info 取最大档、图文 `#js_content` img、视频 videoplayer 二次请求取 url_info） |
 | `packages/briar-node/src/services/fileModerationService.ts` | 图片封禁检测：定时扫描 CDN URL（403/451 判定被封）→ 删记录 + 清理 COS + 发站内信 |
 | `packages/briar-node/src/jobs/scan-blocked-files.mjs` | 封禁扫描定时任务（cron 见 schedulerConfig，`BRIAR_SCAN_BLOCKED_CRON` 可覆盖） |
 | `packages/briar-node/src/routes/scheduler.ts` | 定时任务管理 API（`/api/scheduler`）：任务列表（含最近运行记录）、手动触发 |

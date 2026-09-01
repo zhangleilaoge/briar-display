@@ -29,7 +29,7 @@ export default function ToolMediaSearchBar({
 					<Link2 className="h-5 w-5 text-muted-foreground" />
 					<h1 className="text-lg font-semibold">媒体解析</h1>
 					<span className="text-sm text-muted-foreground">
-						小红书无水印提取（视频 / 封面 / 图集）
+						小红书 / 微信公众号无水印提取（视频 / 封面 / 图集 / 实况图）
 					</span>
 				</div>
 				{hasResult && (
@@ -42,7 +42,7 @@ export default function ToolMediaSearchBar({
 			<Textarea
 				value={input}
 				onChange={(e) => onInputChange(e.target.value)}
-				placeholder="粘贴小红书链接，或整段分享文案（含 xhslink.com 短链）…"
+				placeholder="粘贴小红书或微信公众号文章链接，也支持整段分享文案…"
 				className="min-h-20 resize-y"
 				onKeyDown={(e) => {
 					if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {

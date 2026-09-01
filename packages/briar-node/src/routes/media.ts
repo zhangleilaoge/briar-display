@@ -1,6 +1,7 @@
 import type { ApiResponse, MediaParseResult } from '@briar/shared'
 import { HTTP_STATUS } from '@briar/shared'
 import { type Context, Hono } from 'hono'
+import { parseWechatArticle } from '../services/wechatMediaService'
 
 const mediaRoutes = new Hono()
 
@@ -13,8 +14,8 @@ const MAX_INPUT_LENGTH = 2000
 const UPSTREAM_UA =
 	'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
 
-/** 下载代理域名白名单（防止被当成开放代理），目前仅放行小红书 CDN */
-const ALLOWED_PROXY_HOST_SUFFIXES = ['.xhscdn.com', '.xiaohongshu.com']
+/** 下载代理域名白名单（防止被当成开放代理）：小红书 CDN + 微信图床/视频 CDN */
+const ALLOWED_PROXY_HOST_SUFFIXES = ['.xhscdn.com', '.xiaohongshu.com', '.qpic.cn', '.tc.qq.com']
 
 type AuthedUser = { id: string }
 
@@ -40,16 +41,20 @@ function getHostname(url: string): string | null {
 	}
 }
 
-/** 目前仅支持小红书链接（含 xhslink 短链） */
-function isXhsUrl(url: string): boolean {
+/** 识别支持的平台：小红书（含 xhslink 短链）走 catsapi，公众号文章走自研解析 */
+function detectPlatform(url: string): 'xhs' | 'wechat' | null {
 	const host = getHostname(url)
-	if (!host) return false
-	return (
+	if (!host) return null
+	if (
 		host === 'xiaohongshu.com' ||
 		host.endsWith('.xiaohongshu.com') ||
 		host === 'xhslink.com' ||
 		host.endsWith('.xhslink.com')
-	)
+	) {
+		return 'xhs'
+	}
+	if (host === 'mp.weixin.qq.com') return 'wechat'
+	return null
 }
 
 function isAllowedProxyUrl(url: string): boolean {
@@ -73,11 +78,30 @@ mediaRoutes.post('/parse', async (c) => {
 	}
 
 	const url = extractUrl(input)
-	if (!url || !isXhsUrl(url)) {
+	const platform = url ? detectPlatform(url) : null
+	if (!url || !platform) {
 		return c.json<ApiResponse>(
-			{ success: false, message: '目前仅支持小红书链接' },
+			{ success: false, message: '目前支持小红书、微信公众号文章链接' },
 			HTTP_STATUS.BAD_REQUEST,
 		)
+	}
+
+	// 公众号文章走自研解析（wechatMediaService），其余转发 catsapi
+	if (platform === 'wechat') {
+		try {
+			const data = await parseWechatArticle(url)
+			if (data.images.length === 0 && data.videos.length === 0 && data.live_photos.length === 0) {
+				return c.json<ApiResponse>(
+					{ success: false, message: '未解析到可下载的媒体' },
+					HTTP_STATUS.INTERNAL_SERVER_ERROR,
+				)
+			}
+			return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
+		} catch (err) {
+			console.error('Wechat article parse failed:', err)
+			const message = err instanceof Error ? err.message : '解析失败，请稍后重试'
+			return c.json<ApiResponse>({ success: false, message }, HTTP_STATUS.INTERNAL_SERVER_ERROR)
+		}
 	}
 
 	try {
@@ -124,8 +148,13 @@ mediaRoutes.get('/proxy', async (c) => {
 	}
 
 	try {
+		// 微信图床/CDN 带微信 Referer（实测不带也可），小红书 CDN 带小红书 Referer
+		const host = getHostname(url) || ''
+		const referer = host.endsWith('.xhscdn.com')
+			? 'https://www.xiaohongshu.com/'
+			: 'https://mp.weixin.qq.com/'
 		const upstream = await fetch(url, {
-			headers: { 'User-Agent': UPSTREAM_UA, Referer: 'https://www.xiaohongshu.com/' },
+			headers: { 'User-Agent': UPSTREAM_UA, Referer: referer },
 			signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
 			redirect: 'follow',
 		})
