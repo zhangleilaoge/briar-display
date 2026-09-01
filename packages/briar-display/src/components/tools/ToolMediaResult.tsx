@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { MediaParseResult } from '@briar/shared'
-import { Download, Loader2 } from 'lucide-react'
+import { Download, FolderPlus, Loader2 } from 'lucide-react'
 import type { MediaItem, MediaSections } from './toolMediaUtils'
 
 interface ToolMediaResultProps {
@@ -15,37 +15,52 @@ interface ToolMediaResultProps {
 	zipping: boolean
 	zipPercent: number
 	onDownload: (item: MediaItem) => void
+	onAddTo: (items: MediaItem[]) => void
 	onToggle: (id: string) => void
 	onToggleAll: () => void
 	onZip: () => void
 }
 
-function DownloadButton({
+/** 单个媒体项的操作按钮：下载 + 添加到文件 */
+function ItemActions({
 	item,
 	percent,
 	disabled,
 	onDownload,
+	onAddTo,
 }: {
 	item: MediaItem
 	percent: number | undefined
 	disabled: boolean
 	onDownload: (item: MediaItem) => void
+	onAddTo: (items: MediaItem[]) => void
 }) {
 	const downloading = percent !== undefined
 	return (
-		<Button
-			variant="outline"
-			size="sm"
-			disabled={downloading || disabled}
-			onClick={() => onDownload(item)}
-		>
-			{downloading ? (
-				<Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-			) : (
-				<Download className="mr-1.5 h-4 w-4" />
-			)}
-			{downloading ? `${percent}%` : '下载'}
-		</Button>
+		<div className="flex items-center gap-1.5">
+			<Button
+				variant="outline"
+				size="sm"
+				disabled={downloading || disabled}
+				onClick={() => onDownload(item)}
+			>
+				{downloading ? (
+					<Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+				) : (
+					<Download className="mr-1.5 h-4 w-4" />
+				)}
+				{downloading ? `${percent}%` : '下载'}
+			</Button>
+			<Button
+				variant="outline"
+				size="sm"
+				disabled={downloading || disabled}
+				onClick={() => onAddTo([item])}
+			>
+				<FolderPlus className="mr-1.5 h-4 w-4" />
+				添加到
+			</Button>
+		</div>
 	)
 }
 
@@ -57,11 +72,13 @@ export default function ToolMediaResult({
 	zipping,
 	zipPercent,
 	onDownload,
+	onAddTo,
 	onToggle,
 	onToggleAll,
 	onZip,
 }: ToolMediaResultProps) {
 	const allChecked = sections.images.length > 0 && selected.size === sections.images.length
+	const selectedImages = sections.images.filter((item) => selected.has(item.id))
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -85,11 +102,12 @@ export default function ToolMediaResult({
 					<p className="line-clamp-2 whitespace-pre-line text-sm">{result.title || '（无标题）'}</p>
 					{sections.cover && (
 						<div>
-							<DownloadButton
+							<ItemActions
 								item={sections.cover}
 								percent={progress[sections.cover.id]}
 								disabled={zipping}
 								onDownload={onDownload}
+								onAddTo={onAddTo}
 							/>
 						</div>
 					)}
@@ -101,11 +119,12 @@ export default function ToolMediaResult({
 				<div key={video.id} className="flex flex-col gap-3 rounded-lg border bg-card p-4">
 					<div className="flex items-center justify-between">
 						<h2 className="font-semibold">{video.label}</h2>
-						<DownloadButton
+						<ItemActions
 							item={video}
 							percent={progress[video.id]}
 							disabled={zipping}
 							onDownload={onDownload}
+							onAddTo={onAddTo}
 						/>
 					</div>
 					{/* biome-ignore lint/a11y/useMediaCaption: 外链抓取的媒体没有字幕文件 */}
@@ -133,6 +152,15 @@ export default function ToolMediaResult({
 							<Button variant="outline" size="sm" onClick={onToggleAll} disabled={zipping}>
 								{allChecked ? '取消全选' : '全选'}
 							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => onAddTo(selectedImages)}
+								disabled={zipping || selected.size === 0}
+							>
+								<FolderPlus className="mr-1.5 h-4 w-4" />
+								添加所选到文件 · {selected.size}
+							</Button>
 							<Button size="sm" onClick={onZip} disabled={zipping || selected.size === 0}>
 								{zipping && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
 								{zipping ? `打包中 ${zipPercent}%` : `打包下载所选图片 · ${selected.size}`}
@@ -158,24 +186,21 @@ export default function ToolMediaResult({
 											className="aspect-[3/4] w-full cursor-pointer bg-muted object-cover"
 											onClick={() => onToggle(image.id)}
 										/>
-										<div
-											className="absolute left-2 top-2 rounded bg-background/80 p-0.5"
-											onClick={(e) => e.stopPropagation()}
-										>
-											<Checkbox
-												checked={checked}
-												onCheckedChange={() => onToggle(image.id)}
-												aria-label={`选择${image.label}`}
-											/>
-										</div>
+										<Checkbox
+											checked={checked}
+											onCheckedChange={() => onToggle(image.id)}
+											aria-label={`选择${image.label}`}
+											className="absolute left-2 top-2 h-5 w-5 rounded-[5px] border-2 border-white/80 bg-black/25 shadow-md data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+										/>
 									</div>
 									<div className="flex items-center justify-between gap-2 bg-muted/50 px-3 py-2">
 										<span className="text-sm">{image.label}</span>
-										<DownloadButton
+										<ItemActions
 											item={image}
 											percent={progress[image.id]}
 											disabled={zipping}
 											onDownload={onDownload}
+											onAddTo={onAddTo}
 										/>
 									</div>
 								</div>
@@ -202,11 +227,12 @@ export default function ToolMediaResult({
 								/>
 								<div className="flex items-center justify-between gap-2 bg-muted/50 px-3 py-2">
 									<span className="text-sm">{live.label}</span>
-									<DownloadButton
+									<ItemActions
 										item={live}
 										percent={progress[live.id]}
 										disabled={zipping}
 										onDownload={onDownload}
+										onAddTo={onAddTo}
 									/>
 								</div>
 							</div>
@@ -219,11 +245,12 @@ export default function ToolMediaResult({
 			{sections.audio && (
 				<div className="flex items-center justify-between rounded-lg border bg-card p-4">
 					<h2 className="font-semibold">{sections.audio.label}</h2>
-					<DownloadButton
+					<ItemActions
 						item={sections.audio}
 						percent={progress[sections.audio.id]}
 						disabled={zipping}
 						onDownload={onDownload}
+						onAddTo={onAddTo}
 					/>
 				</div>
 			)}
