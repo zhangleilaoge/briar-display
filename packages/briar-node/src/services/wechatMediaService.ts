@@ -64,20 +64,49 @@ const extractBalancedArray = (text: string, start: number): string | null => {
 	return null
 }
 
-/** 图片消息（picture post）：cdn_url 为静态图，live_photo.format_info 为实况视频 */
+/** 把 [...] 区域拆成顶层 {...} 项（引号感知），避免嵌套对象里的同名字段干扰 */
+const splitTopLevelObjects = (region: string): string[] => {
+	const entries: string[] = []
+	let depth = 0
+	let quote: string | null = null
+	let start = -1
+	for (let i = 0; i < region.length; i++) {
+		const ch = region[i]
+		if (quote) {
+			if (ch === quote && region[i - 1] !== '\\') quote = null
+			continue
+		}
+		if (ch === "'" || ch === '"') {
+			quote = ch
+		} else if (ch === '{') {
+			if (depth === 0) start = i
+			depth++
+		} else if (ch === '}') {
+			depth--
+			if (depth === 0 && start >= 0) entries.push(region.slice(start, i + 1))
+		}
+	}
+	return entries
+}
+
+/** 图片消息（picture post）：每项顶层 cdn_url 为静态原图，live_photo.format_info 为实况视频 */
 const parsePicturePost = (html: string): { images: string[]; livePhotos: string[] } | null => {
 	const marker = html.indexOf('picture_page_info_list')
 	if (marker < 0) return null
 	const region = extractBalancedArray(html, marker)
 	if (!region || !region.includes('cdn_url')) return null
 
-	const images = [...region.matchAll(/cdn_url:\s*'([^']+)'/g)].map((m) =>
-		upgradeToHttps(decodeWxUrl(m[1])),
-	)
-	// 每张实况图有多档格式（format_info），取 file_size 最大的原始档
+	const images: string[] = []
 	const livePhotos: string[] = []
-	for (const block of region.matchAll(/format_info:\s*\[(.*?)\]/gs)) {
-		const formats = [...block[1].matchAll(/url:\s*'([^']+)'[\s\S]*?file_size:\s*'(\d+)'/g)]
+	for (const entry of splitTopLevelObjects(region)) {
+		// 每项的第一个 cdn_url 是顶层原图；嵌套的 watermark_info.cdn_url 是带水印版，必须跳过
+		const image = entry.match(/cdn_url:\s*'([^']+)'/)
+		if (image) images.push(upgradeToHttps(decodeWxUrl(image[1])))
+
+		// 实况图有多档格式（format_info），取 file_size 最大的原始档
+		const formatBlock = entry.match(/format_info:\s*\[(.*?)\]/s)
+		if (!formatBlock) continue
+		const formats = [...formatBlock[1].matchAll(/url:\s*'([^']+)'[\s\S]*?file_size:\s*'(\d+)'/g)]
 		if (formats.length === 0) continue
 		const best = formats.reduce((a, b) => (BigInt(a[2]) >= BigInt(b[2]) ? a : b))
 		livePhotos.push(upgradeToHttps(decodeWxUrl(best[1])))
