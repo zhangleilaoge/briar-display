@@ -153,11 +153,21 @@ mediaRoutes.get('/proxy', async (c) => {
 		const referer = host.endsWith('.xhscdn.com')
 			? 'https://www.xiaohongshu.com/'
 			: 'https://mp.weixin.qq.com/'
-		const upstream = await fetch(url, {
-			headers: { 'User-Agent': UPSTREAM_UA, Referer: referer },
-			signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
-			redirect: 'follow',
-		})
+		// undici 偶发 "fetch failed"（连接池/网络抖动），重试一次
+		let upstream: Response | null = null
+		let lastErr: unknown = null
+		for (let attempt = 0; attempt < 2 && !upstream; attempt++) {
+			try {
+				upstream = await fetch(url, {
+					headers: { 'User-Agent': UPSTREAM_UA, Referer: referer },
+					signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
+					redirect: 'follow',
+				})
+			} catch (err) {
+				lastErr = err
+			}
+		}
+		if (!upstream) throw lastErr
 		if (!upstream.ok || !upstream.body) {
 			return c.json<ApiResponse>(
 				{ success: false, message: `媒体拉取失败（HTTP ${upstream.status}）` },
@@ -176,7 +186,9 @@ mediaRoutes.get('/proxy', async (c) => {
 
 		return new Response(upstream.body, { status: 200, headers })
 	} catch (err) {
-		console.error('Media proxy failed:', err)
+		// undici 的真实原因藏在 cause 里（fetch failed 本身没有信息量）
+		const cause = err instanceof Error ? err.cause : null
+		console.error('Media proxy failed:', err, cause ? { cause } : '')
 		return c.json<ApiResponse>(
 			{ success: false, message: '媒体拉取失败，请稍后重试' },
 			HTTP_STATUS.INTERNAL_SERVER_ERROR,
