@@ -2,15 +2,12 @@
 
 import { type FileItem, type FolderItem, moveFile } from '@/api/files'
 import { Button } from '@/components/ui/button'
+import { Command, CommandGroup, CommandItem, CommandList } from '@/components/ui/command'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/components/ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
+import { Check, ChevronsUpDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -131,6 +128,7 @@ export function MoveFileDialog({
 	onMoved: () => void
 }) {
 	const [folderId, setFolderId] = useState('root')
+	const [pickerOpen, setPickerOpen] = useState(false)
 
 	useEffect(() => {
 		if (file) setFolderId(file.folderId ?? 'root')
@@ -152,6 +150,10 @@ export function MoveFileDialog({
 		onMoved()
 	}
 
+	const selectedName =
+		folderId === 'root' ? '根目录' : (folders.find((f) => f.id === folderId)?.name ?? '选择文件夹')
+	const options = [{ id: 'root', name: '根目录' }, ...folders]
+
 	return (
 		<Dialog open={!!file} onOpenChange={(open) => !open && onClose()}>
 			<DialogContent className="sm:max-w-sm">
@@ -159,19 +161,45 @@ export function MoveFileDialog({
 					<DialogTitle className="break-all">移动「{file?.originalName}」到</DialogTitle>
 				</DialogHeader>
 				<div className="space-y-3">
-					<Select value={folderId} onValueChange={setFolderId}>
-						<SelectTrigger>
-							<SelectValue placeholder="选择文件夹" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="root">根目录</SelectItem>
-							{folders.map((f) => (
-								<SelectItem key={f.id} value={f.id}>
-									{f.name}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+					{/* Select 在 Dialog 里会被焦点圈拦截导致 hover 不高亮，改用 Popover+Command */}
+					<Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+						<PopoverTrigger asChild>
+							<Button variant="outline" className="w-full justify-between font-normal">
+								{selectedName}
+								<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+							</Button>
+						</PopoverTrigger>
+						<PopoverContent
+							className="w-[--radix-popover-trigger-width] p-0"
+							onOpenAutoFocus={(e) => e.preventDefault()}
+						>
+							<Command>
+								<CommandList>
+									<CommandGroup>
+										{options.map((f) => (
+											<CommandItem
+												key={f.id}
+												value={f.id}
+												keywords={[f.name]}
+												onSelect={() => {
+													setFolderId(f.id)
+													setPickerOpen(false)
+												}}
+											>
+												{f.name}
+												<Check
+													className={cn(
+														'ml-auto h-4 w-4',
+														folderId === f.id ? 'opacity-100' : 'opacity-0',
+													)}
+												/>
+											</CommandItem>
+										))}
+									</CommandGroup>
+								</CommandList>
+							</Command>
+						</PopoverContent>
+					</Popover>
 					<Button className="w-full" onClick={handleMove}>
 						移动
 					</Button>
