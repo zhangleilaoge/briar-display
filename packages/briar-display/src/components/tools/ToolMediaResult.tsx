@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { MediaParseResult } from '@briar/shared'
 import { Download, FolderPlus, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import ToolMediaLightbox from './ToolMediaLightbox'
 import type { MediaItem, MediaSections } from './toolMediaUtils'
 
 interface ToolMediaResultProps {
@@ -77,6 +79,7 @@ export default function ToolMediaResult({
 	onToggleAll,
 	onZip,
 }: ToolMediaResultProps) {
+	const [previewIndex, setPreviewIndex] = useState<number | null>(null)
 	const allChecked = sections.images.length > 0 && selected.size === sections.images.length
 	const selectedImages = sections.images.filter((item) => selected.has(item.id))
 
@@ -168,23 +171,18 @@ export default function ToolMediaResult({
 						</div>
 					</div>
 					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-						{sections.images.map((image) => {
+						{sections.images.map((image, imageIndex) => {
 							const checked = selected.has(image.id)
 							return (
-								<div
-									key={image.id}
-									className={`flex flex-col overflow-hidden rounded-lg border-2 transition-colors ${
-										checked ? 'border-primary' : 'border-transparent'
-									}`}
-								>
+								<div key={image.id} className="flex flex-col overflow-hidden rounded-lg">
 									<div className="relative">
 										<img
 											src={image.url}
 											alt={image.label}
 											referrerPolicy="no-referrer"
 											loading="lazy"
-											className="aspect-[3/4] w-full cursor-pointer bg-muted object-cover"
-											onClick={() => onToggle(image.id)}
+											className="aspect-[3/4] w-full cursor-zoom-in bg-muted object-cover"
+											onClick={() => setPreviewIndex(imageIndex)}
 										/>
 										<Checkbox
 											checked={checked}
@@ -254,6 +252,13 @@ export default function ToolMediaResult({
 					/>
 				</div>
 			)}
+
+			<ToolMediaLightbox
+				images={sections.images}
+				index={previewIndex}
+				onClose={() => setPreviewIndex(null)}
+				onNavigate={setPreviewIndex}
+			/>
 		</div>
 	)
 }

@@ -2,19 +2,25 @@
 
 import { fetchMediaBlob, parseMedia } from '@/api/media'
 import type { MediaParseResult } from '@briar/shared'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import ToolMediaAddToDialog from './ToolMediaAddToDialog'
+import ToolMediaHistory from './ToolMediaHistory'
 import ToolMediaResult from './ToolMediaResult'
 import ToolMediaSearchBar from './ToolMediaSearchBar'
 import ToolsLayout from './ToolsLayout'
 import {
+	type MediaHistoryItem,
 	type MediaItem,
 	type MediaSections,
 	buildMediaSections,
 	createZip,
+	extractShareUrl,
+	loadMediaHistory,
+	pushMediaHistory,
 	sanitizeFilename,
 	saveBlob,
+	saveMediaHistory,
 } from './toolMediaUtils'
 
 export default function ToolMediaPage() {
@@ -29,6 +35,15 @@ export default function ToolMediaPage() {
 	const [zipPercent, setZipPercent] = useState(0)
 	// 「添加到文件」弹窗目标（单个或多个媒体项）
 	const [addTarget, setAddTarget] = useState<MediaItem[] | null>(null)
+	const [history, setHistory] = useState<MediaHistoryItem[]>([])
+
+	// 客户端加载历史记录（避免 SSR hydration 不匹配），变更时持久化
+	useEffect(() => {
+		setHistory(loadMediaHistory())
+	}, [])
+	useEffect(() => {
+		saveMediaHistory(history)
+	}, [history])
 
 	const setItemProgress = (id: string, percent: number | null) => {
 		setProgress((prev) => {
@@ -42,8 +57,8 @@ export default function ToolMediaPage() {
 		})
 	}
 
-	const handleParse = async () => {
-		const url = input.trim()
+	const handleParse = async (rawInput?: string) => {
+		const url = (rawInput ?? input).trim()
 		if (!url || parsing) return
 		setParsing(true)
 		try {
@@ -62,12 +77,20 @@ export default function ToolMediaPage() {
 			setResult(res.data)
 			setSections(next)
 			setSelected(new Set(next.images.map((item) => item.id)))
+			setHistory((prev) =>
+				pushMediaHistory(prev, extractShareUrl(url), res.data!.title || '（无标题）'),
+			)
 			toast.success('解析成功')
 		} catch (err: any) {
 			toast.error(err?.response?.data?.message || '解析失败，请稍后重试')
 		} finally {
 			setParsing(false)
 		}
+	}
+
+	const handleSelectHistory = (url: string) => {
+		setInput(url)
+		handleParse(url)
 	}
 
 	const handleClear = () => {
@@ -154,8 +177,14 @@ export default function ToolMediaPage() {
 					parsing={parsing}
 					hasResult={!!sections}
 					onInputChange={setInput}
-					onParse={handleParse}
+					onParse={() => handleParse()}
 					onClear={handleClear}
+				/>
+				<ToolMediaHistory
+					items={history}
+					onSelect={handleSelectHistory}
+					onRemove={(url) => setHistory((prev) => prev.filter((item) => item.url !== url))}
+					onClear={() => setHistory([])}
 				/>
 				{sections && result && (
 					<ToolMediaResult

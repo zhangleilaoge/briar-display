@@ -70,6 +70,9 @@ export const buildMediaSections = (result: MediaParseResult): MediaSections => {
 	}
 }
 
+/** 从分享文案中提取第一个 URL（与后端提取逻辑一致） */
+export const extractShareUrl = (text: string) => text.match(/https?:\/\/[^\s]+/)?.[0] ?? text.trim()
+
 /** 触发浏览器保存 */
 export const saveBlob = (blob: Blob, filename: string) => {
 	const objectUrl = URL.createObjectURL(blob)
@@ -158,3 +161,41 @@ export const createZip = (entries: ZipEntry[]): Blob => {
 
 	return new Blob([...chunks, ...central, new Uint8Array(end.buffer)], { type: 'application/zip' })
 }
+
+// ==================== 历史记录（localStorage，最近 10 条链接 + 标题） ====================
+
+export interface MediaHistoryItem {
+	url: string
+	title: string
+	parsedAt: number
+}
+
+export const MEDIA_HISTORY_KEY = 'briar:media-history'
+export const MAX_MEDIA_HISTORY = 10
+
+export const loadMediaHistory = (): MediaHistoryItem[] => {
+	if (typeof window === 'undefined') return []
+	try {
+		const raw = localStorage.getItem(MEDIA_HISTORY_KEY)
+		const list = raw ? JSON.parse(raw) : []
+		return Array.isArray(list) ? list : []
+	} catch {
+		return []
+	}
+}
+
+export const saveMediaHistory = (items: MediaHistoryItem[]) => {
+	if (typeof window === 'undefined') return
+	localStorage.setItem(MEDIA_HISTORY_KEY, JSON.stringify(items.slice(0, MAX_MEDIA_HISTORY)))
+}
+
+/** 追加/置顶一条历史（按 url 去重），返回截断后的新列表 */
+export const pushMediaHistory = (
+	list: MediaHistoryItem[],
+	url: string,
+	title: string,
+): MediaHistoryItem[] =>
+	[{ url, title, parsedAt: Date.now() }, ...list.filter((item) => item.url !== url)].slice(
+		0,
+		MAX_MEDIA_HISTORY,
+	)
