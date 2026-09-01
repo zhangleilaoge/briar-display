@@ -4,6 +4,7 @@ import { fetchMediaBlob, parseMedia } from '@/api/media'
 import type { MediaParseResult } from '@briar/shared'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import ToolMediaAddToDialog from './ToolMediaAddToDialog'
 import ToolMediaResult from './ToolMediaResult'
 import ToolMediaSearchBar from './ToolMediaSearchBar'
 import ToolsLayout from './ToolsLayout'
@@ -26,6 +27,8 @@ export default function ToolMediaPage() {
 	const [progress, setProgress] = useState<Record<string, number>>({})
 	const [zipping, setZipping] = useState(false)
 	const [zipPercent, setZipPercent] = useState(0)
+	// 「添加到文件」弹窗目标（单个或多个媒体项）
+	const [addTarget, setAddTarget] = useState<MediaItem[] | null>(null)
 
 	const setItemProgress = (id: string, percent: number | null) => {
 		setProgress((prev) => {
@@ -163,11 +166,13 @@ export default function ToolMediaPage() {
 						zipping={zipping}
 						zipPercent={zipPercent}
 						onDownload={handleDownload}
+						onAddTo={setAddTarget}
 						onToggle={handleToggle}
 						onToggleAll={handleToggleAll}
 						onZip={handleZip}
 					/>
 				)}
+				<ToolMediaAddToDialog items={addTarget} onClose={() => setAddTarget(null)} />
 			</div>
 		</ToolsLayout>
 	)
