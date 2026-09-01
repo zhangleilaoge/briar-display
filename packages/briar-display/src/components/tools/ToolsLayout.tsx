@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PermissionProvider } from '@/contexts/PermissionContext'
-import { Braces, FileDiff, ImageIcon } from 'lucide-react'
+import { Braces, Clapperboard, FileDiff, ImageIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 interface NavItem {
@@ -35,6 +35,11 @@ const NAV_ITEMS: NavItem[] = [
 		label: 'JSON 格式化',
 		href: '/briar/tools/json',
 		icon: <Braces className="h-4 w-4" />,
+	},
+	{
+		label: '媒体解析',
+		href: '/briar/tools/media',
+		icon: <Clapperboard className="h-4 w-4" />,
 	},
 ]
 

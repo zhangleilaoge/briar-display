@@ -59,9 +59,15 @@ export default defineConfig({
 	build: assetsPrefix ? { assetsPrefix } : undefined,
 	vite: {
 		resolve: {
-			alias: {
-				'@': fileURLToPath(new URL('./src', import.meta.url)),
-			},
+			alias: [
+				{ find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
+				// 直接指向 shared 源码（工作区内部包，非外部依赖），改动即生效、无需先 build dist；
+				// 正则精确匹配，不影响 astro.config 在 Node 侧使用的 @briar/shared/env（仍走 dist）
+				{
+					find: /^@briar\/shared$/,
+					replacement: fileURLToPath(new URL('../briar-shared/src/index.ts', import.meta.url)),
+				},
+			],
 		},
 		server: {
 			proxy: {

@@ -126,3 +126,18 @@ export interface SchedulerTaskInfo {
 	manual: boolean
 	lastRun: SchedulerRunItem | null
 }
+
+/**
+ * 媒体解析结果（工具箱-媒体解析，目前仅支持小红书）
+ */
+export interface MediaParseResult {
+	platform: string
+	title: string
+	author: { name: string; uid?: string } | null
+	cover: string | null
+	video_url: string | null
+	audio_url: string | null
+	videos: string[]
+	images: string[]
+	live_photos: string[]
+}
