@@ -1,3 +1,4 @@
+import dns from 'dns'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { APP_NAME, NODE_PORT } from '@briar/shared'
@@ -13,6 +14,10 @@ import { applyConfiguredMiddlewares, globalMiddlewares } from './middleware/conf
 import apiRoutes from './routes/api'
 import { rootHandler } from './routes/root'
 import { setupTerminalWebSocket } from './routes/terminalWs'
+
+// 服务器无 IPv6 出口，而部分 CDN（如 sns-bak-v8.xhscdn.com → Akamai）DNS 会返回 AAAA，
+// Node 18 默认按 DNS 顺序连接，v6 不通时偶发 "fetch failed"；强制 IPv4 优先
+dns.setDefaultResultOrder('ipv4first')
 
 // 包装 console.*：请求上下文内的主动日志自动带 [traceId] 前缀（配合 traceIdMiddleware 的 ALS）
 patchConsoleWithTrace()
