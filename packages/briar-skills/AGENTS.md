@@ -18,6 +18,7 @@
 | `briar-skynet` | 天网日志查询、traceId 链路追踪与日志导出下载 |
 | `briar-session` | 按时间范围查找历史 kimi-code 会话（主题、目录、会话 ID、恢复命令） |
 | `briar-get-session-id` | 按时间窗口 + （定制页面 key 或 kdtId）查询有效导购登录 sessionId（天网日志 + Dubbo 校验） |
+| `briar-mail` | 发邮件（支持附件）：直连收件方 MX 投递，无需邮箱凭证 |
 
 ---
 
