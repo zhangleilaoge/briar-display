@@ -331,7 +331,10 @@ mediaRoutes.post('/parse', async (c) => {
 				.then((d) => (d as { detail?: string })?.detail)
 				.catch(() => null)
 			return c.json<ApiResponse>(
-				{ success: false, message: detail || `解析失败（HTTP ${upstream.status}）` },
+				{
+					success: false,
+					message: detail || `解析服务暂时不可用（HTTP ${upstream.status}），请稍后重试`,
+				},
 				HTTP_STATUS.INTERNAL_SERVER_ERROR,
 			)
 		}
