@@ -115,7 +115,11 @@ export const buildMediaSections = (result: MediaParseResult): MediaSections => {
 	}
 
 	// videos 去重（上游 video_url 常与会重复出现在 videos 里）
-	const videoUrls = [...new Set(result.videos || [])].filter(Boolean)
+	const rawVideos = [...new Set(result.videos || [])].filter(Boolean)
+	// 抖音图文作品的「视频」实为背景音乐 mp3（ies-music/*.mp3），归到音轨而不是视频区块
+	const isAudioLike = (url: string) => /\.(mp3|m4a)(?:[?/]|$)/i.test(upgradeToHttps(url))
+	const videoUrls = rawVideos.filter((url) => !isAudioLike(url))
+	const audioUrl = result.audio_url || rawVideos.find(isAudioLike) || null
 	return {
 		cover: result.cover ? toItem('cover', result.cover, 0, '封面') : null,
 		videos: videoUrls.map((url, i) =>
@@ -127,7 +131,7 @@ export const buildMediaSections = (result: MediaParseResult): MediaSections => {
 		livePhotos: (result.live_photos || [])
 			.filter(Boolean)
 			.map((url, i) => toItem('live', url, i, `动态照片${pad(i + 1)}`)),
-		audio: result.audio_url ? toItem('audio', result.audio_url, 0, '音轨') : null,
+		audio: audioUrl ? toItem('audio', audioUrl, 0, '音轨') : null,
 	}
 }
 
