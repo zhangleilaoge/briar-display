@@ -1,6 +1,7 @@
 import { getApiBaseUrl } from '@/api/request'
 import douyinIcon from '@/assets/platforms/douyin.png'
 import wechatIcon from '@/assets/platforms/wechat.png'
+import xIcon from '@/assets/platforms/x.png'
 import xiaohongshuIcon from '@/assets/platforms/xiaohongshu.png'
 import type { MediaParseResult } from '@briar/shared'
 
@@ -31,6 +32,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 	xiaohongshu: '小红书',
 	douyin: '抖音',
 	wechat: '微信公众号',
+	x: 'X',
 }
 
 export const platformLabel = (platform: string) => PLATFORM_LABELS[platform] || platform
@@ -39,6 +41,7 @@ const PLATFORM_ICONS: Record<string, string> = {
 	xiaohongshu: xiaohongshuIcon.src,
 	douyin: douyinIcon.src,
 	wechat: wechatIcon.src,
+	x: xIcon.src,
 }
 
 /** 平台 favicon（取自官网 favicon，本地资源避免跨域/防盗链问题） */
@@ -48,6 +51,7 @@ export const platformIcon = (platform: string) => PLATFORM_ICONS[platform]
 export const platformFromUrl = (url: string) => {
 	if (url.includes('mp.weixin.qq.com')) return 'wechat'
 	if (url.includes('douyin.com') || url.includes('iesdouyin.com')) return 'douyin'
+	if (url.includes('x.com') || url.includes('twitter.com')) return 'x'
 	return 'xiaohongshu'
 }
 

@@ -41,6 +41,8 @@ const ALLOWED_PROXY_HOST_SUFFIXES = [
 	'.douyinstatic.com',
 	'.zjcdn.com',
 	'.snssdk.com',
+	// X/Twitter 媒体 CDN（video.twimg.com / pbs.twimg.com，公开可直连，代理主要为缓存）
+	'.twimg.com',
 ]
 
 /** 各平台 CDN 对应的 Referer */
@@ -53,6 +55,7 @@ const PLATFORM_REFERERS: [string, string][] = [
 	['.douyinstatic.com', 'https://www.douyin.com/'],
 	['.zjcdn.com', 'https://www.douyin.com/'],
 	['.snssdk.com', 'https://www.douyin.com/'],
+	['.twimg.com', 'https://x.com/'],
 ]
 
 function refererFor(host: string): string {
@@ -148,8 +151,8 @@ function getHostname(url: string): string | null {
 	}
 }
 
-/** 识别支持的平台：小红书/抖音（含短链）走 catsapi，公众号文章走自研解析 */
-function detectPlatform(url: string): 'xhs' | 'wechat' | 'douyin' | null {
+/** 识别支持的平台：小红书/抖音（含短链）走 catsapi，公众号文章走自研解析，X 走 fxtwitter */
+function detectPlatform(url: string): 'xhs' | 'wechat' | 'douyin' | 'x' | null {
 	const host = getHostname(url)
 	if (!host) return null
 	if (
@@ -167,7 +170,69 @@ function detectPlatform(url: string): 'xhs' | 'wechat' | 'douyin' | null {
 		return 'douyin'
 	}
 	if (host === 'mp.weixin.qq.com') return 'wechat'
+	if (
+		host === 'x.com' ||
+		host.endsWith('.x.com') ||
+		host === 'twitter.com' ||
+		host.endsWith('.twitter.com')
+	) {
+		return 'x'
+	}
 	return null
+}
+
+/** X/Twitter：catsapi 不支持（502），走 fxtwitter 公共代理（免登录、支持 NSFW 推文） */
+const FX_API_BASE = 'https://api.fxtwitter.com/i/status/'
+const TWEET_ID_RE = /\/status(?:es)?\/(\d{5,25})/
+
+interface FxMediaItem {
+	url: string
+	thumbnail_url?: string
+	type?: string // photo / video / gif
+}
+
+/** fxtwitter 响应 → 通用解析结果；图片/视频 CDN（twimg）公开可直连，无签名时效问题 */
+async function parseTweet(url: string): Promise<MediaParseResult> {
+	const id = url.match(TWEET_ID_RE)?.[1]
+	if (!id) throw new Error('无效的推文链接')
+	const res = await fetch(`${FX_API_BASE}${id}`, {
+		headers: { 'User-Agent': UPSTREAM_UA },
+		signal: AbortSignal.timeout(30_000),
+	})
+	if (!res.ok) throw new Error(`解析失败（HTTP ${res.status}）`)
+	const json = (await res.json()) as {
+		code?: number
+		message?: string
+		tweet?: {
+			text?: string
+			author?: { name?: string; screen_name?: string }
+			media?: { all?: FxMediaItem[] }
+		}
+	}
+	if (json.code !== 200 || !json.tweet) {
+		throw new Error(json.message || '推文不存在或已被删除')
+	}
+	const media = json.tweet.media?.all || []
+	const videos = media.filter((m) => m.type === 'video' || m.type === 'gif').map((m) => m.url)
+	const images = media.filter((m) => m.type === 'photo').map((m) => m.url)
+	const cover =
+		media.find((m) => m.type === 'video' || m.type === 'gif')?.thumbnail_url || images[0] || null
+	return {
+		platform: 'x',
+		title: json.tweet.text || '',
+		author: json.tweet.author
+			? {
+					name: json.tweet.author.name || '',
+					uid: json.tweet.author.screen_name,
+				}
+			: null,
+		cover,
+		video_url: videos[0] || null,
+		audio_url: null,
+		videos,
+		images,
+		live_photos: [],
+	}
 }
 
 function isAllowedProxyUrl(url: string): boolean {
@@ -194,7 +259,7 @@ mediaRoutes.post('/parse', async (c) => {
 	const platform = url ? detectPlatform(url) : null
 	if (!url || !platform) {
 		return c.json<ApiResponse>(
-			{ success: false, message: '目前支持小红书、抖音、微信公众号文章链接' },
+			{ success: false, message: '目前支持小红书、抖音、微信公众号、X(Twitter) 链接' },
 			HTTP_STATUS.BAD_REQUEST,
 		)
 	}
@@ -214,7 +279,7 @@ mediaRoutes.post('/parse', async (c) => {
 			.saveCachedParse(person, url, platform, data)
 			.catch((err) => console.error('[MediaCache] 解析缓存写入失败:', err))
 
-	// 公众号文章走自研解析（wechatMediaService），其余转发 catsapi
+	// 公众号文章走自研解析（wechatMediaService），X 走 fxtwitter，其余转发 catsapi
 	if (platform === 'wechat') {
 		try {
 			const data = await parseWechatArticle(url)
@@ -229,6 +294,25 @@ mediaRoutes.post('/parse', async (c) => {
 			return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
 		} catch (err) {
 			console.error('Wechat article parse failed:', err)
+			const message = err instanceof Error ? err.message : '解析失败，请稍后重试'
+			return c.json<ApiResponse>({ success: false, message }, HTTP_STATUS.INTERNAL_SERVER_ERROR)
+		}
+	}
+
+	if (platform === 'x') {
+		try {
+			const data = await parseTweet(url)
+			if (data.images.length === 0 && data.videos.length === 0) {
+				return c.json<ApiResponse>(
+					{ success: false, message: '未解析到可下载的媒体' },
+					HTTP_STATUS.INTERNAL_SERVER_ERROR,
+				)
+			}
+			await saveCache(data)
+			c.header('X-Cache', 'miss')
+			return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
+		} catch (err) {
+			console.error('Tweet parse failed:', err)
 			const message = err instanceof Error ? err.message : '解析失败，请稍后重试'
 			return c.json<ApiResponse>({ success: false, message }, HTTP_STATUS.INTERNAL_SERVER_ERROR)
 		}
