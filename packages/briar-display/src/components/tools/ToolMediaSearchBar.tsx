@@ -1,9 +1,14 @@
 'use client'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Link2, Loader2, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
+import { platformIcon } from './toolMediaUtils'
+
+/** 支持的平台（图标 tag 示意，与历史记录 tag 同款样式） */
+const SUPPORTED_PLATFORMS = ['xiaohongshu', 'douyin', 'wechat', 'x']
 
 interface ToolMediaSearchBarProps {
 	input: string
@@ -31,8 +36,17 @@ export default function ToolMediaSearchBar({
 				<div className="flex items-center gap-2">
 					<Link2 className="h-5 w-5 text-muted-foreground" />
 					<h1 className="text-lg font-semibold">媒体解析</h1>
-					<span className="text-sm text-muted-foreground">
-						小红书 / 抖音 / 微信公众号无水印提取（视频 / 封面 / 图集 / 实况图）
+					<span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+						{SUPPORTED_PLATFORMS.map((platform) => (
+							<Badge key={platform} variant="secondary" className="shrink-0 px-1.5 py-0.5">
+								<img
+									src={platformIcon(platform)}
+									alt={platform}
+									className="h-3.5 w-3.5 rounded-[3px]"
+								/>
+							</Badge>
+						))}
+						无水印提取（视频 / 封面 / 图集 / 实况图）
 					</span>
 				</div>
 				{hasResult && (
@@ -45,7 +59,7 @@ export default function ToolMediaSearchBar({
 			<Textarea
 				value={input}
 				onChange={(e) => onInputChange(e.target.value)}
-				placeholder="粘贴小红书、抖音或微信公众号文章链接，也支持整段分享文案…"
+				placeholder="粘贴分享链接，也支持整段分享文案…"
 				className="min-h-20 resize-y"
 				onKeyDown={(e) => {
 					if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
