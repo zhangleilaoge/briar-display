@@ -124,18 +124,22 @@ export const buildMediaSections = (result: MediaParseResult, sourceUrl = ''): Me
 
 	// videos 去重（上游 video_url 常与会重复出现在 videos 里）
 	const rawVideos = [...new Set(result.videos || [])].filter(Boolean)
-	// 抖音图文作品的「视频」实为背景音乐 mp3（ies-music/*.mp3），归到音轨而不是视频区块
+	const imageUrls = (result.images || []).filter(Boolean)
+	// 音频判定：
+	// 1. URL 带音频后缀（mp3/m4a，如 ies-music/*.mp3）
+	// 2. 抖音图文作品（images 非空）的 videos 一律是背景音乐——无后缀的 m4a 也中招，
+	//    实测 audio/mp4 裸路径；视频作品 images 恒为空，不会误伤
 	const isAudioLike = (url: string) => /\.(mp3|m4a)(?:[?/]|$)/i.test(upgradeToHttps(url))
-	const videoUrls = rawVideos.filter((url) => !isAudioLike(url))
-	const audioUrl = result.audio_url || rawVideos.find(isAudioLike) || null
+	const douyinSlideshow = result.platform === 'douyin' && imageUrls.length > 0
+	const isAudio = (url: string) => isAudioLike(url) || douyinSlideshow
+	const videoUrls = rawVideos.filter((url) => !isAudio(url))
+	const audioUrl = result.audio_url || rawVideos.find(isAudio) || null
 	return {
 		cover: result.cover ? toItem('cover', result.cover, 0, '封面') : null,
 		videos: videoUrls.map((url, i) =>
 			toItem('video', url, i, `视频${videoUrls.length > 1 ? pad(i + 1) : ''}`),
 		),
-		images: (result.images || [])
-			.filter(Boolean)
-			.map((url, i) => toItem('image', url, i, `原图${pad(i + 1)}`)),
+		images: imageUrls.map((url, i) => toItem('image', url, i, `原图${pad(i + 1)}`)),
 		livePhotos: (result.live_photos || [])
 			.filter(Boolean)
 			.map((url, i) => toItem('live', url, i, `动态照片${pad(i + 1)}`)),
