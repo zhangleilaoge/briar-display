@@ -58,6 +58,22 @@ export const platformFromUrl = (url: string) => {
 /** 小红书 CDN 多为 http 链接，页面在 https 下需升级，否则被浏览器拦截 */
 export const upgradeToHttps = (url: string) => url.replace(/^http:\/\//i, 'https://')
 
+/**
+ * 媒体加载失败时探测真实原因：拉 1 字节看状态码。
+ * 返回后端 JSON 的 message（如「链接已过期」）；网络错误/其他状态返回 null。
+ */
+export const probeMediaError = async (item: MediaItem): Promise<string | null> => {
+	try {
+		const res = await fetch(item.previewUrl ?? item.url, { headers: { Range: 'bytes=0-0' } })
+		if (res.ok || res.status === 206) return null
+		const data = await res.json().catch(() => null)
+		return data?.message || `媒体加载失败（HTTP ${res.status}）`
+	} catch {
+		// 网络层失败（如 twimg 无梯子直连不上），没有可读原因
+		return null
+	}
+}
+
 /** 文件名清洗：去掉非法字符、限长 */
 export const sanitizeFilename = (name: string, maxLength = 60) => {
 	const cleaned = name
@@ -77,6 +93,14 @@ const resolveExt = (url: string, kind: MediaKind) => {
 }
 
 const pad = (n: number) => String(n).padStart(2, '0')
+
+/** 历史记录里的解析时间：今天显示 HH:mm，更早显示 MM-DD HH:mm */
+export const formatParsedAt = (ts: number) => {
+	const d = new Date(ts)
+	const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+	if (d.toDateString() === new Date().toDateString()) return hm
+	return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hm}`
+}
 
 /** 抖音视频/音轨 CDN 域名（签名绑定解析方 IP，即咱们服务器，访客浏览器直连 403） */
 const DOUYIN_VIDEO_HOST_SUFFIXES = ['.zjcdn.com', '.douyinvod.com', '.douyinstatic.com']

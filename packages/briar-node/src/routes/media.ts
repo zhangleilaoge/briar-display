@@ -438,6 +438,8 @@ mediaRoutes.get('/proxy', async (c) => {
 		}
 		if (!upstream) throw lastErr
 		if (upstream.status === 403) {
+			// 签名 URL 过期：删掉对应解析缓存，让「重新解析」真正重新拉取新签名
+			if (from) mediaCacheService.removeCachedParse(person, from).catch(() => {})
 			return c.json<ApiResponse>(
 				{ success: false, message: '链接已过期，请重新解析' },
 				HTTP_STATUS.FORBIDDEN,

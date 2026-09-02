@@ -58,7 +58,7 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 | `packages/briar-display/src/api/files.ts` | 前端文件 API + cos-js-sdk-v5 分片直传封装 |
 | `packages/briar-node/src/routes/messages.ts` | 站内信 API（`/api/messages`）：列表/未读数/标记已读 |
 | `packages/briar-node/src/routes/media.ts` | 媒体解析 API（`/api/media`，工具箱「媒体解析」，免登录 + IP 限频 parse 6/min、proxy 60/min，超管豁免）：`POST /parse` 支持小红书/抖音（转发 catsapi）、微信公众号文章（自研解析，见 wechatMediaService）和 X/Twitter（fxtwitter 公共 API）；`GET /proxy` 媒体代理（白名单 xhscdn/qpic/tc.qq/douyin 系/zjcdn/twimg 等），旁路缓存——inline 预览透传 Range 不缓存，下载（非 inline）拉全量 tee 到 COS 公有桶，hit 302 直发（文件名在对象 key 末段）。twimg 国内服务器不可达：前端对 twimg 直连（CORS 开放，需访客有梯子），代理仅海外环境可用 |
-| `packages/briar-node/src/services/mediaCacheService.ts` | 媒体缓存：`media_parse_cache` 按人（u:{userId}/ip:{IP}）LRU 10 条存解析结果（淘汰连带清对应媒体）；`media_cache` 记录 COS 旁路缓存（每条解析记录累计 ≤50MB 才缓存）；`cleanupExpiredMedia` 清 7 天前媒体（解析结果保留） |
+| `packages/briar-node/src/services/mediaCacheService.ts` | 媒体缓存：`media_parse_cache` 按人（u:{userId}/ip:{IP}）LRU 10 条存解析结果（淘汰连带清对应媒体；抖音签名 URL 时效不足半小时，缓存超 10 分钟视为失效，proxy 遇上游 403 也会删掉对应缓存让「重新解析」生效）；`media_cache` 记录 COS 旁路缓存（每条解析记录累计 ≤50MB 才缓存）；`cleanupExpiredMedia` 清 7 天前媒体（解析结果保留） |
 | `packages/briar-node/src/jobs/cleanup-media-cache.mjs` | 媒体缓存清理定时任务（每日 05:23，`BRIAR_CLEANUP_MEDIA_CRON` 可覆盖） |
 | `packages/briar-node/src/services/wechatMediaService.ts` | 公众号文章解析：正则解析 HTML（og:title/author 元信息、图片消息 `picture_page_info_list` 的 cdn_url + 实况图 format_info 取最大档、图文 `#js_content` img、视频 videoplayer 二次请求取 url_info） |
 | `packages/briar-node/src/services/fileModerationService.ts` | 图片封禁检测：定时扫描 CDN URL（403/451 判定被封）→ 删记录 + 清理 COS + 发站内信 |
