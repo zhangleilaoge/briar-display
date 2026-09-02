@@ -1,3 +1,4 @@
+import './lib/loadEnv'
 import dns from 'dns'
 import path from 'path'
 import { fileURLToPath } from 'url'

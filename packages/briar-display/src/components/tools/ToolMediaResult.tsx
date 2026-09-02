@@ -261,10 +261,17 @@ export default function ToolMediaResult({
 				</div>
 			)}
 
-			{/* 独立音轨 */}
+			{/* 独立音轨（上游确认 audio/* 才存在；带播放器，可直接试听） */}
 			{sections.audio && (
-				<div className="flex items-center justify-between rounded-lg border bg-card p-4">
-					<h2 className="font-semibold">{sections.audio.label}</h2>
+				<div className="flex items-center gap-4 rounded-lg border bg-card p-4">
+					<h2 className="shrink-0 font-semibold">{sections.audio.label}</h2>
+					{/* biome-ignore lint/a11y/useMediaCaption: 音乐音轨无字幕 */}
+					<audio
+						controls
+						preload="none"
+						src={sections.audio.previewUrl ?? sections.audio.url}
+						className="h-9 min-w-0 flex-1"
+					/>
 					<ItemActions
 						item={sections.audio}
 						percent={progress[sections.audio.id]}

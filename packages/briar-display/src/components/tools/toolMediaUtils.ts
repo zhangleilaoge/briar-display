@@ -78,8 +78,8 @@ const resolveExt = (url: string, kind: MediaKind) => {
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-/** 抖音视频 CDN 域名（签名绑定解析方 IP，即咱们服务器，访客浏览器直连 403） */
-const DOUYIN_VIDEO_HOST_SUFFIXES = ['.zjcdn.com', '.douyinvod.com']
+/** 抖音视频/音轨 CDN 域名（签名绑定解析方 IP，即咱们服务器，访客浏览器直连 403） */
+const DOUYIN_VIDEO_HOST_SUFFIXES = ['.zjcdn.com', '.douyinvod.com', '.douyinstatic.com']
 /** X/Twitter 媒体 CDN：国内不可达，一律走后端代理（服务端经 CF Worker 中转 + 旁路缓存） */
 const X_MEDIA_HOST_SUFFIXES = ['.twimg.com']
 
