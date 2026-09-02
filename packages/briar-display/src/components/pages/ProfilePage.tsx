@@ -30,13 +30,8 @@ export default function ProfilePage() {
 }
 
 function ProfilePageInner() {
-	// 个人中心要求最低登录态：page:business 是图床用的，profile 用更宽松的 page:wiki
-	// 没有 page:wiki 的人也不该进，那就 fallback 到 page:business
-	// 这里直接要求登录即可，不卡具体业务权限
 	const { loading: permLoading, denied } = useRequirePermission(undefined, [
-		PERMISSIONS.PAGE_WIKI,
 		PERMISSIONS.PAGE_BUSINESS,
-		PERMISSIONS.PAGE_ADMIN,
 	])
 	const { user, roles, permissions, loading: permsLoading, refresh } = usePermissions()
 	const { unread } = useUnreadMessages()
@@ -106,7 +101,7 @@ function ProfilePageInner() {
 				<a href="/briar/" className="text-sm font-semibold text-foreground">
 					Briar
 				</a>
-				<UserMenu variant="light" />
+				<UserMenu />
 			</header>
 
 			<main className="mx-auto max-w-5xl p-6">

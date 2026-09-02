@@ -12,7 +12,6 @@ import sqlConsoleRoutes from './sqlConsole'
 import terminalRoutes from './terminal'
 import userRoutes from './users'
 import versionRoutes from './version'
-import wikiRoutes from './wiki'
 
 const api = new Hono()
 
@@ -24,7 +23,6 @@ api.route('/admin', adminRoutes)
 api.route('/admin/sql', sqlConsoleRoutes)
 api.route('/cert', certRoutes)
 api.route('/deployment', deploymentRoutes)
-api.route('/wiki', wikiRoutes)
 api.route('/logs', logRoutes)
 api.route('/media', mediaRoutes)
 api.route('/messages', messageRoutes)

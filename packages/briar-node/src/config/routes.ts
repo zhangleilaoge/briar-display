@@ -28,24 +28,10 @@ export const RouteConfig = {
 	],
 
 	/** API GET 公开的路径（写操作仍需认证） */
-	API_PUBLIC_PATHS: [
-		'/api/version',
-		'/api/wiki/pages',
-		'/api/wiki/pages/search',
-		'/api/wiki/categories',
-		'/api/wiki/categories/tree',
-		'/api/wiki/tags',
-		'/api/wiki/templates',
-	],
+	API_PUBLIC_PATHS: ['/api/version'],
 
 	/** API GET 公开的路径前缀（写操作仍需认证） */
-	API_PUBLIC_PREFIXES: [
-		'/api/wiki/special',
-		'/api/wiki/pages/',
-		'/api/wiki/categories/',
-		'/api/wiki/tags/',
-		'/api/wiki/templates/',
-	],
+	API_PUBLIC_PREFIXES: [] as string[],
 
 	/** 资源文件前缀 */
 	ASSET_PREFIXES: ['/_astro'],
