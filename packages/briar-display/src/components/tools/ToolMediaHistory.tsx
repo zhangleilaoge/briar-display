@@ -1,5 +1,6 @@
 'use client'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { History, Trash2, X } from 'lucide-react'
 import {
@@ -56,14 +57,17 @@ export default function ToolMediaHistory({
 								<span className="flex w-full items-center gap-1.5">
 									<span className="truncate text-sm">{item.title || '（无标题）'}</span>
 									{platformIcon(platform) && (
-										<span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+										<Badge
+											variant="secondary"
+											className="shrink-0 gap-1 px-1.5 py-0 text-xs font-normal"
+										>
 											<img
 												src={platformIcon(platform)}
 												alt=""
 												className="h-3.5 w-3.5 rounded-[3px]"
 											/>
 											{platformLabel(platform)}
-										</span>
+										</Badge>
 									)}
 								</span>
 								<span className="w-full truncate text-xs text-muted-foreground">{item.url}</span>
