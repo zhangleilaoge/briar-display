@@ -112,7 +112,7 @@ export default function AdminLayout({ children, currentPath, fullWidth }: AdminL
 					<header className="flex h-12 items-center justify-between gap-3 border-b bg-background px-4">
 						<span className="text-sm font-semibold md:hidden">管理后台</span>
 						<div className="hidden md:block" />
-						<UserMenu variant="light" />
+						<UserMenu />
 					</header>
 
 					<main className="flex-1 bg-muted/30 p-6">

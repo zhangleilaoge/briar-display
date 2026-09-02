@@ -66,19 +66,6 @@ app.get('/', rootHandler)
 // 静态资源
 app.use('/*', serveStatic({ root: STATIC_PATH }))
 
-// Wiki SPA fallback: /briar/wiki/* 动态路由都返回 wiki/index.html
-app.get('/briar/wiki/*', async (c) => {
-	const wikiIndexPath = path.join(STATIC_PATH, 'briar/wiki/index.html')
-	if (fs.existsSync(wikiIndexPath)) {
-		const html = fs.readFileSync(wikiIndexPath, 'utf-8')
-		return c.html(html)
-	}
-	// fallback to root
-	const rootIndexPath = path.join(STATIC_PATH, 'index.html')
-	const html = fs.readFileSync(rootIndexPath, 'utf-8')
-	return c.html(html)
-})
-
 // 文件管理 SPA fallback: /briar/files/<folderId> 返回 files/index.html
 app.get('/briar/files/*', async (c) => {
 	const filesIndexPath = path.join(STATIC_PATH, 'briar/files/index.html')
