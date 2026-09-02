@@ -311,15 +311,12 @@ mediaRoutes.get('/proxy', async (c) => {
 	const disposition = (type: 'inline' | 'attachment') =>
 		`${type}; filename*=UTF-8''${encodeURIComponent(rawName)}`
 
-	// 命中 COS 旁路缓存 → 302 直发（公有读对象用 response-content-disposition 控制文件名/内联预览）
+	// 命中 COS 旁路缓存 → 302 直发。
+	// 注意匿名 GET 不支持 response-content-disposition（400 InvalidRequest），
+	// 下载文件名靠对象 key 末段携带（见下方 cosKey 命名）
 	const cached = await mediaCacheService.lookupMedia(person, urlHash).catch(() => null)
 	if (cached) {
-		const target = new URL(cosService.getPublicBucketUrl(cached.cosKey))
-		target.searchParams.set(
-			'response-content-disposition',
-			disposition(hasName && !inline ? 'attachment' : 'inline'),
-		)
-		return c.redirect(target.toString(), 302)
+		return c.redirect(cosService.getPublicBucketUrl(cached.cosKey), 302)
 	}
 
 	try {
@@ -332,7 +329,10 @@ mediaRoutes.get('/proxy', async (c) => {
 			const cookie = getWechatCookieHeader()
 			if (cookie) reqHeaders.Cookie = cookie
 		}
-		// 不透传 Range：miss 时要拉全量缓存到 COS，客户端收 200 全量（播放器兼容）
+		// 预览（inline）透传 Range，只拉客户端要的分段、不写缓存；
+		// 下载（非 inline）拉全量并 tee 到 COS——只有完整消费才配进缓存
+		const range = c.req.header('range')
+		if (inline && range) reqHeaders.Range = range
 		// undici 偶发 "fetch failed"（连接池/网络抖动、CDN 边缘节点抽风），最多重试 3 次
 		let upstream: Response | null = null
 		let lastErr: unknown = null
@@ -363,7 +363,6 @@ mediaRoutes.get('/proxy', async (c) => {
 		}
 
 		const contentType = upstream.headers.get('Content-Type') || 'application/octet-stream'
-		const size = Number(upstream.headers.get('Content-Length') || 0)
 		const headers: Record<string, string> = {
 			'Content-Type': contentType,
 			'Cache-Control': 'no-store',
@@ -374,9 +373,18 @@ mediaRoutes.get('/proxy', async (c) => {
 			// inline 预览但带上建议文件名：播放器原生「下载」菜单取这个名字，否则只能叫 proxy.mp4
 			headers['Content-Disposition'] = disposition('inline')
 		}
-		if (size > 0) headers['Content-Length'] = String(size)
+		for (const key of ['Content-Length', 'Content-Range', 'Accept-Ranges']) {
+			const value = upstream.headers.get(key)
+			if (value) headers[key] = value
+		}
+
+		// inline 预览：纯透传，不缓存（浏览器只读元数据/分段，拉了也传不完）
+		if (inline) {
+			return new Response(upstream.body, { status: upstream.status, headers })
+		}
 
 		// 缓存判定：无 Content-Length 不缓存；单条解析记录累计超 50MB 整条不缓存
+		const size = Number(upstream.headers.get('Content-Length') || 0)
 		let cacheable = size > 0
 		if (cacheable) {
 			const used = from
@@ -393,8 +401,11 @@ mediaRoutes.get('/proxy', async (c) => {
 			return new Response(upstream.body, { status: 200, headers })
 		}
 
-		// tee：一路回客户端，一路传 COS 公有桶；上传完成才落库，失败只记日志不影响下载
-		const cosKey = `media-cache/${urlHash}.${extForCacheKey(url, contentType)}`
+		// tee：一路回客户端，一路传 COS 公有桶；上传完成才落库，失败只记日志不影响下载。
+		// key 末段带文件名：302 命中后播放器原生下载/直链保存能拿到正常文件名
+		const cosKey = hasName
+			? `media-cache/${urlHash}/${rawName}`
+			: `media-cache/${urlHash}.${extForCacheKey(url, contentType)}`
 		const source = Readable.fromWeb(upstream.body as never)
 		const toClient = new PassThrough()
 		const toCos = new PassThrough()

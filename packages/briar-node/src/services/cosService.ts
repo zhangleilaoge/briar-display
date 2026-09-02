@@ -87,11 +87,12 @@ export const cosService = {
 		})
 	},
 
-	/** 公有 bucket 对象裸 URL（公有读，可直接访问） */
+	/** 公有 bucket 对象裸 URL（公有读，可直接访问；key 可能含中文文件名，按段编码） */
 	getPublicBucketUrl(key: string): string {
+		const encoded = key.split('/').map(encodeURIComponent).join('/')
 		return publicDomain
-			? `${publicDomain}/${key}`
-			: `https://${publicBucket}.cos.${region}.myqcloud.com/${key}`
+			? `${publicDomain}/${encoded}`
+			: `https://${publicBucket}.cos.${region}.myqcloud.com/${encoded}`
 	},
 
 	/**
