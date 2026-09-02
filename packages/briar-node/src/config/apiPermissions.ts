@@ -40,15 +40,15 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	// ==================== Deployment ====================
 	'POST /api/deployment/nginx/deploy': PERMISSIONS.ADMIN_DEPLOY_MANAGE,
 
-	// ==================== Files ====================
-	'POST /api/files/precheck': PERMISSIONS.WIKI_PAGE_CREATE,
-	'POST /api/files/cos-sign': PERMISSIONS.WIKI_PAGE_CREATE,
-	'POST /api/files/confirm': PERMISSIONS.WIKI_PAGE_CREATE,
-	'POST /api/files/folders': PERMISSIONS.WIKI_PAGE_CREATE,
-	'PATCH /api/files/folders/:id': PERMISSIONS.WIKI_PAGE_CREATE,
-	'DELETE /api/files/folders/:id': PERMISSIONS.WIKI_PAGE_CREATE,
-	'PATCH /api/files/:id': PERMISSIONS.WIKI_PAGE_CREATE,
-	'DELETE /api/files/:id': PERMISSIONS.WIKI_PAGE_CREATE,
+	// ==================== Files（文件管理，登录用户即可） ====================
+	'POST /api/files/precheck': null,
+	'POST /api/files/cos-sign': null,
+	'POST /api/files/confirm': null,
+	'POST /api/files/folders': null,
+	'PATCH /api/files/folders/:id': null,
+	'DELETE /api/files/folders/:id': null,
+	'PATCH /api/files/:id': null,
+	'DELETE /api/files/:id': null,
 
 	// ==================== Messages（站内信，登录用户即可） ====================
 	'POST /api/messages/read-all': null,
@@ -70,53 +70,6 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	// ==================== Users ====================
 	'PUT /api/users/me': null,
 	'POST /api/users/me/avatar': null,
-
-	// ==================== Wiki: Pages ====================
-	'POST /api/wiki/pages': PERMISSIONS.WIKI_PAGE_CREATE,
-	'PUT /api/wiki/pages/:slug': PERMISSIONS.WIKI_PAGE_UPDATE,
-	'DELETE /api/wiki/pages/:slug': PERMISSIONS.WIKI_PAGE_DELETE,
-
-	// ==================== Wiki: Revisions ====================
-	'POST /api/wiki/pages/:slug/revisions/:revId/revert': PERMISSIONS.WIKI_REVISION_REVERT,
-
-	// ==================== Wiki: Discussions ====================
-	'POST /api/wiki/pages/:slug/discussions': PERMISSIONS.WIKI_DISCUSSION_CREATE,
-	'POST /api/wiki/pages/:slug/discussions/:topicId/replies': PERMISSIONS.WIKI_DISCUSSION_REPLY,
-	'PUT /api/wiki/pages/:slug/discussions/:topicId/resolve': PERMISSIONS.WIKI_DISCUSSION_RESOLVE,
-
-	// ==================== Wiki: Comments ====================
-	'POST /api/wiki/pages/:slug/comments': PERMISSIONS.WIKI_COMMENT_CREATE,
-	'PUT /api/wiki/pages/:slug/comments/:id': PERMISSIONS.WIKI_COMMENT_UPDATE,
-	'DELETE /api/wiki/pages/:slug/comments/:id': PERMISSIONS.WIKI_COMMENT_DELETE,
-
-	// ==================== Wiki: Change Requests ====================
-	'POST /api/wiki/pages/:slug/change-requests': PERMISSIONS.WIKI_CHANGE_REQUEST_CREATE,
-	'PUT /api/wiki/change-requests/:id/review': PERMISSIONS.WIKI_CHANGE_REQUEST_REVIEW,
-	'DELETE /api/wiki/change-requests/:id': PERMISSIONS.WIKI_CHANGE_REQUEST_CREATE,
-
-	// ==================== Wiki: Categories ====================
-	'POST /api/wiki/categories': PERMISSIONS.WIKI_CATEGORY_CREATE,
-	'PUT /api/wiki/categories/:slug': PERMISSIONS.WIKI_CATEGORY_UPDATE,
-	'DELETE /api/wiki/categories/:slug': PERMISSIONS.WIKI_CATEGORY_DELETE,
-	'POST /api/wiki/categories/:slug/pages': PERMISSIONS.WIKI_CATEGORY_UPDATE,
-	'DELETE /api/wiki/categories/:slug/pages/:pageId': PERMISSIONS.WIKI_CATEGORY_UPDATE,
-
-	// ==================== Wiki: Tags ====================
-	'POST /api/wiki/tags': PERMISSIONS.WIKI_TAG_CREATE,
-	'DELETE /api/wiki/tags/:id': PERMISSIONS.WIKI_TAG_DELETE,
-
-	// ==================== Wiki: Templates ====================
-	'POST /api/wiki/templates': PERMISSIONS.WIKI_TEMPLATE_CREATE,
-	'PUT /api/wiki/templates/:slug': PERMISSIONS.WIKI_TEMPLATE_UPDATE,
-	'DELETE /api/wiki/templates/:slug': PERMISSIONS.WIKI_TEMPLATE_DELETE,
-
-	// ==================== Wiki: Stars ====================
-	'POST /api/wiki/stars/:slug': PERMISSIONS.WIKI_STAR_MANAGE,
-	'DELETE /api/wiki/stars/:slug': PERMISSIONS.WIKI_STAR_MANAGE,
-
-	// ==================== Wiki: Watchlist ====================
-	'POST /api/wiki/watchlist/:slug': PERMISSIONS.WIKI_WATCHLIST_MANAGE,
-	'DELETE /api/wiki/watchlist/:slug': PERMISSIONS.WIKI_WATCHLIST_MANAGE,
 }
 
 /**
@@ -147,7 +100,7 @@ export function findApiPermission(method: string, path: string): string | null |
 
 /**
  * 参数化路径匹配
- * /api/wiki/pages/:slug 匹配 /api/wiki/pages/hello-world
+ * /api/files/folders/:id 匹配 /api/files/folders/abc-123
  */
 function matchPath(pattern: string, actual: string): boolean {
 	const patternParts = pattern.split('/')

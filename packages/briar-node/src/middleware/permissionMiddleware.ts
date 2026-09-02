@@ -56,7 +56,7 @@ export const requirePermission = (
  * 页面访问权限中间件
  * 检查用户是否有访问指定页面的权限
  *
- * @param pagePermissionCode - 页面权限编码（如 'page:wiki'）
+ * @param pagePermissionCode - 页面权限编码（如 'page:admin'）
  */
 export const requirePageAccess = (pagePermissionCode: string): MiddlewareHandler => {
 	return requirePermission(pagePermissionCode, 'any')

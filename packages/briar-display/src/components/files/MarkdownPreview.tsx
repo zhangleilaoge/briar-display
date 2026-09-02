@@ -9,7 +9,7 @@ interface MarkdownPreviewProps {
 	markdown: string
 }
 
-/** md 文件只读预览，复用 wiki 的 BlockNote 渲染 */
+/** md 文件只读预览，基于 BlockNote 渲染 */
 export default function MarkdownPreview({ markdown }: MarkdownPreviewProps) {
 	const editor = useCreateBlockNote()
 	const [parseFailed, setParseFailed] = useState(false)

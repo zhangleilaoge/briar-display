@@ -36,7 +36,7 @@ export default function FileManagerLayout({ children }: FileManagerLayoutProps) 
 						</Breadcrumb>
 						<div className="flex items-center gap-3">
 							<StorageQuota />
-							<UserMenu variant="light" />
+							<UserMenu />
 						</div>
 					</div>
 				</header>
