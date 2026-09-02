@@ -65,7 +65,7 @@ export const emailService = {
 					name,
 					verificationCode: code,
 				},
-				subject: 'Briar - 重置密码验证码',
+				subject: 'xiaobuzi - 重置密码验证码',
 			})
 			return true
 		} catch (error) {

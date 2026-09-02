@@ -88,7 +88,7 @@ export default function LoginPage() {
 
 					<div className="relative z-10 space-y-6 text-center">
 						<h1 className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-6xl font-bold tracking-tight text-transparent">
-							Briar
+							xiaobuzi
 						</h1>
 						<p className="text-xl text-muted-foreground">欢迎回来</p>
 					</div>
@@ -99,7 +99,7 @@ export default function LoginPage() {
 					<Card className="w-full max-w-md bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-xl">
 						<form onSubmit={handleSubmit}>
 							<CardHeader className="text-center">
-								<CardTitle className="text-xl">登录 Briar</CardTitle>
+								<CardTitle className="text-xl">登录 xiaobuzi</CardTitle>
 								<CardDescription>使用你的邮箱和密码登录</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-4">

@@ -184,7 +184,7 @@ export default function RegisterPage() {
 
 					<div className="relative z-10 space-y-6 text-center">
 						<h1 className="bg-gradient-to-br from-purple-600 via-blue-600 to-teal-500 bg-clip-text text-6xl font-bold tracking-tight text-transparent">
-							Briar
+							xiaobuzi
 						</h1>
 						<p className="text-xl text-muted-foreground">开始使用</p>
 					</div>

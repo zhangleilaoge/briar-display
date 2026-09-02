@@ -99,7 +99,7 @@ function ProfilePageInner() {
 			{/* 顶部导航 */}
 			<header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b bg-background/80 px-6 backdrop-blur-md">
 				<a href="/briar/" className="text-sm font-semibold text-foreground">
-					Briar
+					xiaobuzi
 				</a>
 				<UserMenu />
 			</header>

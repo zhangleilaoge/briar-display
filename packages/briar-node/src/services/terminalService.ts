@@ -158,7 +158,7 @@ export const terminalService = {
 			await emailService.sendEmail(user.email, {
 				TemplateID: EmailTemplate.GENERIC_VERIFICATION,
 				TemplateData: { name: user.name, verificationCode: code },
-				subject: 'Briar - SSH 控制台验证码',
+				subject: 'xiaobuzi - SSH 控制台验证码',
 			})
 		} catch (error) {
 			console.error('Failed to send terminal access code:', error)

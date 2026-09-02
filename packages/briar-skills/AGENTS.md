@@ -86,7 +86,6 @@ python3 /Users/zhanglei/.kimi-code/user-skills/zan-gitlab/scripts/zan_gitlab.py 
 
 | superpowers skill | 已覆盖的场景 |
 |-------------------|-------------|
-| `using-git-worktrees` | worktree 创建、管理、隔离工作区 |
 | `systematic-debugging` | 调试方法论、故障排查流程 |
 | `test-driven-development` | TDD 流程、红绿重构循环 |
 | `writing-plans` | 实现计划编写、架构设计 |
