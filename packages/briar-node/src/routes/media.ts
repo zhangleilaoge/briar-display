@@ -329,8 +329,8 @@ mediaRoutes.get('/proxy', async (c) => {
 			const cookie = getWechatCookieHeader()
 			if (cookie) reqHeaders.Cookie = cookie
 		}
-		// 预览（inline）透传 Range，只拉客户端要的分段、不写缓存；
-		// 下载（非 inline）拉全量并 tee 到 COS——只有完整消费才配进缓存
+		// 预览带 Range（视频预加载/拖进度）：只拉客户端要的分段、纯透传不写缓存；
+		// 不带 Range 的 inline（<img> 全量加载）与下载一样落缓存——完整消费才配进缓存
 		const range = c.req.header('range')
 		if (inline && range) reqHeaders.Range = range
 		// undici 偶发 "fetch failed"（连接池/网络抖动、CDN 边缘节点抽风），最多重试 3 次
@@ -378,8 +378,8 @@ mediaRoutes.get('/proxy', async (c) => {
 			if (value) headers[key] = value
 		}
 
-		// inline 预览：纯透传，不缓存（浏览器只读元数据/分段，拉了也传不完）
-		if (inline) {
+		// inline + Range（视频分段预览）：纯透传，不缓存（浏览器只读元数据/分段，拉了也传不完）
+		if (inline && range) {
 			return new Response(upstream.body, { status: upstream.status, headers })
 		}
 
