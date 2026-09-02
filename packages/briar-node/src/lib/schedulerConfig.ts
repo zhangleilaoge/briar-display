@@ -3,6 +3,7 @@ import { logDal } from '../dal/logDal'
 import { certificateService } from '../services/certificateService'
 import { fileModerationService } from '../services/fileModerationService'
 import { maintenanceService } from '../services/maintenanceService'
+import { mediaCacheService } from '../services/mediaCacheService'
 import type { SchedulerTask } from './scheduler'
 
 const resolveCron = (envKey: string, fallbackCron: string) => {
@@ -69,6 +70,19 @@ export const schedulerTasks: SchedulerTask[] = [
 		run: async () => {
 			const deleted = await logDal.cleanup(90)
 			return `已清理 90 天前的请求日志 ${deleted} 条`
+		},
+	},
+	{
+		name: 'cleanup-media-cache',
+		label: '清理媒体缓存',
+		description: '删除 7 天前的媒体解析缓存文件（media_cache + COS 公有桶对象）',
+		scheduleText: '每日 05:23',
+		cron: resolveCron('BRIAR_CLEANUP_MEDIA_CRON', '23 5 * * *'),
+		runOnStart: false,
+		path: fileURLToPath(new URL('../jobs/cleanup-media-cache.mjs', import.meta.url)),
+		run: async () => {
+			const deleted = await mediaCacheService.cleanupExpiredMedia()
+			return `已清理过期的媒体缓存 ${deleted} 条（含 COS 对象）`
 		},
 	},
 ]

@@ -48,7 +48,7 @@ export default function ToolMediaAddToDialog({ items, onClose }: ToolMediaAddToD
 			for (let i = 0; i < items.length; i++) {
 				const item = items[i]
 				setProgressText(items.length > 1 ? `（${i + 1}/${items.length}）${item.label}` : item.label)
-				const blob = await fetchMediaBlob(item.url)
+				const blob = await fetchMediaBlob(item.url, undefined, item.sourceUrl)
 				const file = new File([blob], item.filename, { type: blob.type || undefined })
 				const results = await uploadFiles([file], {
 					folderId: folderId === 'root' ? null : folderId,

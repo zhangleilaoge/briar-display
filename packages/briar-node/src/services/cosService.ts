@@ -78,10 +78,52 @@ export const cosService = {
 				(err, data) => {
 					if (err) return reject(err)
 					if (data?.statusCode === 200) {
-						const url = publicDomain
-							? `${publicDomain}/${key}`
-							: `https://${publicBucket}.cos.${region}.myqcloud.com/${key}`
-						resolve(url)
+						resolve(cosService.getPublicBucketUrl(key))
+					} else {
+						reject(new Error(`COS upload failed: ${data?.statusCode}`))
+					}
+				},
+			)
+		})
+	},
+
+	/** 公有 bucket 对象裸 URL（公有读，可直接访问；key 可能含中文文件名，按段编码） */
+	getPublicBucketUrl(key: string): string {
+		const encoded = key.split('/').map(encodeURIComponent).join('/')
+		return publicDomain
+			? `${publicDomain}/${encoded}`
+			: `https://${publicBucket}.cos.${region}.myqcloud.com/${encoded}`
+	},
+
+	/**
+	 * Stream upload to the public bucket（媒体解析缓存：proxy miss 时边回客户端边传 COS）。
+	 * 对象内容按源 URL 哈希定名、不可变，给一个月浏览器缓存。
+	 */
+	async uploadStream(
+		stream: NodeJS.ReadableStream,
+		key: string,
+		mimeType: string,
+		contentLength?: number,
+	): Promise<string> {
+		return new Promise((resolve, reject) => {
+			cos.putObject(
+				{
+					Bucket: publicBucket!,
+					Region: region!,
+					Key: key,
+					StorageClass: 'STANDARD',
+					Body: stream as any, // SDK 的 UploadBody 类型未涵盖通用 ReadableStream，运行时支持 pipe 流
+					ContentType: mimeType,
+					ContentLength: contentLength,
+					CacheControl: 'max-age=2592000',
+					Headers: {
+						'Content-Disposition': 'inline',
+					},
+				},
+				(err, data) => {
+					if (err) return reject(err)
+					if (data?.statusCode === 200) {
+						resolve(cosService.getPublicBucketUrl(key))
 					} else {
 						reject(new Error(`COS upload failed: ${data?.statusCode}`))
 					}
@@ -91,7 +133,7 @@ export const cosService = {
 	},
 
 	/**
-	 * Delete an object from the public bucket（如旧头像）
+	 * Delete an object from the public bucket（如旧头像、过期的媒体缓存）
 	 */
 	async deletePublicObject(key: string): Promise<void> {
 		return new Promise((resolve, reject) => {
