@@ -17,7 +17,8 @@ const mediaRoutes = new Hono()
 
 /** 解析上游（逆向自 catsapi.com/labs/media-parser） */
 const PARSE_API_URL = 'https://catsapi.com/api/labs/media-parser/parse'
-const PARSE_TIMEOUT_MS = 60_000
+// 上游首解析偶发极慢（实测 douyin 图文长达 ~55s），卡到 85s（前端 axios 90s 兜底）
+const PARSE_TIMEOUT_MS = 85_000
 const PROXY_TIMEOUT_MS = 120_000
 const MAX_INPUT_LENGTH = 2000
 /** 限频：parse 每 IP 每分钟 6 次；proxy 宽松些（视频 Range 流式 + 批量下载有突发） */
