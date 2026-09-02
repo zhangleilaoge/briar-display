@@ -80,22 +80,20 @@ const pad = (n: number) => String(n).padStart(2, '0')
 
 /** 抖音视频/音轨 CDN 域名（签名绑定解析方 IP，即咱们服务器，访客浏览器直连 403） */
 const DOUYIN_VIDEO_HOST_SUFFIXES = ['.zjcdn.com', '.douyinvod.com', '.douyinstatic.com']
-/** X/Twitter 媒体 CDN：国内不可达，一律走后端代理（服务端经 CF Worker 中转 + 旁路缓存） */
-const X_MEDIA_HOST_SUFFIXES = ['.twimg.com']
 
 /**
  * 需要走后端代理预览（inline 模式）的情形：
  * - 图片/封面：一律走代理——<img> 全量加载，proxy 顺带旁路缓存到 COS，二次加载 302 直发
  * - qpic.cn 实况图/视频：auth 参数绑定文章页 Cookie，浏览器直连 403（服务端回带 Cookie）
  * - 抖音视频/音轨：URL 签名绑定解析方 IP，浏览器直连 403（服务端 IP 与解析一致）
- * - twimg（X）图片/视频：国内不可达，服务端经 CF Worker 中转换流
+ * - twimg（X）例外：国内服务器不可达，代理必然失败，直连交给访客浏览器（twimg CORS 开放，有梯子即可用）
  */
 const needsProxyPreview = (url: string, kind: MediaKind) => {
 	try {
-		if (kind === 'image' || kind === 'cover') return true
 		const host = new URL(upgradeToHttps(url)).hostname
+		if (host.endsWith('.twimg.com')) return false
+		if (kind === 'image' || kind === 'cover') return true
 		if (host.endsWith('.qpic.cn')) return true
-		if (X_MEDIA_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))) return true
 		if (
 			(kind === 'video' || kind === 'live' || kind === 'audio') &&
 			DOUYIN_VIDEO_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))

@@ -96,7 +96,7 @@ export default function ToolMediaResult({
 			<div className="flex items-start gap-4 rounded-lg border bg-card p-4">
 				{sections.cover && (
 					<img
-						src={sections.cover.previewUrl ?? sections.cover.url}
+						src={sections.cover.url}
 						alt="封面"
 						referrerPolicy="no-referrer"
 						className="h-24 w-24 shrink-0 rounded-md border object-cover"
