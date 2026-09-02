@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '@/api/request'
+import douyinIcon from '@/assets/platforms/douyin.png'
 import wechatIcon from '@/assets/platforms/wechat.png'
 import xiaohongshuIcon from '@/assets/platforms/xiaohongshu.png'
 import type { MediaParseResult } from '@briar/shared'
@@ -26,6 +27,7 @@ export interface MediaSections {
 
 const PLATFORM_LABELS: Record<string, string> = {
 	xiaohongshu: '小红书',
+	douyin: '抖音',
 	wechat: '微信公众号',
 }
 
@@ -33,6 +35,7 @@ export const platformLabel = (platform: string) => PLATFORM_LABELS[platform] || 
 
 const PLATFORM_ICONS: Record<string, string> = {
 	xiaohongshu: xiaohongshuIcon.src,
+	douyin: douyinIcon.src,
 	wechat: wechatIcon.src,
 }
 
@@ -40,8 +43,11 @@ const PLATFORM_ICONS: Record<string, string> = {
 export const platformIcon = (platform: string) => PLATFORM_ICONS[platform]
 
 /** 从链接推断平台（历史记录未存平台字段，按 URL 推导） */
-export const platformFromUrl = (url: string) =>
-	url.includes('mp.weixin.qq.com') ? 'wechat' : 'xiaohongshu'
+export const platformFromUrl = (url: string) => {
+	if (url.includes('mp.weixin.qq.com')) return 'wechat'
+	if (url.includes('douyin.com') || url.includes('iesdouyin.com')) return 'douyin'
+	return 'xiaohongshu'
+}
 
 /** 小红书 CDN 多为 http 链接，页面在 https 下需升级，否则被浏览器拦截 */
 export const upgradeToHttps = (url: string) => url.replace(/^http:\/\//i, 'https://')
