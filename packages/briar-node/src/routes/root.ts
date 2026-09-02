@@ -59,7 +59,6 @@ const LANDING_HTML = `<!DOCTYPE html>
 </head>
 <body>
 	<main>
-		<h1>${SITE_TITLE}</h1>
 		<div class="links">
 			<a href="/briar/">进入主页</a>
 		</div>
