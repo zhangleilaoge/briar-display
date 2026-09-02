@@ -1,8 +1,15 @@
+import { PassThrough, Readable } from 'node:stream'
 import type { ApiResponse, MediaParseResult } from '@briar/shared'
 import { HTTP_STATUS } from '@briar/shared'
 import { type Context, Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { authService } from '../services/authService'
+import { cosService } from '../services/cosService'
+import {
+	MEDIA_CACHE_MAX_RECORD_BYTES,
+	hashMediaUrl,
+	mediaCacheService,
+} from '../services/mediaCacheService'
 import { permissionService } from '../services/permissionService'
 import { getWechatCookieHeader, parseWechatArticle } from '../services/wechatMediaService'
 
@@ -127,45 +134,9 @@ function extractUrl(text: string): string | null {
 	return match ? match[0] : null
 }
 
-/**
- * 解析结果缓存（进程内）：按「人」隔离——登录用户按 userId，未登录按 IP。
- * 每人 LRU 保留最近 10 条，与前端历史记录条数一致（历史记录里重新解析 = 直接命中）。
- * 条目 7 天过期，惰性清理。风险：上游 CDN 签名 URL 可能先于 7 天失效，
- * 此时 proxy 会返回「链接已过期，请重新解析」，用户重解析一次即可刷新。
- */
-const PARSE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
-const PARSE_CACHE_PER_PERSON = 10
-const PARSE_CACHE_MAX_PERSONS = 2000
-type ParseCacheEntry = { data: MediaParseResult; expireAt: number }
-const parseCache = new Map<string, Map<string, ParseCacheEntry>>()
-
-function getCachedParse(person: string, url: string): MediaParseResult | null {
-	const bucket = parseCache.get(person)
-	const entry = bucket?.get(url)
-	if (!entry) return null
-	if (entry.expireAt <= Date.now()) {
-		bucket?.delete(url)
-		return null
-	}
-	return entry.data
-}
-
-function setCachedParse(person: string, url: string, data: MediaParseResult) {
-	let bucket = parseCache.get(person)
-	if (!bucket) {
-		// 兜底：人数过多时整表清空（缓存而已，代价是一次 miss）
-		if (parseCache.size >= PARSE_CACHE_MAX_PERSONS) parseCache.clear()
-		bucket = new Map()
-		parseCache.set(person, bucket)
-	}
-	bucket.delete(url) // 重插到最新位置
-	bucket.set(url, { data, expireAt: Date.now() + PARSE_CACHE_TTL_MS })
-	// LRU：每人最多 10 条，Map 迭代序即插入序，删最旧
-	while (bucket.size > PARSE_CACHE_PER_PERSON) {
-		const oldest = bucket.keys().next().value
-		if (oldest === undefined) break
-		bucket.delete(oldest)
-	}
+/** 缓存隔离键：登录按 userId，未登录按 IP */
+function personKey(c: Context, user: AuthedUser | null): string {
+	return user ? `u:${user.id}` : `ip:${clientIp(c)}`
 }
 
 function getHostname(url: string): string | null {
@@ -204,8 +175,7 @@ function isAllowedProxyUrl(url: string): boolean {
 /** POST /parse — 解析分享链接，返回无水印媒体地址（免登录，IP 限频；命中缓存不占限频） */
 mediaRoutes.post('/parse', async (c) => {
 	const user = await resolveOptionalUser(c)
-	// 缓存按「人」隔离：登录按 userId，未登录按 IP
-	const person = user ? `u:${user.id}` : `ip:${clientIp(c)}`
+	const person = personKey(c, user)
 
 	const body = await c.req.json<{ url?: string }>().catch(() => ({}) as { url?: string })
 	const input = (body.url || '').trim()
@@ -225,14 +195,20 @@ mediaRoutes.post('/parse', async (c) => {
 		)
 	}
 
-	// 命中本人缓存直接返回（X-Cache 便于排查），不消耗限频
-	const cached = getCachedParse(person, url)
+	// 命中本人缓存直接返回（X-Cache 便于排查），不消耗限频；缓存故障不阻塞正常解析
+	const cached = await mediaCacheService.getCachedParse(person, url).catch(() => null)
 	if (cached) {
 		c.header('X-Cache', 'hit')
 		return c.json<ApiResponse<MediaParseResult>>({ success: true, data: cached })
 	}
 
 	if (await isRateLimited(c, user, 'parse', PARSE_RATE_LIMIT)) return tooManyRequests(c)
+
+	/** 解析成功后写缓存（含 10 条 LRU 淘汰），失败只记日志 */
+	const saveCache = (data: MediaParseResult) =>
+		mediaCacheService
+			.saveCachedParse(person, url, platform, data)
+			.catch((err) => console.error('[MediaCache] 解析缓存写入失败:', err))
 
 	// 公众号文章走自研解析（wechatMediaService），其余转发 catsapi
 	if (platform === 'wechat') {
@@ -244,7 +220,7 @@ mediaRoutes.post('/parse', async (c) => {
 					HTTP_STATUS.INTERNAL_SERVER_ERROR,
 				)
 			}
-			setCachedParse(person, url, data)
+			await saveCache(data)
 			c.header('X-Cache', 'miss')
 			return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
 		} catch (err) {
@@ -272,7 +248,7 @@ mediaRoutes.post('/parse', async (c) => {
 			)
 		}
 		const data = (await upstream.json()) as MediaParseResult
-		setCachedParse(person, url, data)
+		await saveCache(data)
 		c.header('X-Cache', 'miss')
 		return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
 	} catch (err) {
@@ -285,9 +261,33 @@ mediaRoutes.post('/parse', async (c) => {
 	}
 })
 
+/** 缓存对象 key 的扩展名：优先取 URL 里的，取不到按 MIME 映射 */
+const EXT_BY_MIME: Record<string, string> = {
+	'image/jpeg': 'jpg',
+	'image/jpg': 'jpg',
+	'image/png': 'png',
+	'image/webp': 'webp',
+	'image/gif': 'gif',
+	'video/mp4': 'mp4',
+	'video/quicktime': 'mov',
+	'audio/mpeg': 'mp3',
+	'audio/mp4': 'm4a',
+	'audio/x-m4a': 'm4a',
+}
+
+function extForCacheKey(url: string, contentType: string): string {
+	const m = url.match(/\.(mp4|mov|jpg|jpeg|png|webp|gif|mp3|m4a)(?:[?/!]|$)/i)
+	if (m) return m[1].toLowerCase().replace('jpeg', 'jpg')
+	const mime = contentType.split(';')[0].trim().toLowerCase()
+	return EXT_BY_MIME[mime] || 'bin'
+}
+
 /**
- * GET /proxy?url=...&name=...&inline=1 — 媒体代理（解决 CDN 防盗链/跨域，免登录，IP 限频）
- * 默认附件形式返回（下载）；inline=1 时不带 Content-Disposition（<video>/<img> 预览用）
+ * GET /proxy?url=...&name=...&inline=1&from=... — 媒体代理（解决 CDN 防盗链/跨域，免登录，IP 限频）
+ * 默认附件形式返回（下载）；inline=1 时仅带建议文件名（<video>/<img> 预览用）
+ * 旁路缓存：miss 时拉全量、边回客户端边传 COS 公有桶（同 URL 哈希去重）；
+ * hit 时 302 直发公有桶 URL，服务器不再转发。from 为来源解析链接，用于随记录淘汰连带清理。
+ * 每条解析记录累计缓存 ≤ 50MB，超过则该记录完全不走媒体缓存。
  */
 mediaRoutes.get('/proxy', async (c) => {
 	const user = await resolveOptionalUser(c)
@@ -302,6 +302,26 @@ mediaRoutes.get('/proxy', async (c) => {
 		)
 	}
 
+	const inline = c.req.query('inline') === '1'
+	const hasName = Boolean(c.req.query('name'))
+	const rawName = (c.req.query('name') || 'media').replace(/[^\w.一-龥-]+/g, '_').slice(-120)
+	const from = (c.req.query('from') || '').slice(0, 512)
+	const person = personKey(c, user)
+	const urlHash = hashMediaUrl(url)
+	const disposition = (type: 'inline' | 'attachment') =>
+		`${type}; filename*=UTF-8''${encodeURIComponent(rawName)}`
+
+	// 命中 COS 旁路缓存 → 302 直发（公有读对象用 response-content-disposition 控制文件名/内联预览）
+	const cached = await mediaCacheService.lookupMedia(person, urlHash).catch(() => null)
+	if (cached) {
+		const target = new URL(cosService.getPublicBucketUrl(cached.cosKey))
+		target.searchParams.set(
+			'response-content-disposition',
+			disposition(hasName && !inline ? 'attachment' : 'inline'),
+		)
+		return c.redirect(target.toString(), 302)
+	}
+
 	try {
 		// 按平台 CDN 带对应 Referer（实测大多不带也可，兜底防盗链）
 		const host = getHostname(url) || ''
@@ -312,9 +332,7 @@ mediaRoutes.get('/proxy', async (c) => {
 			const cookie = getWechatCookieHeader()
 			if (cookie) reqHeaders.Cookie = cookie
 		}
-		// 透传 Range（<video> 流式播放依赖 206 分段）
-		const range = c.req.header('range')
-		if (range) reqHeaders.Range = range
+		// 不透传 Range：miss 时要拉全量缓存到 COS，客户端收 200 全量（播放器兼容）
 		// undici 偶发 "fetch failed"（连接池/网络抖动、CDN 边缘节点抽风），最多重试 3 次
 		let upstream: Response | null = null
 		let lastErr: unknown = null
@@ -344,24 +362,63 @@ mediaRoutes.get('/proxy', async (c) => {
 			)
 		}
 
-		const inline = c.req.query('inline') === '1'
-		const rawName = (c.req.query('name') || 'media').replace(/[^\w.一-龥-]+/g, '_').slice(-120)
+		const contentType = upstream.headers.get('Content-Type') || 'application/octet-stream'
+		const size = Number(upstream.headers.get('Content-Length') || 0)
 		const headers: Record<string, string> = {
-			'Content-Type': upstream.headers.get('Content-Type') || 'application/octet-stream',
+			'Content-Type': contentType,
 			'Cache-Control': 'no-store',
 		}
 		if (!inline) {
-			headers['Content-Disposition'] = `attachment; filename*=UTF-8''${encodeURIComponent(rawName)}`
-		} else if (c.req.query('name')) {
+			headers['Content-Disposition'] = disposition('attachment')
+		} else if (hasName) {
 			// inline 预览但带上建议文件名：播放器原生「下载」菜单取这个名字，否则只能叫 proxy.mp4
-			headers['Content-Disposition'] = `inline; filename*=UTF-8''${encodeURIComponent(rawName)}`
+			headers['Content-Disposition'] = disposition('inline')
 		}
-		for (const key of ['Content-Length', 'Content-Range', 'Accept-Ranges']) {
-			const value = upstream.headers.get(key)
-			if (value) headers[key] = value
+		if (size > 0) headers['Content-Length'] = String(size)
+
+		// 缓存判定：无 Content-Length 不缓存；单条解析记录累计超 50MB 整条不缓存
+		let cacheable = size > 0
+		if (cacheable) {
+			const used = from
+				? await mediaCacheService
+						.sumRecordMediaSize(person, from)
+						.catch(() => MEDIA_CACHE_MAX_RECORD_BYTES)
+				: 0
+			if (size > MEDIA_CACHE_MAX_RECORD_BYTES || used + size > MEDIA_CACHE_MAX_RECORD_BYTES) {
+				cacheable = false
+			}
 		}
 
-		return new Response(upstream.body, { status: upstream.status, headers })
+		if (!cacheable) {
+			return new Response(upstream.body, { status: 200, headers })
+		}
+
+		// tee：一路回客户端，一路传 COS 公有桶；上传完成才落库，失败只记日志不影响下载
+		const cosKey = `media-cache/${urlHash}.${extForCacheKey(url, contentType)}`
+		const source = Readable.fromWeb(upstream.body as never)
+		const toClient = new PassThrough()
+		const toCos = new PassThrough()
+		source.on('error', (err) => {
+			toClient.destroy(err)
+			toCos.destroy(err)
+		})
+		source.pipe(toClient)
+		source.pipe(toCos)
+		cosService
+			.uploadStream(toCos, cosKey, contentType, size)
+			.then(() =>
+				mediaCacheService.recordMedia({
+					person,
+					parseUrl: from,
+					urlHash,
+					cosKey,
+					contentType,
+					size,
+				}),
+			)
+			.catch((err) => console.error('[MediaCache] 媒体缓存写入失败:', err))
+
+		return new Response(Readable.toWeb(toClient) as ReadableStream, { status: 200, headers })
 	} catch (err) {
 		// undici 的真实原因藏在 cause 里（fetch failed 本身没有信息量）
 		const cause = err instanceof Error ? err.cause : null
