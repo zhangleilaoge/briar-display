@@ -199,7 +199,10 @@ async function parseTweet(url: string): Promise<MediaParseResult> {
 		headers: { 'User-Agent': UPSTREAM_UA },
 		signal: AbortSignal.timeout(30_000),
 	})
-	if (!res.ok) throw new Error(`解析失败（HTTP ${res.status}）`)
+	if (!res.ok) {
+		console.error(`fxtwitter HTTP ${res.status} for ${url}`)
+		throw new Error('解析失败，请稍后重试')
+	}
 	const json = (await res.json()) as {
 		code?: number
 		message?: string
@@ -330,10 +333,11 @@ mediaRoutes.post('/parse', async (c) => {
 				.json()
 				.then((d) => (d as { detail?: string })?.detail)
 				.catch(() => null)
+			console.error(`catsapi parse HTTP ${upstream.status} for ${url}`)
 			return c.json<ApiResponse>(
 				{
 					success: false,
-					message: detail || `解析服务暂时不可用（HTTP ${upstream.status}），请稍后重试`,
+					message: detail || '解析服务暂时不可用，请稍后重试',
 				},
 				HTTP_STATUS.INTERNAL_SERVER_ERROR,
 			)
@@ -449,8 +453,9 @@ mediaRoutes.get('/proxy', async (c) => {
 			)
 		}
 		if (!upstream.ok || !upstream.body) {
+			console.error(`media proxy HTTP ${upstream.status} for ${url.slice(0, 200)}`)
 			return c.json<ApiResponse>(
-				{ success: false, message: `媒体拉取失败（HTTP ${upstream.status}）` },
+				{ success: false, message: '媒体拉取失败，请重新解析或稍后重试' },
 				HTTP_STATUS.INTERNAL_SERVER_ERROR,
 			)
 		}
