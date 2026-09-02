@@ -96,21 +96,24 @@ const needsProxyPreview = (url: string, kind: MediaKind) => {
 	}
 }
 
-const toProxyPreviewUrl = (url: string) =>
-	`${getApiBaseUrl()}/media/proxy?inline=1&url=${encodeURIComponent(upgradeToHttps(url))}`
+const toProxyPreviewUrl = (url: string, filename: string) =>
+	`${getApiBaseUrl()}/media/proxy?inline=1&url=${encodeURIComponent(upgradeToHttps(url))}&name=${encodeURIComponent(filename)}`
 
 /** 把上游解析结果整理成按类型分组的下载项 */
 export const buildMediaSections = (result: MediaParseResult): MediaSections => {
 	const base = sanitizeFilename(result.title || result.platform || 'xhs-media')
 	const toItem = (kind: MediaKind, url: string, index: number, label: string): MediaItem => {
 		const httpsUrl = upgradeToHttps(url)
+		const filename = `${base}-${label.replace(/\s/g, '')}.${resolveExt(url, kind)}`
 		return {
 			id: `${kind}-${index}-${url}`,
 			kind,
 			url: httpsUrl,
-			previewUrl: needsProxyPreview(httpsUrl, kind) ? toProxyPreviewUrl(httpsUrl) : undefined,
+			previewUrl: needsProxyPreview(httpsUrl, kind)
+				? toProxyPreviewUrl(httpsUrl, filename)
+				: undefined,
 			label,
-			filename: `${base}-${label.replace(/\s/g, '')}.${resolveExt(url, kind)}`,
+			filename,
 		}
 	}
 

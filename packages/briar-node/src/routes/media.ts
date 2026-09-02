@@ -94,6 +94,15 @@ function hitRateLimit(key: string, limit: number): boolean {
 	return false
 }
 
+/** 取客户端 IP（限频/匿名缓存 key 用） */
+function clientIp(c: Context): string {
+	return (
+		(c.req.header('x-forwarded-for') || '').split(',')[0].trim() ||
+		c.req.header('x-real-ip') ||
+		'unknown'
+	)
+}
+
 /** 超管豁免限频；其余按 IP 计数 */
 async function isRateLimited(
 	c: Context,
@@ -102,11 +111,7 @@ async function isRateLimited(
 	limit: number,
 ): Promise<boolean> {
 	if (user && (await permissionService.isAdmin(user.id))) return false
-	const ip =
-		(c.req.header('x-forwarded-for') || '').split(',')[0].trim() ||
-		c.req.header('x-real-ip') ||
-		'unknown'
-	return hitRateLimit(`${scope}:${ip}`, limit)
+	return hitRateLimit(`${scope}:${clientIp(c)}`, limit)
 }
 
 function tooManyRequests(c: Context) {
@@ -120,6 +125,46 @@ function tooManyRequests(c: Context) {
 function extractUrl(text: string): string | null {
 	const match = text.match(/https?:\/\/[^\s]+/)
 	return match ? match[0] : null
+}
+
+/**
+ * 解析结果缓存（进程内）：按「人」隔离——登录用户按 userId，未登录按 IP。
+ * 每人 LRU 保留最近 10 条，与前端历史记录条数一致（历史记录里重新解析 = 直接命中）。
+ * 上游返回的 CDN 签名 URL 有时效，条目 1 小时过期，惰性清理。
+ */
+const PARSE_CACHE_TTL_MS = 60 * 60 * 1000
+const PARSE_CACHE_PER_PERSON = 10
+const PARSE_CACHE_MAX_PERSONS = 2000
+type ParseCacheEntry = { data: MediaParseResult; expireAt: number }
+const parseCache = new Map<string, Map<string, ParseCacheEntry>>()
+
+function getCachedParse(person: string, url: string): MediaParseResult | null {
+	const bucket = parseCache.get(person)
+	const entry = bucket?.get(url)
+	if (!entry) return null
+	if (entry.expireAt <= Date.now()) {
+		bucket?.delete(url)
+		return null
+	}
+	return entry.data
+}
+
+function setCachedParse(person: string, url: string, data: MediaParseResult) {
+	let bucket = parseCache.get(person)
+	if (!bucket) {
+		// 兜底：人数过多时整表清空（缓存而已，代价是一次 miss）
+		if (parseCache.size >= PARSE_CACHE_MAX_PERSONS) parseCache.clear()
+		bucket = new Map()
+		parseCache.set(person, bucket)
+	}
+	bucket.delete(url) // 重插到最新位置
+	bucket.set(url, { data, expireAt: Date.now() + PARSE_CACHE_TTL_MS })
+	// LRU：每人最多 10 条，Map 迭代序即插入序，删最旧
+	while (bucket.size > PARSE_CACHE_PER_PERSON) {
+		const oldest = bucket.keys().next().value
+		if (oldest === undefined) break
+		bucket.delete(oldest)
+	}
 }
 
 function getHostname(url: string): string | null {
@@ -155,10 +200,11 @@ function isAllowedProxyUrl(url: string): boolean {
 	return ALLOWED_PROXY_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))
 }
 
-/** POST /parse — 解析分享链接，返回无水印媒体地址（免登录，IP 限频） */
+/** POST /parse — 解析分享链接，返回无水印媒体地址（免登录，IP 限频；命中缓存不占限频） */
 mediaRoutes.post('/parse', async (c) => {
 	const user = await resolveOptionalUser(c)
-	if (await isRateLimited(c, user, 'parse', PARSE_RATE_LIMIT)) return tooManyRequests(c)
+	// 缓存按「人」隔离：登录按 userId，未登录按 IP
+	const person = user ? `u:${user.id}` : `ip:${clientIp(c)}`
 
 	const body = await c.req.json<{ url?: string }>().catch(() => ({}) as { url?: string })
 	const input = (body.url || '').trim()
@@ -178,6 +224,15 @@ mediaRoutes.post('/parse', async (c) => {
 		)
 	}
 
+	// 命中本人缓存直接返回（X-Cache 便于排查），不消耗限频
+	const cached = getCachedParse(person, url)
+	if (cached) {
+		c.header('X-Cache', 'hit')
+		return c.json<ApiResponse<MediaParseResult>>({ success: true, data: cached })
+	}
+
+	if (await isRateLimited(c, user, 'parse', PARSE_RATE_LIMIT)) return tooManyRequests(c)
+
 	// 公众号文章走自研解析（wechatMediaService），其余转发 catsapi
 	if (platform === 'wechat') {
 		try {
@@ -188,6 +243,8 @@ mediaRoutes.post('/parse', async (c) => {
 					HTTP_STATUS.INTERNAL_SERVER_ERROR,
 				)
 			}
+			setCachedParse(person, url, data)
+			c.header('X-Cache', 'miss')
 			return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
 		} catch (err) {
 			console.error('Wechat article parse failed:', err)
@@ -214,6 +271,8 @@ mediaRoutes.post('/parse', async (c) => {
 			)
 		}
 		const data = (await upstream.json()) as MediaParseResult
+		setCachedParse(person, url, data)
+		c.header('X-Cache', 'miss')
 		return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
 	} catch (err) {
 		console.error('Media parse failed:', err)
@@ -292,6 +351,9 @@ mediaRoutes.get('/proxy', async (c) => {
 		}
 		if (!inline) {
 			headers['Content-Disposition'] = `attachment; filename*=UTF-8''${encodeURIComponent(rawName)}`
+		} else if (c.req.query('name')) {
+			// inline 预览但带上建议文件名：播放器原生「下载」菜单取这个名字，否则只能叫 proxy.mp4
+			headers['Content-Disposition'] = `inline; filename*=UTF-8''${encodeURIComponent(rawName)}`
 		}
 		for (const key of ['Content-Length', 'Content-Range', 'Accept-Ranges']) {
 			const value = upstream.headers.get(key)
