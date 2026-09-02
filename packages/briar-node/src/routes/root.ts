@@ -5,7 +5,7 @@ import type { Context } from 'hono'
  * 用于域名根目录（https://xiaobuzi.cn/）展示站点名称与备案号，满足备案合规要求
  */
 // 标题需与备案网站名称保持一致（管局审核要求）
-const SITE_TITLE = '个人学习'
+const SITE_TITLE = 'xiaobuzi'
 const ICP_NUMBER = '浙ICP备2024116093号-3'
 
 const LANDING_HTML = `<!DOCTYPE html>
@@ -60,7 +60,6 @@ const LANDING_HTML = `<!DOCTYPE html>
 <body>
 	<main>
 		<h1>${SITE_TITLE}</h1>
-		<p class="subtitle">个人技术站点，记录与分享编程技术相关的学习与实践。</p>
 		<div class="links">
 			<a href="/briar/">进入主页</a>
 		</div>

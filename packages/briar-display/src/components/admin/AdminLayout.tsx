@@ -74,7 +74,7 @@ export default function AdminLayout({ children, currentPath, fullWidth }: AdminL
 										href="/briar/"
 										className="text-background/40 hover:text-background/60"
 									>
-										Briar
+										xiaobuzi
 									</BreadcrumbLink>
 								</BreadcrumbItem>
 								<BreadcrumbSeparator className="text-background/20" />

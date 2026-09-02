@@ -9,7 +9,7 @@ description: 用 Git worktree 隔离修复代码：按 MR 评论或 Pipeline 失
 
 **不要直接在主工作区修改代码**——可能当前工作区有未提交的改动、或者正在错误的分支上。使用 **worktree** 创建一个隔离的修复环境：
 
-> Worktree 的创建/删除由 `using-git-worktrees` skill 负责，本 skill 只负责 worktree 内的修复操作（读取上下文、改代码、验证、提交）。
+> Worktree 的创建/删除直接用 `git worktree` 原生命令，本 skill 只负责 worktree 内的修复操作（读取上下文、改代码、验证、提交）。
 
 ```
 原工作区（feat/xxx，可能有未提交改动）
@@ -43,7 +43,18 @@ description: 用 Git worktree 隔离修复代码：按 MR 评论或 Pipeline 失
 
 ### Step 1: 创建 Worktree
 
-**调用 `using-git-worktrees` skill** 创建隔离修复环境。由它负责检测当前是否已在隔离空间、选择 native worktree 工具或 `git worktree` fallback、以及目录选择和基线验证。
+用 `git worktree` 原生命令创建隔离修复环境（worktree 放主仓库**同级目录**，命名为 `<repo>-fix-<topic>`）：
+
+```bash
+cd <主仓库路径>
+git fetch origin
+
+# 修复 MR/pipeline 场景：直接基于已有源分支
+git worktree add ../<repo>-fix-<topic> <source_branch>
+
+# 或需要新分支时：基于目标基线新建
+git worktree add ../<repo>-fix-<topic> -b fix/<topic> origin/<base_branch>
+```
 
 完成后进入该 worktree，再继续后续步骤。
 
@@ -157,7 +168,13 @@ description: 用 Git worktree 隔离修复代码：按 MR 评论或 Pipeline 失
 
 ### Step 7: 清理 Worktree
 
-提交完成后，**调用 `using-git-worktrees` skill** 清理 worktree。
+提交完成后，用 `git worktree remove` 清理 worktree：
+
+```bash
+cd <主仓库路径>
+git worktree remove ../<repo>-fix-<topic>   # 有未提交改动时需 --force
+git worktree prune
+```
 
 > 如果用户说"先不清理，我还要看看"，则推迟清理，但**必须提醒**用户后续手动清理。
 
@@ -173,13 +190,13 @@ briar-mr fetch（获取 comments）
 逐条分析合理性
   ↓
 需要修复的 → 调用 briar-fix
-  │   1. setup worktree（via using-git-worktrees）
+  │   1. setup worktree（git worktree add）
   │   2. 读取 comments + diff 上下文
   │   3. 修复代码
   │   4. verify
   │   5. 展示 diff，等用户确认
   │   6. commit + push
-  │   7. cleanup（via using-git-worktrees）
+  │   7. cleanup（git worktree remove）
   ↓
 输出修复总结表格
 ```
@@ -192,13 +209,13 @@ briar-mr pipeline（获取 pipeline jobs）
 发现 lint/test/build 失败
   ↓
 调用 briar-fix
-  │   1. setup worktree（via using-git-worktrees）
+  │   1. setup worktree（git worktree add）
   │   2. 读取失败日志，定位问题
   │   3. 修复代码
   │   4. verify（重点验证失败的 job）
   │   5. 展示 diff，等用户确认
   │   6. commit + push
-  │   7. cleanup（via using-git-worktrees）
+  │   7. cleanup（git worktree remove）
 ```
 
 ---
@@ -207,9 +224,9 @@ briar-mr pipeline（获取 pipeline jobs）
 
 | 阶段 | 负责方 | 命令/操作 |
 |------|--------|----------|
-| 创建 worktree | `using-git-worktrees` skill | 调用 skill，获取 worktree 路径 |
+| 创建 worktree | 原生 git 命令 | `git worktree add <path> <branch>`（见 Step 1） |
 | 验证修复 | `briar-fix` | `briar-fix.sh verify <worktree_path>` |
 | 展示 diff | `briar-fix` | `briar-fix.sh diff <worktree_path>` |
 | 提交 | `briar-fix` | `briar-fix.sh commit <worktree_path> "<msg>"` |
 | push | `briar-fix` | `briar-fix.sh push <worktree_path>` |
-| 清理 worktree | `using-git-worktrees` skill | 调用 skill 清理 |
+| 清理 worktree | 原生 git 命令 | `git worktree remove <path>`（见 Step 7） |

@@ -70,7 +70,7 @@ briar-mr pipeline（获取失败日志）
   │   4. verify（重点验证失败的 job）
   │   5. 展示 diff，等用户确认
   │   6. commit + push
-  │   7. cleanup worktree（via using-git-worktrees）
+  │   7. cleanup worktree（git worktree remove）
   ↓
 重新触发 pipeline（用户手动或自动）
 ```
@@ -80,8 +80,8 @@ briar-mr pipeline（获取失败日志）
 ### 修复脚本速查
 
 ```bash
-# 创建 worktree：调用 using-git-worktrees skill
-# 清理 worktree：调用 using-git-worktrees skill
+# 创建 worktree：git worktree add <path> -b <branch> origin/<base-branch>
+# 清理 worktree：git worktree remove <path>
 
 # 验证（会自动检测项目类型运行 lint/typecheck）
 ../../briar-fix/scripts/briar-fix.sh verify <worktree_path>

@@ -7,7 +7,7 @@
 #
 # 注意：
 # - 拉取/定位仓库请使用 zan-gitlab skill。
-# - worktree 管理请使用 using-git-worktrees skill。
+# - worktree 管理：直接使用 git worktree 原生命令（见 SKILL.md「三、Worktree 管理」）。
 
 set -e
 
@@ -51,7 +51,7 @@ show_usage() {
 	echo ""
 	echo "Notes:"
 	echo "  - 拉取/定位仓库请使用 zan-gitlab skill。"
-	echo "  - worktree 管理请使用 using-git-worktrees skill。"
+	echo "  - worktree 管理：直接使用 git worktree 原生命令（见 SKILL.md「三、Worktree 管理」）。"
 	echo "  - 默认 base_dir: $HOME/projects"
 }
 

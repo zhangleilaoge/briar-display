@@ -146,7 +146,7 @@ briar-mr-review.sh find gitlab.qima-inc.com wsc-node/wsc-pc-shop hotfix/20260625
 # 输出 iid、title、web_url 等
 ```
 
-拿到 `iid` 后再走 `fetch` / `diff` / `post-notes` 流程。如需完整代码上下文，调用 `using-git-worktrees` skill 创建 review worktree。
+拿到 `iid` 后再走 `fetch` / `diff` / `post-notes` 流程。如需完整代码上下文，用 `git worktree add <path> <source_branch>` 创建 review worktree（见 docs/review.md）。
 
 ---
 

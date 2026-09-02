@@ -13,7 +13,7 @@
 #   ./briar-mr.sh pipeline      <domain> <project_path> <mr_iid>
 #   ./briar-mr.sh pending       [domain] [days]
 #
-# 注意：review/pipeline 所需 worktree 由 using-git-worktrees skill 负责创建/清理。
+# 注意：review/pipeline 所需 worktree 用 git worktree 原生命令创建/清理。
 #
 # 也可以直接调用原子脚本：
 #   ./briar-mr-create.sh   ...

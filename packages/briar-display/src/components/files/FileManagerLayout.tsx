@@ -26,7 +26,7 @@ export default function FileManagerLayout({ children }: FileManagerLayoutProps) 
 						<Breadcrumb>
 							<BreadcrumbList>
 								<BreadcrumbItem>
-									<BreadcrumbLink href="/briar/">Briar</BreadcrumbLink>
+									<BreadcrumbLink href="/briar/">xiaobuzi</BreadcrumbLink>
 								</BreadcrumbItem>
 								<BreadcrumbSeparator />
 								<BreadcrumbItem>

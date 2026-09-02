@@ -9,7 +9,7 @@
 #   ./briar-mr-review.sh find          <domain> <project_path> <source_branch>
 #   ./briar-mr-review.sh post-notes    <domain> <project_path> <mr_iid> <comments.json>
 #
-# 注意：review 所需 worktree 由 using-git-worktrees skill 负责创建/清理，本脚本不再提供 setup-worktree。
+# 注意：review 所需 worktree 用 git worktree 原生命令创建/清理，本脚本不再提供 setup-worktree。
 #
 # Token 加载优先级：环境变量 GITLAB_TOKEN → ~/.config/briar-skills/.env → ~/.git-credentials
 

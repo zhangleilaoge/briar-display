@@ -59,7 +59,7 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 							<Breadcrumb>
 								<BreadcrumbList>
 									<BreadcrumbItem>
-										<BreadcrumbLink href="/briar/">Briar</BreadcrumbLink>
+										<BreadcrumbLink href="/briar/">xiaobuzi</BreadcrumbLink>
 									</BreadcrumbItem>
 									<BreadcrumbSeparator />
 									<BreadcrumbItem>

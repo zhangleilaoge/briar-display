@@ -315,7 +315,7 @@ export default function ToolJsonPage() {
 										ref={inputRef}
 										value={input}
 										onChange={(e) => setInput(e.target.value)}
-										placeholder='粘贴 JSON 文本，例如：{"name":"Briar","value":123}'
+										placeholder='粘贴 JSON 文本，例如：{"name":"xiaobuzi","value":123}'
 										className="min-h-0 flex-1 resize-none font-mono text-sm"
 									/>
 								</div>

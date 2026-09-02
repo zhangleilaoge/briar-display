@@ -64,7 +64,7 @@ function PortalPageInner() {
 
 			{/* Top bar */}
 			<header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/50 bg-background/60 px-6 backdrop-blur-md">
-				<span className="text-base font-semibold tracking-tight">Briar</span>
+				<span className="text-base font-semibold tracking-tight">xiaobuzi</span>
 				<div className="flex items-center gap-3">
 					{loading ? <div className="h-4 w-16 animate-pulse rounded bg-muted" /> : <UserMenu />}
 				</div>
@@ -73,14 +73,6 @@ function PortalPageInner() {
 			{/* Main */}
 			<main className="flex flex-1 items-center justify-center p-6">
 				<div className="w-full max-w-2xl space-y-8">
-					{/* Hero */}
-					<div className="text-center space-y-3">
-						<h1 className="bg-gradient-to-br from-blue-600 via-purple-600 to-teal-500 bg-clip-text text-5xl font-bold tracking-tight text-transparent">
-							Briar
-						</h1>
-						<p className="text-lg text-muted-foreground">选择一个模块开始</p>
-					</div>
-
 					{/* Bento grid */}
 					<div className="grid gap-4 sm:grid-cols-2">
 						<EntryCard
@@ -119,7 +111,7 @@ function PortalPageInner() {
 
 			{/* Footer */}
 			<footer className="pb-6 pt-8 text-center text-xs text-muted-foreground/60">
-				Powered by Briar
+				Powered by zhangleilaoge
 			</footer>
 		</div>
 	)

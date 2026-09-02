@@ -6,7 +6,7 @@
 #   ./briar-fix.sh commit  <worktree_path> <message>
 #   ./briar-fix.sh push    <worktree_path>
 #
-# worktree 的创建/删除由 using-git-worktrees skill 负责，本脚本只负责 worktree 内的修复操作。
+# worktree 的创建/删除用 git worktree 原生命令（见 briar-repo SKILL.md「三、Worktree 管理」），本脚本只负责 worktree 内的修复操作。
 
 set -e
 

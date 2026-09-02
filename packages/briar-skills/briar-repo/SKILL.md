@@ -16,10 +16,10 @@ description: 仓库管理：拉取、更新、清理、创建/删除 worktree。
 
 **拉取仓库**：统一由 `zan-gitlab` skill 处理，它支持通过应用名、URL、Dubbo 服务、npm 包等业务线索定位仓库并同步到本地。`briar-repo` 不再自行实现 pull。
 
-**Worktree 管理**：统一由 `using-git-worktrees` skill 处理。`briar-repo` 不再提供 worktree 命令；`briar-fix` 创建/清理 worktree 时调用 `using-git-worktrees`。
+**Worktree 管理**：没有独立的 worktree skill，直接使用 `git worktree` 原生命令（见「三、Worktree 管理」）；`briar-fix` 创建/清理 worktree 时同样用原生命令。
 
 **与 briar-fix 的关系**：
-- `using-git-worktrees` 负责创建/清理 worktree
+- worktree 创建/清理：直接用 `git worktree` 原生命令（见「三、Worktree 管理」）
 - `briar-fix` 负责 worktree 内的**代码修复**（verify、diff、commit、push）
 - `briar-repo` 负责仓库本地更新和清理
 
@@ -61,7 +61,7 @@ fi
 | 拉取/定位仓库 | "帮我拉 xxx"、"克隆 xxx"、"这个应用在哪个仓库" | `zan-gitlab` skill | 调用 `zan-gitlab` |
 | 更新仓库 | "更新 xxx"、"pull 一下" | `briar-repo` | `briar-repo.sh update <repo> [base_dir]` |
 | 清理工作区 | "保持干净"、"清理 xxx" | `briar-repo` | `briar-repo.sh clean <repo> [base_dir]` |
-| 创建/删除 Worktree | "建 worktree"、"删 worktree" | `using-git-worktrees` skill | 调用 `using-git-worktrees` |
+| 创建/删除 Worktree | "建 worktree"、"删 worktree" | 原生 git 命令 | `git worktree add` / `git worktree remove`（见「三、Worktree 管理」） |
 
 **参数说明**：
 - `<repo>`: 仓库名称（脚本默认在 `base_dir` 下查找 `base_dir/<repo>`）
@@ -139,6 +139,33 @@ briar-repo.sh clean <repo-name> [base_dir]
 
 ---
 
+## 三、Worktree 管理
+
+**触发条件**：用户说"建 worktree"、"隔离环境改代码"、"删 worktree"。
+
+没有独立的 worktree skill，直接用 `git worktree` 原生命令：
+
+```bash
+# 创建：基于远程主分支新建分支，worktree 放主仓库同级目录
+cd "$LOCAL_PATH"
+git fetch origin
+git worktree add "$(dirname "$LOCAL_PATH")/<repo>-<task>" -b <branch> origin/<base-branch>
+
+# 含子模块的仓库需要初始化子模块
+cd "$(dirname "$LOCAL_PATH")/<repo>-<task>" && git submodule update --init
+
+# 列出
+git worktree list
+
+# 删除（有未提交改动时先 stash 或确认丢弃）
+git worktree remove <path>        # 有改动时需 --force
+git worktree prune                # 清理已失效的 worktree 记录
+```
+
+约定：worktree 目录命名为 `<repo>-<task>`（如 `briar-display-remove-wiki`），放在主仓库的**同级目录**，避免污染主仓库工作区。
+
+---
+
 ## 已知陷阱
 
 ### 1. 脚本默认 `BASE_DIR` 已简化
@@ -157,10 +184,10 @@ briar-repo.sh clean <repo-name> [base_dir]
 
 `briar-fix` 的工作流：
 
-1. **创建 worktree**：调用 `using-git-worktrees` skill
+1. **创建 worktree**：`git worktree add`（见「三、Worktree 管理」）
 2. **修复代码**：在 worktree 内执行
 3. **验证/展示 diff/提交/push**：调用 `briar-fix.sh`
-4. **清理 worktree**：调用 `using-git-worktrees` skill
+4. **清理 worktree**：`git worktree remove <path>`
 
 `briar-repo` 仅负责本地仓库的更新和清理，不直接参与 worktree 管理。
 
