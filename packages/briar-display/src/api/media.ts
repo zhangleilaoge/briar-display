@@ -11,10 +11,14 @@ export const parseMedia = async (url: string) => {
 	return response.data
 }
 
-/** 经后端代理拉取媒体二进制（解决 CDN 防盗链/跨域） */
-export const fetchMediaBlob = async (url: string, onProgress?: (percent: number) => void) => {
+/** 经后端代理拉取媒体二进制（解决 CDN 防盗链/跨域）；from 为来源解析链接（服务端旁路缓存用） */
+export const fetchMediaBlob = async (
+	url: string,
+	onProgress?: (percent: number) => void,
+	from?: string,
+) => {
 	const response = await apiClient.get<Blob>('/media/proxy', {
-		params: { url },
+		params: { url, from: from || undefined },
 		responseType: 'blob',
 		timeout: 300_000,
 		onDownloadProgress: (e) => {

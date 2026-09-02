@@ -13,6 +13,8 @@ export interface MediaItem {
 	url: string
 	/** 需要后端代理才能预览的地址（如公众号实况图，auth 参数绑定微信 Cookie，直连 403） */
 	previewUrl?: string
+	/** 来源解析链接（服务端媒体缓存按它做 10 条淘汰 + 50MB 上限） */
+	sourceUrl: string
 	label: string
 	filename: string
 }
@@ -96,11 +98,11 @@ const needsProxyPreview = (url: string, kind: MediaKind) => {
 	}
 }
 
-const toProxyPreviewUrl = (url: string, filename: string) =>
-	`${getApiBaseUrl()}/media/proxy?inline=1&url=${encodeURIComponent(upgradeToHttps(url))}&name=${encodeURIComponent(filename)}`
+const toProxyPreviewUrl = (url: string, filename: string, sourceUrl: string) =>
+	`${getApiBaseUrl()}/media/proxy?inline=1&url=${encodeURIComponent(upgradeToHttps(url))}&name=${encodeURIComponent(filename)}&from=${encodeURIComponent(sourceUrl)}`
 
-/** 把上游解析结果整理成按类型分组的下载项 */
-export const buildMediaSections = (result: MediaParseResult): MediaSections => {
+/** 把上游解析结果整理成按类型分组的下载项；sourceUrl 为来源解析链接（媒体缓存归属用） */
+export const buildMediaSections = (result: MediaParseResult, sourceUrl = ''): MediaSections => {
 	const base = sanitizeFilename(result.title || result.platform || 'xhs-media')
 	const toItem = (kind: MediaKind, url: string, index: number, label: string): MediaItem => {
 		const httpsUrl = upgradeToHttps(url)
@@ -110,8 +112,9 @@ export const buildMediaSections = (result: MediaParseResult): MediaSections => {
 			kind,
 			url: httpsUrl,
 			previewUrl: needsProxyPreview(httpsUrl, kind)
-				? toProxyPreviewUrl(httpsUrl, filename)
+				? toProxyPreviewUrl(httpsUrl, filename, sourceUrl)
 				: undefined,
+			sourceUrl,
 			label,
 			filename,
 		}

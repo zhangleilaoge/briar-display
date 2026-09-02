@@ -70,7 +70,7 @@ export default function ToolMediaPage() {
 				toast.error(res.message || '解析失败')
 				return
 			}
-			const next = buildMediaSections(res.data)
+			const next = buildMediaSections(res.data, extractShareUrl(url))
 			const total =
 				next.videos.length + next.images.length + next.livePhotos.length + (next.cover ? 1 : 0)
 			if (total === 0) {
@@ -107,7 +107,11 @@ export default function ToolMediaPage() {
 	const downloadItem = async (item: MediaItem): Promise<Uint8Array | null> => {
 		setItemProgress(item.id, 0)
 		try {
-			const blob = await fetchMediaBlob(item.url, (p) => setItemProgress(item.id, p))
+			const blob = await fetchMediaBlob(
+				item.url,
+				(p) => setItemProgress(item.id, p),
+				item.sourceUrl,
+			)
 			return new Uint8Array(await blob.arrayBuffer())
 		} catch (err: any) {
 			toast.error(err?.response?.data?.message || `${item.label} 下载失败`)
