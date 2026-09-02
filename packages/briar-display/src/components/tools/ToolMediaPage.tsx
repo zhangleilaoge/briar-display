@@ -26,6 +26,8 @@ import {
 export default function ToolMediaPage() {
 	const [input, setInput] = useState('')
 	const [parsing, setParsing] = useState(false)
+	// 上游首解析偶发极慢（~60s），超过 8s 给用户一个「不是卡死」的提示
+	const [slowHint, setSlowHint] = useState(false)
 	const [result, setResult] = useState<MediaParseResult | null>(null)
 	const [sections, setSections] = useState<MediaSections | null>(null)
 	const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -64,6 +66,8 @@ export default function ToolMediaPage() {
 		const url = (rawInput ?? input).trim()
 		if (!url || parsing) return
 		setParsing(true)
+		setSlowHint(false)
+		const slowTimer = setTimeout(() => setSlowHint(true), 8000)
 		try {
 			const res = await parseMedia(url)
 			if (!res.success || !res.data) {
@@ -87,6 +91,8 @@ export default function ToolMediaPage() {
 		} catch (err: any) {
 			toast.error(err?.response?.data?.message || '解析失败，请稍后重试')
 		} finally {
+			clearTimeout(slowTimer)
+			setSlowHint(false)
 			setParsing(false)
 		}
 	}
@@ -182,6 +188,7 @@ export default function ToolMediaPage() {
 				<ToolMediaSearchBar
 					input={input}
 					parsing={parsing}
+					slowHint={slowHint}
 					hasResult={!!sections}
 					onInputChange={setInput}
 					onParse={() => handleParse()}

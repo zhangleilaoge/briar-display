@@ -8,6 +8,8 @@ import { toast } from 'sonner'
 interface ToolMediaSearchBarProps {
 	input: string
 	parsing: boolean
+	/** 解析超过 8s：上游首解析偶发极慢，提示用户不是卡死 */
+	slowHint: boolean
 	hasResult: boolean
 	onInputChange: (value: string) => void
 	onParse: () => void
@@ -17,6 +19,7 @@ interface ToolMediaSearchBarProps {
 export default function ToolMediaSearchBar({
 	input,
 	parsing,
+	slowHint,
 	hasResult,
 	onInputChange,
 	onParse,
@@ -56,7 +59,11 @@ export default function ToolMediaSearchBar({
 				}}
 			/>
 			<div className="flex items-center justify-between">
-				<span className="text-xs text-muted-foreground">支持 ⌘/Ctrl + Enter 快速解析</span>
+				<span className="text-xs text-muted-foreground">
+					{slowHint && parsing
+						? '该链接首次解析较慢（可能需 1 分钟左右），请耐心等待…'
+						: '支持 ⌘/Ctrl + Enter 快速解析'}
+				</span>
 				<Button onClick={onParse} disabled={parsing || !input.trim()}>
 					{parsing && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
 					{parsing ? '解析中…' : '开始解析'}
