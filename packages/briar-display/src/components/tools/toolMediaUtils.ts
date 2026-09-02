@@ -67,7 +67,7 @@ export const probeMediaError = async (item: MediaItem): Promise<string | null> =
 		const res = await fetch(item.previewUrl ?? item.url, { headers: { Range: 'bytes=0-0' } })
 		if (res.ok || res.status === 206) return null
 		const data = await res.json().catch(() => null)
-		return data?.message || `媒体加载失败（HTTP ${res.status}）`
+		return data?.message || '媒体加载失败，请重新解析或稍后重试'
 	} catch {
 		// 网络层失败（如 twimg 无梯子直连不上），没有可读原因
 		return null
