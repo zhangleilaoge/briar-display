@@ -29,6 +29,13 @@ const RATE_WINDOW_MS = 60_000
 const UPSTREAM_UA =
 	'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
 
+/**
+ * twimg（X/Twitter 媒体 CDN）国内不可达：经 Cloudflare Worker 中转（workers/twimg-proxy）。
+ * 未配置则直连（本地开发/海外环境可用）。
+ */
+const TWIMG_PROXY_BASE = process.env.BRIAR_TWIMG_PROXY_BASE || ''
+const TWIMG_PROXY_KEY = process.env.BRIAR_TWIMG_PROXY_KEY || ''
+
 /** 下载代理域名白名单（防止被当成开放代理）：小红书 CDN + 微信图床/视频 CDN + 抖音 CDN */
 const ALLOWED_PROXY_HOST_SUFFIXES = [
 	'.xhscdn.com',
@@ -41,7 +48,7 @@ const ALLOWED_PROXY_HOST_SUFFIXES = [
 	'.douyinstatic.com',
 	'.zjcdn.com',
 	'.snssdk.com',
-	// X/Twitter 媒体 CDN（video.twimg.com / pbs.twimg.com，公开可直连，代理主要为缓存）
+	// X/Twitter 媒体 CDN（video.twimg.com / pbs.twimg.com）：国内服务器不可达，经 CF Worker 中转（见 TWIMG_PROXY_BASE）
 	'.twimg.com',
 ]
 
@@ -412,6 +419,11 @@ mediaRoutes.get('/proxy', async (c) => {
 		const host = getHostname(url) || ''
 		const referer = refererFor(host)
 		const reqHeaders: Record<string, string> = { 'User-Agent': UPSTREAM_UA, Referer: referer }
+		// twimg 国内不可达，改经 CF Worker 中转拉流（Worker 只放行 twimg，Referer 由 Worker 自配）
+		let upstreamUrl = url
+		if (host.endsWith('.twimg.com') && TWIMG_PROXY_BASE) {
+			upstreamUrl = `${TWIMG_PROXY_BASE}?url=${encodeURIComponent(url)}&key=${TWIMG_PROXY_KEY}`
+		}
 		// 实况图（bcvideo.qpic.cn）的 auth 参数绑定文章页下发的 Cookie，需回带否则 403
 		if (host.endsWith('.qpic.cn')) {
 			const cookie = getWechatCookieHeader()
@@ -426,7 +438,7 @@ mediaRoutes.get('/proxy', async (c) => {
 		let lastErr: unknown = null
 		for (let attempt = 0; attempt < 3 && !upstream; attempt++) {
 			try {
-				upstream = await fetch(url, {
+				upstream = await fetch(upstreamUrl, {
 					headers: reqHeaders,
 					signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
 					redirect: 'follow',
