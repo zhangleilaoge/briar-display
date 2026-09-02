@@ -21,8 +21,38 @@ const RATE_WINDOW_MS = 60_000
 const UPSTREAM_UA =
 	'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
 
-/** 下载代理域名白名单（防止被当成开放代理）：小红书 CDN + 微信图床/视频 CDN */
-const ALLOWED_PROXY_HOST_SUFFIXES = ['.xhscdn.com', '.xiaohongshu.com', '.qpic.cn', '.tc.qq.com']
+/** 下载代理域名白名单（防止被当成开放代理）：小红书 CDN + 微信图床/视频 CDN + 抖音 CDN */
+const ALLOWED_PROXY_HOST_SUFFIXES = [
+	'.xhscdn.com',
+	'.xiaohongshu.com',
+	'.qpic.cn',
+	'.tc.qq.com',
+	'.douyin.com',
+	'.douyinpic.com',
+	'.douyinvod.com',
+	'.douyinstatic.com',
+	'.zjcdn.com',
+	'.snssdk.com',
+]
+
+/** 各平台 CDN 对应的 Referer */
+const PLATFORM_REFERERS: [string, string][] = [
+	['.xhscdn.com', 'https://www.xiaohongshu.com/'],
+	['.xiaohongshu.com', 'https://www.xiaohongshu.com/'],
+	['.douyin.com', 'https://www.douyin.com/'],
+	['.douyinpic.com', 'https://www.douyin.com/'],
+	['.douyinvod.com', 'https://www.douyin.com/'],
+	['.douyinstatic.com', 'https://www.douyin.com/'],
+	['.zjcdn.com', 'https://www.douyin.com/'],
+	['.snssdk.com', 'https://www.douyin.com/'],
+]
+
+function refererFor(host: string): string {
+	for (const [suffix, referer] of PLATFORM_REFERERS) {
+		if (host.endsWith(suffix)) return referer
+	}
+	return 'https://mp.weixin.qq.com/'
+}
 
 type AuthedUser = { id: string }
 
@@ -100,8 +130,8 @@ function getHostname(url: string): string | null {
 	}
 }
 
-/** 识别支持的平台：小红书（含 xhslink 短链）走 catsapi，公众号文章走自研解析 */
-function detectPlatform(url: string): 'xhs' | 'wechat' | null {
+/** 识别支持的平台：小红书/抖音（含短链）走 catsapi，公众号文章走自研解析 */
+function detectPlatform(url: string): 'xhs' | 'wechat' | 'douyin' | null {
 	const host = getHostname(url)
 	if (!host) return null
 	if (
@@ -111,6 +141,9 @@ function detectPlatform(url: string): 'xhs' | 'wechat' | null {
 		host.endsWith('.xhslink.com')
 	) {
 		return 'xhs'
+	}
+	if (host === 'douyin.com' || host.endsWith('.douyin.com') || host.endsWith('.iesdouyin.com')) {
+		return 'douyin'
 	}
 	if (host === 'mp.weixin.qq.com') return 'wechat'
 	return null
@@ -122,7 +155,7 @@ function isAllowedProxyUrl(url: string): boolean {
 	return ALLOWED_PROXY_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))
 }
 
-/** POST /parse — 解析小红书分享链接，返回无水印媒体地址（免登录，IP 限频） */
+/** POST /parse — 解析分享链接，返回无水印媒体地址（免登录，IP 限频） */
 mediaRoutes.post('/parse', async (c) => {
 	const user = await resolveOptionalUser(c)
 	if (await isRateLimited(c, user, 'parse', PARSE_RATE_LIMIT)) return tooManyRequests(c)
@@ -131,7 +164,7 @@ mediaRoutes.post('/parse', async (c) => {
 	const input = (body.url || '').trim()
 	if (!input || input.length > MAX_INPUT_LENGTH) {
 		return c.json<ApiResponse>(
-			{ success: false, message: '请粘贴小红书链接或分享文案' },
+			{ success: false, message: '请粘贴分享链接或分享文案' },
 			HTTP_STATUS.BAD_REQUEST,
 		)
 	}
@@ -140,7 +173,7 @@ mediaRoutes.post('/parse', async (c) => {
 	const platform = url ? detectPlatform(url) : null
 	if (!url || !platform) {
 		return c.json<ApiResponse>(
-			{ success: false, message: '目前支持小红书、微信公众号文章链接' },
+			{ success: false, message: '目前支持小红书、抖音、微信公众号文章链接' },
 			HTTP_STATUS.BAD_REQUEST,
 		)
 	}
@@ -210,11 +243,9 @@ mediaRoutes.get('/proxy', async (c) => {
 	}
 
 	try {
-		// 微信图床/CDN 带微信 Referer（实测不带也可），小红书 CDN 带小红书 Referer
+		// 按平台 CDN 带对应 Referer（实测大多不带也可，兜底防盗链）
 		const host = getHostname(url) || ''
-		const referer = host.endsWith('.xhscdn.com')
-			? 'https://www.xiaohongshu.com/'
-			: 'https://mp.weixin.qq.com/'
+		const referer = refererFor(host)
 		const reqHeaders: Record<string, string> = { 'User-Agent': UPSTREAM_UA, Referer: referer }
 		// 实况图（bcvideo.qpic.cn）的 auth 参数绑定文章页下发的 Cookie，需回带否则 403
 		if (host.endsWith('.qpic.cn')) {
