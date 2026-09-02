@@ -85,30 +85,13 @@ export default defineConfig({
 							if (id.includes('node_modules/react-dom')) return 'react-dom-vendor'
 							if (id.includes('node_modules/react/')) return 'react-vendor'
 							if (id.includes('node_modules/react-markdown')) return 'markdown-vendor'
-							if (id.includes('tiptap') || id.includes('prosemirror')) return 'tiptap-vendor'
-							if (id.includes('@blocknote') || id.includes('@mantine')) return 'wiki-editor-vendor'
+							// BlockNote（文件模块 MarkdownPreview 只读预览，体积大，单独分包）
+							if (id.includes('prosemirror')) return 'prosemirror-vendor'
+							if (id.includes('@blocknote') || id.includes('@mantine')) return 'blocknote-vendor'
 						}
-						// Wiki editor（依赖 @blocknote，体积大，按需加载）
-						if (id.includes('/components/wiki/editor/')) return 'wiki-editor'
-						// Wiki pages（20 个页面组件）
-						if (id.includes('/components/wiki/pages/')) return 'wiki-pages'
 					},
 				},
 			},
 		},
-		plugins: [
-			{
-				name: 'wiki-spa-fallback',
-				configureServer(server) {
-					server.middlewares.use((req, res, next) => {
-						const url = req.url?.split('?')[0] || ''
-						if (url.startsWith('/briar/wiki/') && url !== '/briar/wiki/' && !url.includes('.')) {
-							req.url = '/briar/wiki/'
-						}
-						next()
-					})
-				},
-			},
-		],
 	},
 })
