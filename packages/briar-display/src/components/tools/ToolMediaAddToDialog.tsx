@@ -77,7 +77,14 @@ export default function ToolMediaAddToDialog({ items, onClose }: ToolMediaAddToD
 
 	return (
 		<Dialog open={!!items} onOpenChange={(open) => !open && !uploading && onClose()}>
-			<DialogContent className="sm:max-w-sm">
+			{/* Popover 打开期间禁止外部交互关闭：下拉内容 portal 在 DialogContent 之外，
+			    点击选项会被 Radix 误判为「点击弹窗外」 */}
+			<DialogContent
+				className="sm:max-w-sm"
+				onInteractOutside={(e) => {
+					if (pickerOpen) e.preventDefault()
+				}}
+			>
 				<DialogHeader>
 					<DialogTitle>添加到文件</DialogTitle>
 				</DialogHeader>
@@ -99,8 +106,10 @@ export default function ToolMediaAddToDialog({ items, onClose }: ToolMediaAddToD
 								<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 							</Button>
 						</PopoverTrigger>
+						{/* pointer-events-auto：modal Dialog 锁定 body pointer-events，
+						    PopoverContent portal 在 DialogContent 外，不豁免则 hover/点击全失效 */}
 						<PopoverContent
-							className="w-[--radix-popover-trigger-width] p-0"
+							className="pointer-events-auto w-[--radix-popover-trigger-width] p-0"
 							onOpenAutoFocus={(e) => e.preventDefault()}
 						>
 							<Command>
