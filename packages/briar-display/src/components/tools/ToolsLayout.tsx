@@ -83,7 +83,7 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 								</TabsList>
 							</Tabs>
 						</div>
-						<UserMenu variant="light" />
+						<UserMenu />
 					</div>
 				</header>
 

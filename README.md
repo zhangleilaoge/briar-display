@@ -23,7 +23,6 @@
 | 路径 | 功能 |
 | :--- | :--- |
 | `/briar/` | 首页 |
-| `/briar/wiki/` | Wiki 知识库（文章、讨论、评论、变更请求、分类/标签/模板） |
 | `/briar/tools/json` | JSON 格式化工具（树形预览、对象字面量支持、本地历史） |
 | `/briar/tools/diff` | 文本 Diff 对比工具 |
 | `/briar/tools/compress` | 图片压缩工具（IndexedDB 历史） |
@@ -37,7 +36,6 @@
 | 路由模块 | 说明 |
 | :--- | :--- |
 | `auth` | 注册 / 登录 / 密码重置（JWT） |
-| `wiki` | Wiki CRUD、讨论、评论、分类、标签、模板、收藏、关注 |
 | `admin` | 角色/权限/用户管理、请求日志 |
 | `sqlConsole` | SQL 控制台（只读/读写、黑名单、审计日志） |
 | `images` | 图床上传（COS）、去重、列表 |
@@ -166,10 +164,8 @@ make dev-shared
 │   │   │   │       ├── admin/       # 管理后台（用户/角色/日志/SQL）
 │   │   │   │       ├── tools/       # 工具页（JSON/Diff/压缩）
 │   │   │   │       ├── images/      # 图床相册
-│   │   │   │       └── wiki/        # Wiki 知识库
 │   │   │   ├── components/  # React / Vue 组件
 │   │   │   │   ├── ui/      # shadcn/ui 基础组件
-│   │   │   │   ├── wiki/    # Wiki 业务组件
 │   │   │   │   └── admin/   # 管理后台组件
 │   │   │   ├── hooks/       # React hooks（权限、缓存等）
 │   │   │   ├── contexts/    # React Context（权限、主题）
@@ -178,7 +174,7 @@ make dev-shared
 │   ├── briar-node/          # 后端服务 (Hono)
 │   │   ├── src/
 │   │   │   ├── index.ts     # 服务入口
-│   │   │   ├── routes/      # API 路由 (auth, wiki, admin, sql, images...)
+│   │   │   ├── routes/      # API 路由 (auth, admin, sql, files...)
 │   │   │   ├── middleware/  # 全局中间件 (auth, cors, logger, writeGuard)
 │   │   │   ├── config/      # 路由白名单、权限映射表
 │   │   │   ├── controllers/ # 业务控制器

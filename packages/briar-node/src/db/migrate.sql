@@ -212,3 +212,30 @@ CREATE TABLE IF NOT EXISTS media_cache (
   INDEX idx_created (created_at),
   INDEX idx_person_parse (person, parse_url(191))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='媒体资源缓存（COS 旁路）';
+
+-- ============================================================
+-- Wiki 模块下线
+-- ============================================================
+
+-- 清理 wiki 权限的角色关联（先删关联，再删权限）
+DELETE FROM role_permissions WHERE permission_id IN (
+  SELECT id FROM permissions WHERE code LIKE 'wiki:%' OR code = 'page:wiki'
+);
+
+DELETE FROM permissions WHERE code LIKE 'wiki:%' OR code = 'page:wiki';
+
+-- 删除 wiki 表（先子表后父表，DROP TABLE IF EXISTS 幂等）
+DROP TABLE IF EXISTS wiki_page_categories;
+DROP TABLE IF EXISTS wiki_page_tags;
+DROP TABLE IF EXISTS wiki_discussion_replies;
+DROP TABLE IF EXISTS wiki_discussions;
+DROP TABLE IF EXISTS wiki_watchlist;
+DROP TABLE IF EXISTS wiki_stars;
+DROP TABLE IF EXISTS wiki_backlinks;
+DROP TABLE IF EXISTS wiki_inline_comments;
+DROP TABLE IF EXISTS wiki_change_requests;
+DROP TABLE IF EXISTS wiki_revisions;
+DROP TABLE IF EXISTS wiki_pages;
+DROP TABLE IF EXISTS wiki_categories;
+DROP TABLE IF EXISTS wiki_templates;
+DROP TABLE IF EXISTS wiki_tags;

@@ -7,51 +7,9 @@
 /** 权限编码枚举 */
 export const PERMISSIONS = {
 	// 页面访问权限
-	PAGE_WIKI: 'page:wiki',
 	PAGE_ADMIN: 'page:admin',
 	PAGE_BUSINESS: 'page:business',
 	PAGE_SQL_CONSOLE: 'page:sql-console',
-
-	// Wiki - 页面操作
-	WIKI_PAGE_CREATE: 'wiki:page:create',
-	WIKI_PAGE_UPDATE: 'wiki:page:update',
-	WIKI_PAGE_DELETE: 'wiki:page:delete',
-	WIKI_PAGE_PROTECT: 'wiki:page:protect',
-
-	// Wiki - 版本
-	WIKI_REVISION_REVERT: 'wiki:revision:revert',
-
-	// Wiki - 分类
-	WIKI_CATEGORY_CREATE: 'wiki:category:create',
-	WIKI_CATEGORY_UPDATE: 'wiki:category:update',
-	WIKI_CATEGORY_DELETE: 'wiki:category:delete',
-
-	// Wiki - 标签
-	WIKI_TAG_CREATE: 'wiki:tag:create',
-	WIKI_TAG_DELETE: 'wiki:tag:delete',
-
-	// Wiki - 模板
-	WIKI_TEMPLATE_CREATE: 'wiki:template:create',
-	WIKI_TEMPLATE_UPDATE: 'wiki:template:update',
-	WIKI_TEMPLATE_DELETE: 'wiki:template:delete',
-
-	// Wiki - 讨论
-	WIKI_DISCUSSION_CREATE: 'wiki:discussion:create',
-	WIKI_DISCUSSION_REPLY: 'wiki:discussion:reply',
-	WIKI_DISCUSSION_RESOLVE: 'wiki:discussion:resolve',
-
-	// Wiki - 评论
-	WIKI_COMMENT_CREATE: 'wiki:comment:create',
-	WIKI_COMMENT_UPDATE: 'wiki:comment:update',
-	WIKI_COMMENT_DELETE: 'wiki:comment:delete',
-
-	// Wiki - 变更请求
-	WIKI_CHANGE_REQUEST_CREATE: 'wiki:change-request:create',
-	WIKI_CHANGE_REQUEST_REVIEW: 'wiki:change-request:review',
-
-	// Wiki - 个人功能
-	WIKI_WATCHLIST_MANAGE: 'wiki:watchlist:manage',
-	WIKI_STAR_MANAGE: 'wiki:star:manage',
 
 	// 管理后台
 	ADMIN_ROLE_MANAGE: 'admin:role:manage',
@@ -79,7 +37,7 @@ export const SYSTEM_ROLES = {
 export type PermissionType = 'page' | 'api'
 
 /** 权限模块 */
-export type PermissionModule = 'wiki' | 'admin' | 'system'
+export type PermissionModule = 'admin' | 'system'
 
 // ==================== 权限分组（用于前端展示） ====================
 
@@ -99,75 +57,9 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
 		module: 'page',
 		label: '页面访问',
 		permissions: [
-			{ code: PERMISSIONS.PAGE_WIKI, name: '访问 Wiki', type: 'page' },
 			{ code: PERMISSIONS.PAGE_ADMIN, name: '访问管理后台', type: 'page' },
 			{ code: PERMISSIONS.PAGE_BUSINESS, name: '访问业务页面', type: 'page' },
 			{ code: PERMISSIONS.PAGE_SQL_CONSOLE, name: '访问 SQL 控制台', type: 'page' },
-		],
-	},
-	{
-		module: 'wiki:page',
-		label: 'Wiki 页面操作',
-		permissions: [
-			{ code: PERMISSIONS.WIKI_PAGE_CREATE, name: '创建页面', type: 'api' },
-			{ code: PERMISSIONS.WIKI_PAGE_UPDATE, name: '编辑页面', type: 'api' },
-			{ code: PERMISSIONS.WIKI_PAGE_DELETE, name: '删除页面', type: 'api' },
-			{ code: PERMISSIONS.WIKI_PAGE_PROTECT, name: '保护页面', type: 'api' },
-			{ code: PERMISSIONS.WIKI_REVISION_REVERT, name: '回退版本', type: 'api' },
-		],
-	},
-	{
-		module: 'wiki:category',
-		label: 'Wiki 分类管理',
-		permissions: [
-			{ code: PERMISSIONS.WIKI_CATEGORY_CREATE, name: '创建分类', type: 'api' },
-			{ code: PERMISSIONS.WIKI_CATEGORY_UPDATE, name: '编辑分类', type: 'api' },
-			{ code: PERMISSIONS.WIKI_CATEGORY_DELETE, name: '删除分类', type: 'api' },
-		],
-	},
-	{
-		module: 'wiki:tag',
-		label: 'Wiki 标签管理',
-		permissions: [
-			{ code: PERMISSIONS.WIKI_TAG_CREATE, name: '创建标签', type: 'api' },
-			{ code: PERMISSIONS.WIKI_TAG_DELETE, name: '删除标签', type: 'api' },
-		],
-	},
-	{
-		module: 'wiki:template',
-		label: 'Wiki 模板管理',
-		permissions: [
-			{ code: PERMISSIONS.WIKI_TEMPLATE_CREATE, name: '创建模板', type: 'api' },
-			{ code: PERMISSIONS.WIKI_TEMPLATE_UPDATE, name: '编辑模板', type: 'api' },
-			{ code: PERMISSIONS.WIKI_TEMPLATE_DELETE, name: '删除模板', type: 'api' },
-		],
-	},
-	{
-		module: 'wiki:discussion',
-		label: 'Wiki 讨论与评论',
-		permissions: [
-			{ code: PERMISSIONS.WIKI_DISCUSSION_CREATE, name: '创建讨论', type: 'api' },
-			{ code: PERMISSIONS.WIKI_DISCUSSION_REPLY, name: '回复讨论', type: 'api' },
-			{ code: PERMISSIONS.WIKI_DISCUSSION_RESOLVE, name: '标记已解决', type: 'api' },
-			{ code: PERMISSIONS.WIKI_COMMENT_CREATE, name: '创建评论', type: 'api' },
-			{ code: PERMISSIONS.WIKI_COMMENT_UPDATE, name: '编辑评论', type: 'api' },
-			{ code: PERMISSIONS.WIKI_COMMENT_DELETE, name: '删除评论', type: 'api' },
-		],
-	},
-	{
-		module: 'wiki:change-request',
-		label: 'Wiki 变更请求',
-		permissions: [
-			{ code: PERMISSIONS.WIKI_CHANGE_REQUEST_CREATE, name: '创建变更请求', type: 'api' },
-			{ code: PERMISSIONS.WIKI_CHANGE_REQUEST_REVIEW, name: '审核变更请求', type: 'api' },
-		],
-	},
-	{
-		module: 'wiki:personal',
-		label: 'Wiki 个人功能',
-		permissions: [
-			{ code: PERMISSIONS.WIKI_WATCHLIST_MANAGE, name: '管理关注列表', type: 'api' },
-			{ code: PERMISSIONS.WIKI_STAR_MANAGE, name: '管理收藏', type: 'api' },
 		],
 	},
 	{

@@ -1,10 +1,5 @@
 import { defineCollection, z } from 'astro:content'
-import { docsSchema } from '@astrojs/starlight/schema'
 import { glob } from 'astro/loaders'
-
-const docsCollection = defineCollection({
-	schema: docsSchema(),
-})
 
 /** 个人博客：纯静态 Markdown，构建期生成页面，无需登录 */
 const blogCollection = defineCollection({
@@ -19,6 +14,5 @@ const blogCollection = defineCollection({
 })
 
 export const collections = {
-	docs: docsCollection,
 	blog: blogCollection,
 }

@@ -4,7 +4,7 @@ import UserMenu from '@/components/common/UserMenu'
 import { Card, CardContent } from '@/components/ui/card'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { BookOpen, Folder, PenLine, Shield, Wrench } from 'lucide-react'
+import { Folder, PenLine, Shield, Wrench } from 'lucide-react'
 
 interface EntryCardProps {
 	icon: React.ReactNode
@@ -66,11 +66,7 @@ function PortalPageInner() {
 			<header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/50 bg-background/60 px-6 backdrop-blur-md">
 				<span className="text-base font-semibold tracking-tight">Briar</span>
 				<div className="flex items-center gap-3">
-					{loading ? (
-						<div className="h-4 w-16 animate-pulse rounded bg-muted" />
-					) : (
-						<UserMenu variant="light" />
-					)}
+					{loading ? <div className="h-4 w-16 animate-pulse rounded bg-muted" /> : <UserMenu />}
 				</div>
 			</header>
 
@@ -87,13 +83,6 @@ function PortalPageInner() {
 
 					{/* Bento grid */}
 					<div className="grid gap-4 sm:grid-cols-2">
-						<EntryCard
-							icon={<BookOpen className="h-5 w-5" />}
-							title="Wiki"
-							description="知识库与文档管理"
-							href="/briar/wiki/"
-							gradient="from-blue-500 to-purple-500"
-						/>
 						<EntryCard
 							icon={<Wrench className="h-5 w-5" />}
 							title="工具箱"
