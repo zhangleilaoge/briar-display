@@ -72,13 +72,25 @@ const resolveExt = (url: string, kind: MediaKind) => {
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
+/** 抖音视频 CDN 域名（签名绑定解析方 IP，即咱们服务器，访客浏览器直连 403） */
+const DOUYIN_VIDEO_HOST_SUFFIXES = ['.zjcdn.com', '.douyinvod.com']
+
 /**
- * qpic.cn 的实况图/视频 auth 参数绑定文章页 Cookie，浏览器直连 403，
- * 预览需走后端代理（inline 模式，服务端回带 Cookie）
+ * 需要走后端代理预览（inline 模式）的情形：
+ * - qpic.cn 实况图/视频：auth 参数绑定文章页 Cookie，浏览器直连 403（服务端回带 Cookie）
+ * - 抖音视频/音轨：URL 签名绑定解析方 IP，浏览器直连 403（服务端 IP 与解析一致）
  */
-const needsProxyPreview = (url: string) => {
+const needsProxyPreview = (url: string, kind: MediaKind) => {
 	try {
-		return new URL(upgradeToHttps(url)).hostname.endsWith('.qpic.cn')
+		const host = new URL(upgradeToHttps(url)).hostname
+		if (host.endsWith('.qpic.cn')) return true
+		if (
+			(kind === 'video' || kind === 'live' || kind === 'audio') &&
+			DOUYIN_VIDEO_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))
+		) {
+			return true
+		}
+		return false
 	} catch {
 		return false
 	}
@@ -96,7 +108,7 @@ export const buildMediaSections = (result: MediaParseResult): MediaSections => {
 			id: `${kind}-${index}-${url}`,
 			kind,
 			url: httpsUrl,
-			previewUrl: needsProxyPreview(httpsUrl) ? toProxyPreviewUrl(httpsUrl) : undefined,
+			previewUrl: needsProxyPreview(httpsUrl, kind) ? toProxyPreviewUrl(httpsUrl) : undefined,
 			label,
 			filename: `${base}-${label.replace(/\s/g, '')}.${resolveExt(url, kind)}`,
 		}
