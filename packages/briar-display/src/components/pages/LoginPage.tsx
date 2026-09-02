@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { getSafeLoginRedirect } from '@/lib/loginRedirect'
 import axios from 'axios'
 import { Eye, EyeOff } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
@@ -44,7 +45,8 @@ export default function LoginPage() {
 			const result = await login({ email, password })
 			if (result.success && result.data) {
 				setAuthToken(result.data.token, result.data.user, result.data.permissions)
-				window.location.href = '/briar/'
+				// 优先回到触发登录跳转之前的页面（见 lib/loginRedirect）
+				window.location.href = getSafeLoginRedirect()
 				return
 			}
 			setError(result.message || '登录失败')

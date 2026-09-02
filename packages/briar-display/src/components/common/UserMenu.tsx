@@ -3,6 +3,7 @@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { usePermissions } from '@/contexts/PermissionContext'
 import { useUnreadMessages } from '@/hooks/useUnreadMessages'
+import { buildLoginUrl } from '@/lib/loginRedirect'
 import { cn } from '@/lib/utils'
 import { ChevronDown, Home, LogIn, LogOut, Mail, Shield, User as UserIcon } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -62,6 +63,8 @@ export default function UserMenu() {
 	const [open, setOpen] = useState(false)
 	const [user, setUser] = useState<StoredUser | null>(null)
 	const [token, setToken] = useState<string | null>(null)
+	// 登录链接（mount 后带上当前页 redirect 参数，避免 SSR/hydration 不一致）
+	const [loginUrl, setLoginUrl] = useState('/briar/login')
 	const { roles, isAdmin, isLoggedIn } = usePermissions()
 	const { unread } = useUnreadMessages()
 
@@ -69,6 +72,7 @@ export default function UserMenu() {
 		const t = getToken()
 		setToken(t)
 		if (t) setUser(getStoredUser())
+		setLoginUrl(buildLoginUrl())
 	}, [])
 
 	// 跨标签页登录/登出同步
@@ -101,7 +105,7 @@ export default function UserMenu() {
 	if (!token || !isLoggedIn) {
 		return (
 			<a
-				href="/briar/login"
+				href={loginUrl}
 				className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-accent"
 			>
 				<LogIn className="h-3.5 w-3.5" />
