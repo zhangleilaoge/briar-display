@@ -32,11 +32,6 @@ function getToken(): string | null {
 	}
 }
 
-interface UserMenuProps {
-	/** 主题：light 给 Portal/Tools/Images/Admin，wiki 给 Wiki 主题顶部 */
-	variant?: 'light' | 'wiki'
-}
-
 function Avatar({
 	url,
 	initial,
@@ -63,7 +58,7 @@ function Avatar({
 	return <span className={className}>{initial}</span>
 }
 
-export default function UserMenu({ variant = 'light' }: UserMenuProps) {
+export default function UserMenu() {
 	const [open, setOpen] = useState(false)
 	const [user, setUser] = useState<StoredUser | null>(null)
 	const [token, setToken] = useState<string | null>(null)
@@ -99,56 +94,15 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 		window.location.href = '/briar/'
 	}, [])
 
-	const isLight = variant === 'light'
 	const initial = user?.name?.charAt(0)?.toUpperCase() || 'U'
 	const roleDisplay = roles.length > 0 ? roles.map((r) => r.displayName).join(' · ') : null
-
-	// 触发器样式（区分主题）
-	const triggerClass = cn(
-		'inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors',
-		isLight
-			? 'text-foreground hover:bg-accent'
-			: 'text-wiki-text hover:bg-wiki-bg-tertiary text-[13px]',
-	)
-	const avatarClass = cn(
-		'flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-semibold text-white',
-		isLight ? 'bg-gradient-to-br from-blue-500 to-purple-500' : 'bg-wiki-link',
-	)
-	const nameClass = cn(
-		'hidden max-w-[80px] truncate sm:inline',
-		isLight ? 'text-foreground' : 'text-wiki-text text-[13px]',
-	)
-	const chevronClass = cn(
-		'h-3.5 w-3.5 transition-transform',
-		isLight ? 'text-muted-foreground' : 'text-wiki-text-muted',
-		open && 'rotate-180',
-	)
-
-	// 菜单项样式
-	const itemClass = cn(
-		'flex items-center gap-2 rounded-sm px-3 py-2 text-sm transition-colors',
-		isLight
-			? 'text-foreground hover:bg-accent'
-			: 'text-wiki-text-secondary hover:bg-wiki-bg-tertiary hover:text-wiki-text text-[13px]',
-	)
-	const destructiveItemClass = cn(
-		'flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-colors',
-		isLight
-			? 'text-destructive hover:bg-destructive/10'
-			: 'text-wiki-text-secondary hover:bg-wiki-highlight hover:text-wiki-link-red text-[13px]',
-	)
 
 	// 未登录：直接显示「登录」按钮
 	if (!token || !isLoggedIn) {
 		return (
 			<a
 				href="/briar/login"
-				className={cn(
-					'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
-					isLight
-						? 'border border-border bg-background text-foreground hover:bg-accent'
-						: 'text-wiki-text hover:bg-wiki-bg-tertiary text-[13px]',
-				)}
+				className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-accent"
 			>
 				<LogIn className="h-3.5 w-3.5" />
 				登录
@@ -159,45 +113,41 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
-				<button type="button" className={triggerClass} aria-label="用户菜单">
+				<button
+					type="button"
+					className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-accent"
+					aria-label="用户菜单"
+				>
 					<span className="relative">
-						<Avatar url={user?.avatar} initial={initial} className={avatarClass} />
+						<Avatar
+							url={user?.avatar}
+							initial={initial}
+							className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-[12px] font-semibold text-white"
+						/>
 						{unread > 0 && (
 							<span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-red-500" />
 						)}
 					</span>
-					<span className={nameClass}>{user?.name || '用户'}</span>
-					<ChevronDown className={chevronClass} />
+					<span className="hidden max-w-[80px] truncate text-foreground sm:inline">
+						{user?.name || '用户'}
+					</span>
+					<ChevronDown
+						className={cn(
+							'h-3.5 w-3.5 text-muted-foreground transition-transform',
+							open && 'rotate-180',
+						)}
+					/>
 				</button>
 			</PopoverTrigger>
-			<PopoverContent
-				className={cn('w-56 p-1', isLight && 'bg-popover')}
-				align="end"
-				sideOffset={6}
-			>
+			<PopoverContent className="w-56 bg-popover p-1" align="end" sideOffset={6}>
 				{/* 头部：用户信息 */}
-				<div
-					className={cn(
-						'border-b px-3 py-2 mb-1',
-						isLight ? 'border-border' : 'border-wiki-border-light',
-					)}
-				>
+				<div className="mb-1 border-b border-border px-3 py-2">
 					{/* 名字与角色 */}
 					<div className="flex items-center justify-between gap-2">
-						<p
-							className={cn(
-								'truncate text-sm font-medium',
-								isLight ? 'text-foreground' : 'text-wiki-text',
-							)}
-						>
-							{user?.name || '用户'}
-						</p>
+						<p className="truncate text-sm font-medium text-foreground">{user?.name || '用户'}</p>
 						{roleDisplay && (
 							<span
-								className={cn(
-									'inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px]',
-									isLight ? 'bg-primary/10 text-primary' : 'bg-wiki-link/10 text-wiki-link',
-								)}
+								className="inline-flex shrink-0 items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary"
 								title={roleDisplay}
 							>
 								<Shield className="h-3 w-3" />
@@ -208,25 +158,22 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 
 					{/* 邮箱独占一行，避免被角色压缩 */}
 					{user?.email && (
-						<p
-							className={cn(
-								'mt-0.5 truncate text-[11px]',
-								isLight ? 'text-muted-foreground' : 'text-wiki-text-muted',
-							)}
-						>
-							{user.email}
-						</p>
+						<p className="mt-0.5 truncate text-[11px] text-muted-foreground">{user.email}</p>
 					)}
 				</div>
 
 				{/* 菜单项 */}
-				<a href="/briar/profile" className={itemClass} onClick={() => setOpen(false)}>
+				<a
+					href="/briar/profile"
+					className="flex items-center gap-2 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+					onClick={() => setOpen(false)}
+				>
 					<UserIcon className="h-3.5 w-3.5" />
 					个人中心
 				</a>
 				<a
 					href="/briar/profile?tab=messages"
-					className={cn(itemClass, 'justify-between')}
+					className="flex items-center justify-between gap-2 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
 					onClick={() => setOpen(false)}
 				>
 					<span className="flex items-center gap-2">
@@ -239,22 +186,32 @@ export default function UserMenu({ variant = 'light' }: UserMenuProps) {
 						</span>
 					)}
 				</a>
-				<a href="/briar/" className={itemClass} onClick={() => setOpen(false)}>
+				<a
+					href="/briar/"
+					className="flex items-center gap-2 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+					onClick={() => setOpen(false)}
+				>
 					<Home className="h-3.5 w-3.5" />
 					回到主页
 				</a>
 				{isAdmin && (
-					<a href="/briar/admin/permissions" className={itemClass} onClick={() => setOpen(false)}>
+					<a
+						href="/briar/admin/permissions"
+						className="flex items-center gap-2 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+						onClick={() => setOpen(false)}
+					>
 						<Shield className="h-3.5 w-3.5" />
 						管理后台
 					</a>
 				)}
 
-				<div
-					className={cn('my-1 border-t', isLight ? 'border-border' : 'border-wiki-border-light')}
-				/>
+				<div className="my-1 border-t border-border" />
 
-				<button type="button" onClick={handleLogout} className={destructiveItemClass}>
+				<button
+					type="button"
+					onClick={handleLogout}
+					className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
+				>
 					<LogOut className="h-3.5 w-3.5" />
 					退出登录
 				</button>

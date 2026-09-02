@@ -34,7 +34,7 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 
 **文件大小限制**：任何超过 600 行的非配置文件都需要考虑逻辑拆分。优先将纯逻辑（工具函数、计算、解析）抽离到独立的 utils 文件，UI 组件拆分为独立子组件，保持主文件聚焦于状态管理和布局编排。
 
-**UI 组件**：优先使用 shadcn/ui 组件（`@/components/ui/`），不要用原生 HTML 元素（`<select>`、`<input>`、`<dialog>` 等）。Radix Select、Input、Button、Dialog 等已配好样式和 wiki 主题适配。下拉框、搜索框、选择器等交互组件必须使用 shadcn 组件（如 Select、Command+Popover 组合的 Combobox），确保支持键盘导航（↑↓ 切换、Enter 确认、Esc 关闭）。面包屑使用 `Breadcrumb` 组件，页面切换导航使用 `Tabs` 组件，禁止硬编码面包屑文本或自定义按钮组模拟 tab 样式。错误提示、成功反馈等消息禁止使用 `alert()`/`confirm()`，统一使用 `sonner` 的 `toast()`/`toast.error()`/`toast.success()`（已全局挂载 Toaster，直接 `import { toast } from 'sonner'` 即可）。
+**UI 组件**：优先使用 shadcn/ui 组件（`@/components/ui/`），不要用原生 HTML 元素（`<select>`、`<input>`、`<dialog>` 等）。Radix Select、Input、Button、Dialog 等已配好样式。下拉框、搜索框、选择器等交互组件必须使用 shadcn 组件（如 Select、Command+Popover 组合的 Combobox），确保支持键盘导航（↑↓ 切换、Enter 确认、Esc 关闭）。面包屑使用 `Breadcrumb` 组件，页面切换导航使用 `Tabs` 组件，禁止硬编码面包屑文本或自定义按钮组模拟 tab 样式。错误提示、成功反馈等消息禁止使用 `alert()`/`confirm()`，统一使用 `sonner` 的 `toast()`/`toast.error()`/`toast.success()`（已全局挂载 Toaster，直接 `import { toast } from 'sonner'` 即可）。
 
 ## 重要文件路径
 
@@ -75,7 +75,7 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 
 ## 路由架构
 
-前端页面在 `packages/briar-display/src/pages/briar/`，后端 API 在 `packages/briar-node/src/routes/`，Wiki 模块详见 `packages/briar-display/src/components/wiki/AGENTS.md`。
+前端页面在 `packages/briar-display/src/pages/briar/`，后端 API 在 `packages/briar-node/src/routes/`。
 
 ### Nginx 代理
 
@@ -97,7 +97,7 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 
 ### 个人博客
 
-- 页面 `/briar/blog/`（列表，按年分组）+ `/briar/blog/{slug}/`（详情），纯静态、**无登录**，与 wiki 完全独立（无在线编辑、无后端 API）
+- 页面 `/briar/blog/`（列表，按年分组）+ `/briar/blog/{slug}/`（详情），纯静态、**无登录**、无后端 API
 - 文章放在 `packages/briar-display/src/content/blog/*.md`（Astro content collection，glob loader；文件名即 slug，建议英文短横线命名），frontmatter：`title` / `date` / `description?` / `tags?` / `draft?`（draft: true 不发布）；写完 `git push` 走 CI 即上线
 - 布局 `src/layouts/BlogLayout.astro`，样式集中在 `src/styles/blog.css`（暖纸 + 朱砂主题，`prefers-color-scheme: dark` 自动切墨黑 + 金）；字数/阅读时长工具在 `src/lib/blog.ts`
 - 站点名/签名在 `src/pages/briar/blog/index.astro` 顶部 `BLOG_NAME` / `BLOG_SLOGAN` 常量
@@ -122,11 +122,11 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 
 | 角色 | 标识 | 权限范围 |
 | :--- | :--- | :--- |
-| 普通用户 | `user` | 创建/编辑文章、讨论、评论、收藏 |
-| 管理员 | `moderator` | + 删除、分类/标签/模板管理 |
+| 普通用户 | `user` | 访问业务页面（`page:business`） |
+| 管理员 | `moderator` | 预留（当前无额外权限） |
 | 超级管理员 | `admin` | + 管理后台，自动放行所有检查 |
 
-权限编码格式：`{模块}:{资源}:{操作}`（如 `wiki:page:create`、`admin:role:manage`）。
+权限编码格式：`{模块}:{资源}:{操作}`（如 `admin:role:manage`）。
 
 前端使用 `useRequirePermission` hook 或 `<PermissionGuard>` 组件。
 
@@ -134,7 +134,7 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 
 **第一层：authMiddleware + routes.ts（谁能访问）**
 - `routes.ts` 中的 `API_UNRESTRICTED_PATHS` 控制哪些路径跳过 JWT 验证（如登录/注册）
-- `API_PUBLIC_PATHS` / `API_PUBLIC_PREFIXES` 控制 GET 请求的公开访问（如 wiki 浏览）
+- `API_PUBLIC_PATHS` / `API_PUBLIC_PREFIXES` 控制 GET 请求的公开访问（如 `/api/version`）
 
 **第二层：apiWriteGuard + apiPermissions.ts（能做什么）**
 - 全局中间件，拦截所有 POST/PUT/PATCH/DELETE 请求
