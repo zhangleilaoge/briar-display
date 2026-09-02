@@ -13,6 +13,8 @@ export interface MediaItem {
 	url: string
 	/** 需要后端代理才能预览的地址（如公众号实况图，auth 参数绑定微信 Cookie，直连 403） */
 	previewUrl?: string
+	/** 来源解析链接（服务端媒体缓存按它做 10 条淘汰 + 50MB 上限） */
+	sourceUrl: string
 	label: string
 	filename: string
 }
@@ -77,11 +79,13 @@ const DOUYIN_VIDEO_HOST_SUFFIXES = ['.zjcdn.com', '.douyinvod.com']
 
 /**
  * 需要走后端代理预览（inline 模式）的情形：
+ * - 图片/封面：一律走代理——<img> 全量加载，proxy 顺带旁路缓存到 COS，二次加载 302 直发
  * - qpic.cn 实况图/视频：auth 参数绑定文章页 Cookie，浏览器直连 403（服务端回带 Cookie）
  * - 抖音视频/音轨：URL 签名绑定解析方 IP，浏览器直连 403（服务端 IP 与解析一致）
  */
 const needsProxyPreview = (url: string, kind: MediaKind) => {
 	try {
+		if (kind === 'image' || kind === 'cover') return true
 		const host = new URL(upgradeToHttps(url)).hostname
 		if (host.endsWith('.qpic.cn')) return true
 		if (
@@ -96,11 +100,11 @@ const needsProxyPreview = (url: string, kind: MediaKind) => {
 	}
 }
 
-const toProxyPreviewUrl = (url: string, filename: string) =>
-	`${getApiBaseUrl()}/media/proxy?inline=1&url=${encodeURIComponent(upgradeToHttps(url))}&name=${encodeURIComponent(filename)}`
+const toProxyPreviewUrl = (url: string, filename: string, sourceUrl: string) =>
+	`${getApiBaseUrl()}/media/proxy?inline=1&url=${encodeURIComponent(upgradeToHttps(url))}&name=${encodeURIComponent(filename)}&from=${encodeURIComponent(sourceUrl)}`
 
-/** 把上游解析结果整理成按类型分组的下载项 */
-export const buildMediaSections = (result: MediaParseResult): MediaSections => {
+/** 把上游解析结果整理成按类型分组的下载项；sourceUrl 为来源解析链接（媒体缓存归属用） */
+export const buildMediaSections = (result: MediaParseResult, sourceUrl = ''): MediaSections => {
 	const base = sanitizeFilename(result.title || result.platform || 'xhs-media')
 	const toItem = (kind: MediaKind, url: string, index: number, label: string): MediaItem => {
 		const httpsUrl = upgradeToHttps(url)
@@ -110,8 +114,9 @@ export const buildMediaSections = (result: MediaParseResult): MediaSections => {
 			kind,
 			url: httpsUrl,
 			previewUrl: needsProxyPreview(httpsUrl, kind)
-				? toProxyPreviewUrl(httpsUrl, filename)
+				? toProxyPreviewUrl(httpsUrl, filename, sourceUrl)
 				: undefined,
+			sourceUrl,
 			label,
 			filename,
 		}

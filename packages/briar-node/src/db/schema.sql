@@ -237,3 +237,31 @@ CREATE TABLE IF NOT EXISTS cert_renewal_logs (
   INDEX idx_started_at (started_at),
   INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='证书续期记录';
+
+-- 媒体解析结果缓存：按人隔离（u:{userId} 或 ip:{IP}），每人最多 10 条（超出淘汰并连带清理对应媒体资源）
+CREATE TABLE IF NOT EXISTS media_parse_cache (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  person VARCHAR(80) NOT NULL COMMENT '隔离键：u:{userId} 或 ip:{IP}',
+  url VARCHAR(512) NOT NULL COMMENT '提取后的分享链接',
+  platform VARCHAR(16) NOT NULL COMMENT '平台：xhs / douyin / wechat',
+  result JSON NOT NULL COMMENT '解析结果（标题/作者/封面/媒体地址）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间（LRU 依据）',
+  UNIQUE KEY uk_person_url (person, url(191))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='媒体解析结果缓存';
+
+-- 媒体资源缓存：源 CDN 文件旁路缓存到 COS 公有桶；7 天定时清理，或随解析记录淘汰连带清理
+CREATE TABLE IF NOT EXISTS media_cache (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  person VARCHAR(80) NOT NULL COMMENT '隔离键：u:{userId} 或 ip:{IP}',
+  parse_url VARCHAR(512) NOT NULL DEFAULT '' COMMENT '来源解析链接（随解析记录淘汰时连带清理；空串为无来源兜底）',
+  url_hash CHAR(64) NOT NULL COMMENT 'sha256(源 CDN URL)',
+  cos_key VARCHAR(255) NOT NULL COMMENT 'COS 公有桶对象 key',
+  content_type VARCHAR(64) NOT NULL DEFAULT '' COMMENT 'MIME 类型',
+  size BIGINT NOT NULL DEFAULT 0 COMMENT '字节数',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  last_access_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '最近访问时间',
+  UNIQUE KEY uk_person_hash (person, url_hash),
+  INDEX idx_created (created_at),
+  INDEX idx_person_parse (person, parse_url(191))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='媒体资源缓存（COS 旁路）';
