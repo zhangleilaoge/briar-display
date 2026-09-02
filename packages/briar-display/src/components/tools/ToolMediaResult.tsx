@@ -6,8 +6,15 @@ import { Checkbox } from '@/components/ui/checkbox'
 import type { MediaParseResult } from '@briar/shared'
 import { Download, FolderPlus, Loader2 } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import ToolMediaLightbox from './ToolMediaLightbox'
-import { type MediaItem, type MediaSections, platformIcon, platformLabel } from './toolMediaUtils'
+import {
+	type MediaItem,
+	type MediaSections,
+	platformIcon,
+	platformLabel,
+	probeMediaError,
+} from './toolMediaUtils'
 
 interface ToolMediaResultProps {
 	result: MediaParseResult
@@ -87,20 +94,47 @@ export default function ToolMediaResult({
 	onZip,
 }: ToolMediaResultProps) {
 	const [previewIndex, setPreviewIndex] = useState<number | null>(null)
+	/** 加载失败的媒体：id → 失败原因（探测后端拿到真实状态，避免黑框无提示） */
+	const [loadErrors, setLoadErrors] = useState<Record<string, string>>({})
 	const allChecked = sections.images.length > 0 && selected.size === sections.images.length
 	const selectedImages = sections.images.filter((item) => selected.has(item.id))
+
+	const handleMediaError = (item: MediaItem) => {
+		if (loadErrors[item.id]) return
+		probeMediaError(item).then((message) => {
+			// 网络层失败（探测都发不出去）：X 媒体直连，多半是没梯子
+			const fallback = item.url.includes('.twimg.com')
+				? 'X 媒体需网络可访问 x.com（请开代理后刷新重试）'
+				: '媒体加载失败，请稍后重试'
+			const text = message || fallback
+			setLoadErrors((prev) => ({ ...prev, [item.id]: text }))
+			toast.error(text, { id: 'media-load-error' })
+		})
+	}
+
+	/** 媒体加载失败遮罩（覆盖在 video/img 上） */
+	const errorOverlay = (id: string) =>
+		loadErrors[id] ? (
+			<div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-black/70 p-2 text-center text-sm text-white">
+				{loadErrors[id]}
+			</div>
+		) : null
 
 	return (
 		<div className="flex flex-col gap-6">
 			{/* 作品信息 */}
 			<div className="flex items-start gap-4 rounded-lg border bg-card p-4">
 				{sections.cover && (
-					<img
-						src={sections.cover.url}
-						alt="封面"
-						referrerPolicy="no-referrer"
-						className="h-24 w-24 shrink-0 rounded-md border object-cover"
-					/>
+					<div className="relative h-24 w-24 shrink-0">
+						<img
+							src={sections.cover.url}
+							alt="封面"
+							referrerPolicy="no-referrer"
+							onError={() => handleMediaError(sections.cover!)}
+							className="h-24 w-24 rounded-md border object-cover"
+						/>
+						{errorOverlay(sections.cover.id)}
+					</div>
 				)}
 				<div className="flex min-w-0 flex-1 flex-col gap-2">
 					<div className="flex items-center gap-2">
@@ -148,14 +182,18 @@ export default function ToolMediaResult({
 							onAddTo={onAddTo}
 						/>
 					</div>
-					{/* biome-ignore lint/a11y/useMediaCaption: 外链抓取的媒体没有字幕文件 */}
-					<video
-						src={video.previewUrl ?? video.url}
-						controls
-						preload="metadata"
-						referrerPolicy="no-referrer"
-						className="max-h-[480px] w-full rounded-md bg-black"
-					/>
+					<div className="relative">
+						{/* biome-ignore lint/a11y/useMediaCaption: 外链抓取的媒体没有字幕文件 */}
+						<video
+							src={video.previewUrl ?? video.url}
+							controls
+							preload="metadata"
+							referrerPolicy="no-referrer"
+							onError={() => handleMediaError(video)}
+							className="max-h-[480px] w-full rounded-md bg-black"
+						/>
+						{errorOverlay(video.id)}
+					</div>
 				</div>
 			))}
 
@@ -203,7 +241,9 @@ export default function ToolMediaResult({
 											loading="lazy"
 											className="aspect-[3/4] w-full cursor-zoom-in bg-muted object-cover"
 											onClick={() => setPreviewIndex(imageIndex)}
+											onError={() => handleMediaError(image)}
 										/>
+										{errorOverlay(image.id)}
 										<Checkbox
 											checked={checked}
 											onCheckedChange={() => onToggle(image.id)}
@@ -236,14 +276,18 @@ export default function ToolMediaResult({
 					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
 						{sections.livePhotos.map((live) => (
 							<div key={live.id} className="flex flex-col overflow-hidden rounded-lg border">
-								{/* biome-ignore lint/a11y/useMediaCaption: 外链抓取的媒体没有字幕文件 */}
-								<video
-									src={live.previewUrl ?? live.url}
-									controls
-									preload="metadata"
-									referrerPolicy="no-referrer"
-									className="aspect-[3/4] w-full bg-black object-cover"
-								/>
+								<div className="relative">
+									{/* biome-ignore lint/a11y/useMediaCaption: 外链抓取的媒体没有字幕文件 */}
+									<video
+										src={live.previewUrl ?? live.url}
+										controls
+										preload="metadata"
+										referrerPolicy="no-referrer"
+										onError={() => handleMediaError(live)}
+										className="aspect-[3/4] w-full bg-black object-cover"
+									/>
+									{errorOverlay(live.id)}
+								</div>
 								<div className="flex items-center justify-between gap-2 bg-muted/50 px-3 py-2">
 									<span className="text-sm">{live.label}</span>
 									<ItemActions
@@ -270,8 +314,14 @@ export default function ToolMediaResult({
 						controls
 						preload="none"
 						src={sections.audio.previewUrl ?? sections.audio.url}
+						onError={() => handleMediaError(sections.audio!)}
 						className="h-9 min-w-0 flex-1"
 					/>
+					{loadErrors[sections.audio.id] && (
+						<span className="shrink-0 text-xs text-destructive">
+							{loadErrors[sections.audio.id]}
+						</span>
+					)}
 					<ItemActions
 						item={sections.audio}
 						percent={progress[sections.audio.id]}

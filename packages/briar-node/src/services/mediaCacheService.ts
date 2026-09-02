@@ -65,15 +65,26 @@ const deleteCosObjects = async (keys: string[]) => {
 }
 
 export const mediaCacheService = {
-	/** 读解析缓存（mysql2 会自动把 JSON 列解析成对象） */
+	/** 读解析缓存（mysql2 会自动把 JSON 列解析成对象）；抖音签名 URL 时效很短（实测不足半小时），缓存超 10 分钟视为失效 */
 	async getCachedParse(person: string, url: string): Promise<MediaParseResult | null> {
 		const row = await queryOne<ParseCacheRow>(
-			'SELECT result FROM media_parse_cache WHERE person = ? AND url = ?',
+			'SELECT platform, result, updated_at FROM media_parse_cache WHERE person = ? AND url = ?',
 			[person, url],
 		)
 		if (!row) return null
+		if (
+			row.platform === 'douyin' &&
+			Date.now() - new Date(row.updated_at).getTime() > 10 * 60_000
+		) {
+			return null
+		}
 		const result = typeof row.result === 'string' ? JSON.parse(row.result) : row.result
 		return result as MediaParseResult
+	},
+
+	/** 删除某条解析缓存（媒体 URL 过期被上游 403 时调用，让「重新解析」真正重新拉取；COS 里已缓存的媒体副本仍有效，不动） */
+	async removeCachedParse(person: string, url: string): Promise<void> {
+		await execute('DELETE FROM media_parse_cache WHERE person = ? AND url = ?', [person, url])
 	},
 
 	/**

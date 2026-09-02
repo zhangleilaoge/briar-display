@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { History, Trash2, X } from 'lucide-react'
 import {
 	type MediaHistoryItem,
+	formatParsedAt,
 	platformFromUrl,
 	platformIcon,
 	platformLabel,
@@ -70,7 +71,10 @@ export default function ToolMediaHistory({
 										</Badge>
 									)}
 								</span>
-								<span className="w-full truncate text-xs text-muted-foreground">{item.url}</span>
+								<span className="w-full truncate text-xs text-muted-foreground">
+									{item.url}
+									{item.parsedAt ? ` · ${formatParsedAt(item.parsedAt)}` : ''}
+								</span>
 							</button>
 							<Button
 								variant="ghost"
