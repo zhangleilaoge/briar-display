@@ -130,9 +130,10 @@ function extractUrl(text: string): string | null {
 /**
  * 解析结果缓存（进程内）：按「人」隔离——登录用户按 userId，未登录按 IP。
  * 每人 LRU 保留最近 10 条，与前端历史记录条数一致（历史记录里重新解析 = 直接命中）。
- * 上游返回的 CDN 签名 URL 有时效，条目 1 小时过期，惰性清理。
+ * 条目 7 天过期，惰性清理。风险：上游 CDN 签名 URL 可能先于 7 天失效，
+ * 此时 proxy 会返回「链接已过期，请重新解析」，用户重解析一次即可刷新。
  */
-const PARSE_CACHE_TTL_MS = 60 * 60 * 1000
+const PARSE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const PARSE_CACHE_PER_PERSON = 10
 const PARSE_CACHE_MAX_PERSONS = 2000
 type ParseCacheEntry = { data: MediaParseResult; expireAt: number }
