@@ -154,8 +154,11 @@ function detectPlatform(url: string): 'xhs' | 'wechat' | 'douyin' | null {
 	if (
 		host === 'xiaohongshu.com' ||
 		host.endsWith('.xiaohongshu.com') ||
+		// 短链域名 .com/.cn 都在用（App 分享文案现多为 xhslink.cn）
 		host === 'xhslink.com' ||
-		host.endsWith('.xhslink.com')
+		host.endsWith('.xhslink.com') ||
+		host === 'xhslink.cn' ||
+		host.endsWith('.xhslink.cn')
 	) {
 		return 'xhs'
 	}
