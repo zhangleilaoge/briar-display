@@ -79,7 +79,7 @@ function PortalPageInner() {
 							icon={<Wrench className="h-5 w-5" />}
 							title="工具箱"
 							description="文件 Diff、图片压缩等实用工具"
-							href="/briar/tools/diff"
+							href="/briar/tools"
 							gradient="from-teal-500 to-emerald-500"
 						/>
 						<EntryCard
