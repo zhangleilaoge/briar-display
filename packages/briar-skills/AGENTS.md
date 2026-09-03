@@ -14,11 +14,10 @@
 | `briar-fix` | 基于 Git worktree 的安全代码修复 |
 | `briar-mr` | GitLab MR 全能工具（创建、评论、review、pipeline） |
 | `briar-repo` | 从 GitLab 搜索并克隆仓库到本地 |
-| `briar-sync` | 反合主分支：将最新 master/main 合入开发分支，自动处理简单冲突 |
 | `briar-skynet` | 天网日志查询、traceId 链路追踪与日志导出下载 |
-| `briar-session` | 按时间范围查找历史 kimi-code 会话（主题、目录、会话 ID、恢复命令） |
 | `briar-get-session-id` | 按时间窗口 + （定制页面 key 或 kdtId）查询有效导购登录 sessionId（天网日志 + Dubbo 校验） |
 | `briar-mail` | 发邮件（支持附件）：直连收件方 MX 投递，无需邮箱凭证 |
+| `briar-subtitle` | 视频字幕提取：烧录字幕抽帧直读或 whisper 语音转录（带时间轴） |
 
 ---
 
