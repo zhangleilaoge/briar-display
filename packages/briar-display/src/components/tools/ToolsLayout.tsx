@@ -12,7 +12,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { Braces, Clapperboard, FileDiff, ImageIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect } from 'react'
 
 interface NavItem {
 	label: string
@@ -43,12 +43,19 @@ const NAV_ITEMS: NavItem[] = [
 	},
 ]
 
+export const TOOLS_LAST_TAB_KEY = 'briar_tools_last_tab'
+
 interface ToolsLayoutProps {
 	children: ReactNode
 	currentPath: string
 }
 
 export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps) {
+	// 记住当前 tab，下次从首页进入工具箱时恢复
+	useEffect(() => {
+		localStorage.setItem(TOOLS_LAST_TAB_KEY, currentPath)
+	}, [currentPath])
+
 	return (
 		<PermissionProvider>
 			<div className="flex h-screen flex-col overflow-hidden bg-background">

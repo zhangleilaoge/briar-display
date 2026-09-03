@@ -1,7 +1,14 @@
 ---
-// /briar/tools 重定向到 /briar/tools/diff
+// /briar/tools 重定向到上次访问的工具 tab，默认文件 Diff
 ---
 
 <script>
-	window.location.replace('/briar/tools/diff')
+	const TOOL_PATHS = [
+		'/briar/tools/diff',
+		'/briar/tools/compress',
+		'/briar/tools/json',
+		'/briar/tools/media',
+	]
+	const last = localStorage.getItem('briar_tools_last_tab')
+	window.location.replace(last && TOOL_PATHS.includes(last) ? last : TOOL_PATHS[0])
 </script>
