@@ -46,12 +46,14 @@
 ### AI Agent 工具链
 
 - **`@briar/agent`**：基于 `pi-coding-agent` 的 CLI 编码助手，`briar` 命令启动
-- **`@briar/skills`**：5 个 Agent 技能
+- **`@briar/skills`**：7 个 Agent 技能
   - `briar-context`：项目上下文注入
   - `briar-fix`：自动修复
   - `briar-mr`：MR/PR 处理
   - `briar-repo`：仓库分析
-  - `briar-sync`：多仓库同步
+  - `briar-get-session-id`：导购 sessionId 查询
+  - `briar-mail`：发邮件
+  - `briar-subtitle`：视频字幕提取
 - **`briar-hermes-skills`**：Hermes 平台技能（coding-agents / network-proxy / obsidian）
 
 ## 本地开发
@@ -198,7 +200,9 @@ make dev-shared
 │   │   ├── briar-fix/       # 自动修复
 │   │   ├── briar-mr/        # MR/PR 处理
 │   │   ├── briar-repo/      # 仓库分析
-│   │   └── briar-sync/      # 多仓库同步
+│   │   ├── briar-get-session-id/ # 导购 sessionId 查询
+│   │   ├── briar-mail/      # 发邮件
+│   │   └── briar-subtitle/  # 视频字幕提取
 │   ├── briar-hermes-skills/ # Hermes 平台技能
 │   │   ├── coding-agents/   # 编码 Agent 技能
 │   │   ├── network-proxy/   # 网络代理
