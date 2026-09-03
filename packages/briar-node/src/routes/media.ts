@@ -5,6 +5,7 @@ import { type Context, Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { authService } from '../services/authService'
 import { cosService } from '../services/cosService'
+import { parseDouyin } from '../services/douyinMediaService'
 import {
 	MEDIA_CACHE_MAX_RECORD_BYTES,
 	hashMediaUrl,
@@ -15,9 +16,9 @@ import { getWechatCookieHeader, parseWechatArticle } from '../services/wechatMed
 
 const mediaRoutes = new Hono()
 
-/** 解析上游（逆向自 catsapi.com/labs/media-parser） */
+/** 解析上游（逆向自 catsapi.com/labs/media-parser），仅小红书在用 */
 const PARSE_API_URL = 'https://catsapi.com/api/labs/media-parser/parse'
-// 上游首解析偶发极慢（实测 douyin 图文长达 ~55s），卡到 85s（前端 axios 90s 兜底）
+// 上游首解析偶发极慢，卡到 85s（前端 axios 90s 兜底）
 const PARSE_TIMEOUT_MS = 85_000
 const PROXY_TIMEOUT_MS = 120_000
 const MAX_INPUT_LENGTH = 2000
@@ -151,7 +152,7 @@ function getHostname(url: string): string | null {
 	}
 }
 
-/** 识别支持的平台：小红书/抖音（含短链）走 catsapi，公众号文章走自研解析，X 走 fxtwitter */
+/** 识别支持的平台：小红书走 catsapi，抖音/公众号文章走自研解析，X 走 fxtwitter */
 function detectPlatform(url: string): 'xhs' | 'wechat' | 'douyin' | 'x' | null {
 	const host = getHostname(url)
 	if (!host) return null
@@ -282,7 +283,26 @@ mediaRoutes.post('/parse', async (c) => {
 			.saveCachedParse(person, url, platform, data)
 			.catch((err) => console.error('[MediaCache] 解析缓存写入失败:', err))
 
-	// 公众号文章走自研解析（wechatMediaService），X 走 fxtwitter，其余转发 catsapi
+	// 公众号文章/抖音走自研解析（catsapi 抖音通道 2026-09 起持续 502），X 走 fxtwitter，小红书转发 catsapi
+	if (platform === 'douyin') {
+		try {
+			const data = await parseDouyin(url)
+			if (data.images.length === 0 && data.videos.length === 0 && data.live_photos.length === 0) {
+				return c.json<ApiResponse>(
+					{ success: false, message: '未解析到可下载的媒体' },
+					HTTP_STATUS.INTERNAL_SERVER_ERROR,
+				)
+			}
+			await saveCache(data)
+			c.header('X-Cache', 'miss')
+			return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
+		} catch (err) {
+			console.error('Douyin parse failed:', err)
+			const message = err instanceof Error ? err.message : '解析失败，请稍后重试'
+			return c.json<ApiResponse>({ success: false, message }, HTTP_STATUS.INTERNAL_SERVER_ERROR)
+		}
+	}
+
 	if (platform === 'wechat') {
 		try {
 			const data = await parseWechatArticle(url)
