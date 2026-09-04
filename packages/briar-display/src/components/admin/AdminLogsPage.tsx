@@ -58,12 +58,8 @@ function durationColor(ms: number) {
 
 function formatTime(date: string | Date) {
 	const d = typeof date === 'string' ? new Date(date) : date
-	return d.toLocaleTimeString('zh-CN', {
-		hour12: false,
-		hour: '2-digit',
-		minute: '2-digit',
-		second: '2-digit',
-	})
+	const pad = (n: number) => String(n).padStart(2, '0')
+	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 function formatFullTime(date: string | Date) {
@@ -265,7 +261,7 @@ function AdminLogsPageInner() {
 						<Input
 							value={userId}
 							onChange={(e) => setUserId(e.target.value)}
-							placeholder="用户 ID..."
+							placeholder="用户 ID，- 查未登录..."
 							className="h-8 flex-1 text-xs"
 						/>
 					</div>

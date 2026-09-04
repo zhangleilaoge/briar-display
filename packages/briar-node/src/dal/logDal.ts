@@ -35,6 +35,8 @@ interface RequestLogRow {
 	created_at: Date
 }
 
+const EMPTY_USER_FILTER = '-'
+
 const mapRow = (row: RequestLogRow): RequestLogRecord => ({
 	id: row.id,
 	traceId: row.trace_id,
@@ -171,7 +173,9 @@ export const logDal = {
 			conditions.push('trace_id = ?')
 			values.push(filters.traceId)
 		}
-		if (filters.userId) {
+		if (filters.userId === EMPTY_USER_FILTER) {
+			conditions.push(`(user_id IS NULL OR user_id = '')`)
+		} else if (filters.userId) {
 			conditions.push('user_id LIKE ?')
 			values.push(`%${filters.userId}%`)
 		}
