@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '@/api/request'
+import bilibiliIcon from '@/assets/platforms/bilibili.png'
 import douyinIcon from '@/assets/platforms/douyin.png'
 import wechatIcon from '@/assets/platforms/wechat.png'
 import xIcon from '@/assets/platforms/x.png'
@@ -33,6 +34,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 	douyin: '抖音',
 	wechat: '微信公众号',
 	x: 'X',
+	bilibili: 'B站',
 }
 
 export const platformLabel = (platform: string) => PLATFORM_LABELS[platform] || platform
@@ -42,6 +44,7 @@ const PLATFORM_ICONS: Record<string, string> = {
 	douyin: douyinIcon.src,
 	wechat: wechatIcon.src,
 	x: xIcon.src,
+	bilibili: bilibiliIcon.src,
 }
 
 /** 平台 favicon（取自官网 favicon，本地资源避免跨域/防盗链问题） */
@@ -52,6 +55,7 @@ export const platformFromUrl = (url: string) => {
 	if (url.includes('mp.weixin.qq.com')) return 'wechat'
 	if (url.includes('douyin.com') || url.includes('iesdouyin.com')) return 'douyin'
 	if (url.includes('x.com') || url.includes('twitter.com')) return 'x'
+	if (url.includes('bilibili.com') || url.includes('b23.tv')) return 'bilibili'
 	return 'xiaohongshu'
 }
 
