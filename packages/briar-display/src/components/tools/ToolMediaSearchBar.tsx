@@ -1,13 +1,12 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Link2, Loader2, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import { platformIcon } from './toolMediaUtils'
 
-/** 支持的平台（图标 tag 示意，与历史记录 tag 同款样式） */
+/** 支持的平台（纯图标示意） */
 const SUPPORTED_PLATFORMS = ['xiaohongshu', 'douyin', 'wechat', 'x', 'bilibili']
 
 interface ToolMediaSearchBarProps {
@@ -38,13 +37,12 @@ export default function ToolMediaSearchBar({
 					<h1 className="text-lg font-semibold">媒体解析</h1>
 					<span className="flex items-center gap-1.5 text-sm text-muted-foreground">
 						{SUPPORTED_PLATFORMS.map((platform) => (
-							<Badge key={platform} variant="secondary" className="shrink-0 px-1.5 py-0.5">
-								<img
-									src={platformIcon(platform)}
-									alt={platform}
-									className="h-3.5 w-3.5 rounded-[3px]"
-								/>
-							</Badge>
+							<img
+								key={platform}
+								src={platformIcon(platform)}
+								alt={platform}
+								className="h-3.5 w-3.5 rounded-[3px]"
+							/>
 						))}
 						无水印提取（视频 / 封面 / 图集 / 实况图）
 					</span>
