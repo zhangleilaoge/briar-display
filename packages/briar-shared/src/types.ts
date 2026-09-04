@@ -128,7 +128,7 @@ export interface SchedulerTaskInfo {
 }
 
 /**
- * 媒体解析结果（工具箱-媒体解析，支持小红书/抖音/微信公众号/X）
+ * 媒体解析结果（工具箱-媒体解析，支持小红书/抖音/微信公众号/X/B站）
  */
 export interface MediaParseResult {
 	platform: string

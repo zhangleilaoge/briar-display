@@ -4,6 +4,7 @@ import { HTTP_STATUS } from '@briar/shared'
 import { type Context, Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { authService } from '../services/authService'
+import { parseBilibili } from '../services/bilibiliMediaService'
 import { cosService } from '../services/cosService'
 import { parseDouyin } from '../services/douyinMediaService'
 import {
@@ -30,7 +31,7 @@ const RATE_WINDOW_MS = 60_000
 const UPSTREAM_UA =
 	'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
 
-/** 下载代理域名白名单（防止被当成开放代理）：小红书 CDN + 微信图床/视频 CDN + 抖音 CDN */
+/** 下载代理域名白名单（防止被当成开放代理）：小红书 CDN + 微信图床/视频 CDN + 抖音 CDN + B站 CDN */
 const ALLOWED_PROXY_HOST_SUFFIXES = [
 	'.xhscdn.com',
 	'.xiaohongshu.com',
@@ -44,6 +45,10 @@ const ALLOWED_PROXY_HOST_SUFFIXES = [
 	'.snssdk.com',
 	// X/Twitter 媒体 CDN（video.twimg.com / pbs.twimg.com，国内不可达，仅海外环境代理可用）
 	'.twimg.com',
+	// B站视频 CDN + 图片 CDN
+	'.bilivideo.com',
+	'.bilivideo.cn',
+	'.hdslb.com',
 ]
 
 /** 各平台 CDN 对应的 Referer */
@@ -57,6 +62,9 @@ const PLATFORM_REFERERS: [string, string][] = [
 	['.zjcdn.com', 'https://www.douyin.com/'],
 	['.snssdk.com', 'https://www.douyin.com/'],
 	['.twimg.com', 'https://x.com/'],
+	['.bilivideo.com', 'https://www.bilibili.com/'],
+	['.bilivideo.cn', 'https://www.bilibili.com/'],
+	['.hdslb.com', 'https://www.bilibili.com/'],
 ]
 
 function refererFor(host: string): string {
@@ -152,8 +160,8 @@ function getHostname(url: string): string | null {
 	}
 }
 
-/** 识别支持的平台：小红书走 catsapi，抖音/公众号文章走自研解析，X 走 fxtwitter */
-function detectPlatform(url: string): 'xhs' | 'wechat' | 'douyin' | 'x' | null {
+/** 识别支持的平台：小红书走 catsapi，抖音/公众号文章/B站走自研解析，X 走 fxtwitter */
+function detectPlatform(url: string): 'xhs' | 'wechat' | 'douyin' | 'x' | 'bilibili' | null {
 	const host = getHostname(url)
 	if (!host) return null
 	if (
@@ -171,6 +179,15 @@ function detectPlatform(url: string): 'xhs' | 'wechat' | 'douyin' | 'x' | null {
 		return 'douyin'
 	}
 	if (host === 'mp.weixin.qq.com') return 'wechat'
+	if (
+		host === 'bilibili.com' ||
+		host.endsWith('.bilibili.com') ||
+		// App 分享短链
+		host === 'b23.tv' ||
+		host.endsWith('.b23.tv')
+	) {
+		return 'bilibili'
+	}
 	if (
 		host === 'x.com' ||
 		host.endsWith('.x.com') ||
@@ -263,7 +280,7 @@ mediaRoutes.post('/parse', async (c) => {
 	const platform = url ? detectPlatform(url) : null
 	if (!url || !platform) {
 		return c.json<ApiResponse>(
-			{ success: false, message: '目前支持小红书、抖音、微信公众号、X(Twitter) 链接' },
+			{ success: false, message: '目前支持小红书、抖音、微信公众号、X(Twitter)、B站 链接' },
 			HTTP_STATUS.BAD_REQUEST,
 		)
 	}
@@ -283,7 +300,7 @@ mediaRoutes.post('/parse', async (c) => {
 			.saveCachedParse(person, url, platform, data)
 			.catch((err) => console.error('[MediaCache] 解析缓存写入失败:', err))
 
-	// 公众号文章/抖音走自研解析（catsapi 抖音通道 2026-09 起持续 502），X 走 fxtwitter，小红书转发 catsapi
+	// 公众号文章/抖音/B站走自研解析（catsapi 抖音通道 2026-09 起持续 502），X 走 fxtwitter，小红书转发 catsapi
 	if (platform === 'douyin') {
 		try {
 			const data = await parseDouyin(url)
@@ -298,6 +315,25 @@ mediaRoutes.post('/parse', async (c) => {
 			return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
 		} catch (err) {
 			console.error('Douyin parse failed:', err)
+			const message = err instanceof Error ? err.message : '解析失败，请稍后重试'
+			return c.json<ApiResponse>({ success: false, message }, HTTP_STATUS.INTERNAL_SERVER_ERROR)
+		}
+	}
+
+	if (platform === 'bilibili') {
+		try {
+			const data = await parseBilibili(url)
+			if (data.videos.length === 0) {
+				return c.json<ApiResponse>(
+					{ success: false, message: '未解析到可下载的媒体' },
+					HTTP_STATUS.INTERNAL_SERVER_ERROR,
+				)
+			}
+			await saveCache(data)
+			c.header('X-Cache', 'miss')
+			return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
+		} catch (err) {
+			console.error('Bilibili parse failed:', err)
 			const message = err instanceof Error ? err.message : '解析失败，请稍后重试'
 			return c.json<ApiResponse>({ success: false, message }, HTTP_STATUS.INTERNAL_SERVER_ERROR)
 		}
