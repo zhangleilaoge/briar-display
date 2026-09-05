@@ -8,6 +8,19 @@ import type { MediaParseResult } from '@briar/shared'
 
 export type MediaKind = 'cover' | 'video' | 'image' | 'live' | 'audio'
 
+/** 单项下载进度：百分比 + 已下载/总字节数（整拉兜底拿不到总量时只有百分比） */
+export interface MediaProgress {
+	percent: number
+	loaded?: number
+	total?: number
+}
+
+/** 字节数 → MB 文案（<100MB 保留 1 位小数，否则取整） */
+export const formatMb = (bytes: number) => {
+	const mb = bytes / 1048576
+	return mb < 100 ? mb.toFixed(1) : String(Math.round(mb))
+}
+
 export interface MediaItem {
 	id: string
 	kind: MediaKind

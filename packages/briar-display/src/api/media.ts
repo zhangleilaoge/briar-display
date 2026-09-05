@@ -69,30 +69,25 @@ const fetchChunkWithRetry = async (
 }
 
 /** 整拉（上游不支持 Range / 无法获知总大小时的兜底），不带超时上限，大文件慢慢下 */
-const fetchWhole = async (
-	url: string,
-	from: string | undefined,
-	onProgress?: (percent: number) => void,
-) => {
+const fetchWhole = async (url: string, from: string | undefined, onProgress?: MediaProgressFn) => {
 	const response = await apiClient.get<Blob>('/media/proxy', {
 		params: { url, from: from || undefined },
 		responseType: 'blob',
 		timeout: 0,
 		onDownloadProgress: (e) => {
 			if (onProgress && e.total) {
-				onProgress(Math.min(99, Math.round((e.loaded / e.total) * 100)))
+				onProgress(Math.min(99, Math.round((e.loaded / e.total) * 100)), e.loaded, e.total)
 			}
 		},
 	})
 	return response.data
 }
 
+/** 进度回调：percent 0-100，loaded/total 为字节数（未知时不传） */
+type MediaProgressFn = (percent: number, loaded?: number, total?: number) => void
+
 /** 经后端代理拉取媒体二进制（解决 CDN 防盗链/跨域）；from 为来源解析链接（服务端旁路缓存用） */
-export const fetchMediaBlob = async (
-	url: string,
-	onProgress?: (percent: number) => void,
-	from?: string,
-) => {
+export const fetchMediaBlob = async (url: string, onProgress?: MediaProgressFn, from?: string) => {
 	// twimg（X）国内服务器不可达，代理必然失败；其 CORS 开放（回显 Origin），浏览器直连优先，失败再试代理
 	if (new URL(url).hostname.endsWith('.twimg.com')) {
 		try {
@@ -115,7 +110,8 @@ export const fetchMediaBlob = async (
 	const total = probe.total
 	const report = (chunkLoaded: number) => {
 		if (onProgress && total > 0) {
-			onProgress(Math.min(99, Math.round(((downloaded + chunkLoaded) / total) * 100)))
+			const loaded = downloaded + chunkLoaded
+			onProgress(Math.min(99, Math.round((loaded / total) * 100)), loaded, total)
 		}
 	}
 
@@ -125,6 +121,6 @@ export const fetchMediaBlob = async (
 		parts.push(chunk.blob)
 		downloaded += chunk.blob.size
 	}
-	onProgress?.(100)
+	onProgress?.(100, total, total)
 	return new Blob(parts)
 }
