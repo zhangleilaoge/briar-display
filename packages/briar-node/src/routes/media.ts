@@ -23,9 +23,9 @@ const PARSE_API_URL = 'https://catsapi.com/api/labs/media-parser/parse'
 const PARSE_TIMEOUT_MS = 85_000
 const PROXY_TIMEOUT_MS = 120_000
 const MAX_INPUT_LENGTH = 2000
-/** 限频：parse 每 IP 每分钟 6 次；proxy 宽松些（视频 Range 流式 + 批量下载有突发） */
+/** 限频：parse 每 IP 每分钟 6 次；proxy 宽松些（视频 Range 流式 + 批量下载有突发 + 大文件分块下载每块 1 次） */
 const PARSE_RATE_LIMIT = 6
-const PROXY_RATE_LIMIT = 60
+const PROXY_RATE_LIMIT = 120
 const RATE_WINDOW_MS = 60_000
 
 const UPSTREAM_UA =
@@ -480,21 +480,27 @@ mediaRoutes.get('/proxy', async (c) => {
 			const cookie = getWechatCookieHeader()
 			if (cookie) reqHeaders.Cookie = cookie
 		}
-		// 预览带 Range（视频预加载/拖进度）：只拉客户端要的分段、纯透传不写缓存；
-		// 不带 Range 的 inline（<img> 全量加载）与下载一样落缓存——完整消费才配进缓存
+		// Range 透传：inline 预览（视频拖进度分段）和前端分块下载（大视频断点续传）都用；
+		// 带 Range 的响应不是完整文件，后面纯透传不落缓存
 		const range = c.req.header('range')
-		if (inline && range) reqHeaders.Range = range
-		// undici 偶发 "fetch failed"（连接池/网络抖动、CDN 边缘节点抽风），最多重试 3 次
+		if (range) reqHeaders.Range = range
+		// undici 偶发 "fetch failed"（连接池/网络抖动、CDN 边缘节点抽风），最多重试 3 次。
+		// 超时只掐「连接 + 等响应头」阶段：body 是流式转发，B站 GB 级长视频要传十几分钟，
+		// 整体 AbortSignal.timeout 会把正常下载拦腰截断（拿到响应头后立即 clearTimeout）
 		let upstream: Response | null = null
 		let lastErr: unknown = null
 		for (let attempt = 0; attempt < 3 && !upstream; attempt++) {
+			const controller = new AbortController()
+			const headersTimer = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS)
 			try {
 				upstream = await fetch(url, {
 					headers: reqHeaders,
-					signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
+					signal: controller.signal,
 					redirect: 'follow',
 				})
+				clearTimeout(headersTimer)
 			} catch (err) {
+				clearTimeout(headersTimer)
 				lastErr = err
 				if (attempt < 2) await new Promise((r) => setTimeout(r, 500 * (attempt + 1)))
 			}
@@ -532,8 +538,8 @@ mediaRoutes.get('/proxy', async (c) => {
 			if (value) headers[key] = value
 		}
 
-		// inline + Range（视频分段预览）：纯透传，不缓存（浏览器只读元数据/分段，拉了也传不完）
-		if (inline && range) {
+		// 带 Range（视频分段预览/前端分块下载）：纯透传，不缓存（分段不是完整文件，没资格进缓存）
+		if (range) {
 			return new Response(upstream.body, { status: upstream.status, headers })
 		}
 

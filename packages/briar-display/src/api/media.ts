@@ -11,6 +11,82 @@ export const parseMedia = async (url: string) => {
 	return response.data
 }
 
+/** 分块大小：32MB。445MB 的 B站长视频约 14 块，单块失败只需重拉这一块 */
+const CHUNK_SIZE = 32 * 1024 * 1024
+/** 单块失败重试次数（网络抖动容错）；单块 120s 超时，卡死也能触发重试 */
+const CHUNK_MAX_ATTEMPTS = 4
+const CHUNK_TIMEOUT_MS = 120_000
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+interface ChunkResult {
+	/** 206 = 分块；200 = 上游不支持 Range，响应里已是全量 */
+	status: number
+	blob: Blob
+	/** Content-Range 里的总大小（206 时存在） */
+	total: number | null
+}
+
+const fetchChunk = async (
+	url: string,
+	start: number,
+	end: number,
+	from: string | undefined,
+	onLoaded: (loaded: number) => void,
+): Promise<ChunkResult> => {
+	const response = await apiClient.get<Blob>('/media/proxy', {
+		params: { url, from: from || undefined },
+		responseType: 'blob',
+		timeout: CHUNK_TIMEOUT_MS,
+		headers: { Range: `bytes=${start}-${end}` },
+		onDownloadProgress: (e) => onLoaded(e.loaded),
+	})
+	const contentRange = response.headers['content-range'] as string | undefined
+	const total = contentRange ? Number(contentRange.split('/')[1]) || null : null
+	return { status: response.status, blob: response.data, total }
+}
+
+const fetchChunkWithRetry = async (
+	url: string,
+	start: number,
+	end: number,
+	from: string | undefined,
+	onLoaded: (loaded: number) => void,
+): Promise<ChunkResult> => {
+	let lastErr: unknown = null
+	for (let attempt = 0; attempt < CHUNK_MAX_ATTEMPTS; attempt++) {
+		try {
+			return await fetchChunk(url, start, end, from, onLoaded)
+		} catch (err) {
+			lastErr = err
+			// 4xx（签名过期/地址不支持）重试无意义，直接抛
+			const status = (err as { response?: { status?: number } })?.response?.status
+			if (status && status >= 400 && status < 500) throw err
+			if (attempt < CHUNK_MAX_ATTEMPTS - 1) await sleep(500 * (attempt + 1))
+		}
+	}
+	throw lastErr
+}
+
+/** 整拉（上游不支持 Range / 无法获知总大小时的兜底），不带超时上限，大文件慢慢下 */
+const fetchWhole = async (
+	url: string,
+	from: string | undefined,
+	onProgress?: (percent: number) => void,
+) => {
+	const response = await apiClient.get<Blob>('/media/proxy', {
+		params: { url, from: from || undefined },
+		responseType: 'blob',
+		timeout: 0,
+		onDownloadProgress: (e) => {
+			if (onProgress && e.total) {
+				onProgress(Math.min(99, Math.round((e.loaded / e.total) * 100)))
+			}
+		},
+	})
+	return response.data
+}
+
 /** 经后端代理拉取媒体二进制（解决 CDN 防盗链/跨域）；from 为来源解析链接（服务端旁路缓存用） */
 export const fetchMediaBlob = async (
 	url: string,
@@ -26,15 +102,33 @@ export const fetchMediaBlob = async (
 			// 直连失败（无梯子/网络问题），落到后端代理再试一次
 		}
 	}
-	const response = await apiClient.get<Blob>('/media/proxy', {
-		params: { url, from: from || undefined },
-		responseType: 'blob',
-		timeout: 300_000,
-		onDownloadProgress: (e) => {
-			if (onProgress && e.total) {
-				onProgress(Math.min(99, Math.round((e.loaded / e.total) * 100)))
-			}
-		},
-	})
-	return response.data
+
+	// 分块断点续传：第一块探路，206 则按 Content-Range 总量续拉剩余块，200（上游不支持 Range）直接用全量结果
+	const parts: Blob[] = []
+	let downloaded = 0
+	let total = 0
+	const report = (chunkLoaded: number) => {
+		if (onProgress && total > 0) {
+			onProgress(Math.min(99, Math.round(((downloaded + chunkLoaded) / total) * 100)))
+		}
+	}
+
+	const first = await fetchChunkWithRetry(url, 0, CHUNK_SIZE - 1, from, report)
+	parts.push(first.blob)
+	// 上游不支持 Range（200 全量），或 206 但没给总大小（无法续拉，放弃已下的块整拉兜底）
+	if (first.status !== 206) return first.blob
+	if (!first.total) return fetchWhole(url, from, onProgress)
+
+	downloaded = first.blob.size
+	total = first.total
+	if (total <= downloaded) return first.blob
+
+	while (downloaded < total) {
+		const end = Math.min(downloaded + CHUNK_SIZE, total) - 1
+		const chunk = await fetchChunkWithRetry(url, downloaded, end, from, report)
+		parts.push(chunk.blob)
+		downloaded += chunk.blob.size
+	}
+	onProgress?.(100)
+	return new Blob(parts)
 }
