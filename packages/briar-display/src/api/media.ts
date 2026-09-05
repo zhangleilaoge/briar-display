@@ -103,25 +103,21 @@ export const fetchMediaBlob = async (
 		}
 	}
 
-	// 分块断点续传：第一块探路，206 则按 Content-Range 总量续拉剩余块，200（上游不支持 Range）直接用全量结果
+	// 分块断点续传：先用 1 字节探总大小（Content-Range），进度从第 0 字节起就有总量可算，
+	// 不会在第一块（32MB，慢网要一分钟）期间傻显示 0%
+	const probe = await fetchChunkWithRetry(url, 0, 0, from, () => {})
+	// 上游不支持 Range（200 全量），或 206 但没给总大小（无法续拉，整拉兜底）
+	if (probe.status !== 206) return probe.blob
+	if (!probe.total) return fetchWhole(url, from, onProgress)
+
 	const parts: Blob[] = []
 	let downloaded = 0
-	let total = 0
+	const total = probe.total
 	const report = (chunkLoaded: number) => {
 		if (onProgress && total > 0) {
 			onProgress(Math.min(99, Math.round(((downloaded + chunkLoaded) / total) * 100)))
 		}
 	}
-
-	const first = await fetchChunkWithRetry(url, 0, CHUNK_SIZE - 1, from, report)
-	parts.push(first.blob)
-	// 上游不支持 Range（200 全量），或 206 但没给总大小（无法续拉，放弃已下的块整拉兜底）
-	if (first.status !== 206) return first.blob
-	if (!first.total) return fetchWhole(url, from, onProgress)
-
-	downloaded = first.blob.size
-	total = first.total
-	if (total <= downloaded) return first.blob
 
 	while (downloaded < total) {
 		const end = Math.min(downloaded + CHUNK_SIZE, total) - 1
