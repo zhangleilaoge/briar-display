@@ -12,6 +12,7 @@ import ToolsLayout from './ToolsLayout'
 import {
 	type MediaHistoryItem,
 	type MediaItem,
+	type MediaProgress,
 	type MediaSections,
 	buildMediaSections,
 	createZip,
@@ -31,8 +32,8 @@ export default function ToolMediaPage() {
 	const [result, setResult] = useState<MediaParseResult | null>(null)
 	const [sections, setSections] = useState<MediaSections | null>(null)
 	const [selected, setSelected] = useState<Set<string>>(new Set())
-	// 下载中状态：itemId → 进度百分比（0-99），完成或失败后移除
-	const [progress, setProgress] = useState<Record<string, number>>({})
+	// 下载中状态：itemId → 进度（百分比 + 已下载字节数），完成或失败后移除
+	const [progress, setProgress] = useState<Record<string, MediaProgress>>({})
 	const [zipping, setZipping] = useState(false)
 	const [zipPercent, setZipPercent] = useState(0)
 	// 「添加到文件」弹窗目标（单个或多个媒体项）
@@ -50,13 +51,13 @@ export default function ToolMediaPage() {
 		saveMediaHistory(history)
 	}, [history])
 
-	const setItemProgress = (id: string, percent: number | null) => {
+	const setItemProgress = (id: string, value: MediaProgress | null) => {
 		setProgress((prev) => {
 			const next = { ...prev }
-			if (percent === null) {
+			if (value === null) {
 				delete next[id]
 			} else {
-				next[id] = percent
+				next[id] = value
 			}
 			return next
 		})
@@ -111,11 +112,11 @@ export default function ToolMediaPage() {
 	}
 
 	const downloadItem = async (item: MediaItem): Promise<Uint8Array | null> => {
-		setItemProgress(item.id, 0)
+		setItemProgress(item.id, { percent: 0 })
 		try {
 			const blob = await fetchMediaBlob(
 				item.url,
-				(p) => setItemProgress(item.id, p),
+				(p, loaded, total) => setItemProgress(item.id, { percent: p, loaded, total }),
 				item.sourceUrl,
 			)
 			return new Uint8Array(await blob.arrayBuffer())

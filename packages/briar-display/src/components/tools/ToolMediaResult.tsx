@@ -10,7 +10,9 @@ import { toast } from 'sonner'
 import ToolMediaLightbox from './ToolMediaLightbox'
 import {
 	type MediaItem,
+	type MediaProgress,
 	type MediaSections,
+	formatMb,
 	platformIcon,
 	platformLabel,
 	probeMediaError,
@@ -20,7 +22,7 @@ interface ToolMediaResultProps {
 	result: MediaParseResult
 	sections: MediaSections
 	selected: Set<string>
-	progress: Record<string, number>
+	progress: Record<string, MediaProgress>
 	zipping: boolean
 	zipPercent: number
 	/** 是否已登录（未登录隐藏「添加到」按钮，下载/打包仍可用） */
@@ -35,20 +37,29 @@ interface ToolMediaResultProps {
 /** 单个媒体项的操作按钮：下载 + 添加到文件 */
 function ItemActions({
 	item,
-	percent,
+	prog,
 	disabled,
 	canAddTo,
 	onDownload,
 	onAddTo,
 }: {
 	item: MediaItem
-	percent: number | undefined
+	prog: MediaProgress | undefined
 	disabled: boolean
 	canAddTo: boolean
 	onDownload: (item: MediaItem) => void
 	onAddTo: (items: MediaItem[]) => void
 }) {
-	const downloading = percent !== undefined
+	const downloading = prog !== undefined
+	// 下载中：百分比 + 已下载量（整拉兜底拿不到总量时只显示已下载）
+	const progressText = (() => {
+		if (!prog) return ''
+		if (prog.loaded === undefined) return `${prog.percent}%`
+		const loadedMb = formatMb(prog.loaded)
+		return prog.total !== undefined
+			? `${prog.percent}% · ${loadedMb}/${formatMb(prog.total)}MB`
+			: `${prog.percent}% · ${loadedMb}MB`
+	})()
 	return (
 		<div className="flex items-center gap-1.5">
 			<Button
@@ -62,7 +73,7 @@ function ItemActions({
 				) : (
 					<Download className="mr-1.5 h-4 w-4" />
 				)}
-				{downloading ? `${percent}%` : '下载'}
+				{downloading ? progressText : '下载'}
 			</Button>
 			{canAddTo && (
 				<Button
@@ -157,7 +168,7 @@ export default function ToolMediaResult({
 						<div>
 							<ItemActions
 								item={sections.cover}
-								percent={progress[sections.cover.id]}
+								prog={progress[sections.cover.id]}
 								disabled={zipping}
 								canAddTo={canAddTo}
 								onDownload={onDownload}
@@ -175,7 +186,7 @@ export default function ToolMediaResult({
 						<h2 className="font-semibold">{video.label}</h2>
 						<ItemActions
 							item={video}
-							percent={progress[video.id]}
+							prog={progress[video.id]}
 							disabled={zipping}
 							canAddTo={canAddTo}
 							onDownload={onDownload}
@@ -255,7 +266,7 @@ export default function ToolMediaResult({
 										<span className="text-sm">{image.label}</span>
 										<ItemActions
 											item={image}
-											percent={progress[image.id]}
+											prog={progress[image.id]}
 											disabled={zipping}
 											canAddTo={canAddTo}
 											onDownload={onDownload}
@@ -292,7 +303,7 @@ export default function ToolMediaResult({
 									<span className="text-sm">{live.label}</span>
 									<ItemActions
 										item={live}
-										percent={progress[live.id]}
+										prog={progress[live.id]}
 										disabled={zipping}
 										canAddTo={canAddTo}
 										onDownload={onDownload}
@@ -324,7 +335,7 @@ export default function ToolMediaResult({
 					)}
 					<ItemActions
 						item={sections.audio}
-						percent={progress[sections.audio.id]}
+						prog={progress[sections.audio.id]}
 						disabled={zipping}
 						canAddTo={canAddTo}
 						onDownload={onDownload}
