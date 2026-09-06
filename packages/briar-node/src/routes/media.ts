@@ -14,6 +14,7 @@ import {
 } from '../services/mediaCacheService'
 import { permissionService } from '../services/permissionService'
 import { getWechatCookieHeader, parseWechatArticle } from '../services/wechatMediaService'
+import { parseXhs } from '../services/xhsMediaService'
 
 const mediaRoutes = new Hono()
 
@@ -160,7 +161,7 @@ function getHostname(url: string): string | null {
 	}
 }
 
-/** 识别支持的平台：小红书走 catsapi，抖音/公众号文章/B站走自研解析，X 走 fxtwitter */
+/** 识别支持的平台：小红书走 catsapi（失败回退自研解析），抖音/公众号文章/B站走自研解析，X 走 fxtwitter */
 function detectPlatform(url: string): 'xhs' | 'wechat' | 'douyin' | 'x' | 'bilibili' | null {
 	const host = getHostname(url)
 	if (!host) return null
@@ -377,6 +378,7 @@ mediaRoutes.post('/parse', async (c) => {
 		}
 	}
 
+	// 小红书：优先转发 catsapi，失败回退自研解析（catsapi 2026-09 起持续 502，实际靠兜底在跑）
 	try {
 		const upstream = await fetch(PARSE_API_URL, {
 			method: 'POST',
@@ -390,25 +392,30 @@ mediaRoutes.post('/parse', async (c) => {
 				.then((d) => (d as { detail?: string })?.detail)
 				.catch(() => null)
 			console.error(`catsapi parse HTTP ${upstream.status} for ${url}`)
-			return c.json<ApiResponse>(
-				{
-					success: false,
-					message: detail || '解析服务暂时不可用，请稍后重试',
-				},
-				HTTP_STATUS.INTERNAL_SERVER_ERROR,
-			)
+			throw new Error(detail || '解析服务暂时不可用，请稍后重试')
 		}
 		const data = (await upstream.json()) as MediaParseResult
 		await saveCache(data)
 		c.header('X-Cache', 'miss')
 		return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
-	} catch (err) {
-		console.error('Media parse failed:', err)
-		const message =
-			err instanceof Error && err.name === 'TimeoutError'
-				? '解析超时，请重试'
-				: '解析失败，请稍后重试'
-		return c.json<ApiResponse>({ success: false, message }, HTTP_STATUS.INTERNAL_SERVER_ERROR)
+	} catch (catsErr) {
+		console.error('catsapi xhs parse failed, 回退自研解析:', catsErr)
+		try {
+			const data = await parseXhs(url)
+			if (data.images.length === 0 && data.videos.length === 0 && data.live_photos.length === 0) {
+				return c.json<ApiResponse>(
+					{ success: false, message: '未解析到可下载的媒体' },
+					HTTP_STATUS.INTERNAL_SERVER_ERROR,
+				)
+			}
+			await saveCache(data)
+			c.header('X-Cache', 'miss')
+			return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
+		} catch (err) {
+			console.error('Xhs parse failed:', err)
+			const message = err instanceof Error ? err.message : '解析失败，请稍后重试'
+			return c.json<ApiResponse>({ success: false, message }, HTTP_STATUS.INTERNAL_SERVER_ERROR)
+		}
 	}
 })
 
