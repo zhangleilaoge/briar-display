@@ -25,11 +25,15 @@ interface XhsNote {
 	type?: string
 	imageList?: XhsImage[]
 	video?: { media?: { stream?: Record<string, XhsStream[]> } }
-	user?: { nickname?: string; userId?: string }
+	/** 桌面端页面是 nickname，移动端页面是 nickName */
+	user?: { nickname?: string; nickName?: string; userId?: string }
 }
 
 interface XhsInitialState {
+	/** 桌面端笔记页 */
 	note?: { noteDetailMap?: Record<string, { note?: XhsNote }> }
+	/** 移动端笔记页（网页端受限笔记在桌面端拿不到数据，移动端壳可以） */
+	noteData?: { data?: { noteData?: XhsNote } }
 }
 
 /** 笔记 ID：/explore/{id} 或老路径 /discovery/item/{id} */
@@ -115,8 +119,46 @@ const pickStream = (stream?: Record<string, XhsStream[]>): string | null => {
 const pickImageUrl = (img: XhsImage): string | null =>
 	img.urlDefault || img.urlPre || img.url || null
 
+const MOBILE_UA =
+	'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+
+const fetchNoteHtml = async (url: string, ua: string): Promise<string> => {
+	const res = await fetch(url, {
+		headers: {
+			'User-Agent': ua,
+			Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+			// 风控对请求头指纹敏感，补全浏览器常见头降低概率性拦截
+			'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+		},
+		signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+		redirect: 'follow',
+	})
+	if (!res.ok) throw new Error(`笔记页抓取失败（HTTP ${res.status}），请稍后重试`)
+	return res.text()
+}
+
+/** 桌面端 state → 笔记（noteDetailMap 里 noteId 匹配或第一条；空对象视为未命中） */
+const pickDesktopNote = (state: XhsInitialState | null, noteId: string): XhsNote | null => {
+	const detailMap = state?.note?.noteDetailMap
+	if (!detailMap) return null
+	const entries = Object.values(detailMap).filter((e) => e.note)
+	const note = (entries.find((e) => e.note?.noteId === noteId) || entries[0])?.note
+	// 受限内容页 noteDetailMap 有键但 note 是空对象（undertake_note_error=该内容暂时无法查看）
+	return note && Object.keys(note).length > 0 ? note : null
+}
+
+/** 移动端 state → 笔记（结构在 noteData.data.noteData） */
+const pickMobileNote = (state: XhsInitialState | null, noteId: string): XhsNote | null => {
+	const note = state?.noteData?.data?.noteData
+	if (!note || Object.keys(note).length === 0) return null
+	// 移动端笔记页可能 302 回信息流/他笔记，核对 ID
+	return !note.noteId || note.noteId === noteId ? note : null
+}
+
 /**
- * 小红书自研解析（catsapi 的兜底）：短链跟 302 → GET 笔记页 HTML → __INITIAL_STATE__ 直出全部媒体。
+ * 小红书自研解析（catsapi 的兜底）：短链手动跟 302 → GET 笔记页 HTML → __INITIAL_STATE__ 直出全部媒体。
+ * 移动端 UA 优先（noteData.data.noteData）：网页端受限笔记（桌面壳 note 为空对象）移动端能出数据，
+ * 普通图文/视频也都覆盖；被按 IP 概率风控（拦到 /404/sec_ 页）时隔 2s 换桌面端（noteDetailMap）兜底。
  * 硬门槛是 xsec_token（短链跳转自带）；不带 token 会被拦到安全页（error 300031）。
  * 媒体地址都是 xhscdn.com 的 http 链接，由前端/代理统一升级 https。
  */
@@ -125,26 +167,13 @@ export const parseXhs = async (input: string): Promise<MediaParseResult> => {
 	const noteId = extractNoteId(url)
 	if (!noteId) throw new Error('无效的小红书笔记链接')
 
-	const res = await fetch(url, {
-		headers: { 'User-Agent': XHS_UA, Accept: 'text/html,application/xhtml+xml' },
-		signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-		redirect: 'follow',
-	})
-	if (!res.ok) throw new Error(`笔记页抓取失败（HTTP ${res.status}），请稍后重试`)
-	const html = await res.text()
-
-	const state = extractInitialState(html)
-	const detailMap = state?.note?.noteDetailMap
-	if (!detailMap) {
-		// 风控安全页（300031）/ 登录墙都拿不到 noteDetailMap
-		throw new Error('笔记解析失败（链接失效或触发小红书风控），请稍后重试')
+	let note = pickMobileNote(extractInitialState(await fetchNoteHtml(url, MOBILE_UA)), noteId)
+	if (!note) {
+		// 移动端被拦：笔记页接口按 IP 限频，连续两发必有一发被拦，隔 2s 再试桌面端
+		await new Promise((r) => setTimeout(r, 2000))
+		note = pickDesktopNote(extractInitialState(await fetchNoteHtml(url, XHS_UA)), noteId)
 	}
-	const entries = Object.values(detailMap).filter((e) => e.note)
-	const note = (entries.find((e) => e.note?.noteId === noteId) || entries[0])?.note
-	if (!note || Object.keys(note).length === 0) {
-		// 受限内容页 noteDetailMap 有键但 note 是空对象（undertake_note_error=该内容暂时无法查看）
-		throw new Error('该笔记暂时无法查看（内容受平台限制或已被删除）')
-	}
+	if (!note) throw new Error('笔记解析失败（链接失效、内容受限或触发小红书风控），请稍后重试')
 
 	const imageList = note.imageList || []
 	const images = imageList.map(pickImageUrl).filter((u): u is string => Boolean(u))
@@ -163,9 +192,13 @@ export const parseXhs = async (input: string): Promise<MediaParseResult> => {
 	return {
 		platform: 'xiaohongshu',
 		title: note.title || '',
-		author: note.user?.nickname
-			? { name: note.user.nickname, uid: note.user.userId || undefined }
-			: null,
+		author:
+			note.user?.nickname || note.user?.nickName
+				? {
+						name: (note.user.nickname || note.user.nickName) as string,
+						uid: note.user.userId || undefined,
+					}
+				: null,
 		cover: images[0] || null,
 		video_url: videos[0] || null,
 		audio_url: null,
