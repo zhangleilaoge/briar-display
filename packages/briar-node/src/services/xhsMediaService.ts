@@ -122,14 +122,19 @@ const pickImageUrl = (img: XhsImage): string | null =>
 const MOBILE_UA =
 	'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 
+/** 可选：小红书网页登录 Cookie（.env 配 BRIAR_XHS_COOKIE）。网页端受限笔记（桌面壳空 note）带登录态大概率放行 */
+const XHS_COOKIE = process.env.BRIAR_XHS_COOKIE || ''
+
 const fetchNoteHtml = async (url: string, ua: string): Promise<string> => {
+	const headers: Record<string, string> = {
+		'User-Agent': ua,
+		Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+		// 风控对请求头指纹敏感，补全浏览器常见头降低概率性拦截
+		'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+	}
+	if (XHS_COOKIE) headers.Cookie = XHS_COOKIE
 	const res = await fetch(url, {
-		headers: {
-			'User-Agent': ua,
-			Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-			// 风控对请求头指纹敏感，补全浏览器常见头降低概率性拦截
-			'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-		},
+		headers,
 		signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
 		redirect: 'follow',
 	})
