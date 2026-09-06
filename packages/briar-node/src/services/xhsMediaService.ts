@@ -32,7 +32,28 @@ interface XhsInitialState {
 	note?: { noteDetailMap?: Record<string, { note?: XhsNote }> }
 }
 
-/** xhslink 短链跟随 302 拿完整笔记 URL（含 xsec_token）；跳到裸首页说明短链已失效/笔记已删 */
+/** 笔记 ID：/explore/{id} 或老路径 /discovery/item/{id} */
+const extractNoteId = (url: string) =>
+	url.match(/\/(?:explore|discovery\/item)\/([0-9a-f]{24})/)?.[1]
+
+/** 统一成 /explore/{id}?xsec_token=...（老路径 discovery/item 会 302 到信息流丢失笔记，必须改写） */
+const normalizeNoteUrl = (url: string): string | null => {
+	const id = extractNoteId(url)
+	if (!id) return null
+	let token = ''
+	try {
+		token = new URL(url).searchParams.get('xsec_token') || ''
+	} catch {
+		// 保持空
+	}
+	return `https://www.xiaohongshu.com/explore/${id}${token ? `?xsec_token=${encodeURIComponent(token)}` : ''}`
+}
+
+/**
+ * xhslink 短链解析：手动跟 302（不能用 redirect:follow——中间态 discovery/item 老路径
+ * 会继续 302 到 /explore 信息流，最终 URL 丢失笔记 ID），拿到第一个含笔记 ID 的 Location 即停；
+ * 全程没有笔记 ID（如跳到裸首页）说明短链已失效/笔记已删
+ */
 const resolveShareUrl = async (url: string): Promise<string> => {
 	const host = (() => {
 		try {
@@ -41,20 +62,25 @@ const resolveShareUrl = async (url: string): Promise<string> => {
 			return ''
 		}
 	})()
-	if (!host.includes('xhslink.')) return url
-	const res = await fetch(url, {
-		headers: { 'User-Agent': XHS_UA, Accept: 'text/html,application/xhtml+xml' },
-		signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-		redirect: 'follow',
-	})
-	const finalUrl = res.url || url
-	if (!extractNoteId(finalUrl)) throw new Error('链接已失效或笔记已被删除')
-	return finalUrl
-}
+	if (!host.includes('xhslink.')) return normalizeNoteUrl(url) || url
 
-/** 笔记 ID：/explore/{id} 或老路径 /discovery/item/{id} */
-const extractNoteId = (url: string) =>
-	url.match(/\/(?:explore|discovery\/item)\/([0-9a-f]{24})/)?.[1]
+	let current = url
+	for (let i = 0; i < 5; i++) {
+		const res = await fetch(current, {
+			headers: { 'User-Agent': XHS_UA, Accept: 'text/html,application/xhtml+xml' },
+			signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+			redirect: 'manual',
+		})
+		res.body?.cancel()
+		const location = res.headers.get('location')
+		if (res.status < 300 || res.status >= 400 || !location) break
+		const absolute = new URL(location, current).href
+		const normalized = normalizeNoteUrl(absolute)
+		if (normalized) return normalized
+		current = absolute
+	}
+	throw new Error('链接已失效或笔记已被删除')
+}
 
 /**
  * 抠页面内嵌的 window.__INITIAL_STATE__ JSON。
@@ -115,7 +141,10 @@ export const parseXhs = async (input: string): Promise<MediaParseResult> => {
 	}
 	const entries = Object.values(detailMap).filter((e) => e.note)
 	const note = (entries.find((e) => e.note?.noteId === noteId) || entries[0])?.note
-	if (!note) throw new Error('笔记数据为空，请稍后重试')
+	if (!note || Object.keys(note).length === 0) {
+		// 受限内容页 noteDetailMap 有键但 note 是空对象（undertake_note_error=该内容暂时无法查看）
+		throw new Error('该笔记暂时无法查看（内容受平台限制或已被删除）')
+	}
 
 	const imageList = note.imageList || []
 	const images = imageList.map(pickImageUrl).filter((u): u is string => Boolean(u))
