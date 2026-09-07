@@ -1,7 +1,16 @@
 ---
-// /briar/admin 重定向到 /briar/admin/permissions
+// /briar/admin 重定向到上次访问的后台 tab，默认权限管理
 ---
 
 <script>
-	window.location.replace('/briar/admin/permissions')
+	const ADMIN_PATHS = [
+		'/briar/admin/permissions',
+		'/briar/admin/users',
+		'/briar/admin/logs',
+		'/briar/admin/sql',
+		'/briar/admin/deploy',
+		'/briar/admin/terminal',
+	]
+	const last = localStorage.getItem('briar_admin_last_tab')
+	window.location.replace(last && ADMIN_PATHS.includes(last) ? last : ADMIN_PATHS[0])
 </script>

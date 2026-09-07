@@ -15,10 +15,13 @@ import DeployLogDialog from '@/components/admin/DeployLogDialog'
 import SchedulerTasksCard from '@/components/admin/SchedulerTasksCard'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import {
 	AlertTriangle,
+	ChevronDown,
+	ChevronUp,
 	FileBadge,
 	FileTerminal,
 	Globe,
@@ -58,6 +61,9 @@ const TRIGGER_LABEL: Record<CertRenewalItem['triggerType'], string> = {
 
 const RUNNING_DEPLOY_STATUS = ['in_progress', 'queued', 'waiting', 'requested']
 
+/** 列表默认展示条数，超出折叠为「加载更多」 */
+const COLLAPSED_COUNT = 3
+
 function deployStatusBadge(status: string) {
 	if (status === 'success') return <Badge className="bg-green-100 text-green-700">成功</Badge>
 	if (status === 'failure') return <Badge className="bg-red-100 text-red-700">失败</Badge>
@@ -66,6 +72,32 @@ function deployStatusBadge(status: string) {
 		return <Badge className="animate-pulse bg-blue-100 text-blue-700">进行中</Badge>
 	}
 	return <Badge className="bg-gray-100 text-gray-600">{status}</Badge>
+}
+
+/** commit message 单元格：单行截断，hover 弹窗查看全文 */
+function CommitMsgCell({ msg }: { msg?: string }) {
+	const [open, setOpen] = useState(false)
+	if (!msg) return <span className="text-xs text-muted-foreground">-</span>
+	return (
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger asChild>
+				<span
+					className="block max-w-[240px] cursor-default truncate text-xs"
+					onMouseEnter={() => setOpen(true)}
+					onMouseLeave={() => setOpen(false)}
+				>
+					{msg.split('\n')[0]}
+				</span>
+			</PopoverTrigger>
+			<PopoverContent
+				className="w-80 whitespace-pre-wrap break-words text-xs"
+				onMouseEnter={() => setOpen(true)}
+				onMouseLeave={() => setOpen(false)}
+			>
+				{msg}
+			</PopoverContent>
+		</Popover>
+	)
 }
 
 function CertInfoBlock({
@@ -123,8 +155,13 @@ function AdminDeployPageInner() {
 	const [certStatus, setCertStatus] = useState<CertStatus | null>(null)
 	const [renewals, setRenewals] = useState<CertRenewalItem[]>([])
 	const [history, setHistory] = useState<DeployHistoryItem[]>([])
-	const [loading, setLoading] = useState(true)
+	// 各区块独立 loading，互不阻塞（最慢的证书状态不拖其他区块）
+	const [statusLoading, setStatusLoading] = useState(true)
+	const [renewalsLoading, setRenewalsLoading] = useState(true)
+	const [historyLoading, setHistoryLoading] = useState(true)
 	const [nginxDeploying, setNginxDeploying] = useState(false)
+	const [renewalsExpanded, setRenewalsExpanded] = useState(false)
+	const [historyExpanded, setHistoryExpanded] = useState(false)
 	const [logRunId, setLogRunId] = useState<string | null>(null)
 	const [logOpen, setLogOpen] = useState(false)
 	const wasRunningRef = useRef(false)
@@ -145,7 +182,9 @@ function AdminDeployPageInner() {
 	}, [])
 
 	useEffect(() => {
-		Promise.all([fetchStatus(), fetchRenewals(), fetchHistory()]).finally(() => setLoading(false))
+		fetchStatus().finally(() => setStatusLoading(false))
+		fetchRenewals().finally(() => setRenewalsLoading(false))
+		fetchHistory().finally(() => setHistoryLoading(false))
 	}, [fetchStatus, fetchRenewals, fetchHistory])
 
 	// 有进行中的部署时轮询列表，状态翻转后自动停止
@@ -251,7 +290,7 @@ function AdminDeployPageInner() {
 							<Badge className="bg-yellow-100 text-yellow-700">本地与线上不一致</Badge>
 						))}
 				</div>
-				{loading ? (
+				{statusLoading ? (
 					<div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
 						<Loader2 className="h-4 w-4 animate-spin" />
 						加载中...
@@ -308,7 +347,7 @@ function AdminDeployPageInner() {
 					<RefreshCw className="h-4 w-4 text-muted-foreground" />
 					<h2 className="text-sm font-semibold">续期记录</h2>
 				</div>
-				{loading ? (
+				{renewalsLoading ? (
 					<div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
 						<Loader2 className="h-4 w-4 animate-spin" />
 						加载中...
@@ -316,62 +355,90 @@ function AdminDeployPageInner() {
 				) : renewals.length === 0 ? (
 					<p className="py-8 text-center text-xs text-muted-foreground">暂无续期记录</p>
 				) : (
-					<div className="rounded-md border">
-						<table className="w-full text-sm">
-							<thead>
-								<tr className="border-b bg-muted/50">
-									<th className="px-3 py-2 text-left font-medium text-muted-foreground">
-										开始时间
-									</th>
-									<th className="px-3 py-2 text-left font-medium text-muted-foreground">
-										触发方式
-									</th>
-									<th className="px-3 py-2 text-left font-medium text-muted-foreground">状态</th>
-									<th className="px-3 py-2 text-right font-medium text-muted-foreground">耗时</th>
-									<th className="hidden px-3 py-2 text-left font-medium text-muted-foreground lg:table-cell">
-										信息
-									</th>
-								</tr>
-							</thead>
-							<tbody className="divide-y">
-								{renewals.map((item) => {
-									const status = RENEWAL_STATUS[item.status]
-									const duration = item.finishedAt
-										? Math.round(
-												(new Date(item.finishedAt).getTime() - new Date(item.startedAt).getTime()) /
-													1000,
+					<>
+						<div className="rounded-md border">
+							<table className="w-full text-sm">
+								<thead>
+									<tr className="border-b bg-muted/50">
+										<th className="px-3 py-2 text-left font-medium text-muted-foreground">
+											开始时间
+										</th>
+										<th className="px-3 py-2 text-left font-medium text-muted-foreground">
+											触发方式
+										</th>
+										<th className="px-3 py-2 text-left font-medium text-muted-foreground">状态</th>
+										<th className="px-3 py-2 text-right font-medium text-muted-foreground">耗时</th>
+										<th className="hidden px-3 py-2 text-left font-medium text-muted-foreground lg:table-cell">
+											信息
+										</th>
+									</tr>
+								</thead>
+								<tbody className="divide-y">
+									{(renewalsExpanded ? renewals : renewals.slice(0, COLLAPSED_COUNT)).map(
+										(item) => {
+											const status = RENEWAL_STATUS[item.status]
+											const duration = item.finishedAt
+												? Math.round(
+														(new Date(item.finishedAt).getTime() -
+															new Date(item.startedAt).getTime()) /
+															1000,
+													)
+												: null
+											return (
+												<tr key={item.id}>
+													<td className="whitespace-nowrap px-3 py-2 font-mono text-xs">
+														{formatTime(item.startedAt)}
+													</td>
+													<td className="px-3 py-2 text-xs">{TRIGGER_LABEL[item.triggerType]}</td>
+													<td className="px-3 py-2">
+														<Badge
+															variant="secondary"
+															className={`text-[11px] ${status.className}`}
+														>
+															{status.label}
+														</Badge>
+													</td>
+													<td className="whitespace-nowrap px-3 py-2 text-right font-mono text-xs">
+														{duration === null
+															? '-'
+															: duration >= 60
+																? `${Math.floor(duration / 60)}m${duration % 60}s`
+																: `${duration}s`}
+													</td>
+													<td
+														className="hidden max-w-[300px] truncate px-3 py-2 text-xs text-muted-foreground lg:table-cell"
+														title={item.message || ''}
+													>
+														{item.message || '-'}
+													</td>
+												</tr>
 											)
-										: null
-									return (
-										<tr key={item.id}>
-											<td className="whitespace-nowrap px-3 py-2 font-mono text-xs">
-												{formatTime(item.startedAt)}
-											</td>
-											<td className="px-3 py-2 text-xs">{TRIGGER_LABEL[item.triggerType]}</td>
-											<td className="px-3 py-2">
-												<Badge variant="secondary" className={`text-[11px] ${status.className}`}>
-													{status.label}
-												</Badge>
-											</td>
-											<td className="whitespace-nowrap px-3 py-2 text-right font-mono text-xs">
-												{duration === null
-													? '-'
-													: duration >= 60
-														? `${Math.floor(duration / 60)}m${duration % 60}s`
-														: `${duration}s`}
-											</td>
-											<td
-												className="hidden max-w-[300px] truncate px-3 py-2 text-xs text-muted-foreground lg:table-cell"
-												title={item.message || ''}
-											>
-												{item.message || '-'}
-											</td>
-										</tr>
-									)
-								})}
-							</tbody>
-						</table>
-					</div>
+										},
+									)}
+								</tbody>
+							</table>
+						</div>
+						{renewals.length > COLLAPSED_COUNT && (
+							<Button
+								variant="ghost"
+								size="sm"
+								className="mt-2 w-full gap-1 text-xs text-muted-foreground"
+								onClick={() => setRenewalsExpanded((v) => !v)}
+							>
+								{renewalsExpanded ? (
+									<>
+										<ChevronUp className="h-3.5 w-3.5" />
+										收起
+									</>
+								) : (
+									<>
+										<ChevronDown className="h-3.5 w-3.5" />
+										加载更多（还有 {renewals.length - COLLAPSED_COUNT} 条）
+									</>
+								)}
+							</Button>
+						)}
+					</>
 				)}
 			</div>
 
@@ -381,7 +448,7 @@ function AdminDeployPageInner() {
 					<Rocket className="h-4 w-4 text-muted-foreground" />
 					<h2 className="text-sm font-semibold">部署记录</h2>
 				</div>
-				{loading ? (
+				{historyLoading ? (
 					<div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
 						<Loader2 className="h-4 w-4 animate-spin" />
 						加载中...
@@ -391,47 +458,81 @@ function AdminDeployPageInner() {
 						暂无部署记录（deploy-history.jsonl 仅存在于服务器）
 					</p>
 				) : (
-					<div className="rounded-md border">
-						<table className="w-full text-sm">
-							<thead>
-								<tr className="border-b bg-muted/50">
-									<th className="px-3 py-2 text-left font-medium text-muted-foreground">时间</th>
-									<th className="px-3 py-2 text-left font-medium text-muted-foreground">Commit</th>
-									<th className="px-3 py-2 text-left font-medium text-muted-foreground">触发者</th>
-									<th className="px-3 py-2 text-left font-medium text-muted-foreground">状态</th>
-									<th className="px-3 py-2 text-right font-medium text-muted-foreground">操作</th>
-								</tr>
-							</thead>
-							<tbody className="divide-y">
-								{history.map((item, index) => (
-									<tr key={`${item.run}-${index}`}>
-										<td className="whitespace-nowrap px-3 py-2 font-mono text-xs">
-											{formatTime(item.at)}
-										</td>
-										<td className="px-3 py-2 font-mono text-xs">{item.commit.slice(0, 7)}</td>
-										<td className="px-3 py-2 text-xs">{item.actor}</td>
-										<td className="px-3 py-2">{deployStatusBadge(item.status)}</td>
-										<td className="px-3 py-2 text-right">
-											{item.run && (
-												<Button
-													variant="ghost"
-													size="sm"
-													className="h-7 gap-1 px-2 text-xs"
-													onClick={() => {
-														setLogRunId(item.run)
-														setLogOpen(true)
-													}}
-												>
-													<FileTerminal className="h-3.5 w-3.5" />
-													发布日志
-												</Button>
-											)}
-										</td>
+					<>
+						<div className="rounded-md border">
+							<table className="w-full text-sm">
+								<thead>
+									<tr className="border-b bg-muted/50">
+										<th className="px-3 py-2 text-left font-medium text-muted-foreground">时间</th>
+										<th className="px-3 py-2 text-left font-medium text-muted-foreground">
+											Commit
+										</th>
+										<th className="hidden px-3 py-2 text-left font-medium text-muted-foreground lg:table-cell">
+											提交信息
+										</th>
+										<th className="px-3 py-2 text-left font-medium text-muted-foreground">
+											触发者
+										</th>
+										<th className="px-3 py-2 text-left font-medium text-muted-foreground">状态</th>
+										<th className="px-3 py-2 text-right font-medium text-muted-foreground">操作</th>
 									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
+								</thead>
+								<tbody className="divide-y">
+									{(historyExpanded ? history : history.slice(0, COLLAPSED_COUNT)).map(
+										(item, index) => (
+											<tr key={`${item.run}-${index}`}>
+												<td className="whitespace-nowrap px-3 py-2 font-mono text-xs">
+													{formatTime(item.at)}
+												</td>
+												<td className="px-3 py-2 font-mono text-xs">{item.commit.slice(0, 7)}</td>
+												<td className="hidden px-3 py-2 lg:table-cell">
+													<CommitMsgCell msg={item.msg} />
+												</td>
+												<td className="px-3 py-2 text-xs">{item.actor}</td>
+												<td className="px-3 py-2">{deployStatusBadge(item.status)}</td>
+												<td className="px-3 py-2 text-right">
+													{item.run && (
+														<Button
+															variant="ghost"
+															size="sm"
+															className="h-7 gap-1 px-2 text-xs"
+															onClick={() => {
+																setLogRunId(item.run)
+																setLogOpen(true)
+															}}
+														>
+															<FileTerminal className="h-3.5 w-3.5" />
+															发布日志
+														</Button>
+													)}
+												</td>
+											</tr>
+										),
+									)}
+								</tbody>
+							</table>
+						</div>
+						{history.length > COLLAPSED_COUNT && (
+							<Button
+								variant="ghost"
+								size="sm"
+								className="mt-2 w-full gap-1 text-xs text-muted-foreground"
+								onClick={() => setHistoryExpanded((v) => !v)}
+							>
+								{historyExpanded ? (
+									<>
+										<ChevronUp className="h-3.5 w-3.5" />
+										收起
+									</>
+								) : (
+									<>
+										<ChevronDown className="h-3.5 w-3.5" />
+										加载更多（还有 {history.length - COLLAPSED_COUNT} 条）
+									</>
+								)}
+							</Button>
+						)}
+					</>
 				)}
 			</div>
 			<DeployLogDialog runId={logRunId} open={logOpen} onOpenChange={setLogOpen} />

@@ -118,6 +118,8 @@ jobs:
         if: always()
         env:
           PROJECT_DIR: ${{ secrets.DEPLOY_PROJECT_DIR }}
+          # env 传递避免 commit message 内引号/换行破坏 shell 插值
+          HEAD_MSG: ${{ github.event.head_commit.message }}
         run: |
           # 前置步骤失败时（if: always）Setup SSH 可能没跑过，这里自带密钥初始化
           mkdir -p ~/.ssh
@@ -126,6 +128,17 @@ jobs:
           SSH_OPTS="-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3"
           PROJECT_DIR="${PROJECT_DIR:-/home/ubuntu/github/briar-display}"
           AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          RECORD="{\"commit\":\"${{ github.sha }}\",\"ref\":\"${{ github.ref }}\",\"actor\":\"${{ github.actor }}\",\"status\":\"${{ job.status }}\",\"at\":\"$AT\",\"run\":\"${{ github.run_id }}\"}"
-          ssh $SSH_OPTS ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
-            "cd $PROJECT_DIR && mkdir -p briar-assets && echo '$RECORD' >> briar-assets/deploy-history.jsonl && echo '记录已追加' && tail -n 1 briar-assets/deploy-history.jsonl"
+          MSG="$HEAD_MSG"
+          [ -z "$MSG" ] && MSG="（手动触发）"
+          # jq 构造 JSON（转义安全），经 stdin 传给远端 cat 追加，避免多层引号嵌套
+          RECORD=$(jq -nc \
+            --arg commit "${{ github.sha }}" \
+            --arg ref "${{ github.ref }}" \
+            --arg actor "${{ github.actor }}" \
+            --arg status "${{ job.status }}" \
+            --arg at "$AT" \
+            --arg run "${{ github.run_id }}" \
+            --arg msg "$MSG" \
+            '{commit:$commit,ref:$ref,actor:$actor,status:$status,at:$at,run:$run,msg:$msg}')
+          echo "$RECORD" | ssh $SSH_OPTS ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "cd $PROJECT_DIR && mkdir -p briar-assets && cat >> briar-assets/deploy-history.jsonl && echo '记录已追加' && tail -n 1 briar-assets/deploy-history.jsonl"

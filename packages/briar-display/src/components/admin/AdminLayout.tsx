@@ -12,7 +12,7 @@ import {
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
 import { Database, Radio, Rocket, Shield, TerminalSquare, Users } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect } from 'react'
 
 interface NavItem {
 	label: string
@@ -53,6 +53,8 @@ const NAV_ITEMS: NavItem[] = [
 	},
 ]
 
+export const ADMIN_LAST_TAB_KEY = 'briar_admin_last_tab'
+
 interface AdminLayoutProps {
 	children: ReactNode
 	currentPath: string
@@ -61,6 +63,11 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children, currentPath, fullWidth }: AdminLayoutProps) {
+	// 记住当前 tab，下次进入管理后台时恢复（同工具箱 TOOLS_LAST_TAB_KEY 模式）
+	useEffect(() => {
+		localStorage.setItem(ADMIN_LAST_TAB_KEY, currentPath)
+	}, [currentPath])
+
 	return (
 		<PermissionProvider>
 			<div className="flex min-h-screen">

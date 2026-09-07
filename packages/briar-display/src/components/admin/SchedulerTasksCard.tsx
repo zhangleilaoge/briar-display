@@ -4,9 +4,12 @@ import { getSchedulerTasks, runSchedulerTask } from '@/api/deploy'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { SchedulerRunStatus, SchedulerTaskInfo } from '@briar/shared'
-import { CalendarClock, Loader2, Play } from 'lucide-react'
+import { CalendarClock, ChevronDown, ChevronUp, Loader2, Play } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+
+/** 默认展示条数，超出后折叠为「加载更多」 */
+const COLLAPSED_COUNT = 3
 
 const STATUS_STYLE: Record<SchedulerRunStatus, { label: string; className: string }> = {
 	running: { label: '运行中', className: 'animate-pulse bg-blue-100 text-blue-700' },
@@ -30,6 +33,7 @@ export default function SchedulerTasksCard() {
 	const [tasks, setTasks] = useState<SchedulerTaskInfo[]>([])
 	const [loading, setLoading] = useState(true)
 	const [triggering, setTriggering] = useState<string | null>(null)
+	const [expanded, setExpanded] = useState(false)
 	const wasRunningRef = useRef(false)
 
 	const fetchTasks = useCallback(async () => {
@@ -97,74 +101,98 @@ export default function SchedulerTasksCard() {
 			) : tasks.length === 0 ? (
 				<p className="py-8 text-center text-xs text-muted-foreground">暂无定时任务</p>
 			) : (
-				<div className="divide-y rounded-md border">
-					{tasks.map((task) => {
-						const lastRun = task.lastRun
-						const running = lastRun?.status === 'running'
-						const busy = triggering === task.name || running
-						const duration = lastRun ? formatDuration(lastRun.startedAt, lastRun.finishedAt) : null
+				<>
+					<div className="divide-y rounded-md border">
+						{(expanded ? tasks : tasks.slice(0, COLLAPSED_COUNT)).map((task) => {
+							const lastRun = task.lastRun
+							const running = lastRun?.status === 'running'
+							const busy = triggering === task.name || running
+							const duration = lastRun
+								? formatDuration(lastRun.startedAt, lastRun.finishedAt)
+								: null
 
-						return (
-							<div key={task.name} className="flex items-start justify-between gap-3 px-3 py-3">
-								<div className="min-w-0 flex-1 space-y-1">
-									<div className="flex flex-wrap items-center gap-2">
-										<span className="text-sm font-medium">{task.label}</span>
-										<Badge variant="outline" className="text-[11px] font-normal">
-											{task.scheduleText}
-										</Badge>
+							return (
+								<div key={task.name} className="flex items-start justify-between gap-3 px-3 py-3">
+									<div className="min-w-0 flex-1 space-y-1">
+										<div className="flex flex-wrap items-center gap-2">
+											<span className="text-sm font-medium">{task.label}</span>
+											<Badge variant="outline" className="text-[11px] font-normal">
+												{task.scheduleText}
+											</Badge>
+										</div>
+										<p className="text-xs text-muted-foreground">{task.description}</p>
+										<p className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+											{lastRun ? (
+												<>
+													<span>上次运行 {formatTime(lastRun.startedAt)}</span>
+													<span>·</span>
+													<Badge
+														variant="secondary"
+														className={`text-[11px] ${STATUS_STYLE[lastRun.status].className}`}
+													>
+														{STATUS_STYLE[lastRun.status].label}
+													</Badge>
+													{duration && (
+														<>
+															<span>·</span>
+															<span className="font-mono">{duration}</span>
+														</>
+													)}
+													{lastRun.message && (
+														<>
+															<span>·</span>
+															<span className="truncate" title={lastRun.message}>
+																{lastRun.message}
+															</span>
+														</>
+													)}
+												</>
+											) : (
+												'尚未运行'
+											)}
+										</p>
 									</div>
-									<p className="text-xs text-muted-foreground">{task.description}</p>
-									<p className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-										{lastRun ? (
-											<>
-												<span>上次运行 {formatTime(lastRun.startedAt)}</span>
-												<span>·</span>
-												<Badge
-													variant="secondary"
-													className={`text-[11px] ${STATUS_STYLE[lastRun.status].className}`}
-												>
-													{STATUS_STYLE[lastRun.status].label}
-												</Badge>
-												{duration && (
-													<>
-														<span>·</span>
-														<span className="font-mono">{duration}</span>
-													</>
-												)}
-												{lastRun.message && (
-													<>
-														<span>·</span>
-														<span className="truncate" title={lastRun.message}>
-															{lastRun.message}
-														</span>
-													</>
-												)}
-											</>
-										) : (
-											'尚未运行'
-										)}
-									</p>
+									{task.manual && (
+										<Button
+											size="sm"
+											variant="outline"
+											onClick={() => handleRun(task)}
+											disabled={busy}
+											className="shrink-0 gap-1.5"
+										>
+											{busy ? (
+												<Loader2 className="h-3.5 w-3.5 animate-spin" />
+											) : (
+												<Play className="h-3.5 w-3.5" />
+											)}
+											{running ? '执行中...' : '立即执行'}
+										</Button>
+									)}
 								</div>
-								{task.manual && (
-									<Button
-										size="sm"
-										variant="outline"
-										onClick={() => handleRun(task)}
-										disabled={busy}
-										className="shrink-0 gap-1.5"
-									>
-										{busy ? (
-											<Loader2 className="h-3.5 w-3.5 animate-spin" />
-										) : (
-											<Play className="h-3.5 w-3.5" />
-										)}
-										{running ? '执行中...' : '立即执行'}
-									</Button>
-								)}
-							</div>
-						)
-					})}
-				</div>
+							)
+						})}
+					</div>
+					{tasks.length > COLLAPSED_COUNT && (
+						<Button
+							variant="ghost"
+							size="sm"
+							className="mt-2 w-full gap-1 text-xs text-muted-foreground"
+							onClick={() => setExpanded((v) => !v)}
+						>
+							{expanded ? (
+								<>
+									<ChevronUp className="h-3.5 w-3.5" />
+									收起
+								</>
+							) : (
+								<>
+									<ChevronDown className="h-3.5 w-3.5" />
+									加载更多（还有 {tasks.length - COLLAPSED_COUNT} 条）
+								</>
+							)}
+						</Button>
+					)}
+				</>
 			)}
 		</div>
 	)

@@ -9,6 +9,8 @@ export interface DeployHistoryItem {
 	status: string
 	at: string
 	run: string
+	/** commit message（CI 追加 jsonl 时写入；GitHub API 源取 display_title；旧记录无此字段） */
+	msg?: string
 }
 
 export interface DeployRunLogs {
@@ -371,6 +373,7 @@ const fetchRecentRuns = async (token: string, limit: number): Promise<DeployHist
 			status: string
 			conclusion: string | null
 			created_at: string
+			display_title?: string
 			actor: { login: string } | null
 		}>
 	}
@@ -382,6 +385,7 @@ const fetchRecentRuns = async (token: string, limit: number): Promise<DeployHist
 		status: run.status === 'completed' ? (run.conclusion ?? 'completed') : run.status,
 		at: run.created_at,
 		run: String(run.id),
+		msg: run.display_title,
 	}))
 }
 
