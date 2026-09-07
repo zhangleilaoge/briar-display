@@ -101,7 +101,7 @@ function PortalPageInner() {
 								icon={<Shield className="h-5 w-5" />}
 								title="管理后台"
 								description="角色权限与用户管理"
-								href="/briar/admin/permissions"
+								href="/briar/admin"
 								gradient="from-amber-500 to-orange-500"
 							/>
 						)}

@@ -53,6 +53,8 @@ export interface DeployHistoryItem {
 	status: string
 	at: string
 	run: string
+	/** commit message（CI 写入 jsonl；GitHub API 合并源取 display_title；旧记录无此字段） */
+	msg?: string
 }
 
 export const getDeployHistory = async () => {
