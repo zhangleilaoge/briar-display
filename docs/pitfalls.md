@@ -73,3 +73,14 @@ export default function AdminXxxPage() {
 静态密钥下 `getObjectUrl({ Sign: true, Query: {...} })` 同步返回字符串，但 SDK 只在异步回调路径里对 `q-url-param-list` 做二次编码（`replaceUrlParamList`），同步路径漏了——带数据万象参数（如 `imageMogr2/...`）的签名 URL 直接 403 `SignatureDoesNotMatch`，不带 Query 的则正常。
 
 修复：拿到同步返回的 URL 后手动套用同款二次编码（见 `cosService.getSignedUrl`）。验证方式：对签名 URL 发 `Range: bytes=0-0` 请求，206 为有效。
+
+## 10. 小红书笔记页风控按 TLS/HTTP 指纹 + IP 打分，Node fetch 裸奔必拦
+
+`GET www.xiaohongshu.com/explore/{id}`（移动端 h5 笔记页同理）被拦时 302 到 `/404/sec_xxx?source=xhs_sec_server` 安全页（HTML 约 24KB，无笔记数据），或桌面壳返回空 `noteDetailMap`（`undertake_note_error=该内容暂时无法查看`）。
+
+实测规律（2026-09）：
+
+- **同 IP 同 URL**：macOS curl（SecureTransport）全过，Node undici/bun fetch（BoringSSL/OpenSSL）裸请求全拦——TLS 指纹直接参与打分
+- Node fetch **只带 `User-Agent` + fresh `a1` Cookie**（a1 可本地纯算生成，见 `xhsMediaService.generateA1`）概率放行；加 `Accept`/`Accept-Language` 等"更像浏览器"的头反而提高拦截率
+- 单 IP 高频请求会短期全黑（所有变体都拦），停 1 分钟左右恢复
+- 应对：极简头 + 每次重试换 fresh a1 + 递增间隔（2s 起），3 次不过基本就是 IP 黑了，别死磕

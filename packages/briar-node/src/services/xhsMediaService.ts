@@ -4,12 +4,33 @@ const XHS_UA =
 	'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
 const FETCH_TIMEOUT_MS = 30_000
 
+/** a1 游客 Cookie 生成（逆向自官方 JS：毫秒时间戳 hex + 30 随机字符 + 固定段 + crc32，截 52 位） */
+const A1_CHARSET = 'abcdefghijklmnopqrstuvwxyz1234567890'
+const CRC32_TABLE = Array.from({ length: 256 }, (_, n) => {
+	let c = n
+	for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+	return c >>> 0
+})
+const crc32 = (input: string): number => {
+	let c = 0xffffffff
+	for (let i = 0; i < input.length; i++)
+		c = CRC32_TABLE[(c ^ input.charCodeAt(i)) & 0xff] ^ (c >>> 8)
+	return (c ^ 0xffffffff) >>> 0
+}
+const generateA1 = (): string => {
+	let rand = ''
+	for (let i = 0; i < 30; i++) rand += A1_CHARSET[Math.floor(Math.random() * A1_CHARSET.length)]
+	const part = `${Date.now().toString(16)}${rand}50000`
+	return (part + String(crc32(part))).slice(0, 52)
+}
+
 interface XhsStream {
 	masterUrl?: string
 	qualityType?: string
 }
 
 interface XhsImage {
+	fileId?: string
 	urlDefault?: string
 	urlPre?: string
 	url?: string
@@ -25,6 +46,7 @@ interface XhsNote {
 	type?: string
 	imageList?: XhsImage[]
 	video?: { media?: { stream?: Record<string, XhsStream[]> } }
+	cover?: { fileId?: string }
 	/** 桌面端页面是 nickname，移动端页面是 nickName */
 	user?: { nickname?: string; nickName?: string; userId?: string }
 }
@@ -116,8 +138,15 @@ const pickStream = (stream?: Record<string, XhsStream[]>): string | null => {
 	return null
 }
 
+/**
+ * 图片地址：优先 fileId 裸 key + imageView2 转 jpg（实测无水印原图；url/urlDefault 等场景图带平台水印）。
+ * 裸 key 在 sns-na/ci 域上免签名直出，imageView2 处理参数不参与签名校验
+ */
+const RAW_IMAGE_BASE = 'https://sns-na-i1.xhscdn.com'
+const rawImageUrl = (fileId: string) => `${RAW_IMAGE_BASE}/${fileId}?imageView2/2/format/jpg`
+
 const pickImageUrl = (img: XhsImage): string | null =>
-	img.urlDefault || img.urlPre || img.url || null
+	(img.fileId ? rawImageUrl(img.fileId) : null) || img.urlDefault || img.urlPre || img.url || null
 
 const MOBILE_UA =
 	'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
@@ -125,20 +154,22 @@ const MOBILE_UA =
 /** 可选：小红书网页登录 Cookie（.env 配 BRIAR_XHS_COOKIE）。网页端受限笔记（桌面壳空 note）带登录态大概率放行 */
 const XHS_COOKIE = process.env.BRIAR_XHS_COOKIE || ''
 
-const fetchNoteHtml = async (url: string, ua: string): Promise<string> => {
+/**
+ * 抓笔记页 HTML；被风控拦到 /404/sec_ 安全页（概率性，按 IP+指纹打分）返回 null 让上层换 a1 重试。
+ * 请求头越极简通过率越高：实测只带 UA + fresh a1 通过率最高，Accept/Accept-Language 等额外头反而提高拦截率
+ */
+const fetchNoteHtml = async (url: string, ua: string): Promise<string | null> => {
 	const headers: Record<string, string> = {
 		'User-Agent': ua,
-		Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-		// 风控对请求头指纹敏感，补全浏览器常见头降低概率性拦截
-		'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+		Cookie: XHS_COOKIE || `a1=${generateA1()}`,
 	}
-	if (XHS_COOKIE) headers.Cookie = XHS_COOKIE
 	const res = await fetch(url, {
 		headers,
 		signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
 		redirect: 'follow',
 	})
 	if (!res.ok) throw new Error(`笔记页抓取失败（HTTP ${res.status}），请稍后重试`)
+	if (res.url.includes('/404/sec_')) return null
 	return res.text()
 }
 
@@ -160,23 +191,30 @@ const pickMobileNote = (state: XhsInitialState | null, noteId: string): XhsNote 
 	return !note.noteId || note.noteId === noteId ? note : null
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
 /**
  * 小红书自研解析（catsapi 的兜底）：短链手动跟 302 → GET 笔记页 HTML → __INITIAL_STATE__ 直出全部媒体。
  * 移动端 UA 优先（noteData.data.noteData）：网页端受限笔记（桌面壳 note 为空对象）移动端能出数据，
- * 普通图文/视频也都覆盖；被按 IP 概率风控（拦到 /404/sec_ 页）时隔 2s 换桌面端（noteDetailMap）兜底。
- * 硬门槛是 xsec_token（短链跳转自带）；不带 token 会被拦到安全页（error 300031）。
- * 媒体地址都是 xhscdn.com 的 http 链接，由前端/代理统一升级 https。
+ * 普通图文/视频也都覆盖。笔记页被风控概率性拦到 /404/sec_ 安全页（按 IP+TLS 指纹打分，裸 Node fetch
+ * 不带 Cookie 必拦），每次重试换 fresh a1 游客 Cookie 并递增间隔，3 次不过再换桌面端（noteDetailMap）兜底。
+ * 硬门槛是 xsec_token（短链跳转自带，过期/缺失会被拦）；分享文案整段传入时会先抠出第一个 URL。
  */
 export const parseXhs = async (input: string): Promise<MediaParseResult> => {
-	const url = await resolveShareUrl(input)
+	const url = await resolveShareUrl(input.match(/https?:\/\/[^\s]+/)?.[0] || input)
 	const noteId = extractNoteId(url)
 	if (!noteId) throw new Error('无效的小红书笔记链接')
 
-	let note = pickMobileNote(extractInitialState(await fetchNoteHtml(url, MOBILE_UA)), noteId)
+	let note: XhsNote | null = null
+	for (let attempt = 0; attempt < 3 && !note; attempt++) {
+		if (attempt > 0) await sleep(2000 + attempt * 1000)
+		const html = await fetchNoteHtml(url, MOBILE_UA)
+		if (html) note = pickMobileNote(extractInitialState(html), noteId)
+	}
 	if (!note) {
-		// 移动端被拦：笔记页接口按 IP 限频，连续两发必有一发被拦，隔 2s 再试桌面端
-		await new Promise((r) => setTimeout(r, 2000))
-		note = pickDesktopNote(extractInitialState(await fetchNoteHtml(url, XHS_UA)), noteId)
+		await sleep(2000)
+		const html = await fetchNoteHtml(url, XHS_UA)
+		if (html) note = pickDesktopNote(extractInitialState(html), noteId)
 	}
 	if (!note) throw new Error('笔记解析失败（链接失效、内容受限或触发小红书风控），请稍后重试')
 
@@ -204,7 +242,7 @@ export const parseXhs = async (input: string): Promise<MediaParseResult> => {
 						uid: note.user.userId || undefined,
 					}
 				: null,
-		cover: images[0] || null,
+		cover: (note.cover?.fileId ? rawImageUrl(note.cover.fileId) : null) || images[0] || null,
 		video_url: videos[0] || null,
 		audio_url: null,
 		videos,
