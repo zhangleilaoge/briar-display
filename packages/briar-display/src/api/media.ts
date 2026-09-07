@@ -122,5 +122,6 @@ export const fetchMediaBlob = async (url: string, onProgress?: MediaProgressFn, 
 		downloaded += chunk.blob.size
 	}
 	onProgress?.(100, total, total)
-	return new Blob(parts)
+	// 分块 Blob 不带 type，需从首块（带响应 Content-Type）继承，否则下游 File.type 为空
+	return new Blob(parts, { type: probe.blob.type })
 }

@@ -32,6 +32,38 @@ function getExtFromName(name: string): string {
 	return /^\.[a-z0-9]{1,10}$/.test(ext) ? ext : ''
 }
 
+/** 常见扩展名 → MIME；客户端 mimeType 缺失或 octet-stream 时按文件名纠偏 */
+const EXT_MIME_MAP: Record<string, string> = {
+	'.webp': 'image/webp',
+	'.jpg': 'image/jpeg',
+	'.jpeg': 'image/jpeg',
+	'.png': 'image/png',
+	'.gif': 'image/gif',
+	'.bmp': 'image/bmp',
+	'.svg': 'image/svg+xml',
+	'.avif': 'image/avif',
+	'.mp4': 'video/mp4',
+	'.mov': 'video/quicktime',
+	'.webm': 'video/webm',
+	'.m4v': 'video/mp4',
+	'.mp3': 'audio/mpeg',
+	'.m4a': 'audio/mp4',
+	'.wav': 'audio/wav',
+	'.ogg': 'audio/ogg',
+	'.md': 'text/markdown',
+	'.markdown': 'text/markdown',
+	'.txt': 'text/plain',
+	'.log': 'text/plain',
+	'.json': 'application/json',
+	'.csv': 'text/csv',
+}
+
+/** 客户端 MIME 不可信（可能为空或 octet-stream），按扩展名兜底纠偏 */
+function resolveMimeType(name: string, mimeType?: string): string {
+	if (mimeType && mimeType !== 'application/octet-stream') return mimeType
+	return EXT_MIME_MAP[getExtFromName(name)] || mimeType || 'application/octet-stream'
+}
+
 /** 删除 COS 对象（视频会连带封面图，best effort） */
 async function deleteCosObjects(file: { filename: string; mimeType: string }) {
 	await cosService.deleteFileWithCover(file.filename, file.mimeType)
@@ -231,7 +263,7 @@ fileRoutes.post('/confirm', async (c) => {
 		)
 	}
 
-	const mimeType = body.mimeType || 'application/octet-stream'
+	const mimeType = resolveMimeType(name, body.mimeType)
 	const cdnUrl = cosService.getPublicUrl(cosKey)
 	const thumbnailUrl = mimeType.startsWith('image/')
 		? cosService.getThumbnailUrl(cdnUrl)
