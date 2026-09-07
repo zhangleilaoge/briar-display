@@ -29,6 +29,8 @@ export interface FolderItem {
 	userId: string
 	name: string
 	parentId: string | null
+	/** 是否隐私文件夹（隐私链路 = 自身或任一祖先是隐私文件夹） */
+	isPrivate?: boolean
 	createdAt: string
 	/** 直接文件数（不含子文件夹）；新建文件夹的响应里没有此字段 */
 	fileCount?: number
@@ -390,5 +392,66 @@ export const renameFolder = async (id: string, name: string) => {
 
 export const deleteFolder = async (id: string) => {
 	const response = await apiClient.delete<ApiResponse>(`/files/folders/${id}`)
+	return response.data
+}
+
+// ========== 隐私空间 ==========
+
+export interface PrivacyStatus {
+	hasSecurityPassword: boolean
+}
+
+export interface PrivacyUnlockResult {
+	token: string
+	expiresAt: string
+}
+
+export const getPrivacyStatus = async () => {
+	const response = await apiClient.get<ApiResponse<PrivacyStatus>>('/files/privacy/status')
+	return response.data
+}
+
+/** 首次设置安全密码，成功即解锁（返回 token） */
+export const setupPrivacyPassword = async (password: string) => {
+	const response = await apiClient.post<ApiResponse<PrivacyUnlockResult>>('/files/privacy/setup', {
+		password,
+	})
+	return response.data
+}
+
+export const changePrivacyPassword = async (oldPassword: string, newPassword: string) => {
+	const response = await apiClient.post<ApiResponse>('/files/privacy/change', {
+		oldPassword,
+		newPassword,
+	})
+	return response.data
+}
+
+export const sendPrivacyCode = async () => {
+	const response = await apiClient.post<ApiResponse>('/files/privacy/send-code')
+	return response.data
+}
+
+/** 邮箱验证码重置安全密码（忘记密码通道） */
+export const resetPrivacyPassword = async (code: string, newPassword: string) => {
+	const response = await apiClient.post<ApiResponse>('/files/privacy/reset', {
+		code,
+		newPassword,
+	})
+	return response.data
+}
+
+/** 解锁隐私空间：安全密码 / 邮箱验证码二选一，返回 12h token */
+export const unlockPrivacy = async (params: { password?: string; code?: string }) => {
+	const response = await apiClient.post<ApiResponse<PrivacyUnlockResult>>(
+		'/files/privacy/unlock',
+		params,
+	)
+	return response.data
+}
+
+/** 设置/取消文件夹隐私（需已解锁） */
+export const setFolderPrivacy = async (id: string, isPrivate: boolean) => {
+	const response = await apiClient.patch<ApiResponse>(`/files/folders/${id}`, { isPrivate })
 	return response.data
 }

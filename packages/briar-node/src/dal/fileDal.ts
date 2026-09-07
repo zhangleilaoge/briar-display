@@ -189,6 +189,8 @@ export const fileDal = {
 			pageSize: number
 			keyword?: string
 			folderId?: string | null
+			/** 搜索时排除的文件夹集合（隐私链路未解锁），命中 folder_id 的记录不返回 */
+			excludeFolderIds?: string[]
 			type?: FileType
 			sort?: FileSortField
 			order?: 'asc' | 'desc'
@@ -211,6 +213,12 @@ export const fileDal = {
 		if (params.type) {
 			const { clause } = typeCondition(params.type)
 			conditions.push(clause)
+		}
+
+		if (params.excludeFolderIds && params.excludeFolderIds.length > 0) {
+			const placeholders = params.excludeFolderIds.map(() => '?').join(',')
+			conditions.push(`(folder_id IS NULL OR folder_id NOT IN (${placeholders}))`)
+			values.push(...params.excludeFolderIds)
 		}
 
 		const where = `WHERE ${conditions.join(' AND ')}`

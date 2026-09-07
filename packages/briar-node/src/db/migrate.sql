@@ -239,3 +239,21 @@ DROP TABLE IF EXISTS wiki_pages;
 DROP TABLE IF EXISTS wiki_categories;
 DROP TABLE IF EXISTS wiki_templates;
 DROP TABLE IF EXISTS wiki_tags;
+
+-- ============================================================
+-- 隐私文件夹
+-- ============================================================
+
+-- users 表新增安全密码哈希（隐私空间解锁用，独立于登录密码）
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'security_password_hash');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE users ADD COLUMN security_password_hash VARCHAR(255) NULL COMMENT ''隐私空间安全密码哈希'' AFTER password_hash', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- folders 表新增隐私标记（自身或任一祖先 is_private=1 即隐私链路，禁止嵌套隐私）
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'folders' AND COLUMN_NAME = 'is_private');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE folders ADD COLUMN is_private TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''是否隐私文件夹'' AFTER parent_id', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

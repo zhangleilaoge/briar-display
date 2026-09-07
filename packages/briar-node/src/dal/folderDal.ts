@@ -6,6 +6,7 @@ export interface FolderRecord {
 	userId: string
 	name: string
 	parentId: string | null
+	isPrivate: boolean
 	createdAt: Date
 }
 
@@ -24,6 +25,7 @@ interface FolderRow {
 	user_id: string
 	name: string
 	parent_id: string | null
+	is_private: number
 	created_at: Date
 }
 
@@ -32,6 +34,7 @@ const mapRow = (row: FolderRow): FolderRecord => ({
 	userId: row.user_id,
 	name: row.name,
 	parentId: row.parent_id,
+	isPrivate: Boolean(row.is_private),
 	createdAt: row.created_at,
 })
 
@@ -117,6 +120,15 @@ export const folderDal = {
 	async rename(id: string, userId: string, name: string): Promise<boolean> {
 		const result = await execute('UPDATE folders SET name = ? WHERE id = ? AND user_id = ?', [
 			name,
+			id,
+			userId,
+		])
+		return result.affectedRows > 0
+	},
+
+	async setPrivacy(id: string, userId: string, isPrivate: boolean): Promise<boolean> {
+		const result = await execute('UPDATE folders SET is_private = ? WHERE id = ? AND user_id = ?', [
+			isPrivate ? 1 : 0,
 			id,
 			userId,
 		])

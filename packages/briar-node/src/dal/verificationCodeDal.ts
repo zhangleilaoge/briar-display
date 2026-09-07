@@ -25,6 +25,10 @@ export enum VerificationCodeType {
 	 * SSH 控制台设备授权验证码
 	 */
 	TERMINAL_ACCESS = 'terminal_access',
+	/**
+	 * 隐私空间解锁/重置验证码
+	 */
+	FILES_PRIVACY = 'files_privacy',
 }
 
 export interface VerificationCodeRecord {

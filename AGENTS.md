@@ -54,8 +54,10 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 | `packages/briar-node/src/routes/terminal.ts` | SSH 控制台 HTTP API（`/api/terminal`）：发设备验证码、验码签 7 天设备令牌、服务器信息采集（host-info） |
 | `packages/briar-node/src/services/terminalService.ts` | 终端服务：验证码/设备令牌签发校验、ssh2 采集服务器信息（10s 缓存）、`resolveDeployKeyPath` |
 | `packages/briar-node/src/routes/version.ts` | `/api/version` 版本指纹接口（前后端一致性校验） |
-| `packages/briar-node/src/routes/files.ts` | 文件管理 API（`/api/files`，原图床）：上传 precheck/cos-sign/confirm、文件夹 CRUD、文本预览代理 |
-| `packages/briar-display/src/api/files.ts` | 前端文件 API + cos-js-sdk-v5 分片直传封装 |
+| `packages/briar-node/src/routes/files.ts` | 文件管理 API（`/api/files`，原图床）：文件夹 CRUD（含 isPrivate 设/取消隐私）、列表/详情/文本预览代理；上传三件套在 `routes/fileUpload.ts`（precheck/cos-sign/confirm），共享 helper 在 `routes/filesShared.ts` |
+| `packages/briar-node/src/routes/filePrivacy.ts` | 隐私空间 API（`/api/files/privacy`）：status/setup/change/send-code/reset/unlock，并导出隐私链路网关 helper（`guardPrivateChain`/`hasPrivacyUnlock`/`privacyLocked`）供 files/fileUpload 复用 |
+| `packages/briar-node/src/services/privacyService.ts` | 隐私空间服务：账户级安全密码（bcrypt，users.security_password_hash）+ 邮箱验证码双通道解锁，签 12h JWT（purpose=`files-privacy`）；`isPrivateChain`/`privateScopeFolderIds` 隐私链路判定；unlock 内存限频 5 次/分钟/用户 |
+| `packages/briar-display/src/api/files.ts` | 前端文件 API + cos-js-sdk-v5 分片直传封装 + 隐私空间 API（status/setup/change/send-code/reset/unlock/setFolderPrivacy） |
 | `packages/briar-node/src/routes/messages.ts` | 站内信 API（`/api/messages`）：列表/未读数/标记已读 |
 | `packages/briar-node/src/routes/media.ts` | 媒体解析 API（`/api/media`，工具箱「媒体解析」，免登录 + IP 限频 parse 6/min、proxy 120/min，超管豁免）：`POST /parse` 支持小红书（转发 catsapi，失败回退自研解析 xhsMediaService，catsapi 2026-09 起持续 502）、抖音（自研解析，见 douyinMediaService）、微信公众号文章（自研解析，见 wechatMediaService）、B站（自研解析，见 bilibiliMediaService）和 X/Twitter（fxtwitter 公共 API）；`GET /proxy` 媒体代理（白名单 xhscdn/qpic/tc.qq/douyin 系/zjcdn/twimg/bilivideo/hdslb 等），旁路缓存——inline 预览透传 Range 不缓存，下载（非 inline）拉全量 tee 到 COS 公有桶，hit 302 直发（文件名在对象 key 末段）。twimg 国内服务器不可达：前端对 twimg 直连（CORS 开放，需访客有梯子），代理仅海外环境可用 |
 | `packages/briar-node/src/services/xhsMediaService.ts` | 小红书自研解析（catsapi 兜底）：xhslink 短链手动跟 302（老路径 discovery/item 会二次跳信息流丢笔记 ID，须改写为 explore；跳到裸首页=链接失效）→ GET 笔记页 HTML 抠 `window.__INITIAL_STATE__`（裸 undefined 字面量需替换再 JSON.parse）。**移动端 UA 优先**（noteData.data.noteData，能出网页端受限笔记），每次请求带本地生成的 fresh `a1` 游客 Cookie（generateA1：时间戳 hex+随机串+crc32），被概率风控（/404/sec_ 安全页）换 a1 递增间隔重试 3 次再换桌面端（noteDetailMap）兜底；**请求头保持极简**（仅 UA+Cookie，Accept/Accept-Language 等额外头反而提高拦截率）。图片用 `imageList[].fileId` 裸 key + `?imageView2/2/format/jpg`（sns-na-i1.xhscdn.com，免签名**无水印**原图；url/urlDefault 场景图带平台水印仅兜底）、实况 stream.h264 HD 档、视频 video.media.stream.h264 HD 档。硬门槛 xsec_token（短链跳转自带，过期/缺失被拦）。风控指纹陷阱见 docs/pitfalls.md #10 |
@@ -97,7 +99,8 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 - 存量文件从公开桶迁到私有桶：`make cos-migrate-files`（幂等，不删源桶）
 - 封禁扫描（fileModerationService）必须签 URL 再 fetch：私有桶未签名恒 403，直接 fetch 裸 URL 会把全部图片误判为封禁并删除
 - 视频封面：上传完成后客户端用 video+canvas 截首帧，直传为 `{cosKey去扩展名}.cover.jpg` 并在 confirm 时传 `thumbnailKey`；网格有封面用 `<img>`，存量无封面视频 fallback 到 `<video preload="metadata">`；删除文件/文件夹时连带删封面
-- 数据表：`files`（原 `images` 表改名）+ `folders`（嵌套文件夹），迁移见 `migrate.sql`
+- 数据表：`files`（原 `images` 表改名）+ `folders`（嵌套文件夹，含 `is_private`），迁移见 `migrate.sql`
+- **隐私文件夹**：`folders.is_private=1` 的文件夹及其全部子孙构成隐私链路（禁止嵌套设隐私）。未持有解锁 token（`x-privacy-token` header，前端 sessionStorage `briar_files_privacy_token`，12h JWT）时：链路内文件不签发 URL、不出现在列表/搜索（`excludeFolderIds`）、precheck 去重命中链路文件按新文件上传；链路文件夹 previews 置空但始终返回 `isPrivate`；链路上写操作一律 403（响应体 `code=40301` 即 shared `PRIVACY_LOCKED_CODE`，前端拦截器清 token 并弹解锁框）。设/取消隐私走 `PATCH /api/files/folders/:id` 传 `isPrivate`（需已解锁 + 祖先/后代无 private）。链路内文件前端禁用详情预览、隐藏「预览/复制链接」；管理员查看他人文件不受隐私限制
 
 ### 个人博客
 

@@ -3,6 +3,8 @@ import adminRoutes from './admin'
 import authRoutes from './auth'
 import certRoutes from './cert'
 import deploymentRoutes from './deployment'
+import filePrivacyRoutes from './filePrivacy'
+import fileUploadRoutes from './fileUpload'
 import fileRoutes from './files'
 import logRoutes from './log'
 import mediaRoutes from './media'
@@ -28,6 +30,8 @@ api.route('/media', mediaRoutes)
 api.route('/messages', messageRoutes)
 api.route('/scheduler', schedulerRoutes)
 api.route('/terminal', terminalRoutes)
+api.route('/files/privacy', filePrivacyRoutes)
+api.route('/files', fileUploadRoutes)
 api.route('/files', fileRoutes)
 api.route('/users', userRoutes)
 api.route('/version', versionRoutes)

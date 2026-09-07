@@ -14,17 +14,7 @@ import {
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import { PERMISSIONS } from '@briar/shared'
-import {
-	AlertCircle,
-	Clipboard,
-	Download,
-	Eye,
-	FolderInput,
-	FolderOpen,
-	Loader2,
-	Pencil,
-	Trash2,
-} from 'lucide-react'
+import { AlertCircle, Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import FileBreadcrumb from './FileBreadcrumb'
@@ -34,7 +24,11 @@ import { ConfirmDialog, type ConfirmState, MoveFileDialog, RenameDialog } from '
 import FileGrid, { folderSelectKey } from './FileGrid'
 import FileManagerLayout from './FileManagerLayout'
 import FileToolbar from './FileToolbar'
+import PrivacySettingsDialog from './PrivacySettingsDialog'
+import PrivacyUnlockDialog from './PrivacyUnlockDialog'
+import { buildContextMenuItems } from './fileMenuItems'
 import { splitSort, useFileList } from './useFileList'
+import { usePrivacyGate } from './usePrivacyGate'
 
 interface ContextMenuState {
 	x: number
@@ -118,6 +112,18 @@ function FileManagerPageInner() {
 		refresh()
 		refreshFolders()
 	}, [refresh, refreshFolders])
+
+	const {
+		unlockOpen,
+		setUnlockOpen,
+		privacyTarget,
+		setPrivacyTarget,
+		privateChainIds,
+		requireUnlock,
+		handleUnlocked,
+		openFolder,
+		isPrivateFile,
+	} = usePrivacyGate({ folders, refreshAll, setCurrentFolderId })
 
 	// URL 中的文件夹 id 失效（被删除或链接错误）时回退到根目录
 	useEffect(() => {
@@ -353,6 +359,15 @@ function FileManagerPageInner() {
 
 	// ========== 右键菜单 ==========
 
+	/** 隐私链路内文件本迭代不开放详情预览 */
+	const handleFileClick = (file: FileItem) => {
+		if (isPrivateFile(file)) {
+			toast('隐私文件夹内暂不支持预览')
+			return
+		}
+		setDetailFile(file)
+	}
+
 	const openFileContextMenu = (e: React.MouseEvent, file: FileItem) => {
 		e.preventDefault()
 		setContextMenu({ x: e.clientX, y: e.clientY, file })
@@ -363,63 +378,25 @@ function FileManagerPageInner() {
 		setContextMenu({ x: e.clientX, y: e.clientY, folder })
 	}
 
-	const contextMenuItems: ContextMenuItem[] = contextMenu?.file
-		? [
-				{
-					label: '预览',
-					icon: <Eye className="h-4 w-4" />,
-					onClick: () => setDetailFile(contextMenu.file!),
-				},
-				{
-					label: '复制链接',
-					icon: <Clipboard className="h-4 w-4" />,
-					onClick: async () => {
-						await navigator.clipboard.writeText(contextMenu.file!.cdnUrl)
-						toast.success('链接已复制')
-					},
-				},
-				{
-					label: '下载',
-					icon: <Download className="h-4 w-4" />,
-					onClick: () => downloadFile(contextMenu.file!),
-				},
-				{
-					label: '重命名',
-					icon: <Pencil className="h-4 w-4" />,
-					onClick: () => setRenameFileTarget(contextMenu.file!),
-				},
-				{
-					label: '移动到...',
-					icon: <FolderInput className="h-4 w-4" />,
-					onClick: () => setMoveTarget(contextMenu.file!),
-				},
-				{
-					label: '删除',
-					icon: <Trash2 className="h-4 w-4" />,
-					danger: true,
-					onClick: () => confirmDeleteFile(contextMenu.file!),
-				},
-			]
-		: contextMenu?.folder
-			? [
-					{
-						label: '打开',
-						icon: <FolderOpen className="h-4 w-4" />,
-						onClick: () => setCurrentFolderId(contextMenu.folder!.id),
-					},
-					{
-						label: '重命名',
-						icon: <Pencil className="h-4 w-4" />,
-						onClick: () => setRenameTarget(contextMenu.folder!),
-					},
-					{
-						label: '删除',
-						icon: <Trash2 className="h-4 w-4" />,
-						danger: true,
-						onClick: () => handleDeleteFolder(contextMenu.folder!),
-					},
-				]
-			: []
+	const contextMenuItems: ContextMenuItem[] = contextMenu
+		? buildContextMenuItems({
+				file: contextMenu.file,
+				folder: contextMenu.folder,
+				fileIsPrivate: contextMenu.file ? isPrivateFile(contextMenu.file) : false,
+				folderInPrivateChain: contextMenu.folder
+					? privateChainIds.has(contextMenu.folder.id)
+					: false,
+				onPreviewFile: setDetailFile,
+				onDownloadFile: downloadFile,
+				onRenameFile: setRenameFileTarget,
+				onMoveFile: setMoveTarget,
+				onDeleteFile: confirmDeleteFile,
+				onOpenFolder: openFolder,
+				onRenameFolder: setRenameTarget,
+				onDeleteFolder: handleDeleteFolder,
+				onTogglePrivacy: (folder) => requireUnlock(() => setPrivacyTarget(folder)),
+			})
+		: []
 
 	if (permLoading) {
 		return (
@@ -463,7 +440,7 @@ function FileManagerPageInner() {
 				{!keyword && (
 					<FileBreadcrumb
 						folderPath={folderPath}
-						onNavigate={setCurrentFolderId}
+						onNavigate={openFolder}
 						onDragOver={handleFolderDragOver}
 						onDragLeave={() => setDropFolderId(null)}
 						onDrop={handleFolderDrop}
@@ -488,10 +465,10 @@ function FileManagerPageInner() {
 							dropFolderId={dropFolderId}
 							onToggleSelect={toggleSelect}
 							onToggleSelectAll={toggleSelectAll}
-							onFileClick={setDetailFile}
+							onFileClick={handleFileClick}
 							onFileContextMenu={openFileContextMenu}
 							onFolderContextMenu={openFolderContextMenu}
-							onFolderOpen={setCurrentFolderId}
+							onFolderOpen={openFolder}
 							onFolderRename={setRenameTarget}
 							onFolderDelete={handleDeleteFolder}
 							onFileDragStart={handleFileDragStart}
@@ -558,6 +535,18 @@ function FileManagerPageInner() {
 				folders={folders}
 				onClose={() => setMoveTarget(null)}
 				onMoved={refreshAll}
+			/>
+
+			<PrivacyUnlockDialog
+				open={unlockOpen}
+				onOpenChange={setUnlockOpen}
+				onUnlocked={handleUnlocked}
+			/>
+
+			<PrivacySettingsDialog
+				folder={privacyTarget}
+				onClose={() => setPrivacyTarget(null)}
+				onDone={refreshFolders}
 			/>
 		</FileManagerLayout>
 	)
