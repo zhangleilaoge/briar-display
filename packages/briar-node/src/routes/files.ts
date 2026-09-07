@@ -1,293 +1,23 @@
 import type { ApiResponse } from '@briar/shared'
 import { HTTP_STATUS } from '@briar/shared'
-import { generateId } from '@briar/shared'
-import { type Context, Hono } from 'hono'
+import { Hono } from 'hono'
 import { type FileSortField, type FileType, fileDal, isTextLike } from '../dal/fileDal'
 import { folderDal } from '../dal/folderDal'
 import { cosService } from '../services/cosService'
 import { permissionService } from '../services/permissionService'
+import { privacyService } from '../services/privacyService'
+import { guardPrivateChain, hasPrivacyUnlock, privacyLocked } from './filePrivacy'
+import {
+	deleteCosObjects,
+	getQuota,
+	requireUser,
+	unauthorized,
+	validateFolder,
+} from './filesShared'
 
 const fileRoutes = new Hono()
 
-const MAX_FILE_SIZE = 200 * 1024 * 1024 // 200MB
-const USER_QUOTA = 200 * 1024 * 1024 // 200MB
-const ADMIN_QUOTA = 2 * 1024 * 1024 * 1024 // 2GB
 const TEXT_PREVIEW_MAX_SIZE = 2 * 1024 * 1024 // 文本预览最大 2MB
-
-type AuthedUser = { id: string }
-
-function requireUser(c: Context): AuthedUser | null {
-	return (c.get('user') as AuthedUser | undefined) ?? null
-}
-
-function unauthorized(c: Context) {
-	return c.json<ApiResponse>({ success: false, message: '请先登录' }, HTTP_STATUS.UNAUTHORIZED)
-}
-
-/** 从原始文件名提取安全的扩展名 */
-function getExtFromName(name: string): string {
-	const idx = name.lastIndexOf('.')
-	if (idx < 0) return ''
-	const ext = name.slice(idx).toLowerCase()
-	return /^\.[a-z0-9]{1,10}$/.test(ext) ? ext : ''
-}
-
-/** 常见扩展名 → MIME；客户端 mimeType 缺失或 octet-stream 时按文件名纠偏 */
-const EXT_MIME_MAP: Record<string, string> = {
-	'.webp': 'image/webp',
-	'.jpg': 'image/jpeg',
-	'.jpeg': 'image/jpeg',
-	'.png': 'image/png',
-	'.gif': 'image/gif',
-	'.bmp': 'image/bmp',
-	'.svg': 'image/svg+xml',
-	'.avif': 'image/avif',
-	'.mp4': 'video/mp4',
-	'.mov': 'video/quicktime',
-	'.webm': 'video/webm',
-	'.m4v': 'video/mp4',
-	'.mp3': 'audio/mpeg',
-	'.m4a': 'audio/mp4',
-	'.wav': 'audio/wav',
-	'.ogg': 'audio/ogg',
-	'.md': 'text/markdown',
-	'.markdown': 'text/markdown',
-	'.txt': 'text/plain',
-	'.log': 'text/plain',
-	'.json': 'application/json',
-	'.csv': 'text/csv',
-}
-
-/** 客户端 MIME 不可信（可能为空或 octet-stream），按扩展名兜底纠偏 */
-function resolveMimeType(name: string, mimeType?: string): string {
-	if (mimeType && mimeType !== 'application/octet-stream') return mimeType
-	return EXT_MIME_MAP[getExtFromName(name)] || mimeType || 'application/octet-stream'
-}
-
-/** 删除 COS 对象（视频会连带封面图，best effort） */
-async function deleteCosObjects(file: { filename: string; mimeType: string }) {
-	await cosService.deleteFileWithCover(file.filename, file.mimeType)
-}
-
-/** 校验文件夹归属当前用户，返回文件夹或 null（根目录） */
-async function validateFolder(userId: string, folderId?: string | null) {
-	if (!folderId) return null
-	const folder = await folderDal.findById(folderId)
-	if (!folder || folder.userId !== userId) return undefined
-	return folder
-}
-
-async function getQuota(userId: string) {
-	const isAdmin = await permissionService.isAdmin(userId)
-	return { quota: isAdmin ? ADMIN_QUOTA : USER_QUOTA, isAdmin }
-}
-
-/** POST /precheck — 直传前校验（配额/大小/文件夹/去重），分配 cosKey */
-fileRoutes.post('/precheck', async (c) => {
-	const user = requireUser(c)
-	if (!user) return unauthorized(c)
-
-	const body = await c.req.json<{
-		name?: string
-		size?: number
-		mimeType?: string
-		folderId?: string | null
-		fileHash?: string
-	}>()
-
-	const name = (body.name || '').trim()
-	const size = Number(body.size) || 0
-	const mimeType = body.mimeType || 'application/octet-stream'
-
-	if (!name) {
-		return c.json<ApiResponse>(
-			{ success: false, message: '文件名不能为空' },
-			HTTP_STATUS.BAD_REQUEST,
-		)
-	}
-	if (size <= 0) {
-		return c.json<ApiResponse>({ success: false, message: '文件大小无效' }, HTTP_STATUS.BAD_REQUEST)
-	}
-	if (size > MAX_FILE_SIZE) {
-		return c.json<ApiResponse>(
-			{
-				success: false,
-				message: `文件过大: ${(size / 1024 / 1024).toFixed(1)}MB (最大 200MB)`,
-			},
-			HTTP_STATUS.PAYLOAD_TOO_LARGE,
-		)
-	}
-
-	const folder = await validateFolder(user.id, body.folderId)
-	if (folder === undefined) {
-		return c.json<ApiResponse>({ success: false, message: '文件夹不存在' }, HTTP_STATUS.BAD_REQUEST)
-	}
-
-	// 内容去重（仅当客户端提供了 hash）
-	if (body.fileHash) {
-		const existing = await fileDal.findByUserAndHash(user.id, body.fileHash)
-		if (existing) {
-			return c.json<ApiResponse>({
-				success: true,
-				data: {
-					deduplicated: true,
-					file: { ...existing, ...cosService.signFileUrls(existing) },
-				},
-			})
-		}
-	}
-
-	// 配额校验
-	const { quota, isAdmin } = await getQuota(user.id)
-	const used = Number(await fileDal.getUserStorageUsed(user.id)) || 0
-	if (used + size > quota) {
-		console.warn('[Upload Quota]', { userId: user.id, used, newSize: size, quota, isAdmin, name })
-		return c.json<ApiResponse>(
-			{
-				success: false,
-				message: `存储空间不足。已用 ${(used / 1024 / 1024).toFixed(1)}MB，限额 ${isAdmin ? 2048 : 200}MB`,
-			},
-			HTTP_STATUS.PAYLOAD_TOO_LARGE,
-		)
-	}
-
-	const cosKey = `files/${user.id}/${generateId()}${getExtFromName(name)}`
-	const { bucket, region } = cosService.getBucketInfo()
-
-	return c.json<ApiResponse>({
-		success: true,
-		data: { deduplicated: false, cosKey, bucket, region },
-	})
-})
-
-/** POST /cos-sign — 为前端 cos-js-sdk-v5 的分片请求签名 */
-fileRoutes.post('/cos-sign', async (c) => {
-	const user = requireUser(c)
-	if (!user) return unauthorized(c)
-
-	const body = await c.req.json<{
-		method?: string
-		key?: string
-		query?: Record<string, string>
-		headers?: Record<string, string>
-	}>()
-
-	const method = (body.method || '').toUpperCase()
-	const key = body.key || ''
-
-	if (!method) {
-		return c.json<ApiResponse>({ success: false, message: '参数不完整' }, HTTP_STATUS.BAD_REQUEST)
-	}
-
-	// 只允许签名当前用户自己的 files/{userId}/ 前缀。
-	// key 为空时是 bucket 级请求（sliceUploadFile 续传检查：GET /?prefix=xxx&uploads），
-	// 此时校验 query.prefix 前缀。
-	const userPrefix = `files/${user.id}/`
-	if (key) {
-		if (!key.startsWith(userPrefix)) {
-			return c.json<ApiResponse>(
-				{ success: false, message: '无权操作该对象' },
-				HTTP_STATUS.FORBIDDEN,
-			)
-		}
-	} else if (!(body.query?.prefix || '').startsWith(userPrefix)) {
-		return c.json<ApiResponse>({ success: false, message: '无权操作该对象' }, HTTP_STATUS.FORBIDDEN)
-	}
-
-	const authorization = cosService.getAuth({
-		Method: method,
-		Key: key,
-		Query: body.query,
-		Headers: body.headers,
-	})
-
-	return c.json<ApiResponse>({ success: true, data: { authorization } })
-})
-
-/** POST /confirm — 直传完成后写库 */
-fileRoutes.post('/confirm', async (c) => {
-	const user = requireUser(c)
-	if (!user) return unauthorized(c)
-
-	const body = await c.req.json<{
-		cosKey?: string
-		name?: string
-		mimeType?: string
-		folderId?: string | null
-		fileHash?: string
-		thumbnailKey?: string
-	}>()
-
-	const cosKey = body.cosKey || ''
-	const name = (body.name || '').trim()
-	if (!cosKey.startsWith(`files/${user.id}/`) || !name) {
-		return c.json<ApiResponse>({ success: false, message: '参数不完整' }, HTTP_STATUS.BAD_REQUEST)
-	}
-
-	// 封面图 key（视频客户端截帧），同样限制在当前用户前缀下
-	const thumbnailKey = body.thumbnailKey?.startsWith(`files/${user.id}/`)
-		? body.thumbnailKey
-		: undefined
-
-	const folder = await validateFolder(user.id, body.folderId)
-	if (folder === undefined) {
-		return c.json<ApiResponse>({ success: false, message: '文件夹不存在' }, HTTP_STATUS.BAD_REQUEST)
-	}
-
-	// 以 COS 上的实际对象为准
-	let actualSize: number
-	try {
-		actualSize = await cosService.headObject(cosKey)
-	} catch {
-		return c.json<ApiResponse>(
-			{ success: false, message: '文件尚未上传成功' },
-			HTTP_STATUS.BAD_REQUEST,
-		)
-	}
-
-	const { quota, isAdmin } = await getQuota(user.id)
-	const used = Number(await fileDal.getUserStorageUsed(user.id)) || 0
-	if (used + actualSize > quota) {
-		// 清理已上传的对象
-		try {
-			await cosService.deleteObject(cosKey)
-		} catch {
-			/* best effort */
-		}
-		return c.json<ApiResponse>(
-			{
-				success: false,
-				message: `存储空间不足。已用 ${(used / 1024 / 1024).toFixed(1)}MB，限额 ${isAdmin ? 2048 : 200}MB`,
-			},
-			HTTP_STATUS.PAYLOAD_TOO_LARGE,
-		)
-	}
-
-	const mimeType = resolveMimeType(name, body.mimeType)
-	const cdnUrl = cosService.getPublicUrl(cosKey)
-	const thumbnailUrl = mimeType.startsWith('image/')
-		? cosService.getThumbnailUrl(cdnUrl)
-		: thumbnailKey
-			? cosService.getPublicUrl(thumbnailKey)
-			: undefined
-
-	const record = await fileDal.create({
-		userId: user.id,
-		originalName: name,
-		filename: cosKey,
-		mimeType,
-		size: actualSize,
-		cdnUrl,
-		thumbnailUrl,
-		fileHash: body.fileHash,
-		folderId: folder?.id ?? null,
-	})
-
-	return c.json<ApiResponse>({
-		success: true,
-		data: { ...record, ...cosService.signFileUrls(record) },
-	})
-})
 
 /** GET /stats — storage usage stats */
 fileRoutes.get('/stats', async (c) => {
@@ -304,29 +34,35 @@ fileRoutes.get('/stats', async (c) => {
 	})
 })
 
-/** GET /folders — 当前用户全部文件夹（前端拼树/面包屑），fileCount 为直接文件数（不含子文件夹），previews 为直接图片/视频预览（最多 3 张，私有桶签名 URL；isVideo=true 为无封面视频，前端用 video 首帧兜底） */
+/** GET /folders — 当前用户全部文件夹（前端拼树/面包屑），fileCount 为直接文件数（不含子文件夹），previews 为直接图片/视频预览（最多 3 张，私有桶签名 URL；isVideo=true 为无封面视频，前端用 video 首帧兜底）。isPrivate 始终返回；未解锁时隐私链路文件夹 previews 置空 */
 fileRoutes.get('/folders', async (c) => {
 	const user = requireUser(c)
 	if (!user) return unauthorized(c)
 
-	const [folders, fileCounts, previewMap] = await Promise.all([
+	const [folders, fileCounts, previewMap, privateScope] = await Promise.all([
 		folderDal.listByUser(user.id),
 		folderDal.countFilesByFolder(user.id),
 		folderDal.previewFilesByFolder(user.id),
+		privacyService.privateScopeFolderIds(user.id),
 	])
+	const unlocked = hasPrivacyUnlock(c, user.id)
+	const privateSet = new Set(privateScope)
 	return c.json<ApiResponse>({
 		success: true,
 		data: folders.map((f) => ({
 			...f,
 			fileCount: fileCounts.get(f.id) ?? 0,
-			previews: (previewMap.get(f.id) ?? []).map((p) => {
-				const signed = cosService.signFileUrls({
-					filename: p.filename,
-					mimeType: p.mimeType,
-					thumbnailUrl: p.hasCover ? 'cover' : null,
-				})
-				return { url: signed.thumbnailUrl ?? signed.cdnUrl, isVideo: p.isVideo }
-			}),
+			previews:
+				!unlocked && privateSet.has(f.id)
+					? []
+					: (previewMap.get(f.id) ?? []).map((p) => {
+							const signed = cosService.signFileUrls({
+								filename: p.filename,
+								mimeType: p.mimeType,
+								thumbnailUrl: p.hasCover ? 'cover' : null,
+							})
+							return { url: signed.thumbnailUrl ?? signed.cdnUrl, isVideo: p.isVideo }
+						}),
 		})),
 	})
 })
@@ -359,16 +95,45 @@ fileRoutes.post('/folders', async (c) => {
 		)
 	}
 
+	// 在隐私链路内新建子文件夹需先解锁
+	const denied = await guardPrivateChain(c, user.id, parent?.id)
+	if (denied) return denied
+
 	const folder = await folderDal.create({ userId: user.id, name, parentId: parent?.id ?? null })
 	return c.json<ApiResponse>({ success: true, data: folder })
 })
 
-/** PATCH /folders/:id — 重命名 */
+/** PATCH /folders/:id — 重命名（name）或设置/取消隐私（isPrivate） */
 fileRoutes.patch('/folders/:id', async (c) => {
 	const user = requireUser(c)
 	if (!user) return unauthorized(c)
 
-	const body = await c.req.json<{ name?: string }>()
+	const folderId = c.req.param('id')
+	const body = await c.req.json<{ name?: string; isPrivate?: boolean }>()
+
+	// 隐私链路上的文件夹：重命名/取消隐私均需先解锁
+	const denied = await guardPrivateChain(c, user.id, folderId)
+	if (denied) return denied
+
+	if (body.isPrivate !== undefined) {
+		// 设/取消隐私都必须已解锁（上面 guard 只拦链路内；设为隐私针对的是非链路文件夹，需显式校验）
+		if (!hasPrivacyUnlock(c, user.id)) return privacyLocked(c)
+		if (body.isPrivate) {
+			const error = await privacyService.validateSetPrivate(user.id, folderId)
+			if (error) {
+				return c.json<ApiResponse>({ success: false, message: error }, HTTP_STATUS.BAD_REQUEST)
+			}
+		}
+		const ok = await folderDal.setPrivacy(folderId, user.id, body.isPrivate)
+		if (!ok) {
+			return c.json<ApiResponse>({ success: false, message: '文件夹不存在' }, HTTP_STATUS.NOT_FOUND)
+		}
+		return c.json<ApiResponse>({
+			success: true,
+			message: body.isPrivate ? '已设为隐私文件夹' : '已取消隐私',
+		})
+	}
+
 	const name = (body.name || '').trim()
 	if (!name || name.length > 255 || name.includes('/') || name.includes('\\')) {
 		return c.json<ApiResponse>(
@@ -377,7 +142,7 @@ fileRoutes.patch('/folders/:id', async (c) => {
 		)
 	}
 
-	const ok = await folderDal.rename(c.req.param('id'), user.id, name)
+	const ok = await folderDal.rename(folderId, user.id, name)
 	if (!ok) {
 		return c.json<ApiResponse>({ success: false, message: '文件夹不存在' }, HTTP_STATUS.NOT_FOUND)
 	}
@@ -394,6 +159,10 @@ fileRoutes.delete('/folders/:id', async (c) => {
 	if (!folder || folder.userId !== user.id) {
 		return c.json<ApiResponse>({ success: false, message: '文件夹不存在' }, HTTP_STATUS.NOT_FOUND)
 	}
+
+	// 隐私链路上的文件夹删除需先解锁
+	const denied = await guardPrivateChain(c, user.id, folderId)
+	if (denied) return denied
 
 	// 软删文件夹内（含子孙）全部文件
 	const folderIds = await folderDal.collectDescendantIds(user.id, folderId)
@@ -429,11 +198,21 @@ fileRoutes.get('/', async (c) => {
 		: undefined
 	const order = c.req.query('order') === 'asc' ? ('asc' as const) : undefined
 
+	// 进入隐私链路文件夹需先解锁；搜索时未解锁则排除隐私链路文件
+	let excludeFolderIds: string[] | undefined
+	if (folderId) {
+		const denied = await guardPrivateChain(c, user.id, folderId)
+		if (denied) return denied
+	} else if (keyword && !hasPrivacyUnlock(c, user.id)) {
+		excludeFolderIds = await privacyService.privateScopeFolderIds(user.id)
+	}
+
 	const { items, total } = await fileDal.listByUser(user.id, {
 		page,
 		pageSize,
 		keyword,
 		folderId,
+		excludeFolderIds,
 		type,
 		sort,
 		order,
@@ -466,6 +245,10 @@ fileRoutes.get('/:id', async (c) => {
 		if (!isAdmin) {
 			return c.json<ApiResponse>({ success: false, message: '无权访问' }, HTTP_STATUS.FORBIDDEN)
 		}
+	} else {
+		// 本人文件：隐私链路内未解锁不签发 URL（管理员查看他人文件维持现状，不受隐私限制）
+		const denied = await guardPrivateChain(c, user.id, file.folderId)
+		if (denied) return denied
 	}
 
 	return c.json<ApiResponse>({
@@ -488,6 +271,9 @@ fileRoutes.get('/:id/content', async (c) => {
 		if (!isAdmin) {
 			return c.json<ApiResponse>({ success: false, message: '无权访问' }, HTTP_STATUS.FORBIDDEN)
 		}
+	} else {
+		const denied = await guardPrivateChain(c, user.id, file.folderId)
+		if (denied) return denied
 	}
 
 	if (!isTextLike(file.mimeType, file.originalName)) {
@@ -522,6 +308,15 @@ fileRoutes.patch('/:id', async (c) => {
 
 	const body = await c.req.json<{ folderId?: string | null; name?: string }>()
 
+	const file = await fileDal.findById(c.req.param('id'))
+	if (!file || file.userId !== user.id) {
+		return c.json<ApiResponse>({ success: false, message: '文件不存在' }, HTTP_STATUS.NOT_FOUND)
+	}
+
+	// 隐私链路内文件的重命名/移动需先解锁
+	const denied = await guardPrivateChain(c, user.id, file.folderId)
+	if (denied) return denied
+
 	if (body.name !== undefined) {
 		const name = body.name.trim()
 		if (!name || name.length > 255 || name.includes('/') || name.includes('\\')) {
@@ -541,6 +336,10 @@ fileRoutes.patch('/:id', async (c) => {
 	if (folder === undefined) {
 		return c.json<ApiResponse>({ success: false, message: '文件夹不存在' }, HTTP_STATUS.BAD_REQUEST)
 	}
+
+	// 移入隐私链路文件夹需先解锁（移出隐私链路 = 解除保护，已解锁即可）
+	const deniedTarget = await guardPrivateChain(c, user.id, folder?.id)
+	if (deniedTarget) return deniedTarget
 
 	const ok = await fileDal.moveToFolder(c.req.param('id'), user.id, folder?.id ?? null)
 	if (!ok) {
@@ -566,6 +365,9 @@ fileRoutes.delete('/:id', async (c) => {
 		}
 		await fileDal.adminDelete(file.id)
 	} else {
+		// 隐私链路内文件删除需先解锁
+		const denied = await guardPrivateChain(c, user.id, file.folderId)
+		if (denied) return denied
 		await fileDal.softDelete(file.id, user.id)
 	}
 

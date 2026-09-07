@@ -50,6 +50,13 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	'PATCH /api/files/:id': null,
 	'DELETE /api/files/:id': null,
 
+	// ==================== Files Privacy（隐私空间，登录用户即可） ====================
+	'POST /api/files/privacy/setup': null,
+	'POST /api/files/privacy/change': null,
+	'POST /api/files/privacy/send-code': null,
+	'POST /api/files/privacy/reset': null,
+	'POST /api/files/privacy/unlock': null,
+
 	// ==================== Messages（站内信，登录用户即可） ====================
 	'POST /api/messages/read-all': null,
 	'POST /api/messages/:id/read': null,

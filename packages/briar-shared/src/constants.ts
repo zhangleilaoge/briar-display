@@ -39,6 +39,11 @@ export const HTTP_STATUS = {
 } as const
 
 /**
+ * 隐私空间未解锁的业务错误码（HTTP 403 响应体 code 字段，前端据此清 token 并弹解锁框）
+ */
+export const PRIVACY_LOCKED_CODE = 40301
+
+/**
  * 环境变量
  */
 export const ENV = {

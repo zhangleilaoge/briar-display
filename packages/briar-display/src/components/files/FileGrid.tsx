@@ -2,7 +2,7 @@
 
 import type { FileItem, FolderItem, FolderPreview } from '@/api/files'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Pencil, Play, Trash2 } from 'lucide-react'
+import { Lock, Pencil, Play, Trash2 } from 'lucide-react'
 import FileTypeIcon from './FileTypeIcon'
 
 /** 文件夹外观：双色 SVG 文件夹；内部有图片/视频时前几张缩略图扇形露出（视频叠半透明播放图标） */
@@ -185,8 +185,9 @@ export default function FileGrid({
 						<FolderVisual previews={folder.previews ?? []} />
 					</button>
 					<div className="mt-1">
-						<p className="truncate text-xs font-medium" title={folder.name}>
-							{folder.name}
+						<p className="flex items-center gap-1 truncate text-xs font-medium" title={folder.name}>
+							{folder.isPrivate && <Lock className="h-3 w-3 shrink-0 text-amber-500" />}
+							<span className="truncate">{folder.name}</span>
 						</p>
 						<p className="text-[11px] text-muted-foreground">
 							{(folder.fileCount ?? 0) > 0 ? `${folder.fileCount} 个文件` : '空文件夹'}
