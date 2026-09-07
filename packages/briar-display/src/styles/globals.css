@@ -99,3 +99,39 @@
 .json-tree-container .copy-icon:has(+ span) {
 	display: none;
 }
+
+/* ============================================================
+   滚动条：stable gutter 常驻预留轨道宽度，
+   滚动条出现/消失（路由切换、弹窗锁滚动、列表加载）时内容宽度不再跳动
+   ============================================================ */
+html {
+	scrollbar-gutter: stable;
+	/* Firefox：细滚动条 + 半透明 thumb */
+	scrollbar-width: thin;
+	scrollbar-color: hsl(0 0% 50% / 0.35) transparent;
+}
+
+/* 内部滚动容器（Tailwind overflow 工具类）同样预留，容器内内容不被挤压 */
+.overflow-y-auto,
+.overflow-y-scroll {
+	scrollbar-gutter: stable;
+}
+
+/* WebKit：细滚动条 + 透明轨道（macOS 覆盖式滚动条不受影响的系统下表现为轻量经典样式） */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: hsl(0 0% 50% / 0.35);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: hsl(0 0% 50% / 0.55);
+}
