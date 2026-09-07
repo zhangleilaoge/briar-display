@@ -96,15 +96,37 @@ async function sha256Hex(file: File): Promise<string> {
 		.join('')
 }
 
-/** 浏览器对 md/txt 可能不给 MIME，按后缀补一下（影响后端类型筛选） */
+/** 浏览器对抓取/下载的媒体常不给 MIME（Blob.type 为空或 octet-stream），按扩展名兜底 */
+const EXT_MIME_MAP: Record<string, string> = {
+	webp: 'image/webp',
+	jpg: 'image/jpeg',
+	jpeg: 'image/jpeg',
+	png: 'image/png',
+	gif: 'image/gif',
+	bmp: 'image/bmp',
+	svg: 'image/svg+xml',
+	avif: 'image/avif',
+	mp4: 'video/mp4',
+	mov: 'video/quicktime',
+	webm: 'video/webm',
+	m4v: 'video/mp4',
+	mp3: 'audio/mpeg',
+	m4a: 'audio/mp4',
+	wav: 'audio/wav',
+	ogg: 'audio/ogg',
+	md: 'text/markdown',
+	markdown: 'text/markdown',
+	txt: 'text/plain',
+	log: 'text/plain',
+	json: 'application/json',
+	csv: 'text/csv',
+}
+
+/** 浏览器可能不给 MIME（分块下载组装的 Blob、WebKit 下载等），按扩展名补一下（影响后端类型筛选） */
 function guessMimeType(file: File): string {
-	if (file.type) return file.type
-	const lower = file.name.toLowerCase()
-	if (lower.endsWith('.md') || lower.endsWith('.markdown')) return 'text/markdown'
-	if (lower.endsWith('.txt') || lower.endsWith('.log')) return 'text/plain'
-	if (lower.endsWith('.json')) return 'application/json'
-	if (lower.endsWith('.csv')) return 'text/csv'
-	return 'application/octet-stream'
+	if (file.type && file.type !== 'application/octet-stream') return file.type
+	const ext = file.name.toLowerCase().split('.').pop() || ''
+	return EXT_MIME_MAP[ext] || 'application/octet-stream'
 }
 
 /** 对象浏览器缓存：一个月（cosKey 带随机 id，内容不可变，可放心长缓存） */
