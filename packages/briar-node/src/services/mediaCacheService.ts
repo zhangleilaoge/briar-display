@@ -79,6 +79,13 @@ export const mediaCacheService = {
 			return null
 		}
 		const result = typeof row.result === 'string' ? JSON.parse(row.result) : row.result
+		// xhs 旧格式媒体地址（catsapi 时代 webpic 时效签名路径 /{14位时间戳}/）过期即废；
+		// 自研解析产出的裸 key 地址长效，不受影响
+		if (row.platform === 'xhs') {
+			const r = result as MediaParseResult
+			const urls = [r.cover, r.video_url, r.audio_url, ...r.images, ...r.videos, ...r.live_photos]
+			if (urls.some((u) => u && /xhscdn\.com\/\d{14}\//.test(u))) return null
+		}
 		return result as MediaParseResult
 	},
 
