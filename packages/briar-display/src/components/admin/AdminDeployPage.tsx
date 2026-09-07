@@ -15,7 +15,7 @@ import DeployLogDialog from '@/components/admin/DeployLogDialog'
 import SchedulerTasksCard from '@/components/admin/SchedulerTasksCard'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import {
@@ -74,29 +74,20 @@ function deployStatusBadge(status: string) {
 	return <Badge className="bg-gray-100 text-gray-600">{status}</Badge>
 }
 
-/** commit message 单元格：单行截断，hover 弹窗查看全文 */
+/** commit message 单元格：单行截断，hover 弹窗查看全文（HoverCard 自带悬停延迟，鼠标可移入弹层） */
 function CommitMsgCell({ msg }: { msg?: string }) {
-	const [open, setOpen] = useState(false)
 	if (!msg) return <span className="text-xs text-muted-foreground">-</span>
 	return (
-		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger asChild>
-				<span
-					className="block max-w-[240px] cursor-default truncate text-xs"
-					onMouseEnter={() => setOpen(true)}
-					onMouseLeave={() => setOpen(false)}
-				>
+		<HoverCard openDelay={100} closeDelay={150}>
+			<HoverCardTrigger asChild>
+				<span className="block max-w-[240px] cursor-default truncate text-xs">
 					{msg.split('\n')[0]}
 				</span>
-			</PopoverTrigger>
-			<PopoverContent
-				className="w-80 whitespace-pre-wrap break-words text-xs"
-				onMouseEnter={() => setOpen(true)}
-				onMouseLeave={() => setOpen(false)}
-			>
+			</HoverCardTrigger>
+			<HoverCardContent className="w-80 whitespace-pre-wrap break-words text-xs">
 				{msg}
-			</PopoverContent>
-		</Popover>
+			</HoverCardContent>
+		</HoverCard>
 	)
 }
 
