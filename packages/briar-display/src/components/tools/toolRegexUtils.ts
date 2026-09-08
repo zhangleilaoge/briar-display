@@ -510,7 +510,16 @@ function drawNode(node: Laid, x: number, cy: number): string {
 				),
 			)
 			const ix = x + (node.box.w - node.item.box.w) / 2
+			parts.push(
+				tag('line', `x1="${x}" y1="${cy}" x2="${ix}" y2="${cy}" stroke="#333" stroke-width="1.5"`),
+			)
 			parts.push(drawNode(node.item, ix, cy))
+			parts.push(
+				tag(
+					'line',
+					`x1="${ix + node.item.box.w}" y1="${cy}" x2="${x + node.box.w}" y2="${cy}" stroke="#333" stroke-width="1.5"`,
+				),
+			)
 			break
 		}
 	}
