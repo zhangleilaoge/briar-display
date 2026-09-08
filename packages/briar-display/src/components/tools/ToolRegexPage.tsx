@@ -28,6 +28,7 @@ export default function ToolRegexPage() {
 	const [ready, setReady] = useState(false)
 	const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const svgHostRef = useRef<HTMLDivElement>(null)
+	const patternRef = useRef<HTMLTextAreaElement>(null)
 
 	useEffect(() => {
 		const cache = loadCache()
@@ -49,6 +50,13 @@ export default function ToolRegexPage() {
 	}, [pattern, flags, testInput, ready])
 
 	const flagStr = useMemo(() => flagsToString(flags), [flags])
+
+	useEffect(() => {
+		const el = patternRef.current
+		if (!el) return
+		el.style.height = 'auto'
+		el.style.height = `${el.scrollHeight}px`
+	}, [pattern])
 
 	const diagram = useMemo(() => {
 		try {
@@ -98,16 +106,22 @@ export default function ToolRegexPage() {
 						<CardTitle className="text-base">正则表达式</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-3">
-						<div className="flex items-start gap-2 font-mono text-sm">
-							<span className="mt-2 text-muted-foreground">/</span>
+						<div className="flex w-full items-center rounded-md border border-input bg-background font-mono text-sm focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
+							<span aria-hidden className="select-none pl-3 text-muted-foreground">
+								/
+							</span>
 							<Textarea
+								ref={patternRef}
 								value={pattern}
 								onChange={(e) => setPattern(e.target.value)}
 								placeholder="输入正则…"
-								className="min-h-[72px] font-mono text-sm"
+								rows={1}
+								className="min-h-0 flex-1 resize-none overflow-hidden rounded-none border-0 bg-transparent px-2 py-2.5 font-mono text-sm shadow-none focus-visible:border-transparent focus-visible:ring-0"
 								spellCheck={false}
 							/>
-							<span className="mt-2 text-muted-foreground">/{flagStr}</span>
+							<span aria-hidden className="select-none pr-3 text-muted-foreground">
+								/{flagStr}
+							</span>
 						</div>
 						<div className="flex flex-wrap gap-2">
 							{FLAG_KEYS.map((key) => (
@@ -139,8 +153,8 @@ export default function ToolRegexPage() {
 								解析失败：{diagram.error}
 							</div>
 						) : (
-							<div className="overflow-auto rounded-md border bg-white p-4 dark:bg-zinc-950">
-								<div ref={svgHostRef} className="inline-block min-w-full" />
+							<div className="overflow-auto rounded-md border bg-white p-6">
+								<div ref={svgHostRef} className="mx-auto w-fit" />
 							</div>
 						)}
 					</CardContent>
