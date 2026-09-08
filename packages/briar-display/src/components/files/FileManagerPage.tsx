@@ -11,6 +11,7 @@ import {
 	renameFile,
 	renameFolder,
 } from '@/api/files'
+import AdminPagination from '@/components/admin/AdminPagination'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import { PERMISSIONS } from '@briar/shared'
@@ -27,7 +28,7 @@ import FileToolbar from './FileToolbar'
 import PrivacySettingsDialog from './PrivacySettingsDialog'
 import PrivacyUnlockDialog from './PrivacyUnlockDialog'
 import { buildContextMenuItems } from './fileMenuItems'
-import { splitSort, useFileList } from './useFileList'
+import { PAGE_SIZE, splitSort, useFileList } from './useFileList'
 import { usePrivacyGate } from './usePrivacyGate'
 
 interface ContextMenuState {
@@ -68,18 +69,17 @@ function FileManagerPageInner() {
 	const {
 		files,
 		total,
-		hasMore,
 		loading,
-		loadingMore,
 		search,
 		keyword,
 		typeFilter,
 		sortValue,
+		page,
 		currentFolderId,
-		sentinelRef,
 		setTypeFilter,
 		setSortValue,
 		setCurrentFolderId,
+		setPage,
 		handleSearchChange,
 		refresh,
 	} = useFileList()
@@ -477,16 +477,12 @@ function FileManagerPageInner() {
 							onFolderDrop={handleFolderDrop}
 						/>
 
-						{/* Infinite scroll sentinel */}
-						<div ref={sentinelRef} className="h-1" />
-						{loadingMore && (
-							<div className="flex items-center justify-center py-6">
-								<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-							</div>
-						)}
-						{!hasMore && files.length > 0 && (
-							<div className="py-6 text-center text-xs text-muted-foreground">没有更多了</div>
-						)}
+						<AdminPagination
+							total={total}
+							limit={PAGE_SIZE}
+							offset={(page - 1) * PAGE_SIZE}
+							onPageChange={(offset) => setPage(offset / PAGE_SIZE + 1)}
+						/>
 					</>
 				)}
 			</div>

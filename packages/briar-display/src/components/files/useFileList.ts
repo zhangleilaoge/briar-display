@@ -9,7 +9,7 @@ import {
 } from '@/api/files'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const PAGE_SIZE = 24
+export const PAGE_SIZE = 24
 const BASE_PATH = '/briar/files'
 
 /** 排序组合值（Select 单值，拆成 field + order 传给后端） */
@@ -32,25 +32,20 @@ function readFolderFromPath(): string | null {
 	return match ? match[1] : null
 }
 
-/** 文件列表数据：分页加载、无限滚动、搜索防抖、类型/文件夹筛选、文件夹路径与 URL 同步 */
+/** 文件列表数据：传统翻页、搜索防抖、类型/文件夹筛选、文件夹路径与 URL 同步 */
 export function useFileList() {
 	const [files, setFiles] = useState<FileItem[]>([])
 	const [total, setTotal] = useState(0)
-	const [hasMore, setHasMore] = useState(false)
 	const [loading, setLoading] = useState(true)
-	const [loadingMore, setLoadingMore] = useState(false)
 	const [search, setSearch] = useState('')
 	const [keyword, setKeyword] = useState('')
 	const [typeFilter, setTypeFilter] = useState<'' | FileTypeFilter>('')
 	const [sortValue, setSortValue] = useState<FileSortValue>(DEFAULT_SORT)
+	const [page, setPage] = useState(1)
 	const [currentFolderId, setCurrentFolderIdState] = useState<string | null>(() =>
 		readFolderFromPath(),
 	)
 	const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
-	const sentinelRef = useRef<HTMLDivElement>(null)
-	const pageRef = useRef(1)
-	const hasMoreRef = useRef(false)
-	const loadingMoreRef = useRef(false)
 
 	/** 切换文件夹并同步到 URL（pushState，支持前进/后退） */
 	const setCurrentFolderId = useCallback((folderId: string | null) => {
@@ -72,14 +67,8 @@ export function useFileList() {
 			type: '' | FileTypeFilter,
 			sort: FileSortValue,
 			p: number,
-			append: boolean,
 		) => {
-			if (append) {
-				setLoadingMore(true)
-				loadingMoreRef.current = true
-			} else {
-				setLoading(true)
-			}
+			setLoading(true)
 			try {
 				const res = await getFiles({
 					keyword: kw || undefined,
@@ -90,35 +79,30 @@ export function useFileList() {
 					pageSize: PAGE_SIZE,
 				})
 				if (res.success && res.data) {
-					setFiles((prev) => (append ? [...prev, ...res.data!.items] : res.data!.items))
+					setFiles(res.data.items)
 					setTotal(res.data.total)
-					const nextHasMore = p * PAGE_SIZE < res.data.total
-					setHasMore(nextHasMore)
-					hasMoreRef.current = nextHasMore
 				}
 			} catch {
 				/* ignore */
 			} finally {
-				if (append) {
-					setLoadingMore(false)
-					loadingMoreRef.current = false
-				} else {
-					setLoading(false)
-				}
+				setLoading(false)
 			}
 		},
 		[],
 	)
 
 	const refresh = useCallback(() => {
-		pageRef.current = 1
-		fetchPage(keyword, currentFolderId, typeFilter, sortValue, 1, false)
-	}, [fetchPage, keyword, currentFolderId, typeFilter, sortValue])
+		fetchPage(keyword, currentFolderId, typeFilter, sortValue, page)
+	}, [fetchPage, keyword, currentFolderId, typeFilter, sortValue, page])
+
+	// 筛选条件变化时回到第一页
+	useEffect(() => {
+		setPage(1)
+	}, [keyword, currentFolderId, typeFilter, sortValue])
 
 	useEffect(() => {
-		pageRef.current = 1
-		fetchPage(keyword, currentFolderId, typeFilter, sortValue, 1, false)
-	}, [keyword, currentFolderId, typeFilter, sortValue, fetchPage])
+		fetchPage(keyword, currentFolderId, typeFilter, sortValue, page)
+	}, [keyword, currentFolderId, typeFilter, sortValue, page, fetchPage])
 
 	const handleSearchChange = (value: string) => {
 		setSearch(value)
@@ -128,43 +112,25 @@ export function useFileList() {
 		}, 300)
 	}
 
-	const loadMore = useCallback(() => {
-		if (loadingMoreRef.current || !hasMoreRef.current) return
-		const next = pageRef.current + 1
-		pageRef.current = next
-		fetchPage(keyword, currentFolderId, typeFilter, sortValue, next, true)
-	}, [fetchPage, keyword, currentFolderId, typeFilter, sortValue])
-
-	useEffect(() => {
-		const el = sentinelRef.current
-		if (!el) return
-		const io = new IntersectionObserver(
-			(entries) => {
-				for (const entry of entries) {
-					if (entry.isIntersecting) loadMore()
-				}
-			},
-			{ rootMargin: '200px' },
-		)
-		io.observe(el)
-		return () => io.disconnect()
-	}, [loadMore])
+	const handlePageChange = useCallback((p: number) => {
+		setPage(p)
+		window.scrollTo({ top: 0 })
+	}, [])
 
 	return {
 		files,
 		total,
-		hasMore,
 		loading,
-		loadingMore,
 		search,
 		keyword,
 		typeFilter,
 		sortValue,
+		page,
 		currentFolderId,
-		sentinelRef,
 		setTypeFilter,
 		setSortValue,
 		setCurrentFolderId,
+		setPage: handlePageChange,
 		handleSearchChange,
 		refresh,
 	}
