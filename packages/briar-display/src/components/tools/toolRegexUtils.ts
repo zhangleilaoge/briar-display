@@ -90,7 +90,7 @@ type RRNode =
 	| { kind: 'terminal'; label: string; tone?: 'lit' | 'meta' | 'anchor' }
 	| { kind: 'sequence'; items: RRNode[] }
 	| { kind: 'choice'; label: string; items: RRNode[] }
-	| { kind: 'quant'; item: RRNode; text: string; greedy: boolean }
+	| { kind: 'quant'; item: RRNode; text: string; greedy: boolean; skip: boolean; repeat: boolean }
 	| { kind: 'group'; label: string; item: RRNode }
 
 const parseFn = (
@@ -186,7 +186,14 @@ function astToRR(node: AstNode): RRNode {
 			const max = node.max
 			let text = quantLabel(min, max)
 			if (node.greedy === false) text += ' (lazy)'
-			return { kind: 'quant', item: inner, text, greedy: node.greedy !== false }
+			return {
+				kind: 'quant',
+				item: inner,
+				text,
+				greedy: node.greedy !== false,
+				skip: min === 0,
+				repeat: max !== 1,
+			}
 		}
 		case 'characterClass': {
 			const parts = (node.body || []).map(partLabel)
@@ -247,7 +254,7 @@ type Laid =
 	| { kind: 'terminal'; label: string; tone: string; box: Box }
 	| { kind: 'sequence'; items: Laid[]; box: Box }
 	| { kind: 'choice'; label: string; items: Laid[]; box: Box }
-	| { kind: 'quant'; item: Laid; text: string; box: Box }
+	| { kind: 'quant'; item: Laid; text: string; skip: boolean; repeat: boolean; box: Box }
 	| { kind: 'group'; label: string; item: Laid; box: Box }
 
 const CHAR_W = 7.2
@@ -295,7 +302,7 @@ function layout(node: RRNode): Laid {
 			})
 			const w = Math.max(labelW, innerW + 40) + 24
 			const h = innerH + 36
-			const up = h / 2
+			const up = items.length > 0 ? 28 + items[0].box.up : h / 2
 			return { kind: 'choice', label: node.label, items, box: { w, h, up, down: h - up } }
 		}
 		case 'quant': {
@@ -303,11 +310,13 @@ function layout(node: RRNode): Laid {
 			const tw = textWidth(node.text) + 8
 			const w = item.box.w + 36
 			const up = item.box.up + 22
-			const down = item.box.down + 8
+			const down = item.box.down + (node.skip ? 24 : 8)
 			return {
 				kind: 'quant',
 				item,
 				text: node.text,
+				skip: node.skip,
+				repeat: node.repeat,
 				box: { w: Math.max(w, tw + 20), h: up + down, up, down },
 			}
 		}
@@ -315,7 +324,7 @@ function layout(node: RRNode): Laid {
 			const item = layout(node.item)
 			const lw = textWidth(node.label) + 12
 			const w = Math.max(item.box.w + 28, lw + 8)
-			const up = item.box.up + 18
+			const up = item.box.up + 26
 			const down = item.box.down + 12
 			return { kind: 'group', label: node.label, item, box: { w, h: up + down, up, down } }
 		}
@@ -366,13 +375,10 @@ function drawNode(node: Laid, x: number, cy: number): string {
 			let cx = x
 			node.items.forEach((it, i) => {
 				if (i > 0) {
-					const prev = node.items[i - 1]
-					const x1 = cx - GAP
-					const x2 = cx
 					parts.push(
 						tag(
 							'line',
-							`x1="${x1 + prev.box.w}" y1="${cy}" x2="${x2}" y2="${cy}" stroke="#333" stroke-width="1.5"`,
+							`x1="${cx - GAP}" y1="${cy}" x2="${cx}" y2="${cy}" stroke="#333" stroke-width="1.5"`,
 						),
 					)
 				}
@@ -452,20 +458,28 @@ function drawNode(node: Laid, x: number, cy: number): string {
 			parts.push(drawNode(node.item, ix, cy))
 			const x0 = x + 8
 			const x1 = ix + node.item.box.w + 10
-			const loopY = cy - node.item.box.up - 12
-			parts.push(
-				tag(
-					'path',
-					`d="M ${x0} ${cy} C ${x0} ${loopY}, ${x1} ${loopY}, ${x1} ${cy}" fill="none" stroke="#333" stroke-width="1.5"`,
-				),
-			)
-			parts.push(
-				tag('polygon', `points="${x0},${cy - 4} ${x0 + 8},${cy} ${x0},${cy + 4}" fill="#333"`),
-			)
+			if (node.repeat) {
+				const loopY = cy - node.item.box.up - 12
+				parts.push(
+					tag(
+						'path',
+						`d="M ${x0} ${cy} L ${x0} ${loopY + 8} Q ${x0} ${loopY}, ${x0 + 8} ${loopY} L ${x1 - 8} ${loopY} Q ${x1} ${loopY}, ${x1} ${loopY + 8} L ${x1} ${cy}" fill="none" stroke="#333" stroke-width="1.5"`,
+					),
+				)
+			}
+			if (node.skip) {
+				const bypassY = cy + node.item.box.down + 12
+				parts.push(
+					tag(
+						'path',
+						`d="M ${x0} ${cy} L ${x0} ${bypassY - 8} Q ${x0} ${bypassY}, ${x0 + 8} ${bypassY} L ${x1 - 8} ${bypassY} Q ${x1} ${bypassY}, ${x1} ${bypassY - 8} L ${x1} ${cy}" fill="none" stroke="#333" stroke-width="1.5"`,
+					),
+				)
+			}
 			parts.push(
 				tag(
 					'text',
-					`x="${(x0 + x1) / 2}" y="${loopY - 4}" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#444"`,
+					`x="${(x0 + x1) / 2}" y="${cy - node.item.box.up - 16}" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#444"`,
 					esc(node.text),
 				),
 			)
