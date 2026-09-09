@@ -4,7 +4,7 @@ import UserMenu from '@/components/common/UserMenu'
 import { Card, CardContent } from '@/components/ui/card'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { Folder, PenLine, Shield, Wrench } from 'lucide-react'
+import { Folder, PenLine, Shield, Sparkles, Wrench } from 'lucide-react'
 
 interface EntryCardProps {
 	icon: React.ReactNode
@@ -88,6 +88,13 @@ function PortalPageInner() {
 							description="文件、图片与视频的云端管理"
 							href="/briar/files"
 							gradient="from-pink-500 to-rose-500"
+						/>
+						<EntryCard
+							icon={<Sparkles className="h-5 w-5" />}
+							title="AETHER 流境"
+							description="数字流体艺术馆 · 八件馆藏静帧"
+							href="/briar/aether"
+							gradient="from-indigo-500 to-fuchsia-500"
 						/>
 						<EntryCard
 							icon={<PenLine className="h-5 w-5" />}
