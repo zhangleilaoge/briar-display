@@ -148,9 +148,14 @@ export default function ToolMediaPage() {
 		})
 	}
 
-	const handleToggleAll = (kind: 'images' | 'videos') => {
+	const handleToggleAll = (kind: 'images' | 'videos' | 'livePhotos') => {
 		if (!sections) return
-		const pool = kind === 'images' ? sections.images : sections.videos
+		const pool =
+			kind === 'images'
+				? sections.images
+				: kind === 'videos'
+					? sections.videos
+					: sections.livePhotos
 		const ids = pool.map((item) => item.id)
 		setSelected((prev) => {
 			const allSelected = ids.length > 0 && ids.every((id) => prev.has(id))
@@ -164,11 +169,16 @@ export default function ToolMediaPage() {
 		})
 	}
 
-	const handleZip = async (kind: 'images' | 'videos') => {
+	const handleZip = async (kind: 'images' | 'videos' | 'livePhotos') => {
 		if (!sections || zipping) return
-		const pool = kind === 'images' ? sections.images : sections.videos
+		const pool =
+			kind === 'images'
+				? sections.images
+				: kind === 'videos'
+					? sections.videos
+					: sections.livePhotos
 		const items = pool.filter((item) => selected.has(item.id))
-		const noun = kind === 'images' ? '图片' : '视频'
+		const noun = kind === 'images' ? '图片' : kind === 'videos' ? '视频' : '动态照片'
 		if (items.length === 0) {
 			toast.error(`请先勾选要下载的${noun}`)
 			return
@@ -184,7 +194,12 @@ export default function ToolMediaPage() {
 				setZipPercent(Math.round(((i + 1) / items.length) * 100))
 			}
 			const zip = createZip(entries)
-			const fallback = kind === 'images' ? 'media-images' : 'media-videos'
+			const fallback =
+				kind === 'images'
+					? 'media-images'
+					: kind === 'videos'
+						? 'media-videos'
+						: 'media-live-photos'
 			saveBlob(zip, `${sanitizeFilename(result?.title || fallback)}.zip`)
 			toast.success(`已打包 ${entries.length} 个${noun}`)
 		} catch {
