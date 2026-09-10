@@ -30,8 +30,8 @@ interface ToolMediaResultProps {
 	onDownload: (item: MediaItem) => void
 	onAddTo: (items: MediaItem[]) => void
 	onToggle: (id: string) => void
-	onToggleAll: () => void
-	onZip: () => void
+	onToggleAll: (kind: 'images' | 'videos') => void
+	onZip: (kind: 'images' | 'videos') => void
 }
 
 /** 单个媒体项的操作按钮：下载 + 添加到文件 */
@@ -107,8 +107,12 @@ export default function ToolMediaResult({
 	const [previewIndex, setPreviewIndex] = useState<number | null>(null)
 	/** 加载失败的媒体：id → 失败原因（探测后端拿到真实状态，避免黑框无提示） */
 	const [loadErrors, setLoadErrors] = useState<Record<string, string>>({})
-	const allChecked = sections.images.length > 0 && selected.size === sections.images.length
 	const selectedImages = sections.images.filter((item) => selected.has(item.id))
+	const selectedVideos = sections.videos.filter((item) => selected.has(item.id))
+	const allImagesChecked =
+		sections.images.length > 0 && sections.images.every((item) => selected.has(item.id))
+	const allVideosChecked =
+		sections.videos.length > 0 && sections.videos.every((item) => selected.has(item.id))
 
 	const handleMediaError = (item: MediaItem) => {
 		if (loadErrors[item.id]) return
@@ -180,33 +184,87 @@ export default function ToolMediaResult({
 			</div>
 
 			{/* 视频 */}
-			{sections.videos.map((video) => (
-				<div key={video.id} className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+			{sections.videos.length > 0 && (
+				<div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
 					<div className="flex items-center justify-between">
-						<h2 className="font-semibold">{video.label}</h2>
-						<ItemActions
-							item={video}
-							prog={progress[video.id]}
-							disabled={zipping}
-							canAddTo={canAddTo}
-							onDownload={onDownload}
-							onAddTo={onAddTo}
-						/>
+						<h2 className="font-semibold">
+							视频
+							<span className="ml-2 text-sm font-normal text-muted-foreground">
+								共 {sections.videos.length} 个
+							</span>
+						</h2>
+						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => onToggleAll('videos')}
+								disabled={zipping}
+							>
+								{allVideosChecked ? '取消全选' : '全选'}
+							</Button>
+							{canAddTo && (
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => onAddTo(selectedVideos)}
+									disabled={zipping || selectedVideos.length === 0}
+								>
+									<FolderPlus className="mr-1.5 h-4 w-4" />
+									添加所选到文件 · {selectedVideos.length}
+								</Button>
+							)}
+							<Button
+								size="sm"
+								onClick={() => onZip('videos')}
+								disabled={zipping || selectedVideos.length === 0}
+							>
+								{zipping && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+								{zipping ? `打包中 ${zipPercent}%` : `打包下载所选视频 · ${selectedVideos.length}`}
+							</Button>
+						</div>
 					</div>
-					<div className="relative">
-						{/* biome-ignore lint/a11y/useMediaCaption: 外链抓取的媒体没有字幕文件 */}
-						<video
-							src={video.previewUrl ?? video.url}
-							controls
-							preload="metadata"
-							referrerPolicy="no-referrer"
-							onError={() => handleMediaError(video)}
-							className="max-h-[480px] w-full rounded-md bg-black"
-						/>
-						{errorOverlay(video.id)}
+					<div className="flex flex-col gap-4">
+						{sections.videos.map((video) => {
+							const checked = selected.has(video.id)
+							return (
+								<div key={video.id} className="flex flex-col gap-3 rounded-lg border p-3">
+									<div className="flex items-center justify-between gap-2">
+										<div className="flex min-w-0 items-center gap-2">
+											<Checkbox
+												checked={checked}
+												onCheckedChange={() => onToggle(video.id)}
+												aria-label={`选择${video.label}`}
+												className="h-5 w-5 rounded-[5px] border-2"
+											/>
+											<h3 className="truncate font-medium">{video.label}</h3>
+										</div>
+										<ItemActions
+											item={video}
+											prog={progress[video.id]}
+											disabled={zipping}
+											canAddTo={canAddTo}
+											onDownload={onDownload}
+											onAddTo={onAddTo}
+										/>
+									</div>
+									<div className="relative">
+										{/* biome-ignore lint/a11y/useMediaCaption: 外链抓取的媒体没有字幕文件 */}
+										<video
+											src={video.previewUrl ?? video.url}
+											controls
+											preload="metadata"
+											referrerPolicy="no-referrer"
+											onError={() => handleMediaError(video)}
+											className="max-h-[480px] w-full rounded-md bg-black"
+										/>
+										{errorOverlay(video.id)}
+									</div>
+								</div>
+							)
+						})}
 					</div>
 				</div>
-			))}
+			)}
 
 			{/* 图集 */}
 			{sections.images.length > 0 && (
@@ -219,23 +277,32 @@ export default function ToolMediaResult({
 							</span>
 						</h2>
 						<div className="flex items-center gap-2">
-							<Button variant="outline" size="sm" onClick={onToggleAll} disabled={zipping}>
-								{allChecked ? '取消全选' : '全选'}
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => onToggleAll('images')}
+								disabled={zipping}
+							>
+								{allImagesChecked ? '取消全选' : '全选'}
 							</Button>
 							{canAddTo && (
 								<Button
 									variant="outline"
 									size="sm"
 									onClick={() => onAddTo(selectedImages)}
-									disabled={zipping || selected.size === 0}
+									disabled={zipping || selectedImages.length === 0}
 								>
 									<FolderPlus className="mr-1.5 h-4 w-4" />
-									添加所选到文件 · {selected.size}
+									添加所选到文件 · {selectedImages.length}
 								</Button>
 							)}
-							<Button size="sm" onClick={onZip} disabled={zipping || selected.size === 0}>
+							<Button
+								size="sm"
+								onClick={() => onZip('images')}
+								disabled={zipping || selectedImages.length === 0}
+							>
 								{zipping && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-								{zipping ? `打包中 ${zipPercent}%` : `打包下载所选图片 · ${selected.size}`}
+								{zipping ? `打包中 ${zipPercent}%` : `打包下载所选图片 · ${selectedImages.length}`}
 							</Button>
 						</div>
 					</div>

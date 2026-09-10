@@ -84,7 +84,9 @@ export default function ToolMediaPage() {
 			}
 			setResult(res.data)
 			setSections(next)
-			setSelected(new Set(next.images.map((item) => item.id)))
+			setSelected(
+				new Set((next.images.length > 0 ? next.images : next.videos).map((item) => item.id)),
+			)
 			setHistory((prev) =>
 				pushMediaHistory(prev, extractShareUrl(url), res.data!.title || '（无标题）'),
 			)
@@ -146,20 +148,29 @@ export default function ToolMediaPage() {
 		})
 	}
 
-	const handleToggleAll = () => {
+	const handleToggleAll = (kind: 'images' | 'videos') => {
 		if (!sections) return
-		setSelected((prev) =>
-			prev.size === sections.images.length
-				? new Set()
-				: new Set(sections.images.map((item) => item.id)),
-		)
+		const pool = kind === 'images' ? sections.images : sections.videos
+		const ids = pool.map((item) => item.id)
+		setSelected((prev) => {
+			const allSelected = ids.length > 0 && ids.every((id) => prev.has(id))
+			const next = new Set(prev)
+			if (allSelected) {
+				for (const id of ids) next.delete(id)
+			} else {
+				for (const id of ids) next.add(id)
+			}
+			return next
+		})
 	}
 
-	const handleZip = async () => {
+	const handleZip = async (kind: 'images' | 'videos') => {
 		if (!sections || zipping) return
-		const items = sections.images.filter((item) => selected.has(item.id))
+		const pool = kind === 'images' ? sections.images : sections.videos
+		const items = pool.filter((item) => selected.has(item.id))
+		const noun = kind === 'images' ? '图片' : '视频'
 		if (items.length === 0) {
-			toast.error('请先勾选要下载的图片')
+			toast.error(`请先勾选要下载的${noun}`)
 			return
 		}
 		setZipping(true)
@@ -173,8 +184,9 @@ export default function ToolMediaPage() {
 				setZipPercent(Math.round(((i + 1) / items.length) * 100))
 			}
 			const zip = createZip(entries)
-			saveBlob(zip, `${sanitizeFilename(result?.title || 'xhs-images')}.zip`)
-			toast.success(`已打包 ${entries.length} 张图片`)
+			const fallback = kind === 'images' ? 'media-images' : 'media-videos'
+			saveBlob(zip, `${sanitizeFilename(result?.title || fallback)}.zip`)
+			toast.success(`已打包 ${entries.length} 个${noun}`)
 		} catch {
 			// downloadItem 已提示失败原因
 		} finally {
