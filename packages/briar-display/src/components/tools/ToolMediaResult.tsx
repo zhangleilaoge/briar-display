@@ -30,8 +30,8 @@ interface ToolMediaResultProps {
 	onDownload: (item: MediaItem) => void
 	onAddTo: (items: MediaItem[]) => void
 	onToggle: (id: string) => void
-	onToggleAll: (kind: 'images' | 'videos') => void
-	onZip: (kind: 'images' | 'videos') => void
+	onToggleAll: (kind: 'images' | 'videos' | 'livePhotos') => void
+	onZip: (kind: 'images' | 'videos' | 'livePhotos') => void
 }
 
 /** 单个媒体项的操作按钮：下载 + 添加到文件 */
@@ -109,10 +109,13 @@ export default function ToolMediaResult({
 	const [loadErrors, setLoadErrors] = useState<Record<string, string>>({})
 	const selectedImages = sections.images.filter((item) => selected.has(item.id))
 	const selectedVideos = sections.videos.filter((item) => selected.has(item.id))
+	const selectedLivePhotos = sections.livePhotos.filter((item) => selected.has(item.id))
 	const allImagesChecked =
 		sections.images.length > 0 && sections.images.every((item) => selected.has(item.id))
 	const allVideosChecked =
 		sections.videos.length > 0 && sections.videos.every((item) => selected.has(item.id))
+	const allLivePhotosChecked =
+		sections.livePhotos.length > 0 && sections.livePhotos.every((item) => selected.has(item.id))
 
 	const handleMediaError = (item: MediaItem) => {
 		if (loadErrors[item.id]) return
@@ -350,35 +353,82 @@ export default function ToolMediaResult({
 			{/* 动态照片 */}
 			{sections.livePhotos.length > 0 && (
 				<div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
-					<h2 className="font-semibold">动态照片</h2>
+					<div className="flex items-center justify-between">
+						<h2 className="font-semibold">
+							动态照片
+							<span className="ml-2 text-sm font-normal text-muted-foreground">
+								共 {sections.livePhotos.length} 个
+							</span>
+						</h2>
+						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => onToggleAll('livePhotos')}
+								disabled={zipping}
+							>
+								{allLivePhotosChecked ? '取消全选' : '全选'}
+							</Button>
+							{canAddTo && (
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => onAddTo(selectedLivePhotos)}
+									disabled={zipping || selectedLivePhotos.length === 0}
+								>
+									<FolderPlus className="mr-1.5 h-4 w-4" />
+									添加所选到文件 · {selectedLivePhotos.length}
+								</Button>
+							)}
+							<Button
+								size="sm"
+								onClick={() => onZip('livePhotos')}
+								disabled={zipping || selectedLivePhotos.length === 0}
+							>
+								{zipping && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+								{zipping
+									? `打包中 ${zipPercent}%`
+									: `打包下载所选动态照片 · ${selectedLivePhotos.length}`}
+							</Button>
+						</div>
+					</div>
 					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-						{sections.livePhotos.map((live) => (
-							<div key={live.id} className="flex flex-col overflow-hidden rounded-lg border">
-								<div className="relative">
-									{/* biome-ignore lint/a11y/useMediaCaption: 外链抓取的媒体没有字幕文件 */}
-									<video
-										src={live.previewUrl ?? live.url}
-										controls
-										preload="metadata"
-										referrerPolicy="no-referrer"
-										onError={() => handleMediaError(live)}
-										className="aspect-[3/4] w-full bg-black object-cover"
-									/>
-									{errorOverlay(live.id)}
+						{sections.livePhotos.map((live) => {
+							const checked = selected.has(live.id)
+							return (
+								<div key={live.id} className="flex flex-col overflow-hidden rounded-lg border">
+									<div className="relative">
+										{/* biome-ignore lint/a11y/useMediaCaption: 外链抓取的媒体没有字幕文件 */}
+										<video
+											src={live.previewUrl ?? live.url}
+											controls
+											preload="metadata"
+											referrerPolicy="no-referrer"
+											onError={() => handleMediaError(live)}
+											className="aspect-[3/4] w-full bg-black object-cover"
+										/>
+										{errorOverlay(live.id)}
+										<Checkbox
+											checked={checked}
+											onCheckedChange={() => onToggle(live.id)}
+											aria-label={`选择${live.label}`}
+											className="absolute left-2 top-2 h-5 w-5 rounded-[5px] border-2 border-white/80 bg-black/25 shadow-md data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+										/>
+									</div>
+									<div className="flex items-center justify-between gap-2 bg-muted/50 px-3 py-2">
+										<span className="text-sm">{live.label}</span>
+										<ItemActions
+											item={live}
+											prog={progress[live.id]}
+											disabled={zipping}
+											canAddTo={canAddTo}
+											onDownload={onDownload}
+											onAddTo={onAddTo}
+										/>
+									</div>
 								</div>
-								<div className="flex items-center justify-between gap-2 bg-muted/50 px-3 py-2">
-									<span className="text-sm">{live.label}</span>
-									<ItemActions
-										item={live}
-										prog={progress[live.id]}
-										disabled={zipping}
-										canAddTo={canAddTo}
-										onDownload={onDownload}
-										onAddTo={onAddTo}
-									/>
-								</div>
-							</div>
-						))}
+							)
+						})}
 					</div>
 				</div>
 			)}
