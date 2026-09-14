@@ -277,21 +277,31 @@ def query_logs(
         f"start={start.isoformat(timespec='seconds')} "
         f"end={end.isoformat(timespec='seconds')}"
     )
-    completed = subprocess.run(
-        command,
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    if completed.returncode != 0:
-        raise RuntimeError("天网查询失败，请检查 OPS 登录态、网络和应用权限")
-    try:
-        result = json.loads(completed.stdout)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError("天网查询返回无法解析") from exc
-    if not result.get("success"):
-        raise RuntimeError("天网查询未成功，请检查 OPS 登录态和查询参数")
+    last_error: RuntimeError | None = None
+    for attempt in (1, 2):
+        if attempt > 1:
+            progress("天网查询重试 attempt=2（退避 2s）")
+            time.sleep(2)
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        if completed.returncode != 0:
+            last_error = RuntimeError("天网查询失败，请检查 OPS 登录态、网络和应用权限")
+            continue
+        try:
+            result = json.loads(completed.stdout)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("天网查询返回无法解析") from exc
+        if not result.get("success"):
+            last_error = RuntimeError("天网查询未成功，请检查 OPS 登录态和查询参数")
+            continue
+        break
+    else:
+        raise last_error or RuntimeError("天网查询失败，请检查 OPS 登录态、网络和应用权限")
     progress(
         f"天网查询完成 total={result.get('total', 0)} "
         f"returned={len(result.get('logs', []))} "

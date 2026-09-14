@@ -18,6 +18,7 @@
 | `briar-get-session-id` | 按时间窗口 + （定制页面 key 或 kdtId）查询有效导购登录 sessionId（天网日志 + Dubbo 校验） |
 | `briar-mail` | 发邮件（支持附件）：直连收件方 MX 投递，无需邮箱凭证 |
 | `briar-subtitle` | 视频字幕提取：烧录字幕抽帧直读或 whisper 语音转录（带时间轴） |
+| `h5-standalone-demo` | 把 H5 页面从源码抽成独立单文件演示 HTML（样式还原 + 可点交互 + mock 数据） |
 
 ---
 
