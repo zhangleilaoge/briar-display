@@ -113,7 +113,7 @@ Dubbo 鉴权由 `zan-dubbo-invoke` 管理（Funeng/Ticket 登录态，可从 Chr
 
 - OPS 登录缺失或过期：请用户执行 `opscli login` 后重试。
 - 缺少 `zan-dubbo-invoke`：请用户安装后重试（如 `helm skill install zan-dubbo-invoke -g`）。
-- Dubbo 鉴权失败：停止执行，请用户在 Chrome 登录 CAS（cas.qima-inc.com）并手动访问 https://ticket.qima-inc.com 完成 Ticket 平台登录后重试；鉴权错误不得重试。
+- Dubbo 鉴权失败：先检查 Chrome 中 cas.qima-inc.com 是否已有登录态。若 CAS 已登录，AI 应自行通过 kimi-webbridge 在用户真实浏览器中打开 https://funeng.qima-inc.com/ 完成 Funeng 登录（通常会复用 CAS 会话自动授权），再访问 https://ticket.qima-inc.com 确认不再提示「用户未登录」，然后重试一次查询；仍失败才停止执行，请用户在 Chrome 手动登录 CAS（cas.qima-inc.com）并访问 https://ticket.qima-inc.com 完成 Ticket 平台登录后重试。除「Funeng/Ticket 登录态刷新后重试一次」外，鉴权错误不得重试。
 - 白名单拉取失败（401/302 到 safelogin）：请用户在 Chrome 登录 CAS 后重试。
 - 遇到限流：至少退避一秒，所有重试仍需遵守 3 QPS 限制。
 - 部分候选失败：保留已完成的脱敏记录，汇报失败数量，不得伪造结果。
