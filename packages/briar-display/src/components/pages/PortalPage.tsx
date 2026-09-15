@@ -1,5 +1,6 @@
 'use client'
 
+import FrothyGalaxyShader from '@/components/common/FrothyGalaxyShader'
 import UserMenu from '@/components/common/UserMenu'
 import { Card, CardContent } from '@/components/ui/card'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
@@ -44,23 +45,10 @@ function PortalPageInner() {
 
 	return (
 		<div className="relative flex min-h-screen flex-col overflow-hidden">
-			{/* Mesh gradient background */}
+			{/* Frothy galaxy shader background */}
 			<div className="pointer-events-none fixed inset-0 -z-20">
-				<div className="absolute inset-0 bg-background" />
-				<div className="absolute -left-[20%] -top-[20%] h-[60%] w-[60%] rounded-full bg-blue-500/20 blur-[120px]" />
-				<div className="absolute -right-[10%] top-[10%] h-[50%] w-[50%] rounded-full bg-purple-500/20 blur-[120px]" />
-				<div className="absolute bottom-[5%] left-[30%] h-[40%] w-[40%] rounded-full bg-teal-500/15 blur-[100px]" />
+				<FrothyGalaxyShader />
 			</div>
-
-			{/* Dot grid overlay */}
-			<div
-				className="pointer-events-none fixed inset-0 -z-10"
-				style={{
-					backgroundImage:
-						'radial-gradient(circle, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)',
-					backgroundSize: '24px 24px',
-				}}
-			/>
 
 			{/* Top bar */}
 			<header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/50 bg-background/60 px-6 backdrop-blur-md">
