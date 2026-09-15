@@ -5,7 +5,7 @@ import UserMenu from '@/components/common/UserMenu'
 import { Card, CardContent } from '@/components/ui/card'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { Folder, PenLine, Shield, Sparkles, Wrench } from 'lucide-react'
+import { Folder, PenLine, Shield, Wrench } from 'lucide-react'
 
 interface EntryCardProps {
 	icon: React.ReactNode
@@ -78,13 +78,6 @@ function PortalPageInner() {
 							gradient="from-pink-500 to-rose-500"
 						/>
 						<EntryCard
-							icon={<Sparkles className="h-5 w-5" />}
-							title="AETHER 流境"
-							description="数字流体艺术馆 · 八件馆藏静帧"
-							href="/briar/aether"
-							gradient="from-indigo-500 to-fuchsia-500"
-						/>
-						<EntryCard
 							icon={<PenLine className="h-5 w-5" />}
 							title="博客"
 							description="个人随笔与文章"
@@ -106,7 +99,15 @@ function PortalPageInner() {
 
 			{/* Footer */}
 			<footer className="pb-6 pt-8 text-center text-xs text-muted-foreground/60">
-				Powered by zhangleilaoge
+				<p>Powered by zhangleilaoge</p>
+				<a
+					href="https://beian.miit.gov.cn/"
+					target="_blank"
+					rel="noopener noreferrer"
+					className="mt-1 inline-block transition-colors hover:text-muted-foreground"
+				>
+					浙ICP备2024116093号-3
+				</a>
 			</footer>
 		</div>
 	)

@@ -13,7 +13,6 @@ import { startScheduler } from './lib/scheduler'
 import { schedulerTasks } from './lib/schedulerConfig'
 import { applyConfiguredMiddlewares, globalMiddlewares } from './middleware/config'
 import apiRoutes from './routes/api'
-import { rootHandler } from './routes/root'
 import { setupTerminalWebSocket } from './routes/terminalWs'
 
 // 服务器无 IPv6 出口，而部分 CDN（如 sns-bak-v8.xhscdn.com → Akamai）DNS 会返回 AAAA，
@@ -61,8 +60,8 @@ applyConfiguredMiddlewares(app, globalMiddlewares, '/*')
 // API 路由
 app.route('/api', apiRoutes)
 
-// 根路径落地页（备案合规）：须在静态资源中间件之前注册
-app.get('/', rootHandler)
+// 根路径直接跳转 /briar/（备案号展示在 /briar/ 页脚）：须在静态资源中间件之前注册
+app.get('/', (c) => c.redirect('/briar/'))
 
 // 静态资源
 app.use('/*', serveStatic({ root: STATIC_PATH }))
