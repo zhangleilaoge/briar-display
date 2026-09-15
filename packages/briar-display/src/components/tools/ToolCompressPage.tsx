@@ -41,6 +41,13 @@ interface CompressResult {
 	thumbnail: string
 }
 
+/** 暂存的待压缩文件（拖拽/选择后先入列，确认后才压缩） */
+interface PendingFile {
+	id: string
+	file: File
+	previewUrl: string
+}
+
 function formatSizeLocal(bytes: number): string {
 	if (bytes < 1024) return `${bytes} B`
 	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -150,6 +157,7 @@ export default function ToolCompressPage() {
 	const [pngColors, setPngColors] = useState(256)
 	const [maxWidth, setMaxWidth] = useState(0)
 	const [results, setResults] = useState<CompressResult[]>([])
+	const [pending, setPending] = useState<PendingFile[]>([])
 	const [compressing, setCompressing] = useState(false)
 	const [dragging, setDragging] = useState(false)
 	const [history, setHistory] = useState<CompressHistoryEntry[]>([])
@@ -175,62 +183,88 @@ export default function ToolCompressPage() {
 		setHistory((prev) => prev.filter((e) => e.id !== id))
 	}, [])
 
-	const handleFiles = useCallback(
-		async (files: FileList | File[]) => {
-			const imageFiles = Array.from(files).filter((f) => f.type.startsWith('image/'))
-			if (imageFiles.length === 0) return
+	// 拖拽/选择只进暂存列表，点「开始压缩」才处理
+	const stageFiles = useCallback((files: FileList | File[]) => {
+		const imageFiles = Array.from(files).filter((f) => f.type.startsWith('image/'))
+		if (imageFiles.length === 0) return
+		setPending((prev) => [
+			...prev,
+			...imageFiles.map((f) => ({
+				id: `${Date.now()}-${Math.random()}`,
+				file: f,
+				previewUrl: URL.createObjectURL(f),
+			})),
+		])
+	}, [])
 
-			setCompressing(true)
-			try {
-				const newResults: CompressResult[] = []
-				for (const file of imageFiles) {
-					try {
-						const result = await compressImage(file, format, quality, maxWidth, pngColors)
-						const id = `${Date.now()}-${Math.random()}`
-						newResults.push({ ...result, id })
+	const removePending = useCallback((id: string) => {
+		setPending((prev) => {
+			const target = prev.find((p) => p.id === id)
+			if (target) URL.revokeObjectURL(target.previewUrl)
+			return prev.filter((p) => p.id !== id)
+		})
+	}, [])
 
-						// 保存历史记录到 IndexedDB（仅已登录用户）
-						if (hasToken) {
-							try {
-								const updated = await pushCompressHistory({
-									id,
-									userId,
-									name: result.name,
-									originalSize: result.originalSize,
-									compressedSize: result.compressedSize,
-									width: result.width,
-									height: result.height,
-									newWidth: result.newWidth,
-									newHeight: result.newHeight,
-									format,
-									timestamp: Date.now(),
-									blob: result.compressedBlob,
-									thumbnail: result.thumbnail,
-								})
-								setHistory(updated)
-							} catch (e) {
-								console.warn('历史记录保存失败:', e)
-							}
+	const clearPending = useCallback(() => {
+		setPending((prev) => {
+			for (const p of prev) URL.revokeObjectURL(p.previewUrl)
+			return []
+		})
+	}, [])
+
+	const handleStartCompress = useCallback(async () => {
+		if (pending.length === 0) return
+		setCompressing(true)
+		try {
+			const newResults: CompressResult[] = []
+			for (const item of pending) {
+				try {
+					const result = await compressImage(item.file, format, quality, maxWidth, pngColors)
+					const id = `${Date.now()}-${Math.random()}`
+					newResults.push({ ...result, id })
+
+					// 保存历史记录到 IndexedDB（仅已登录用户）
+					if (hasToken) {
+						try {
+							const updated = await pushCompressHistory({
+								id,
+								userId,
+								name: result.name,
+								originalSize: result.originalSize,
+								compressedSize: result.compressedSize,
+								width: result.width,
+								height: result.height,
+								newWidth: result.newWidth,
+								newHeight: result.newHeight,
+								format,
+								timestamp: Date.now(),
+								blob: result.compressedBlob,
+								thumbnail: result.thumbnail,
+							})
+							setHistory(updated)
+						} catch (e) {
+							console.warn('历史记录保存失败:', e)
 						}
-					} catch (err) {
-						console.error(`压缩 ${file.name} 失败:`, err)
 					}
+				} catch (err) {
+					console.error(`压缩 ${item.file.name} 失败:`, err)
+					toast.error(`压缩 ${item.file.name} 失败`)
 				}
-				setResults((prev) => [...newResults, ...prev])
-			} finally {
-				setCompressing(false)
 			}
-		},
-		[format, quality, maxWidth, pngColors, hasToken, userId],
-	)
+			setResults((prev) => [...newResults, ...prev])
+			clearPending()
+		} finally {
+			setCompressing(false)
+		}
+	}, [pending, format, quality, maxWidth, pngColors, hasToken, userId, clearPending])
 
 	const handleDrop = useCallback(
 		(e: React.DragEvent) => {
 			e.preventDefault()
 			setDragging(false)
-			handleFiles(e.dataTransfer.files)
+			stageFiles(e.dataTransfer.files)
 		},
-		[handleFiles],
+		[stageFiles],
 	)
 
 	const handleDownload = (result: CompressResult) => {
@@ -305,7 +339,7 @@ export default function ToolCompressPage() {
 		<ToolsLayout currentPath="/briar/tools/compress">
 			<div className="space-y-6">
 				{/* 设置面板 */}
-				<Card>
+				<Card className="glass">
 					<CardHeader className="pb-4">
 						<CardTitle className="flex items-center gap-2 text-lg">
 							<ImageIcon className="h-5 w-5" />
@@ -388,7 +422,7 @@ export default function ToolCompressPage() {
 					</CardContent>
 				</Card>
 
-				{/* 上传区 */}
+				{/* 上传区（玻璃质感面板，虚线描边保留拖拽暗示） */}
 				<div
 					onDrop={handleDrop}
 					onDragOver={(e) => {
@@ -397,10 +431,8 @@ export default function ToolCompressPage() {
 					}}
 					onDragLeave={() => setDragging(false)}
 					onClick={() => fileInputRef.current?.click()}
-					className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-12 transition-colors ${
-						dragging
-							? 'border-primary bg-primary/5'
-							: 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+					className={`glass-soft flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-12 transition-colors ${
+						dragging ? 'border-primary' : 'border-white/80 hover:border-primary/50'
 					}`}
 				>
 					<input
@@ -410,22 +442,64 @@ export default function ToolCompressPage() {
 						multiple
 						className="hidden"
 						onChange={(e) => {
-							if (e.target.files) handleFiles(e.target.files)
+							if (e.target.files) stageFiles(e.target.files)
 							e.target.value = ''
 						}}
 					/>
-					{compressing ? (
-						<Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
-					) : (
-						<Upload className="h-10 w-10 text-muted-foreground" />
-					)}
+					<Upload className="h-10 w-10 text-muted-foreground" />
 					<div className="text-center">
-						<p className="text-sm font-medium">
-							{compressing ? '压缩中...' : '拖拽图片到此处，或点击上传'}
+						<p className="text-sm font-medium">拖拽图片到此处，或点击选择</p>
+						<p className="mt-1 text-xs text-muted-foreground">
+							支持 PNG、JPEG、WebP、GIF，可多次添加，确认后开始压缩
 						</p>
-						<p className="mt-1 text-xs text-muted-foreground">支持 PNG、JPEG、WebP、GIF</p>
 					</div>
 				</div>
+
+				{/* 待压缩列表（暂存区） */}
+				{pending.length > 0 && (
+					<div className="glass rounded-lg p-4">
+						<div className="mb-3 flex items-center justify-between">
+							<h3 className="text-sm font-medium">
+								待压缩
+								<span className="ml-2 text-muted-foreground">({pending.length})</span>
+							</h3>
+							<div className="flex items-center gap-2">
+								<Button variant="outline" size="sm" onClick={clearPending} disabled={compressing}>
+									清空
+								</Button>
+								<Button
+									size="sm"
+									onClick={handleStartCompress}
+									disabled={compressing}
+									className="gap-1.5"
+								>
+									{compressing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+									{compressing ? '压缩中...' : '开始压缩'}
+								</Button>
+							</div>
+						</div>
+						<div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+							{pending.map((p) => (
+								<div key={p.id} className="group relative">
+									<img
+										src={p.previewUrl}
+										alt={p.file.name}
+										className="aspect-square w-full rounded-md border object-cover"
+									/>
+									<button
+										type="button"
+										onClick={() => removePending(p.id)}
+										className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border bg-white text-muted-foreground shadow transition-colors hover:text-destructive"
+										title="移除"
+									>
+										<X className="h-3 w-3" />
+									</button>
+									<p className="mt-1 truncate text-xs text-muted-foreground">{p.file.name}</p>
+								</div>
+							))}
+						</div>
+					</div>
+				)}
 
 				{/* 结果列表 */}
 				{results.length > 0 && (
@@ -442,7 +516,7 @@ export default function ToolCompressPage() {
 							const isBigger = r.compressedSize > r.originalSize
 							return (
 								<Card key={r.id}>
-									<CardContent className="flex items-center gap-4 py-4">
+									<CardContent className="flex flex-wrap items-center gap-4 py-4">
 										<img
 											src={r.compressedUrl}
 											alt={r.name}
@@ -502,7 +576,7 @@ export default function ToolCompressPage() {
 
 				{/* 压缩历史（仅已登录用户，从 IndexedDB 读取） */}
 				{hasToken && history.length > 0 && (
-					<Card>
+					<Card className="glass">
 						<CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
 							<CardTitle className="flex items-center gap-2 text-base">
 								<Clock className="h-4 w-4" />

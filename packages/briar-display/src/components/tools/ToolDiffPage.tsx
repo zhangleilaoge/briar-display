@@ -6,8 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { type Change, diffLines } from 'diff'
 import {
-	ChevronLeft,
-	ChevronRight,
 	CircleCheck,
 	Clock,
 	FileDiff,
@@ -44,7 +42,6 @@ export default function ToolDiffPage() {
 	const [viewMode, setViewMode] = useState<ViewMode>('split')
 	const [stats, setStats] = useState<DiffStats | null>(null)
 	const [history, setHistory] = useState<HistoryEntry[]>([])
-	const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 	const [now, setNow] = useState(0)
 	const [expanded, setExpanded] = useState<Set<number>>(new Set())
 
@@ -183,8 +180,8 @@ export default function ToolDiffPage() {
 
 	return (
 		<ToolsLayout currentPath="/briar/tools/diff">
-			<Card className="flex min-h-0 flex-1 flex-col">
-				<CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
+			<Card className="glass flex shrink-0 flex-col">
+				<CardHeader className="flex-col items-start gap-3 space-y-0 pb-4 sm:flex-row sm:items-center sm:justify-between">
 					<CardTitle className="flex items-center gap-2 text-lg">
 						<FileDiff className="h-5 w-5" />
 						在线文件 Diff
@@ -221,93 +218,11 @@ export default function ToolDiffPage() {
 					</div>
 				</CardHeader>
 				<CardContent className="flex min-h-0 flex-1 flex-col">
-					<div className="flex min-h-0 flex-1 gap-4">
-						{/* 历史侧边栏 */}
-						{sidebarCollapsed ? (
-							<div className="flex w-8 shrink-0 flex-col items-center rounded-md border bg-muted/20">
-								<button
-									onClick={() => setSidebarCollapsed(false)}
-									className="mt-2 flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-									title="展开历史记录"
-								>
-									<ChevronRight className="h-4 w-4" />
-								</button>
-								{history.length > 0 && (
-									<span className="mt-1 text-[10px] font-medium text-muted-foreground">
-										{history.length}
-									</span>
-								)}
-							</div>
-						) : (
-							<div className="flex w-[220px] shrink-0 flex-col rounded-md border bg-muted/20">
-								<div className="flex items-center justify-between border-b px-3 py-2">
-									<span className="text-sm font-medium">历史记录</span>
-									<div className="flex items-center gap-1">
-										{history.length > 0 && (
-											<Button
-												variant="ghost"
-												size="sm"
-												onClick={handleClearHistory}
-												className="h-auto p-1 text-xs text-muted-foreground hover:text-destructive"
-											>
-												<Trash2 className="h-3.5 w-3.5" />
-											</Button>
-										)}
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={() => setSidebarCollapsed(true)}
-											className="h-auto p-1 text-muted-foreground hover:text-foreground"
-											title="收起历史记录"
-										>
-											<ChevronLeft className="h-4 w-4" />
-										</Button>
-									</div>
-								</div>
-								<div className="flex-1 overflow-y-auto">
-									{history.length === 0 ? (
-										<div className="flex flex-col items-center justify-center py-8 text-xs text-muted-foreground">
-											<Clock className="mb-2 h-6 w-6 opacity-40" />
-											暂无历史记录
-										</div>
-									) : (
-										history.map((entry) => (
-											<div
-												key={entry.id}
-												onClick={() => handleRestore(entry)}
-												className="group flex w-full flex-col border-b px-3 py-2.5 text-left transition-colors hover:bg-accent"
-											>
-												<div className="flex items-center justify-between">
-													<span className="text-xs font-medium text-foreground">
-														{formatRelativeTime(entry.timestamp, now)}
-													</span>
-													<Button
-														variant="ghost"
-														size="sm"
-														onClick={(e) => {
-															e.stopPropagation()
-															handleDeleteHistory(entry.id)
-														}}
-														className="h-auto p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
-													>
-														<Trash2 className="h-3 w-3" />
-													</Button>
-												</div>
-												<span className="mt-0.5 text-[11px] text-muted-foreground">
-													{formatFullTime(entry.timestamp)} ·{' '}
-													{formatSize(entry.leftText + entry.rightText)}
-												</span>
-											</div>
-										))
-									)}
-								</div>
-							</div>
-						)}
-
-						{/* 主内容区 */}
-						<div className="flex min-h-0 flex-1 flex-col space-y-4 overflow-y-auto">
-							{/* 编辑区：固定高度，接近一屏 */}
-							<div className="grid h-[calc(100vh-250px)] min-h-[280px] shrink-0 grid-cols-2 gap-4">
+					<div className="flex min-h-0 flex-1 flex-col gap-4">
+						{/* 主内容区（页面级滚动，历史在首屏外） */}
+						<div className="flex flex-col space-y-4">
+							{/* 编辑区：占满首屏剩余高度 */}
+							<div className="grid h-[calc(100dvh-16.75rem)] min-h-[400px] shrink-0 grid-cols-1 grid-rows-2 gap-4 sm:h-[calc(100dvh-17.75rem)] sm:grid-cols-2 sm:grid-rows-1 lg:h-[calc(100dvh-12.5rem)] lg:min-h-[280px]">
 								<div
 									onDrop={handleFileDrop('left')}
 									onDragOver={(e) => e.preventDefault()}
@@ -396,6 +311,69 @@ export default function ToolDiffPage() {
 					</div>
 				</CardContent>
 			</Card>
+
+			{/* 历史记录（首屏外，向下滚动可见） */}
+			<div className="glass mt-4 shrink-0 rounded-xl sm:mt-6">
+				<div className="flex items-center justify-between border-b px-3 py-2">
+					<span className="text-sm font-medium">
+						历史记录
+						{history.length > 0 && (
+							<span className="ml-1.5 text-xs font-normal text-muted-foreground">
+								({history.length})
+							</span>
+						)}
+					</span>
+					{history.length > 0 && (
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={handleClearHistory}
+							className="h-auto p-1 text-xs text-muted-foreground hover:text-destructive"
+						>
+							<Trash2 className="h-3.5 w-3.5" />
+						</Button>
+					)}
+				</div>
+				<div className="max-h-52 overflow-y-auto p-2">
+					{history.length === 0 ? (
+						<div className="flex flex-col items-center justify-center py-6 text-xs text-muted-foreground">
+							<Clock className="mb-2 h-6 w-6 opacity-40" />
+							暂无历史记录
+						</div>
+					) : (
+						<div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+							{history.map((entry) => (
+								<div
+									key={entry.id}
+									onClick={() => handleRestore(entry)}
+									className="group flex cursor-pointer flex-col rounded-md border border-white/70 bg-white/75 px-3 py-2.5 text-left transition-colors hover:bg-white"
+								>
+									<div className="flex items-center justify-between">
+										<span className="text-xs font-medium text-foreground">
+											{formatRelativeTime(entry.timestamp, now)}
+										</span>
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={(e) => {
+												e.stopPropagation()
+												handleDeleteHistory(entry.id)
+											}}
+											className="h-auto p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+										>
+											<Trash2 className="h-3 w-3" />
+										</Button>
+									</div>
+									<span className="mt-0.5 text-[11px] text-muted-foreground">
+										{formatFullTime(entry.timestamp)} ·{' '}
+										{formatSize(entry.leftText + entry.rightText)}
+									</span>
+								</div>
+							))}
+						</div>
+					)}
+				</div>
+			</div>
 		</ToolsLayout>
 	)
 }

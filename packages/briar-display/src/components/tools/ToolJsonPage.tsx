@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Braces, Check, Copy, Download, FileUp, RotateCcw } from 'lucide-react'
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import JsonHistorySidebar from './JsonHistorySidebar'
+import JsonHistoryPanel from './JsonHistoryPanel'
 import JsonSearchDropdown from './JsonSearchDropdown'
 import ToolsLayout from './ToolsLayout'
 import {
@@ -31,7 +31,6 @@ export default function ToolJsonPage() {
 	const [error, setError] = useState<string | null>(null)
 	const [copied, setCopied] = useState(false)
 	const [history, setHistory] = useState<HistoryEntry[]>([])
-	const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 	const [treeKey, setTreeKey] = useState(0)
 	const [treeCollapsed, setTreeCollapsed] = useState<boolean | number>(1)
 	const [now, setNow] = useState(0)
@@ -229,8 +228,8 @@ export default function ToolJsonPage() {
 
 	return (
 		<ToolsLayout currentPath="/briar/tools/json">
-			<Card className="flex min-h-0 flex-1 flex-col">
-				<CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
+			<Card className="glass flex min-h-[calc(100dvh-8.25rem)] shrink-0 flex-col sm:min-h-[calc(100dvh-9.25rem)] lg:min-h-[calc(100dvh-6.5rem)]">
+				<CardHeader className="flex-col items-start gap-3 space-y-0 pb-4 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex items-center gap-3">
 						<CardTitle className="flex items-center gap-2 text-lg">
 							<Braces className="h-5 w-5" />
@@ -249,17 +248,7 @@ export default function ToolJsonPage() {
 					</div>
 				</CardHeader>
 				<CardContent className="flex min-h-0 flex-1 flex-col">
-					<div className="flex min-h-0 flex-1 gap-4">
-						<JsonHistorySidebar
-							collapsed={sidebarCollapsed}
-							onToggle={() => setSidebarCollapsed((v) => !v)}
-							entries={history}
-							onRestore={handleRestore}
-							onDelete={handleDeleteHistory}
-							onClear={handleClearHistory}
-							now={now}
-						/>
-
+					<div className="flex min-h-0 flex-1 flex-col gap-4">
 						{/* 主内容区 */}
 						<div className="flex min-h-0 flex-1 flex-col space-y-4">
 							{/* 操作按钮 */}
@@ -284,7 +273,7 @@ export default function ToolJsonPage() {
 							</div>
 
 							{/* 输入 + 树状预览 */}
-							<div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-2">
+							<div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-2 gap-4 lg:grid-cols-2 lg:grid-rows-1">
 								<div
 									onDrop={handleDrop}
 									onDragOver={(e) => e.preventDefault()}
@@ -413,6 +402,17 @@ export default function ToolJsonPage() {
 					</div>
 				</CardContent>
 			</Card>
+
+			{/* 历史记录（首屏外，向下滚动可见） */}
+			<div className="mt-4 shrink-0 sm:mt-6">
+				<JsonHistoryPanel
+					entries={history}
+					onRestore={handleRestore}
+					onDelete={handleDeleteHistory}
+					onClear={handleClearHistory}
+					now={now}
+				/>
+			</div>
 		</ToolsLayout>
 	)
 }

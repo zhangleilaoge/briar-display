@@ -76,6 +76,60 @@
 		--chart-4: 280 65% 60%;
 		--chart-5: 340 75% 55%;
 	}
+
+	/* ============================================================
+	   云系主题作用域（门户 / 工具箱共用）：
+	   中性灰 token 换成浅蓝调，与流动云背景风格统一；
+	   内容分层靠 macOS 风玻璃拟态（.glass 族），不靠扁平灰边
+	   ============================================================ */
+	.cloud-scope {
+		--muted: 210 45% 95%;
+		--muted-foreground: 215 22% 40%;
+		--accent: 210 45% 93%;
+		--border: 211 35% 85%;
+		--input: 211 35% 85%;
+		--ring: 210 65% 70%;
+	}
+}
+
+@layer utilities {
+	/* 玻璃卡片（参考 css.glass 经典配方）：低饱和白底 + 大半径柔影 + 柔和白边 + 轻度模糊，
+	   关键是不叠内高光/渐变/重描边——干净才像玻璃 */
+	.glass {
+		border: 1px solid hsl(0 0% 100% / 0.3);
+		background: hsl(0 0% 100% / 0.8);
+		box-shadow: 0 4px 30px hsl(210 55% 55% / 0.12);
+		backdrop-filter: blur(8px) saturate(1.4);
+		-webkit-backdrop-filter: blur(8px) saturate(1.4);
+	}
+
+	/* 可交互玻璃：悬浮上浮 + 投影加深 + 底色略提 */
+	.glass-interactive {
+		transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+	}
+
+	.glass-interactive:hover {
+		transform: translateY(-4px);
+		background: hsl(0 0% 100% / 0.6);
+		box-shadow: 0 10px 40px hsl(210 55% 55% / 0.2);
+	}
+
+	/* 顶栏玻璃：同族配方，底边一道柔白 */
+	.glass-header {
+		border-bottom: 1px solid hsl(0 0% 100% / 0.3);
+		background: hsl(0 0% 100% / 0.8);
+		box-shadow: 0 4px 30px hsl(210 55% 55% / 0.08);
+		backdrop-filter: blur(10px) saturate(1.4);
+		-webkit-backdrop-filter: blur(10px) saturate(1.4);
+	}
+
+	/* 无描边玻璃底：给需要自定义边框（如虚线 dropzone）的容器 */
+	.glass-soft {
+		background: hsl(0 0% 100% / 0.8);
+		box-shadow: 0 4px 30px hsl(210 55% 55% / 0.1);
+		backdrop-filter: blur(6px) saturate(1.3);
+		-webkit-backdrop-filter: blur(6px) saturate(1.3);
+	}
 }
 
 /* JSON 树状预览：复制图标容器高度归零，hover 显示时不撑高当前行（库内联 vertical-align: top 需覆盖） */
@@ -101,20 +155,15 @@
 }
 
 /* ============================================================
-   滚动条：stable gutter 常驻预留轨道宽度，
-   滚动条出现/消失（路由切换、弹窗锁滚动、列表加载）时内容宽度不再跳动
+   滚动条：细滚动条 + 半透明 thumb。
+   注意：不要加 scrollbar-gutter: stable —— 在经典滚动条系统
+   （如 macOS「总是显示滚动条」）下，它会在视口右侧常驻一条
+   空白 gutter，fixed 背景盖不住，看起来像页面右边漏了一条白边
    ============================================================ */
 html {
-	scrollbar-gutter: stable;
 	/* Firefox：细滚动条 + 半透明 thumb */
 	scrollbar-width: thin;
 	scrollbar-color: hsl(0 0% 50% / 0.35) transparent;
-}
-
-/* 内部滚动容器（Tailwind overflow 工具类）同样预留，容器内内容不被挤压 */
-.overflow-y-auto,
-.overflow-y-scroll {
-	scrollbar-gutter: stable;
 }
 
 /* WebKit：细滚动条 + 透明轨道（macOS 覆盖式滚动条不受影响的系统下表现为轻量经典样式） */

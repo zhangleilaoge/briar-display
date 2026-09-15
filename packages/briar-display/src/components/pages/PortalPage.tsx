@@ -18,7 +18,7 @@ interface EntryCardProps {
 function EntryCard({ icon, title, description, href, gradient }: EntryCardProps) {
 	return (
 		<a href={href} className="group block">
-			<Card className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+			<Card className="glass glass-interactive rounded-2xl">
 				<CardContent className="flex items-start gap-4 p-5">
 					<div
 						className={cn(
@@ -44,14 +44,14 @@ function PortalPageInner() {
 	const { isAdmin, loading } = usePermissions()
 
 	return (
-		<div className="relative flex min-h-screen flex-col overflow-hidden">
+		<div className="cloud-scope relative flex min-h-screen flex-col overflow-hidden">
 			{/* Frothy galaxy shader background */}
 			<div className="pointer-events-none fixed inset-0 -z-20">
 				<FrothyGalaxyShader />
 			</div>
 
 			{/* Top bar */}
-			<header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/50 bg-background/60 px-6 backdrop-blur-md">
+			<header className="glass-header sticky top-0 z-50 flex h-14 items-center justify-between px-4 sm:px-6">
 				<span className="text-base font-semibold tracking-tight">xiaobuzi</span>
 				<div className="flex items-center gap-3">
 					{loading ? <div className="h-4 w-16 animate-pulse rounded bg-muted" /> : <UserMenu />}
@@ -59,7 +59,7 @@ function PortalPageInner() {
 			</header>
 
 			{/* Main */}
-			<main className="flex flex-1 items-center justify-center p-6">
+			<main className="flex flex-1 items-center justify-center p-4 sm:p-6">
 				<div className="w-full max-w-2xl space-y-8">
 					{/* Bento grid */}
 					<div className="grid gap-4 sm:grid-cols-2">
@@ -98,7 +98,7 @@ function PortalPageInner() {
 			</main>
 
 			{/* Footer */}
-			<footer className="pb-6 pt-8 text-center text-xs text-muted-foreground/60">
+			<footer className="pb-6 pt-8 text-center text-xs text-muted-foreground/80">
 				<p>Powered by zhangleilaoge</p>
 				<a
 					href="https://beian.miit.gov.cn/"
