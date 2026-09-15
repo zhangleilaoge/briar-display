@@ -64,10 +64,10 @@ void main() {
 	float h = waves * 0.5 + 0.5;
 
 	// Beautiful gradient colors
-	vec3 color1 = vec3(0.58, 0.72, 0.88);  // Soft blue
-	vec3 color2 = vec3(0.70, 0.82, 0.93);  // Light blue
-	vec3 color3 = vec3(0.82, 0.90, 0.96);  // Pale blue
-	vec3 color4 = vec3(0.93, 0.96, 0.99);  // Near white
+	vec3 color1 = vec3(0.60, 0.74, 0.90);  // Soft blue
+	vec3 color2 = vec3(0.72, 0.82, 0.93);  // Light blue
+	vec3 color3 = vec3(0.82, 0.89, 0.95);  // Pale blue
+	vec3 color4 = vec3(0.90, 0.94, 0.98);  // Ice blue
 
 	// Smooth color transitions
 	vec3 color;
@@ -79,17 +79,17 @@ void main() {
 		color = mix(color3, color4, (h - 0.66) * 3.0);
 	}
 
-	// Add shimmer
+	// Add shimmer（压低亮度上限，避免高光溢出成纯白）
 	float shimmer = fbm(p * 6.0 + vec2(time * 0.3, time * 0.2));
-	shimmer = pow(shimmer, 2.0) * 0.3;
+	shimmer = pow(shimmer, 2.0) * 0.12;
 	color += vec3(shimmer);
 
 	// Depth fade
-	color = mix(color, color1, (1.0 - uv.y) * 0.35);
+	color = mix(color, color1, (1.0 - uv.y) * 0.2);
 
 	// Subtle vignette
 	float dist = length(uv - 0.5);
-	color *= 1.0 - dist * 0.15;
+	color *= 1.0 - dist * 0.05;
 
 	gl_FragColor = vec4(color, 1.0);
 }
@@ -164,7 +164,7 @@ export default function FrothyGalaxyShader() {
 		const startTime = performance.now()
 
 		const render = () => {
-			gl.clearColor(0, 0, 0, 1)
+			gl.clearColor(1, 1, 1, 1)
 			gl.clear(gl.COLOR_BUFFER_BIT)
 
 			gl.useProgram(program)
@@ -194,7 +194,8 @@ export default function FrothyGalaxyShader() {
 	}, [])
 
 	return (
-		<div ref={containerRef} className="absolute inset-0 h-full w-full overflow-hidden bg-black">
+		// 容器底色用白色：WebGL 水合画出第一帧前不会闪黑
+		<div ref={containerRef} className="absolute inset-0 h-full w-full overflow-hidden bg-white">
 			<canvas ref={canvasRef} className="absolute top-0 left-0 h-full w-full" />
 		</div>
 	)

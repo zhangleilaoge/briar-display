@@ -84,7 +84,7 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 
 ### Nginx 代理
 
-- `/` → `http://127.0.0.1:3888/`（根路径落地页，备案合规，源码 `packages/briar-node/src/routes/root.ts`）
+- `/` → `http://127.0.0.1:3888/`（302 跳转 `/briar/`；备案号「浙ICP备2024116093号-3」展示在 `/briar/` 页脚）
 - `/robots.txt` → nginx 直接返回（`Disallow: /api/`，拦 AI 爬虫嗅探，不进 node 不落日志）
 - `/briar/` → `http://127.0.0.1:3888`（后端提供静态资源 + fallback）
 - `/api/` → `http://127.0.0.1:3888/api/`
