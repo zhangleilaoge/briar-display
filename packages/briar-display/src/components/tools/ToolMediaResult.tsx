@@ -167,7 +167,9 @@ export default function ToolMediaResult({
 							{platformLabel(result.platform)}
 						</Badge>
 						{result.author?.name && (
-							<span className="text-sm text-muted-foreground">@{result.author.name}</span>
+							<span className="min-w-0 truncate text-sm text-muted-foreground">
+								@{result.author.name}
+							</span>
 						)}
 					</div>
 					<p className="line-clamp-2 whitespace-pre-line text-sm">{result.title || '（无标题）'}</p>
@@ -189,14 +191,14 @@ export default function ToolMediaResult({
 			{/* 视频 */}
 			{sections.videos.length > 0 && (
 				<div className="flex flex-col gap-3 glass rounded-lg p-4">
-					<div className="flex items-center justify-between">
+					<div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
 						<h2 className="font-semibold">
 							视频
 							<span className="ml-2 text-sm font-normal text-muted-foreground">
 								共 {sections.videos.length} 个
 							</span>
 						</h2>
-						<div className="flex items-center gap-2">
+						<div className="flex flex-wrap items-center gap-2">
 							<Button
 								variant="outline"
 								size="sm"
@@ -272,14 +274,14 @@ export default function ToolMediaResult({
 			{/* 图集 */}
 			{sections.images.length > 0 && (
 				<div className="flex flex-col gap-3 glass rounded-lg p-4">
-					<div className="flex items-center justify-between">
+					<div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
 						<h2 className="font-semibold">
 							图集原图
 							<span className="ml-2 text-sm font-normal text-muted-foreground">
 								共 {sections.images.length} 张
 							</span>
 						</h2>
-						<div className="flex items-center gap-2">
+						<div className="flex flex-wrap items-center gap-2">
 							<Button
 								variant="outline"
 								size="sm"
@@ -332,7 +334,7 @@ export default function ToolMediaResult({
 											className="absolute left-2 top-2 h-5 w-5 rounded-[5px] border-2 border-white/80 bg-black/25 shadow-md data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
 										/>
 									</div>
-									<div className="flex items-center justify-between gap-2 bg-muted/50 px-3 py-2">
+									<div className="flex flex-col items-start gap-1.5 bg-muted/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
 										<span className="text-sm">{image.label}</span>
 										<ItemActions
 											item={image}
@@ -353,14 +355,14 @@ export default function ToolMediaResult({
 			{/* 动态照片 */}
 			{sections.livePhotos.length > 0 && (
 				<div className="flex flex-col gap-3 glass rounded-lg p-4">
-					<div className="flex items-center justify-between">
+					<div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
 						<h2 className="font-semibold">
 							动态照片
 							<span className="ml-2 text-sm font-normal text-muted-foreground">
 								共 {sections.livePhotos.length} 个
 							</span>
 						</h2>
-						<div className="flex items-center gap-2">
+						<div className="flex flex-wrap items-center gap-2">
 							<Button
 								variant="outline"
 								size="sm"
@@ -415,7 +417,7 @@ export default function ToolMediaResult({
 											className="absolute left-2 top-2 h-5 w-5 rounded-[5px] border-2 border-white/80 bg-black/25 shadow-md data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
 										/>
 									</div>
-									<div className="flex items-center justify-between gap-2 bg-muted/50 px-3 py-2">
+									<div className="flex flex-col items-start gap-1.5 bg-muted/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
 										<span className="text-sm">{live.label}</span>
 										<ItemActions
 											item={live}
@@ -435,7 +437,7 @@ export default function ToolMediaResult({
 
 			{/* 独立音轨（上游确认 audio/* 才存在；带播放器，可直接试听） */}
 			{sections.audio && (
-				<div className="flex items-center gap-4 glass rounded-lg p-4">
+				<div className="flex flex-wrap items-center gap-4 glass rounded-lg p-4">
 					<h2 className="shrink-0 font-semibold">{sections.audio.label}</h2>
 					{/* biome-ignore lint/a11y/useMediaCaption: 音乐音轨无字幕 */}
 					<audio

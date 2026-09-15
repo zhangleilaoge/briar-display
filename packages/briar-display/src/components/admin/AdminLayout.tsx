@@ -9,6 +9,7 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
 import { Database, Radio, Rocket, Shield, TerminalSquare, Users } from 'lucide-react'
@@ -122,7 +123,26 @@ export default function AdminLayout({ children, currentPath, fullWidth }: AdminL
 						<UserMenu />
 					</header>
 
-					<main className="flex-1 bg-muted/30 p-6">
+					{/* 窄屏：导航 tab 独占一行，横向滚动（同工具箱 ToolsLayout 模式） */}
+					<div className="overflow-x-auto border-b bg-background px-3 py-2 md:hidden">
+						<Tabs
+							value={currentPath}
+							onValueChange={(v) => {
+								window.location.href = v
+							}}
+						>
+							<TabsList>
+								{NAV_ITEMS.map((item) => (
+									<TabsTrigger key={item.href} value={item.href} className="gap-1.5">
+										{item.icon}
+										{item.label}
+									</TabsTrigger>
+								))}
+							</TabsList>
+						</Tabs>
+					</div>
+
+					<main className="flex-1 bg-muted/30 p-4 sm:p-6">
 						<div className={fullWidth ? 'w-full' : 'mx-auto w-full max-w-[1200px]'}>{children}</div>
 					</main>
 				</div>

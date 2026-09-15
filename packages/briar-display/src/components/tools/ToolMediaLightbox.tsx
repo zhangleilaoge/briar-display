@@ -89,7 +89,7 @@ export default function ToolMediaLightbox({
 				className="max-h-full max-w-full object-contain"
 				onClick={(e) => e.stopPropagation()}
 			/>
-			<div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-sm text-white">
+			<div className="absolute bottom-4 left-1/2 max-w-[calc(100vw-4rem)] -translate-x-1/2 truncate rounded-full bg-white/10 px-3 py-1 text-sm text-white">
 				{current.label} · {index + 1}/{images.length}
 			</div>
 		</div>

@@ -431,7 +431,7 @@ export default function ToolCompressPage() {
 					}}
 					onDragLeave={() => setDragging(false)}
 					onClick={() => fileInputRef.current?.click()}
-					className={`glass-soft flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-12 transition-colors ${
+					className={`glass-soft flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-8 transition-colors sm:p-12 ${
 						dragging ? 'border-primary' : 'border-white/80 hover:border-primary/50'
 					}`}
 				>
@@ -458,7 +458,7 @@ export default function ToolCompressPage() {
 				{/* 待压缩列表（暂存区） */}
 				{pending.length > 0 && (
 					<div className="glass rounded-lg p-4">
-						<div className="mb-3 flex items-center justify-between">
+						<div className="mb-3 flex flex-wrap items-center justify-between gap-2">
 							<h3 className="text-sm font-medium">
 								待压缩
 								<span className="ml-2 text-muted-foreground">({pending.length})</span>

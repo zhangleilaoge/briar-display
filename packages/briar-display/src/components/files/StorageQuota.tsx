@@ -30,17 +30,17 @@ export default function StorageQuota() {
 	return (
 		<div className="flex items-center gap-3">
 			<div className="flex items-center gap-2">
-				<div className="h-2 w-24 overflow-hidden rounded-full bg-muted">
+				<div className="h-2 w-16 overflow-hidden rounded-full bg-muted sm:w-24">
 					<div
 						className={cn('h-full rounded-full transition-all', colorClass)}
 						style={{ width: `${percent}%` }}
 					/>
 				</div>
-				<span className="whitespace-nowrap text-xs text-muted-foreground">
+				<span className="hidden whitespace-nowrap text-xs text-muted-foreground sm:inline">
 					{formatBytes(stats.used)} / {formatBytes(stats.quota)}
 				</span>
 			</div>
-			<span className="text-xs text-muted-foreground">{stats.count} 个文件</span>
+			<span className="hidden text-xs text-muted-foreground lg:inline">{stats.count} 个文件</span>
 		</div>
 	)
 }

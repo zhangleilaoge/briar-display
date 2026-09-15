@@ -160,12 +160,12 @@ function AdminUsersPageInner() {
 	return (
 		<AdminLayout currentPath="/briar/admin/users" title="用户角色">
 			<Card>
-				<CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
+				<CardHeader className="flex-col items-start gap-3 space-y-0 pb-4 sm:flex-row sm:items-center sm:justify-between">
 					<CardTitle className="flex items-center gap-2 text-lg">
 						<User className="h-5 w-5" />
 						用户角色管理
 					</CardTitle>
-					<div className="relative w-64">
+					<div className="relative w-full sm:w-64">
 						<Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
 							placeholder="搜索用户名或邮箱..."

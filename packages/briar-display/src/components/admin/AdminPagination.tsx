@@ -41,7 +41,7 @@ export default function AdminPagination({
 	return (
 		<nav
 			aria-label="分页导航"
-			className={cn('flex items-center justify-center gap-1 pt-4', className)}
+			className={cn('flex flex-wrap items-center justify-center gap-1 pt-4', className)}
 		>
 			<Button
 				variant="outline"

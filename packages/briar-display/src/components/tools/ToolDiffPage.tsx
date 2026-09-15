@@ -75,6 +75,8 @@ export default function ToolDiffPage() {
 		const cache = loadCache()
 		if (cache.leftText) setLeftText(String(cache.leftText))
 		if (cache.rightText) setRightText(String(cache.rightText))
+		// 窄屏默认统一视图（客户端挂载后切换，避免 SSR hydration 不匹配）
+		if (window.innerWidth < 640) setViewMode('unified')
 	}, [])
 
 	// 保存历史
@@ -222,7 +224,7 @@ export default function ToolDiffPage() {
 						{/* 主内容区（页面级滚动，历史在首屏外） */}
 						<div className="flex flex-col space-y-4">
 							{/* 编辑区：占满首屏剩余高度 */}
-							<div className="grid h-[calc(100dvh-16.75rem)] min-h-[400px] shrink-0 grid-cols-1 grid-rows-2 gap-4 sm:h-[calc(100dvh-17.75rem)] sm:grid-cols-2 sm:grid-rows-1 lg:h-[calc(100dvh-12.5rem)] lg:min-h-[280px]">
+							<div className="grid h-[calc(100dvh-19rem)] min-h-[360px] shrink-0 grid-cols-1 grid-rows-2 gap-4 sm:h-[calc(100dvh-17.5rem)] sm:grid-cols-2 sm:grid-rows-1 lg:h-[calc(100dvh-14rem)] lg:min-h-[280px]">
 								<div
 									onDrop={handleFileDrop('left')}
 									onDragOver={(e) => e.preventDefault()}
@@ -289,7 +291,7 @@ export default function ToolDiffPage() {
 											</Badge>
 										</div>
 									)}
-									<div className="h-[calc(100vh-310px)] min-h-[280px]">
+									<div className="h-[70dvh] min-h-[280px]">
 										{stats && stats.added === 0 && stats.removed === 0 ? (
 											<div className="flex h-full flex-col items-center justify-center gap-2 rounded-md border bg-muted/30 text-sm text-muted-foreground">
 												<CircleCheck className="h-8 w-8 text-green-600/70 dark:text-green-400/70" />
