@@ -101,7 +101,7 @@ export default function ToolRegexPage() {
 					</Button>
 				</div>
 
-				<Card>
+				<Card className="glass">
 					<CardHeader className="pb-3">
 						<CardTitle className="text-base">正则表达式</CardTitle>
 					</CardHeader>
@@ -143,7 +143,7 @@ export default function ToolRegexPage() {
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="glass">
 					<CardHeader className="pb-3">
 						<CardTitle className="text-base">铁路图</CardTitle>
 					</CardHeader>
@@ -160,7 +160,7 @@ export default function ToolRegexPage() {
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="glass">
 					<CardHeader className="pb-3">
 						<CardTitle className="text-base">测试文本</CardTitle>
 					</CardHeader>

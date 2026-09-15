@@ -63,11 +63,11 @@ void main() {
 	// Normalized wave height
 	float h = waves * 0.5 + 0.5;
 
-	// Beautiful gradient colors
-	vec3 color1 = vec3(0.60, 0.74, 0.90);  // Soft blue
-	vec3 color2 = vec3(0.72, 0.82, 0.93);  // Light blue
-	vec3 color3 = vec3(0.82, 0.89, 0.95);  // Pale blue
-	vec3 color4 = vec3(0.90, 0.94, 0.98);  // Ice blue
+	// Beautiful gradient colors（色阶压缩，整体低对比）
+	vec3 color1 = vec3(0.70, 0.80, 0.91);  // Soft blue
+	vec3 color2 = vec3(0.77, 0.85, 0.93);  // Light blue
+	vec3 color3 = vec3(0.84, 0.90, 0.95);  // Pale blue
+	vec3 color4 = vec3(0.89, 0.93, 0.97);  // Ice blue
 
 	// Smooth color transitions
 	vec3 color;
@@ -81,7 +81,7 @@ void main() {
 
 	// Add shimmer（压低亮度上限，避免高光溢出成纯白）
 	float shimmer = fbm(p * 6.0 + vec2(time * 0.3, time * 0.2));
-	shimmer = pow(shimmer, 2.0) * 0.12;
+	shimmer = pow(shimmer, 2.0) * 0.08;
 	color += vec3(shimmer);
 
 	// Depth fade

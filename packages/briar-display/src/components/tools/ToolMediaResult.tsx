@@ -141,7 +141,7 @@ export default function ToolMediaResult({
 	return (
 		<div className="flex flex-col gap-6">
 			{/* 作品信息 */}
-			<div className="flex items-start gap-4 rounded-lg border bg-card p-4">
+			<div className="flex items-start gap-4 glass rounded-lg p-4">
 				{sections.cover && (
 					<div className="relative h-24 w-24 shrink-0">
 						<img
@@ -188,7 +188,7 @@ export default function ToolMediaResult({
 
 			{/* 视频 */}
 			{sections.videos.length > 0 && (
-				<div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+				<div className="flex flex-col gap-3 glass rounded-lg p-4">
 					<div className="flex items-center justify-between">
 						<h2 className="font-semibold">
 							视频
@@ -271,7 +271,7 @@ export default function ToolMediaResult({
 
 			{/* 图集 */}
 			{sections.images.length > 0 && (
-				<div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+				<div className="flex flex-col gap-3 glass rounded-lg p-4">
 					<div className="flex items-center justify-between">
 						<h2 className="font-semibold">
 							图集原图
@@ -352,7 +352,7 @@ export default function ToolMediaResult({
 
 			{/* 动态照片 */}
 			{sections.livePhotos.length > 0 && (
-				<div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+				<div className="flex flex-col gap-3 glass rounded-lg p-4">
 					<div className="flex items-center justify-between">
 						<h2 className="font-semibold">
 							动态照片
@@ -435,7 +435,7 @@ export default function ToolMediaResult({
 
 			{/* 独立音轨（上游确认 audio/* 才存在；带播放器，可直接试听） */}
 			{sections.audio && (
-				<div className="flex items-center gap-4 rounded-lg border bg-card p-4">
+				<div className="flex items-center gap-4 glass rounded-lg p-4">
 					<h2 className="shrink-0 font-semibold">{sections.audio.label}</h2>
 					{/* biome-ignore lint/a11y/useMediaCaption: 音乐音轨无字幕 */}
 					<audio

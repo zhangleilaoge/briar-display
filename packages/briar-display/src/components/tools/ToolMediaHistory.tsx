@@ -28,7 +28,7 @@ export default function ToolMediaHistory({
 	if (items.length === 0) return null
 
 	return (
-		<div className="flex flex-col gap-2 rounded-lg border bg-card p-4">
+		<div className="flex flex-col gap-2 glass rounded-lg p-4">
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2 text-sm font-medium">
 					<History className="h-4 w-4 text-muted-foreground" />

@@ -61,12 +61,31 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 		localStorage.setItem(TOOLS_LAST_TAB_KEY, currentPath)
 	}, [currentPath])
 
+	const tabs = (
+		<Tabs
+			value={currentPath}
+			onValueChange={(v) => {
+				window.location.href = v
+			}}
+		>
+			<TabsList>
+				{NAV_ITEMS.map((item) => (
+					<TabsTrigger key={item.href} value={item.href} className="gap-1.5">
+						{item.icon}
+						{item.label}
+					</TabsTrigger>
+				))}
+			</TabsList>
+		</Tabs>
+	)
+
 	return (
 		<PermissionProvider>
-			<div className="flex h-screen flex-col overflow-hidden bg-background">
+			{/* 云系浅蓝渐变底（与首页 shader 色阶同源的静态版本，工作页不用 WebGL） */}
+			<div className="cloud-scope flex h-screen flex-col overflow-hidden bg-gradient-to-b from-[#e7f0f8] via-[#f0f5fa] to-[#e9f1f8]">
 				{/* 顶部导航栏 */}
-				<header className="sticky top-0 z-50 border-b bg-background">
-					<div className="flex h-14 items-center justify-between px-6">
+				<header className="glass-header sticky top-0 z-50">
+					<div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
 						<div className="flex items-center gap-6">
 							<Breadcrumb>
 								<BreadcrumbList>
@@ -79,28 +98,17 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 									</BreadcrumbItem>
 								</BreadcrumbList>
 							</Breadcrumb>
-							<Tabs
-								value={currentPath}
-								onValueChange={(v) => {
-									window.location.href = v
-								}}
-							>
-								<TabsList>
-									{NAV_ITEMS.map((item) => (
-										<TabsTrigger key={item.href} value={item.href} className="gap-1.5">
-											{item.icon}
-											{item.label}
-										</TabsTrigger>
-									))}
-								</TabsList>
-							</Tabs>
+							{/* 宽屏：tab 与面包屑同行 */}
+							<div className="hidden lg:block">{tabs}</div>
 						</div>
 						<UserMenu />
 					</div>
+					{/* 窄屏：tab 独占一行，横向滚动 */}
+					<div className="overflow-x-auto px-3 pb-2 lg:hidden">{tabs}</div>
 				</header>
 
 				{/* 内容区 */}
-				<main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-6">
+				<main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
 					<div className="flex w-full flex-1 flex-col min-h-0">{children}</div>
 				</main>
 			</div>

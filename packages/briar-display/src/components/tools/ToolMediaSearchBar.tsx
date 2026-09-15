@@ -30,12 +30,12 @@ export default function ToolMediaSearchBar({
 	onClear,
 }: ToolMediaSearchBarProps) {
 	return (
-		<div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
-			<div className="flex items-center justify-between">
+		<div className="flex flex-col gap-3 glass rounded-lg p-4">
+			<div className="flex flex-wrap items-center justify-between gap-2">
 				<div className="flex items-center gap-2">
 					<Link2 className="h-5 w-5 text-muted-foreground" />
 					<h1 className="text-lg font-semibold">媒体解析</h1>
-					<span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+					<span className="hidden items-center gap-1.5 text-sm text-muted-foreground sm:flex">
 						{SUPPORTED_PLATFORMS.map((platform) => (
 							<img
 								key={platform}
@@ -70,7 +70,7 @@ export default function ToolMediaSearchBar({
 					}
 				}}
 			/>
-			<div className="flex items-center justify-between">
+			<div className="flex flex-wrap items-center justify-between gap-2">
 				<span className="text-xs text-muted-foreground">
 					{slowHint && parsing
 						? '该链接首次解析较慢（可能需 1 分钟左右），请耐心等待…'
