@@ -104,7 +104,7 @@ function ProfilePageInner() {
 				<UserMenu />
 			</header>
 
-			<main className="mx-auto max-w-5xl p-6">
+			<main className="mx-auto max-w-5xl p-4 sm:p-6">
 				<div>
 					<h1 className="text-2xl font-semibold tracking-tight">个人中心</h1>
 					<p className="mt-1 text-sm text-muted-foreground">管理你的账号信息、角色与权限</p>
@@ -324,11 +324,13 @@ interface InfoRowProps {
 function InfoRow({ icon, label, value, mono }: InfoRowProps) {
 	return (
 		<div className="flex items-center justify-between gap-3 border-b border-border/40 py-2 last:border-0">
-			<div className="flex items-center gap-2 text-sm text-muted-foreground">
+			<div className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
 				{icon}
 				<span>{label}</span>
 			</div>
-			<span className={mono ? 'font-mono text-xs text-foreground/80' : 'text-sm font-medium'}>
+			<span
+				className={`min-w-0 truncate text-right ${mono ? 'font-mono text-xs text-foreground/80' : 'text-sm font-medium'}`}
+			>
 				{value || '—'}
 			</span>
 		</div>

@@ -301,7 +301,7 @@ function AdminLogsPageInner() {
 					</div>
 					<div /> {/* empty cell for alignment */}
 					{/* Row 3: Time range — full width */}
-					<div className="col-span-full flex items-center gap-2">
+					<div className="col-span-full flex flex-wrap items-center gap-2">
 						<label className="w-16 shrink-0 text-right text-[12px] text-muted-foreground">
 							时间
 						</label>
@@ -459,7 +459,7 @@ function AdminLogsPageInner() {
 					<p className="text-sm">暂无日志记录</p>
 				</div>
 			) : (
-				<div className="rounded-md border">
+				<div className="overflow-x-auto rounded-md border">
 					<table className="w-full text-sm">
 						<thead>
 							<tr className="border-b bg-muted/50">
@@ -541,7 +541,7 @@ function AdminLogsPageInner() {
 										{isExpanded && (
 											<tr key={`${log.id}-detail`}>
 												<td colSpan={7} className="border-b bg-muted/10 px-6 py-3">
-													<div className="grid grid-cols-2 gap-4 text-xs">
+													<div className="grid grid-cols-1 gap-4 text-xs md:grid-cols-2">
 														<div>
 															<p className="mb-1 font-medium text-muted-foreground">Trace ID</p>
 															<div className="flex items-center gap-2">

@@ -46,7 +46,7 @@ export default function JsonSearchDropdown({ flatEntries, onSelect }: JsonSearch
 					搜索
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent className="w-80 p-0" align="end">
+			<PopoverContent className="w-[calc(100vw-3rem)] max-w-80 p-0" align="end">
 				<Command shouldFilter={false}>
 					<CommandInput
 						placeholder="搜索 key / value…"

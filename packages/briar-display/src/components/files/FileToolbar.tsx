@@ -93,7 +93,7 @@ export default function FileToolbar({
 	return (
 		<div className="flex flex-wrap items-center justify-between gap-3">
 			<div className="flex flex-wrap items-center gap-3">
-				<div className="relative w-64">
+				<div className="relative w-full sm:w-64">
 					<Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						placeholder="搜索文件名..."
@@ -115,7 +115,7 @@ export default function FileToolbar({
 					</TabsList>
 				</Tabs>
 			</div>
-			<div className="flex items-center gap-2">
+			<div className="flex flex-wrap items-center gap-2">
 				{selectedCount > 0 && (
 					<Button variant="destructive" size="sm" onClick={onBulkDelete} className="gap-1.5">
 						<Trash2 className="h-4 w-4" />

@@ -22,7 +22,7 @@ export default function FileManagerLayout({ children }: FileManagerLayoutProps) 
 		<PermissionProvider>
 			<div className="flex min-h-screen flex-col bg-background">
 				<header className="sticky top-0 z-50 border-b bg-background">
-					<div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between px-6">
+					<div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between gap-2 px-4 sm:px-6">
 						<Breadcrumb>
 							<BreadcrumbList>
 								<BreadcrumbItem>
@@ -41,7 +41,7 @@ export default function FileManagerLayout({ children }: FileManagerLayoutProps) 
 					</div>
 				</header>
 
-				<main className="flex-1 p-6">
+				<main className="flex-1 p-4 sm:p-6">
 					<div className="mx-auto max-w-[1200px]">{children}</div>
 				</main>
 			</div>

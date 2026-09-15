@@ -89,11 +89,13 @@ export default function ToolRegexPage() {
 	return (
 		<ToolsLayout currentPath="/briar/tools/regex">
 			<div className="flex flex-col gap-4">
-				<div className="flex items-center justify-between gap-3">
+				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="flex items-center gap-2">
 						<Spline className="h-5 w-5 text-muted-foreground" />
 						<h1 className="text-lg font-semibold">正则可视化</h1>
-						<Badge variant="secondary">Regexper 风格</Badge>
+						<Badge variant="secondary" className="hidden sm:inline-flex">
+							Regexper 风格
+						</Badge>
 					</div>
 					<Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5">
 						<RotateCcw className="h-4 w-4" />
@@ -186,7 +188,7 @@ export default function ToolRegexPage() {
 										{matchResult.matches.map((m, i) => (
 											<li
 												key={`${i}:${m.index}`}
-												className="rounded-md border bg-muted/30 px-3 py-2 font-mono text-xs"
+												className="break-all rounded-md border bg-muted/30 px-3 py-2 font-mono text-xs"
 											>
 												<div>
 													#{i + 1} @ {m.index}:{' '}

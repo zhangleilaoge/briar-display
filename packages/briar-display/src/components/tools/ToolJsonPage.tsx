@@ -312,7 +312,7 @@ export default function ToolJsonPage() {
 								<div className="flex min-h-0 flex-col space-y-2">
 									<div className="flex items-center justify-between text-sm text-muted-foreground">
 										<span>树状预览</span>
-										<div className="flex items-center gap-1">
+										<div className="flex flex-wrap items-center gap-1">
 											{error && <span className="text-xs text-destructive">解析失败</span>}
 											{input && (
 												<>

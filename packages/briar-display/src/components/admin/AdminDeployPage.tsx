@@ -271,7 +271,9 @@ function AdminDeployPageInner() {
 					<ShieldCheck className="h-4 w-4 text-muted-foreground" />
 					<h2 className="text-sm font-semibold">证书状态</h2>
 					{certStatus && (
-						<span className="font-mono text-xs text-muted-foreground">{certStatus.domain}</span>
+						<span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+							{certStatus.domain}
+						</span>
 					)}
 					{certStatus?.local &&
 						certStatus?.live &&
@@ -347,7 +349,7 @@ function AdminDeployPageInner() {
 					<p className="py-8 text-center text-xs text-muted-foreground">暂无续期记录</p>
 				) : (
 					<>
-						<div className="rounded-md border">
+						<div className="overflow-x-auto rounded-md border">
 							<table className="w-full text-sm">
 								<thead>
 									<tr className="border-b bg-muted/50">
@@ -450,7 +452,7 @@ function AdminDeployPageInner() {
 					</p>
 				) : (
 					<>
-						<div className="rounded-md border">
+						<div className="overflow-x-auto rounded-md border">
 							<table className="w-full text-sm">
 								<thead>
 									<tr className="border-b bg-muted/50">

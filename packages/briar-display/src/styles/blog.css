@@ -447,6 +447,7 @@
 	background: var(--blog-accent-soft);
 	color: var(--blog-accent);
 	font-size: 0.88em;
+	overflow-wrap: anywhere;
 }
 
 .blog-article pre {
@@ -482,6 +483,8 @@
 }
 
 .blog-article table {
+	display: block;
+	overflow-x: auto;
 	width: 100%;
 	margin: 1.6rem 0;
 	border-collapse: collapse;
