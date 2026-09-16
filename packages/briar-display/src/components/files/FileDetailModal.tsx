@@ -236,23 +236,25 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 
 					{/* Metadata */}
 					<div className="mb-6 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-						<div>
+						<div className="min-w-0">
 							<p className="text-muted-foreground">大小</p>
 							<p className="font-medium">{formatSize(file.size)}</p>
 						</div>
-						<div>
+						<div className="min-w-0">
 							<p className="text-muted-foreground">类型</p>
-							<p className="font-medium">{file.mimeType}</p>
+							<p className="truncate font-medium" title={file.mimeType}>
+								{file.mimeType}
+							</p>
 						</div>
 						{file.width && file.height ? (
-							<div>
+							<div className="min-w-0">
 								<p className="text-muted-foreground">尺寸</p>
 								<p className="font-medium">
 									{file.width} × {file.height}
 								</p>
 							</div>
 						) : (
-							<div>
+							<div className="min-w-0">
 								<p className="text-muted-foreground">上传时间</p>
 								<p className="font-medium">
 									{new Date(file.createdAt).toLocaleDateString('zh-CN')}
