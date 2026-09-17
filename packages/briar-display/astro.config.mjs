@@ -81,13 +81,20 @@ export default defineConfig({
 			rollupOptions: {
 				output: {
 					manualChunks(id) {
+						// Vite 的 preload-helper / CJS 互操作 helper 独立成 chunk，
+						// 避免被就近卷进某个 vendor 后让所有用到动态 import 的页面静态依赖它
+						if (id.includes('vite/preload-helper') || id.includes('commonjsHelpers'))
+							return 'vite-helpers'
 						if (id.includes('node_modules')) {
 							if (id.includes('node_modules/react-dom')) return 'react-dom-vendor'
 							if (id.includes('node_modules/react/')) return 'react-vendor'
+							// react-icons 被 FileTypeIcon 和 BlockNote 共用，独立分包避免被卷进大块头
+							if (id.includes('node_modules/react-icons')) return 'react-icons'
 							if (id.includes('node_modules/react-markdown')) return 'markdown-vendor'
-							// BlockNote（文件模块 MarkdownPreview 只读预览，体积大，单独分包）
-							if (id.includes('prosemirror')) return 'prosemirror-vendor'
-							if (id.includes('@blocknote') || id.includes('@mantine')) return 'blocknote-vendor'
+							// 注意：不要为 @blocknote/prosemirror 设 manualChunks ——
+							// 函数式 manualChunks 会把共享依赖（react-remove-scroll/clsx 等）就近吸进该 chunk，
+							// 导致 shadcn 基础组件都静态依赖它，MarkdownPreview 的懒加载失效。
+							// 懒加载边界（React.lazy）本身已能保证 BlockNote 按需加载。
 						}
 					},
 				},
