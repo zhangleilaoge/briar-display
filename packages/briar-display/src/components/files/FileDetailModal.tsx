@@ -3,11 +3,13 @@
 import { type FileItem, getFileContent } from '@/api/files'
 import { Button } from '@/components/ui/button'
 import { Check, Clipboard, Download, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import DocxPreview from './DocxPreview'
 import ExcelPreview from './ExcelPreview'
 import FileTypeIcon from './FileTypeIcon'
-import MarkdownPreview from './MarkdownPreview'
+
+// BlockNote 体积大（~1MB），仅预览 md 时才加载
+const MarkdownPreview = lazy(() => import('./MarkdownPreview'))
 
 function formatSize(bytes: number): string {
 	if (bytes < 1024) return `${bytes} B`
@@ -202,7 +204,15 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 									</div>
 								)}
 								{!textError && textContent !== null && kind === 'markdown' && (
-									<MarkdownPreview markdown={textContent} />
+									<Suspense
+										fallback={
+											<div className="rounded-lg bg-muted p-4 text-center text-sm text-muted-foreground">
+												加载中...
+											</div>
+										}
+									>
+										<MarkdownPreview markdown={textContent} />
+									</Suspense>
 								)}
 								{!textError && textContent !== null && kind === 'text' && (
 									<pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap break-all rounded-lg bg-muted p-4 text-xs">
