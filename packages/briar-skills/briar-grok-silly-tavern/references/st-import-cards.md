@@ -44,6 +44,30 @@ SillyTavern `chara_card_v2` JSON 常见结构：
 
 **Skill 约定**：导入前检查 `avatar`；缺图则停下来要 URL，不要默默导一张没脸的卡。
 
+
+### E. 坑：列表头像是问号 / 「没有头像」
+
+常见原因：**先用纯 JSON 导入**（`avatar: none` / 只有 URL 未嵌入），ST 会在
+
+`data/default-user/thumbnails/avatar/<角色名>.png`
+
+写下 **问号占位图**。之后即使用磁盘替换 `characters/*.png` 立绘，**缩略图不会自动更新**，UI 仍显示没头像。
+
+正确做法：
+
+1. **始终优先用 `chara_card_v2.png` 经 ST 导入**（不要先 JSON 再偷偷覆盖文件）。
+2. 若已踩坑：删坏缩略图并重建：
+
+```bash
+bash scripts/fix_st_avatar_thumb.sh "Jaq & Gus.png"
+```
+
+3. 浏览器对 ST **硬刷新**（Cmd+Shift+R）。
+
+### F. 「一张卡里两个人」≠ 两个角色
+
+Chub 上常见 **双人同卡**（如 `Jaq & Gus`）：`data.name` 一个、文件一个、ST 角色列表一项；立绘/人设里出现两姐妹是设定，不是导成两张卡。需要单人卡时另找角色，不要拆这份 PNG。
+
 ## 本机路径
 
 - 角色：`~/Documents/github/SillyTavern/data/default-user/characters/`

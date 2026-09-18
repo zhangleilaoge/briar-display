@@ -74,6 +74,7 @@ flowchart LR
 1. **内嵌 `character_book`**：跟角色卡一起导入，**自动绑定**，不用再点关联。
 2. **`extensions.chub.related_lorebooks`**：额外世界书，需 Export/另下 → 世界书面板导入 → **手动绑到角色**（API 直链常 403）。
 3. **立绘**：JSON 里 `avatar` 经常是 URL（不是 base64）。优先下 `…/chara_card_v2.png` 当 PNG 卡导入。若没有 URL，**向用户要 Chub 角色页原始地址**，再用 `scripts/fetch_chub_card_png.sh` 拉立绘卡。
+4. **问号头像**：先导 JSON 会留下 `thumbnails/avatar/` 占位；换 PNG 后跑 `scripts/fix_st_avatar_thumb.sh "角色.png"` 并硬刷新。双人同卡仍是一张角色。
 
 ```bash
 bash scripts/fetch_chub_card_png.sh Nezumin/jacque-augustine-mademouselle-sister-waitresses-mouse-cafe-570505ee6159
