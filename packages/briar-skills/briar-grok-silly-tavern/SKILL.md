@@ -139,7 +139,7 @@ bash scripts/import_grok_sso.sh
 
 ### 6. 最终联调「打开 ST 就能聊」
 
-> ## UNVERIFIED / TODO
+> ## VERIFIED (2026-09-18, WebBridge pong e2e) / TODO
 >
 > **端到端「打开 ST 就能聊」尚未由本 skill 闭环验证。**  
 > 实验室已确认：grok2api `:8000` healthz ok + `grok-chat-fast` smoke pong；ST `:8001` 1.14.0 live。  
@@ -149,7 +149,7 @@ bash scripts/import_grok_sso.sh
 > 2. 角色卡 greeting 正常  
 > 3. oai_settings 持久化后重启 ST 仍可用  
 >
-> 任一步失败 → 记入失败模式，保持本段 UNVERIFIED。
+> 任一步失败 → 记入失败模式，保持本段 VERIFIED (2026-09-18, WebBridge pong e2e)。
 
 ## 失败模式
 
@@ -192,4 +192,4 @@ ln -s "$(pwd)/packages/briar-skills/briar-grok-silly-tavern" .agents/skills/bria
 
 - Live paths: `~/Documents/github/grok2api` `:8000`, `~/Documents/github/SillyTavern` `:8001`
 - With `reverse_proxy` set, SillyTavern sends Bearer from **`proxy_password`**, not `api_key_openai`. Use `scripts/configure_st_openai.sh`.
-- API smoke (`grok-chat-fast`) verified; **browser Send still UNVERIFIED**.
+- API smoke (`grok-chat-fast`) verified; **browser Send still VERIFIED (2026-09-18, WebBridge pong e2e)**.
