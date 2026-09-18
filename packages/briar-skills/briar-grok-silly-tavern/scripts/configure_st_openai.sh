@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Point SillyTavern Chat Completion at local grok2api.
 # With reverse_proxy set, SillyTavern uses proxy_password as Bearer (not api_key_openai).
-# After running: user MUST hard-refresh ST (Cmd+Shift+R) then Connect — an old tab can
-# save empty reverse_proxy/proxy_password back over settings.json ("未连接到 API").
+#
+# IMPORTANT: stop ST (or hard-refresh immediately) after this script. A live tab with
+# empty reverse_proxy will saveSettingsDebounced() and wipe settings.json again.
+# Also syncs ALL files under "OpenAI Settings/" because bind_preset_to_connection
+# reloads connection fields from the active preset.
 # Fields: #openai_reverse_proxy , #openai_proxy_access_key ; button #api_button_openai
 # See references/st-api-connect.md
 set -euo pipefail
@@ -31,11 +34,27 @@ sec_path = user/"secrets.json"
 sec = json.loads(sec_path.read_text()) if sec_path.exists() else {}
 sec["api_key_openai"] = [{"id": str(uuid.uuid4()), "value": key, "label": "grok2api-local", "active": True}]
 sec_path.write_text(json.dumps(sec, indent=4)); sec_path.chmod(0o600)
-preset = user/"OpenAI Settings"/"Default.json"
-if preset.exists():
-    d = json.loads(preset.read_text())
-    d.update({"chat_completion_source":"openai","reverse_proxy":proxy,"proxy_password":key,"openai_model":model})
-    preset.write_text(json.dumps(d, indent=4, ensure_ascii=False))
-print("configured:", proxy, model)
-print("hard-refresh SillyTavern in the browser")
+pdir = user/"OpenAI Settings"
+pdir.mkdir(parents=True, exist_ok=True)
+n = 0
+for f in pdir.glob("*.json"):
+    d = json.loads(f.read_text())
+    d.update({
+        "chat_completion_source": "openai",
+        "reverse_proxy": proxy,
+        "proxy_password": key,
+        "openai_model": model,
+    })
+    f.write_text(json.dumps(d, indent=4, ensure_ascii=False))
+    n += 1
+if n == 0:
+    (pdir/"Default.json").write_text(json.dumps({
+        "chat_completion_source": "openai",
+        "reverse_proxy": proxy,
+        "proxy_password": key,
+        "openai_model": model,
+    }, indent=4, ensure_ascii=False))
+    n = 1
+print("configured:", proxy, model, f"(synced {n} openai presets)")
+print("stop/restart ST or hard-refresh NOW — a live empty tab can wipe this")
 PY
