@@ -19,6 +19,7 @@ echo "INFO: refreshing SSO via WebBridge (no cookie values logged)"
 python3 "$DIR/import_grok_sso.py" --via-webbridge "$@"
 
 KEY_FILE="${BRIAR_G2A_CLIENT_KEY:-$HOME/Documents/github/grok2api/.client_key}"
+if [[ ! -f "$KEY_FILE" ]]; then KEY_FILE="$HOME/Documents/github/grok2api/.client_key"; fi
 if [[ ! -f "$KEY_FILE" ]]; then
   KEY_FILE="$HOME/.config/briar-skills/grok2api-client.key"
 fi
