@@ -90,13 +90,18 @@ bash scripts/start_all.sh   # grok2api :8000 + SillyTavern :8001
 bash scripts/stop_all.sh    # 停两者（含端口兜底）
 ```
 
-聊天 **502 / 连接上游失败 / ST 已连但发不出**：多半是 Grok SSO 失效，不是 ST。
+## ST「未连接到 API」vs 聊天 502
 
-```bash
-bash scripts/refresh_grok_sso.sh
-```
+详见 [references/st-api-connect.md](references/st-api-connect.md)。
 
-会经 Kimi WebBridge 打开 grok.com 收 cookie → 导入 grok2api → smoke。需浏览器扩展已连且 grok.com 已登录。
+| 现象 | 原因 | 动作 |
+|------|------|------|
+| UI **未连接到 API** / Connect **403** | 反向代理或 **代理密码** 空/错；或旧标签把空配置写回磁盘 | `bash scripts/configure_st_openai.sh` → 浏览器 **Cmd+Shift+R** → Connect |
+| 已连接但消息 **502** | Grok SSO 失效 | `bash scripts/refresh_grok_sso.sh` |
+
+接线要点：反向代理 `http://127.0.0.1:8000/v1`，Bearer 走 **`proxy_password`**（DOM `#openai_proxy_access_key`），不是 OpenAI API Key。改配置后必须硬刷新，避免旧会话冲掉 `settings.json`。
+
+
 
 ## 日常开玩（一键）
 

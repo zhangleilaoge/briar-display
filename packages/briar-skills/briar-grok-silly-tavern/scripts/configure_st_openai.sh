@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Point SillyTavern Chat Completion at local grok2api.
 # With reverse_proxy set, SillyTavern uses proxy_password as Bearer (not api_key_openai).
+# After running: user MUST hard-refresh ST (Cmd+Shift+R) then Connect — an old tab can
+# save empty reverse_proxy/proxy_password back over settings.json ("未连接到 API").
+# Fields: #openai_reverse_proxy , #openai_proxy_access_key ; button #api_button_openai
+# See references/st-api-connect.md
 set -euo pipefail
 ST_USER="${ST_USER_DIR:-$HOME/Documents/github/SillyTavern/data/default-user}"
 G2A_HOME="${GROK2API_HOME:-$HOME/Documents/github/grok2api}"
