@@ -82,6 +82,22 @@ bash scripts/fetch_chub_card_png.sh Nezumin/jacque-augustine-mademouselle-sister
 bash scripts/fetch_chub_card_png.sh /path/to/card.json
 ```
 
+
+## 一键启停
+
+```bash
+bash scripts/start_all.sh   # grok2api :8000 + SillyTavern :8001
+bash scripts/stop_all.sh    # 停两者（含端口兜底）
+```
+
+聊天 **502 / 连接上游失败 / ST 已连但发不出**：多半是 Grok SSO 失效，不是 ST。
+
+```bash
+bash scripts/refresh_grok_sso.sh
+```
+
+会经 Kimi WebBridge 打开 grok.com 收 cookie → 导入 grok2api → smoke。需浏览器扩展已连且 grok.com 已登录。
+
 ## 日常开玩（一键）
 
 ```bash

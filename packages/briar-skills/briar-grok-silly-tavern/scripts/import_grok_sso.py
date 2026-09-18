@@ -85,26 +85,45 @@ def cookies_via_webbridge() -> list[dict]:
     except SystemExit:
         die(f"WebBridge not reachable at {WB} — run: ~/.kimi-webbridge/bin/kimi-webbridge start")
 
-    # borrow / open grok tab
-    wb_command("find_tab", {"url": "https://grok.com", "active": True})
-    # if find_tab fails open navigate
-    # cookies via CDP passthrough
+    # Open/reuse grok tab. Never require active:true (fails if another tab is focused).
+    opened = False
+    for action, args in (
+        ("find_tab", {"url": "https://grok.com", "create": True}),
+        ("find_tab", {"url": "https://grok.com", "open": True}),
+        ("navigate", {"url": "https://grok.com"}),
+    ):
+        try:
+            status, payload = http_json(
+                f"{WB}/command",
+                method="POST",
+                body={"action": action, "args": args, "session": SESSION},
+            )
+            if status == 200 and isinstance(payload, dict) and payload.get("ok") is False:
+                info(f"WebBridge {action} skip: {str(payload)[:180]}")
+                continue
+            if status == 200:
+                info(f"WebBridge {action} ok")
+                opened = True
+                break
+            info(f"WebBridge {action} HTTP {status}: {str(payload)[:180]}")
+        except SystemExit as e:
+            info(f"WebBridge {action} skip: {e}")
+    if not opened:
+        wb_command("navigate", {"url": "https://grok.com"})
+
     payload = wb_command(
         "cdp",
         {"method": "Network.getCookies", "params": {"urls": ["https://grok.com", "https://www.grok.com"]}},
     )
     data = payload.get("data") or payload.get("result") or payload
-    # shapes: {cookies:[...]} or nested
     cookies = data.get("cookies") if isinstance(data, dict) else None
     if cookies is None and isinstance(data, dict):
-        # sometimes {result:{cookies}}
         cookies = (data.get("result") or {}).get("cookies")
     if not isinstance(cookies, list):
         die(f"unexpected CDP cookie payload keys={list(data)[:20] if isinstance(data, dict) else type(data)}")
     names = sorted({c.get("name") for c in cookies if isinstance(c, dict)})
     info(f"cookie names on grok.com: {names}")
     return cookies
-
 
 def pick_grok_cookies(cookies: list[dict]) -> tuple[str, str]:
     sso = sso_rw = ""
