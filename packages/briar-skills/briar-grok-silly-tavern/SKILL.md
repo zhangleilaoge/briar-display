@@ -64,6 +64,23 @@ flowchart LR
 实验室可用聊天模型：**`grok-chat-fast`**（曾测 200 / smoke pong）。`grok-chat-auto` / `grok-chat-expert` 易因账号池 **503** — 优先 `grok-chat-fast`。
 
 
+
+## 角色卡 / 世界书 / 立绘（SillyTavern）
+
+详见 [references/st-import-cards.md](references/st-import-cards.md)。
+
+要点：
+
+1. **内嵌 `character_book`**：跟角色卡一起导入，**自动绑定**，不用再点关联。
+2. **`extensions.chub.related_lorebooks`**：额外世界书，需 Export/另下 → 世界书面板导入 → **手动绑到角色**（API 直链常 403）。
+3. **立绘**：JSON 里 `avatar` 经常是 URL（不是 base64）。优先下 `…/chara_card_v2.png` 当 PNG 卡导入。若没有 URL，**向用户要 Chub 角色页原始地址**，再用 `scripts/fetch_chub_card_png.sh` 拉立绘卡。
+
+```bash
+bash scripts/fetch_chub_card_png.sh Nezumin/jacque-augustine-mademouselle-sister-waitresses-mouse-cafe-570505ee6159
+# 或
+bash scripts/fetch_chub_card_png.sh /path/to/card.json
+```
+
 ## 日常开玩（一键）
 
 ```bash
