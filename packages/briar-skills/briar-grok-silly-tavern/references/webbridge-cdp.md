@@ -1,49 +1,33 @@
-# WebBridge / CDP — 采集 grok.com SSO
+# WebBridge / CDP — grok.com SSO
 
-## 目标
+## 真实接口（2026-09-18 验证）
 
-从**已登录** <https://grok.com> 的浏览器上下文读取 cookie：
+Kimi WebBridge daemon：`http://127.0.0.1:10086`
 
-- `sso`
-- `sso-rw`
+| 用途 | 调用 |
+|------|------|
+| 健康 | `GET /status` |
+| 命令 | `POST /command` JSON：`{action, args, session}` |
+| 借当前标签 | `find_tab` + `{"url":"https://grok.com","active":true}` |
+| 读 cookie | `cdp` + `Network.getCookies` `urls:["https://grok.com"]` |
 
-交给 grok2api Admin 导入，而**不要**把 cookie 值粘贴进 Agent 聊天。
+**不是** Chrome 远程调试口：`/json/version`、`/json/list` 在 10086 上通常 404。CDP 只走 `action:"cdp"`。
 
-## 前置
+CLI：`~/.kimi-webbridge/bin/kimi-webbridge start|status`
 
-- Kimi WebBridge（或等价 CDP 代理）在 macOS 监听  
-  默认探测：`BRIAR_WEBBRIDGE_CDP` = `http://127.0.0.1:10086`
-- 用户已在该浏览器配置里登录 grok.com
+## 快修（代理 / SSO 失效）
 
-## 推荐流程
+症状：ST/curl 对 `grok-chat-fast` 返回 **401**、空账号池、或 **503 账号池不支持**。
 
-1. 确认 CDP 可达：`curl -sS "$BRIAR_WEBBRIDGE_CDP/json/version"`（或 WebBridge 自身健康检查）
-2. 列出 targets / 选中 grok.com 页面
-3. 通过 CDP `Network.getCookies` 或等价 API 过滤 `domain` 含 `grok.com`、name ∈ `{sso,sso-rw}`
-4. 写入临时文件，权限 **0600**，例如：  
-   `$HOME/.config/briar-skills/grok-sso.env`  
-   格式示例（占位）：
-   ```
-   SSO=replace_me
-   SSO_RW=replace_me
-   ```
-5. 调用 `scripts/import_grok_sso.sh`：读取该文件 → 调 grok2api Admin import → 确认 active
-6. 导入成功后可删除临时 env，或保留但永不 git add
+```bash
+# 1) 浏览器里打开 grok.com 并保持登录（WebBridge 能借到该标签）
+# 2) 一键重拉 SSO + 导入 + smoke
+bash scripts/refresh_grok_sso.sh
+```
+
+脚本会：启动 WebBridge（若有 CLI）→ `find_tab` grok.com → CDP 取 `sso`/`sso-rw`（只日志 name）→ 写入 `~/.config/briar-skills/grok-sso.env` (0600) → Admin `web/import` → `/v1/chat/completions` smoke。
 
 ## 禁止
 
-- 在 SKILL / PR / issue / chat 中粘贴真实 SSO
-- 用截图 OCR 把完整 cookie 回传给模型（除非用户明确要求且仍写入 0600 文件）
-- 把 cookie 文件放到仓库目录内
-
-## 故障
-
-| 症状 | 处理 |
-|------|------|
-| 连接 CDP refused | 检查 WebBridge 是否启动、端口是否仍为 10086 |
-| 有页面但无 sso cookie | 用户重新打开 grok.com 并登录；注意 HttpOnly/Secure 仍可通过 CDP 读取 |
-| 导入后很快失效 | SSO 会话过期 → 重新采集 |
-
-## 与脚本的关系
-
-`scripts/import_grok_sso.py` 封装：探测 CDP → 写 0600 文件 → HTTP 调用本地 grok2api Admin（具体 Admin 路径以 grok2api 当前版本为准；脚本内用占位并打印清晰错误）。
+- 把 cookie 值贴进 chat / commit / SKILL
+- OCR 截图里的完整 SSO 回传模型
