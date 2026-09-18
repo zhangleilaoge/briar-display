@@ -63,6 +63,30 @@ flowchart LR
 
 实验室可用聊天模型：**`grok-chat-fast`**（曾测 200 / smoke pong）。`grok-chat-auto` / `grok-chat-expert` 易因账号池 **503** — 优先 `grok-chat-fast`。
 
+
+## 日常开玩（一键）
+
+```bash
+# 仓库内或任意 cwd：
+bash packages/briar-skills/briar-grok-silly-tavern/scripts/start_all.sh
+# 打开 http://127.0.0.1:8001/
+# 停：
+bash packages/briar-skills/briar-grok-silly-tavern/scripts/stop_all.sh
+```
+
+`start_all.sh` = `start_grok2api.sh` + `start_sillytavern.sh`，并等待 `/healthz` 与 ST HTTP。
+
+## SSO / 反代失效快修
+
+| 症状 | 动作 |
+|------|------|
+| 聊天 401 / 未授权 | `bash scripts/refresh_grok_sso.sh` |
+| 503 账号池不支持该模型 | 改用 **`grok-chat-fast`**；仍失败再 refresh SSO |
+| WebBridge 连不上 | `~/.kimi-webbridge/bin/kimi-webbridge start`，浏览器扩展连上后再 refresh |
+| grok.com 未登录 | 在 WebBridge 控制的浏览器打开 grok.com 登录 → refresh |
+
+细节：[references/webbridge-cdp.md](references/webbridge-cdp.md)
+
 ## Agent 工作流
 
 ### 0. 并行安装注意
@@ -103,6 +127,7 @@ bash scripts/install_grok2api.sh      # 优先 go build → ./grok2api；写 con
 ### 3. 启停（nohup + pid）
 
 ```bash
+bash scripts/start_all.sh          # 推荐：两边一起起
 bash scripts/start_grok2api.sh        # nohup ./grok2api --config config.yaml ; pid → $Grok2API_HOME/grok2api.pid
 bash scripts/start_sillytavern.sh     # nohup ./start.sh ; pid → $ST_HOME/sillytavern.pid
 bash scripts/stop_grok2api.sh
