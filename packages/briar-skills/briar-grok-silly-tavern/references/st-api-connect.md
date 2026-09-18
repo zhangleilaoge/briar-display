@@ -96,3 +96,8 @@ PY
 判别：看 `oai_settings.reverse_proxy` 是否又变空；空则重跑 `configure_st_openai.sh`，关掉多余标签后 Cmd+Shift+R。直连 `/v1/chat/completions` 若仍 200，就更确认是 ST 配置问题。上游 502/非 JSON 才跑 `refresh_grok_sso.sh`。
 
 Agent 约定：用户说「刚能聊又不行 / token 计数 / Unexpected token」时，**先查 settings 是否被冲空**，再查 SSO。
+
+
+## 相关 example
+
+配置已填仍显示未连接：见 [examples/st-api-connection-red-but-filled.md](../examples/st-api-connection-red-but-filled.md)。
