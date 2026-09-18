@@ -101,3 +101,5 @@ Agent 约定：用户说「刚能聊又不行 / token 计数 / Unexpected token�
 ## 相关 example
 
 配置已填仍显示未连接：见 [examples/st-api-connection-red-but-filled.md](../examples/st-api-connection-red-but-filled.md)。
+
+相关：模型 404 见 [examples/st-model-does-not-exist.md](../examples/st-model-does-not-exist.md)。
