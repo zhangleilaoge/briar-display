@@ -98,6 +98,8 @@ bash scripts/stop_all.sh    # 停两者（含端口兜底）
 |------|------|------|
 | UI **未连接到 API** / Connect **403** | 反向代理或 **代理密码** 空/错；或旧标签把空配置写回磁盘 | `bash scripts/configure_st_openai.sh` → 浏览器 **Cmd+Shift+R** → Connect |
 | 已连接但消息 **502** | Grok SSO 失效 | `bash scripts/refresh_grok_sso.sh` |
+| toast **连接上游服务失败**（502 `upstream_network_error`） | 本地代理没开 / 节点或账号卡在冷却（冷却存 sqlite，**重启不清**） | 先确认代理客户端在跑（`nc -z 127.0.0.1 7892`），再 `bash scripts/fix_grok_upstream.sh`（探活+清冷却+smoke 一条龙） |
+| 上面做了仍 502，日志 `Grok index 返回 403` | 出口 IP 被 Cloudflare 风控。判据：浏览器里 grok.com 也卡「请稍候…正在进行安全验证」= **IP 级硬风控** | **在代理客户端换节点**（唯一解法；cf_clearance 绑 UA+IP，从浏览器搬到 grok2api 实测无效）。换完跑 `fix_grok_upstream.sh` 验证 |
 | toast **模型不存在** | `openai_model` 被改成 gpt-* 等，不在 grok2api 列表 | 改成 `grok-chat-fast`；见 `examples/st-model-does-not-exist.md` |
 | 配置都填了顶部仍红 / 未连接 | **没点 Connect**（选 profile 不会自动连） | 滚到 `#api_button_openai` 点连接并确认代理弹窗；见 `examples/st-api-connection-red-but-filled.md` |
 | 刚聊一句就 Token 计数错误 / Unexpected token S 然后未连接 | 旧标签冲空反向代理，或上游偶发非 JSON | 查 settings → configure → 关多余标签硬刷新；上游差再 refresh SSO |
@@ -123,6 +125,7 @@ bash packages/briar-skills/briar-grok-silly-tavern/scripts/stop_all.sh
 | 症状 | 动作 |
 |------|------|
 | 聊天 401 / 未授权 | `bash scripts/refresh_grok_sso.sh` |
+| 聊天 502 / 连接上游服务失败 | `bash scripts/fix_grok_upstream.sh`；日志有 `Grok index 返回 403` 则先去代理客户端换节点 |
 | 503 账号池不支持该模型 | 改用 **`grok-chat-fast`**；仍失败再 refresh SSO |
 | WebBridge 连不上 | `~/.kimi-webbridge/bin/kimi-webbridge start`，浏览器扩展连上后再 refresh |
 | grok.com 未登录 | 在 WebBridge 控制的浏览器打开 grok.com 登录 → refresh |
@@ -244,6 +247,7 @@ bash scripts/import_grok_sso.sh
 | `start_grok2api.sh` / `stop_grok2api.sh` | nohup + `grok2api.pid` |
 | `start_sillytavern.sh` / `stop_sillytavern.sh` | nohup + `sillytavern.pid` |
 | `import_grok_sso.sh` / `.py` | CDP → Admin SSO import |
+| `fix_grok_upstream.sh` | 「连接上游服务失败」快修：节点探活（成功即清节点冷却）+ 清账号冷却 + smoke |
 
 更多：[architecture.md](references/architecture.md) · [webbridge-cdp.md](references/webbridge-cdp.md)
 
@@ -260,3 +264,18 @@ ln -s "$(pwd)/packages/briar-skills/briar-grok-silly-tavern" .agents/skills/bria
 - Live paths: `~/Documents/github/grok2api` `:8000`, `~/Documents/github/SillyTavern` `:8001`
 - With `reverse_proxy` set, SillyTavern sends Bearer from **`proxy_password`**, not `api_key_openai`. Use `scripts/configure_st_openai.sh`.
 - API smoke (`grok-chat-fast`) verified; **browser Send still VERIFIED (2026-09-18, WebBridge pong e2e)**.
+- Admin API cheat-sheet: login `POST /api/admin/v1/auth/login` → token 在 **`data.tokens.accessToken`**（不是 `data.token`）；冷却/探活端点 `POST /egress-nodes/:id/test`、`POST /accounts/:id/clear-cooldown`（已封装进 `fix_grok_upstream.sh`）。grok2api 由 launchd `com.briar.grok2api` 托管，重启用 `launchctl kickstart -k gui/$(id -u)/com.briar.grok2api`。
+- **勿动 egress 节点的 `userAgent`**：默认 `Chrome/146` 与 grok2api 的 tls-client 指纹绑定，改成浏览器 UA（如 151）会造成指纹/UA 不一致，反而更容易被 CF 拦。
+- CF 风控分层判据：curl 403 但浏览器正常 = 指纹/UA 级（可试 cf cookie）；浏览器也卡验证页 = IP 级，只能换节点。
+- **VERIFIED (2026-09-18 晚)**：出口 IP 被 CF 硬风控（浏览器/grok2api 双双 403）→ 自由猫换「原生|媒体AI」节点 → `fix_grok_upstream.sh` 探活 healthy + 清冷却 + **smoke 200 pong**。即该脚本 + 换节点已端到端闭环。
+
+## 防复读 / pattern lock（Chat Completion）
+
+角色反复同一套开场收束、网页端却正常时，按 [references/st-anti-repetition.md](references/st-anti-repetition.md) 处理：
+
+1. 先清污染历史（Swipe / 删轮 / 新开），再调参。
+2. `presence_penalty≈0.8`，`frequency_penalty≈0.4`（`settings.json` 的 `oai_settings` + `OpenAI Settings/Default.json`）。
+3. 启用全局世界书 **Anti-Repetition**（`worlds/Anti-Repetition.json`，常驻），并在当前聊天写入 Author's Note（`chat_metadata.note_prompt`）。
+4. 硬刷新 SillyTavern 后再生成。
+
+这是上下文套句锁死，不是 ST 程序 bug。
