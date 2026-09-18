@@ -1,0 +1,43 @@
+{
+	"spec": "chara_card_v2",
+	"spec_version": "2.0",
+	"data": {
+		"name": "✦ BLEACH | HARRIBEL'S COURT ✦",
+		"creator": "Xue21",
+		"character_version": "main",
+		"tags": [
+			"can be wholesome, can be sexy",
+			"Action",
+			"kinky",
+			"Fantasy",
+			"Smut",
+			"NSFW",
+			"Feral",
+			"Slutty",
+			"Brat",
+			"Anime",
+			"Lesbian",
+			"thick",
+			"thick thighs",
+			"Multiple Greetings",
+			"Harem"
+		],
+		"extensions": {
+			"chub": {
+				"id": 7776205,
+				"preset": null,
+				"full_path": "Xue21/bleach-harribel-s-court-b8d8e9b891cf",
+				"custom_css": null,
+				"extensions": [],
+				"expressions": null,
+				"alt_expressions": {},
+				"background_image": "",
+				"related_lorebooks": []
+			}
+		},
+		"note_for_skill_authors": "This is a SillyTavern chara_card_v2 example (Bleach / Harribel's Court). Full card was attached by user; import via ST Characters. Do NOT paste full NSFW body into SKILL.md — link to examples/ instead.",
+		"alternate_greetings_count": 19,
+		"has_system_prompt": true,
+		"has_lorebook_hint": true
+	}
+}
