@@ -81,4 +81,18 @@ PY
 
 - `scripts/configure_st_openai.sh` — 写 ST 反向代理与代理密码  
 - `scripts/refresh_grok_sso.sh` — SSO 复活  
-- `scripts/start_all.sh` / `scripts/stop_all.sh` — 启停（stop 含端口兜底）  
+- `scripts/start_all.sh` / `scripts/stop_all.sh` — 启停（stop 含端口兜底）
+
+
+## 聊一句就挂：「Token 计数错误」+ 又变成未连接
+
+常见连环（本实验室已复现）：
+
+1. 某次生成返回了 **非 JSON** 正文（例如以 `Something` 开头的纯文本）→ 浏览器报 `Unexpected token 'S', "Something "... is not valid JSON`。
+2. 同时或稍后弹出 **Token 计数错误**（ST 组装 prompt 时的 toastr；与 grok2api 是否存活无直接关系）。
+3. 若还有 **另一个未硬刷新的 ST 标签**（内存里反向代理/代理密码为空）触发保存，会把空配置 **写回** `settings.json`。
+4. UI 变红：**未连接到 API**——像「只能聊一句」，其实是 **配置被冲掉**。
+
+判别：看 `oai_settings.reverse_proxy` 是否又变空；空则重跑 `configure_st_openai.sh`，关掉多余标签后 Cmd+Shift+R。直连 `/v1/chat/completions` 若仍 200，就更确认是 ST 配置问题。上游 502/非 JSON 才跑 `refresh_grok_sso.sh`。
+
+Agent 约定：用户说「刚能聊又不行 / token 计数 / Unexpected token」时，**先查 settings 是否被冲空**，再查 SSO。

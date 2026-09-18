@@ -98,6 +98,7 @@ bash scripts/stop_all.sh    # 停两者（含端口兜底）
 |------|------|------|
 | UI **未连接到 API** / Connect **403** | 反向代理或 **代理密码** 空/错；或旧标签把空配置写回磁盘 | `bash scripts/configure_st_openai.sh` → 浏览器 **Cmd+Shift+R** → Connect |
 | 已连接但消息 **502** | Grok SSO 失效 | `bash scripts/refresh_grok_sso.sh` |
+| 刚聊一句就 Token 计数错误 / Unexpected token S 然后未连接 | 旧标签冲空反向代理，或上游偶发非 JSON | 查 settings → configure → 关多余标签硬刷新；上游差再 refresh SSO |
 
 接线要点：反向代理 `http://127.0.0.1:8000/v1`，Bearer 走 **`proxy_password`**（DOM `#openai_proxy_access_key`），不是 OpenAI API Key。改配置后必须硬刷新，避免旧会话冲掉 `settings.json`。
 
