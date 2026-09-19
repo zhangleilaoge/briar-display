@@ -11,12 +11,9 @@
 ## 立刻止血（优先顺序）
 
 1. **清污染历史**：Swipe / 删除带模板的几轮；严重则 **新开聊天** 或从「尚未复读」处分支。这比只调参更有效。
-2. **Chat Completion 惩罚**（OpenAI 兼容；grok2api 同样走这组字段）：
-   - `presence_penalty`：**0.6–1.0**（本机默认落地 **0.8**）
-   - `frequency_penalty`：**0.3–0.6**（本机默认落地 **0.4**）
-   - 温度可略降到 **0.8–0.9**（可选）
-3. **Author's Note**（聊天元数据 `note_prompt`）+ **世界书常驻条目**（`constant: true`），禁止具体套句并要求每轮换开场/节奏。
-4. 本地后端才主打 DRY / rep_pen；走 grok API 时以前三条为主。
+2. **换话题 / 换场景**：复读循环被「同一个没进展的话题」喂养。话题一动模板就失效——直接用 OOC/画外音推剧情（钟声响起、有人敲门、角色起身离开），比任何指令都管用。
+3. **反复读指令**：预设 `jailbreak`（Post-History Instructions）写双语反复读文案（本机已落地，2026-09-19）；单聊天可用 Author's Note（`note_prompt`）。只能延缓、不能根治——人设本身就是「教义复读机」的卡（如 Chelsee）配弱模型仍会锁死。
+4. ~~Chat Completion 惩罚~~：**grok2api 不转发** temperature / presence_penalty / frequency_penalty（源码无这些字段，Grok 网页 API 不支持），ST 里调这些全是空调，别再折腾。DRY/XTC/rep_pen 仅本地后端（KoboldCpp/llamacpp）有效。
 
 ## 本机落盘位置（实验室）
 
@@ -24,8 +21,7 @@
 
 | 项 | 路径 / 字段 |
 |----|-------------|
-| 当前 OAI 惩罚 | `settings.json` → `oai_settings.pres_pen_openai` / `freq_pen_openai` |
-| 预设 | `OpenAI Settings/Default.json` → `presence_penalty` / `frequency_penalty` |
+| 预设 | `OpenAI Settings/Default.json` → `prompts` 里 `identifier=="jailbreak"` 的 `content`（反复读指令；采样字段无效不必管） |
 | 全局世界书勾选 | `settings.json` → `world_info_settings.world_info.globalSelect` 含 `Anti-Repetition` |
 | 世界书文件 | `worlds/Anti-Repetition.json`（条目 `constant: true`） |
 | 某局 Author's Note | `chats/<Char>/<chat>.jsonl` 首行 `chat_metadata.note_prompt`（及 `note_interval=1`, `note_depth=4`, `note_role=0`） |

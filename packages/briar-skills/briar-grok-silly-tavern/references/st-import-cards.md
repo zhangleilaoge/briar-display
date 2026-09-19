@@ -30,9 +30,11 @@ SillyTavern `chara_card_v2` JSON 常见结构：
 ### C. 独立世界书（`related_lorebooks` / 用户另给的 lore JSON）
 
 1. 从 Chub lorebook 页 **Export** 下载，或用户直接丢 `.json`。
-2. API 直链常 **403**，优先：用户导出文件，或 WebBridge 登录态下点 Export。
-3. ST → **世界书** 面板 → 导入（`#world_import_file`）。
-4. **关联到角色**：打开该角色 → 世界书/角色世界书绑定 → 选刚导入的书（或设为全局启用）。不同 ST 版本 UI 文案可能是「绑定世界书 / Character Lorebook」。
+2. **Chub API 全站 geo 封锁**：`api.chub.ai` / `chub.ai/api` 直连 curl 403「not available in your country」，**挂代理也 403**（ASN 级）。只能走 WebBridge 浏览器导出（已验证）：
+   - `navigate` 到 lorebook 页 → **CDP 可信点击**（`Input.dispatchMouseEvent`）点 Export 按钮打开菜单（合成 `el.click()` 打不开菜单）→ 菜单项「SillyTavern World Info」是 React `<li>`，**合成 `li.click()` 即可**触发下载，文件落 `~/Downloads`（文件名形如 `main_<书名>_world_info.json`，导入后可重命名为干净的世界书名）
+   - 真实下载地址规律（备选）：`https://gateway.chub.ai/api/v4/projects/{lorebookId}/repository/files/raw%2Fsillytavern_raw.json/raw?ref=main&response_type=blob`，`lorebookId` 即 `related_lorebooks[].id`
+3. ST → **世界书** 面板 → 导入（`#world_import_file`）；或 API：`POST /api/worldinfo/import`（注意**不是** `/api/worlds`），multipart 字段名 `avatar`。
+4. **关联到角色**：打开该角色 → 世界书/角色世界书绑定 → 选刚导入的书（或设为全局启用）。不同 ST 版本 UI 文案可能是「绑定世界书 / Character Lorebook」。API 方式：`POST /api/characters/edit` 顶层带 `world: "<世界书名>"`（需带 `json_data` 原文保住嵌入书）。
 
 ### D. 立绘 / 头像
 
@@ -73,6 +75,25 @@ Chub 上常见 **双人同卡**（如 `Jaq & Gus`）：`data.name` 一个、文�
 - 角色：`~/Documents/github/SillyTavern/data/default-user/characters/`
 - 世界书：`~/Documents/github/SillyTavern/data/default-user/worlds/`
 - 临时下载：`~/Documents/github/st-import/`
+
+## 坑：WebBridge upload 与 ST API 直连
+
+- WebBridge `upload` 到 `#character_import_file` 需要 Chrome 给扩展开「允许访问文件网址」（默认关）→ 报错就让用户去 `chrome://extensions` 开，或**直接走 ST 服务端 API**（推荐，无需浏览器）。
+- ST API 直连（已验证）：`disableCsrfProtection: false` 时 POST 必须带会话 cookie + CSRF token：
+
+```bash
+JAR=/tmp/st_cookie.jar
+TOKEN=$(curl -sS -c $JAR http://127.0.0.1:8001/csrf-token | python3 -c 'import json,sys;print(json.load(sys.stdin)["token"])')
+# 导入角色 PNG 卡
+curl -sS -b $JAR -c $JAR -X POST http://127.0.0.1:8001/api/characters/import \
+  -H "X-CSRF-Token: $TOKEN" -F "avatar=@/path/to/card.png;type=image/png" -F "file_type=png"
+# 读卡 / 改卡（如绑全局世界书：body 顶层加 "world": "Cheese Lore"）
+# POST /api/characters/get {"avatar_url":"X.png"} → 改完 POST /api/characters/edit（需带 json_data 原文保嵌入书）
+# 主动生成缩略图（避免懒加载前显示占位）：
+curl -sS -b $JAR -o /dev/null 'http://127.0.0.1:8001/thumbnail?type=avatar&file=X.png'
+```
+
+完整流程（Dora / Mollie 已两次验证）：读 JSON 的 `avatar` → charhub URL 直接下 PNG → API import → `/edit` 绑世界书 → 触发 thumbnail → 浏览器硬刷新。
 
 ## 示例（Jaq & Gus / Mouse Cafe）
 

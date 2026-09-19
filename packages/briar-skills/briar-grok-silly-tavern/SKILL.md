@@ -103,6 +103,7 @@ bash scripts/stop_all.sh    # 停两者（含端口兜底）
 | toast **模型不存在** | `openai_model` 被改成 gpt-* 等，不在 grok2api 列表 | 改成 `grok-chat-fast`；见 `examples/st-model-does-not-exist.md` |
 | 配置都填了顶部仍红 / 未连接 | **没点 Connect**（选 profile 不会自动连） | 滚到 `#api_button_openai` 点连接并确认代理弹窗；见 `examples/st-api-connection-red-but-filled.md` |
 | 刚聊一句就 Token 计数错误 / Unexpected token S 然后未连接 | 旧标签冲空反向代理，或上游偶发非 JSON | 查 settings → configure → 关多余标签硬刷新；上游差再 refresh SSO |
+| 回复**逐字复读**（同一句话反复出现） | grok2api **不转发** temperature/frequency/presence penalty（源码里无这些字段，Grok 网页 API 本就不支持），ST 采样参数全是空调；且上下文里已堆满重复句，模型模仿自身历史形成自增强循环 | ① **删掉 / swipe 掉复读的那几条回复**切断循环（社区共识：上下文里的重复会毒化后续所有回复）；② 已在 `OpenAI Settings/Default.json` 的 `jailbreak`（Post-History Instructions）写入双语反复读指令（2026-09-19，改完需硬刷新让预设重载）；③ 单聊天可用 Author's Note 放反复读策略；④ 长聊天用自带 Summarize 扩展瘦身；⑤ **话题卡死时用画外音/OOC 强制换场景**（钟声/敲门/角色离场），复读循环靠「同一话题无进展」喂养，话题一动模板即失效——指令只能延缓不能根治，人设即复读机的卡配弱模型仍会锁死。DRY/XTC/重复惩罚等采样器方案仅本地模型（KoboldCpp/llamacpp）有效，本链路不可用 |
 
 接线要点：反向代理 `http://127.0.0.1:8000/v1`，Bearer 走 **`proxy_password`**（DOM `#openai_proxy_access_key`），不是 OpenAI API Key。改配置后必须硬刷新，避免旧会话冲掉 `settings.json`。
 
