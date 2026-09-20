@@ -128,6 +128,24 @@ export interface SchedulerTaskInfo {
 }
 
 /**
+ * 磁力链接信息查询结果（工具箱-磁力查询，数据来自 whatslink.info）
+ */
+export interface MagnetParseResult {
+	/** 归一化后的查询链接（magnet 小写 hash / ed2k 原样） */
+	link: string
+	/** 资源名称 */
+	name: string
+	/** 总大小（字节） */
+	size: number
+	/** 文件数量 */
+	count: number
+	/** 内容类型（whatslink file_type 原值：video/folder/image/...） */
+	fileType: string
+	/** 预览截图 URL 列表 */
+	screenshots: string[]
+}
+
+/**
  * 媒体解析结果（工具箱-媒体解析，支持小红书/抖音/微信公众号/X/B站）
  */
 export interface MediaParseResult {
