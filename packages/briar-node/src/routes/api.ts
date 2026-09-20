@@ -7,6 +7,7 @@ import filePrivacyRoutes from './filePrivacy'
 import fileUploadRoutes from './fileUpload'
 import fileRoutes from './files'
 import logRoutes from './log'
+import magnetRoutes from './magnet'
 import mediaRoutes from './media'
 import messageRoutes from './messages'
 import schedulerRoutes from './scheduler'
@@ -26,6 +27,7 @@ api.route('/admin/sql', sqlConsoleRoutes)
 api.route('/cert', certRoutes)
 api.route('/deployment', deploymentRoutes)
 api.route('/logs', logRoutes)
+api.route('/magnet', magnetRoutes)
 api.route('/media', mediaRoutes)
 api.route('/messages', messageRoutes)
 api.route('/scheduler', schedulerRoutes)

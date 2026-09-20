@@ -25,6 +25,8 @@ export const RouteConfig = {
 		// 媒体解析免登录（路由内自带 IP 限频），「添加到文件」仍需登录
 		'/api/media/parse',
 		'/api/media/proxy',
+		// 磁力查询免登录（路由内自带 IP 限频）
+		'/api/magnet/parse',
 	],
 
 	/** API GET 公开的路径（写操作仍需认证） */
