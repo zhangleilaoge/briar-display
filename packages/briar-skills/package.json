@@ -4,6 +4,9 @@
 	"private": true,
 	"type": "module",
 	"description": "Briar skill collection for AI agents",
-	"scripts": {},
+	"scripts": {
+		"sillytavern:start-all": "bash briar-grok-silly-tavern/scripts/start_all.sh",
+		"sillytavern:stop-all": "bash briar-grok-silly-tavern/scripts/stop_all.sh"
+	},
 	"devDependencies": {}
 }
