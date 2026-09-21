@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Start SillyTavern (Node.js ONLY — never calls Go) on :8001 via nohup + pid file.
-# Live lab: ST 1.14.0 release at ~/Documents/github/SillyTavern, config.yaml port 8001.
+# Start SillyTavern (Node.js ONLY — never calls Go) on :8905 via nohup + pid file.
+# Live lab: ST 1.14.0 release at ~/Documents/github/SillyTavern, config.yaml port 8905.
 set -euo pipefail
 
 ST_HOME="${ST_HOME:-${BRIAR_ST_HOME:-$HOME/Documents/github/SillyTavern}}"
-BRIAR_ST_PORT="${BRIAR_ST_PORT:-8001}"
+BRIAR_ST_PORT="${BRIAR_ST_PORT:-8905}"
 PID_FILE="${ST_HOME}/sillytavern.pid"
 LOG_FILE="${ST_HOME}/sillytavern.nohup.log"
 
@@ -37,15 +37,15 @@ if is_running; then
   exit 0
 fi
 
-# Soft check: config.yaml should pin port 8001 (do not rewrite while parent may be editing).
+# Soft check: config.yaml should pin port 8905 (do not rewrite while parent may be editing).
 if [[ -f "$ST_HOME/config.yaml" ]]; then
   if command -v rg >/dev/null 2>&1; then
     if ! rg -n "^port:\s*${BRIAR_ST_PORT}\b|port:\s*${BRIAR_ST_PORT}\b" "$ST_HOME/config.yaml" >/dev/null 2>&1; then
-      info "WARN: expected port $BRIAR_ST_PORT in $ST_HOME/config.yaml — live lab uses 8001 to avoid clashing with grok2api :8000"
+      info "WARN: expected port $BRIAR_ST_PORT in $ST_HOME/config.yaml — live lab uses 8905 to avoid clashing with grok2api :8904"
     fi
   fi
 else
-  info "WARN: no config.yaml yet — ensure listen port is $BRIAR_ST_PORT (not 8000)"
+  info "WARN: no config.yaml yet — ensure listen port is $BRIAR_ST_PORT (not the grok2api port)"
 fi
 
 cd "$ST_HOME"

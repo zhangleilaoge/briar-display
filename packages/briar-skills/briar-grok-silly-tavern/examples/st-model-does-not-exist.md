@@ -22,7 +22,7 @@ Connection Profile / Default 预设里即便写着 `grok-chat-fast`，只要当�
 
 ```bash
 KEY=$(cat ~/Documents/github/grok2api/.client_key)
-curl -sS -H "Authorization: Bearer $KEY" http://127.0.0.1:8000/v1/models
+curl -sS -H "Authorization: Bearer $KEY" http://127.0.0.1:8904/v1/models
 python3 - <<'PY'
 import json
 from pathlib import Path

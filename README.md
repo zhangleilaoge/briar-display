@@ -47,11 +47,11 @@
 
 - **`@briar/agent`**：基于 `pi-coding-agent` 的 CLI 编码助手，`briar` 命令启动
 - **`@briar/skills`**：7 个 Agent 技能
-  - `briar-context`：项目上下文注入
-  - `briar-fix`：自动修复
-  - `briar-mr`：MR/PR 处理
-  - `briar-repo`：仓库分析
-  - `briar-get-session-id`：导购 sessionId 查询
+  - `briar-youzan-context`：项目上下文注入
+  - `briar-youzan-fix`：自动修复
+  - `briar-youzan-mr`：MR/PR 处理
+  - `briar-youzan-repo`：仓库分析
+  - `briar-youzan-get-session-id`：导购 sessionId 查询
   - `briar-mail`：发邮件
   - `briar-subtitle`：视频字幕提取
 - **`briar-hermes-skills`**：Hermes 平台技能（coding-agents / network-proxy / obsidian）
@@ -196,12 +196,13 @@ make dev-shared
 │   │       ├── cli.ts       # CLI 入口（briar 命令）
 │   │       └── index.ts     # Agent 核心逻辑
 │   ├── briar-skills/        # AI Agent 技能集合
-│   │   ├── briar-context/   # 项目上下文注入
-│   │   ├── briar-fix/       # 自动修复
-│   │   ├── briar-mr/        # MR/PR 处理
-│   │   ├── briar-repo/      # 仓库分析
-│   │   ├── briar-get-session-id/ # 导购 sessionId 查询
-│   │   ├── briar-mail/      # 发邮件
+│   │   ├── briar-youzan-context/   # 项目上下文注入
+│   │   ├── briar-youzan-fix/       # 自动修复
+│   │   ├── briar-youzan-mr/        # MR/PR 处理
+│   │   ├── briar-youzan-repo/      # 仓库分析
+│   │   ├── briar-youzan-get-session-id/ # 导购 sessionId 查询
+│   │   ├── briar-youzan-skynet/ # 天网日志排查方法
+│   │   ├── briar-mail/      # 发邮件（通用）
 │   │   └── briar-subtitle/  # 视频字幕提取
 │   ├── briar-hermes-skills/ # Hermes 平台技能
 │   │   ├── coding-agents/   # 编码 Agent 技能

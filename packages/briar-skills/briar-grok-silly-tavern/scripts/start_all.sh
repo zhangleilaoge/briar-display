@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# One-shot: start grok2api (:8000) then SillyTavern (:8001).
+# One-shot: start grok2api (:8904) then SillyTavern (:8905).
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-G2A_PORT="${BRIAR_G2A_PORT:-8000}"
-ST_PORT="${BRIAR_ST_PORT:-8001}"
+G2A_PORT="${BRIAR_G2A_PORT:-8904}"
+ST_PORT="${BRIAR_ST_PORT:-8905}"
 
 "$DIR/start_grok2api.sh"
 "$DIR/start_sillytavern.sh"

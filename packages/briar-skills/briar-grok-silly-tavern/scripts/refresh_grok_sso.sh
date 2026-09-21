@@ -3,7 +3,7 @@
 # Never prints cookie values.
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-G2A_PORT="${BRIAR_G2A_PORT:-8000}"
+G2A_PORT="${BRIAR_G2A_PORT:-8904}"
 
 # ensure daemon
 if [[ -x "$HOME/.kimi-webbridge/bin/kimi-webbridge" ]]; then

@@ -9,7 +9,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 ST_USER="${ST_USER_DIR:-$HOME/Documents/github/SillyTavern/data/default-user}"
 G2A_HOME="${GROK2API_HOME:-$HOME/Documents/github/grok2api}"
 KEY_FILE="${G2A_CLIENT_KEY_FILE:-$G2A_HOME/.client_key}"
-PROXY_URL="${G2A_PROXY_URL:-http://127.0.0.1:8000/v1}"
+PROXY_URL="${G2A_PROXY_URL:-http://127.0.0.1:8904/v1}"
 MODEL="${G2A_MODEL:-grok-chat-fast}"
 PROFILE_NAME="${G2A_ST_PROFILE:-grok2api-local}"
 [[ -f "$KEY_FILE" ]] || { echo "missing $KEY_FILE" >&2; exit 1; }

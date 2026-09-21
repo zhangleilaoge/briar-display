@@ -20,7 +20,7 @@ from pathlib import Path
 CONFIG_DIR = Path(os.environ.get("BRIAR_SKILLS_CONFIG", Path.home() / ".config" / "briar-skills"))
 SSO_FILE = CONFIG_DIR / "grok-sso.env"
 WB = os.environ.get("BRIAR_WEBBRIDGE", "http://127.0.0.1:10086").rstrip("/")
-G2A = os.environ.get("BRIAR_G2A_BASE", "http://127.0.0.1:8000").rstrip("/")
+G2A = os.environ.get("BRIAR_G2A_BASE", "http://127.0.0.1:8904").rstrip("/")
 SESSION = os.environ.get("BRIAR_WB_SESSION", "briar-grok-sso-refresh")
 G2A_HOME = Path(os.environ.get("Grok2API_HOME", Path.home() / "Documents/github/grok2api"))
 

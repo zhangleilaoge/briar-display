@@ -8,14 +8,16 @@
 
 ## 包含的 Skill
 
+命名约定：**qima / GitLab / youzan 内网相关**的 skill 统一使用 `briar-youzan-` 前缀；**通用** skill 直接用 `briar-` 前缀。
+
 | Skill | 作用 |
 |-------|------|
-| `briar-context` | 通过 URL 获取页面上下文（Jira、GitLab MR、内网文档等） |
-| `briar-fix` | 基于 Git worktree 的安全代码修复 |
-| `briar-mr` | GitLab MR 全能工具（创建、评论、review、pipeline） |
-| `briar-repo` | 从 GitLab 搜索并克隆仓库到本地 |
-| `briar-skynet` | 天网日志查询、traceId 链路追踪与日志导出下载 |
-| `briar-get-session-id` | 按时间窗口 + （定制页面 key 或 kdtId）查询有效导购登录 sessionId（天网日志 + Dubbo 校验） |
+| `briar-youzan-context` | 通过 URL 获取页面上下文（Jira、GitLab MR、内网文档等） |
+| `briar-youzan-fix` | 基于 Git worktree 的安全代码修复 |
+| `briar-youzan-mr` | GitLab MR 全能工具（创建、评论、review、pipeline） |
+| `briar-youzan-repo` | 从 GitLab 搜索并克隆仓库到本地 |
+| `briar-youzan-skynet` | Skynet（天网）日志排查方法：补足 skynet-query 的查询范式与事件丢失排查方法论 |
+| `briar-youzan-get-session-id` | 按时间窗口 + （定制页面 key 或 kdtId）查询有效导购登录 sessionId（天网日志 + Dubbo 校验） |
 | `briar-mail` | 发邮件（支持附件）：直连收件方 MX 投递，无需邮箱凭证 |
 | `briar-subtitle` | 视频字幕提取：烧录字幕抽帧直读或 whisper 语音转录（带时间轴） |
 | `briar-grok-silly-tavern` | macOS 上安装/接线 grok2api（Go）与 SillyTavern（纯 Node），CDP 导入 grok SSO，ST 用 OpenAI 兼容接口聊 Grok |
@@ -51,7 +53,7 @@ ln -s "$(pwd)/packages/briar-skills/<skill-name>" ~/.claude/skills/<skill-name>
 
 ### GitLab Token
 
-`briar-context`、`briar-mr`、`briar-repo` 都需要 `GITLAB_TOKEN`。读取优先级：
+`briar-youzan-context`、`briar-youzan-mr`、`briar-youzan-repo` 都需要 `GITLAB_TOKEN`。读取优先级：
 
 1. 环境变量 `GITLAB_TOKEN`
 2. 全局配置文件：`$HOME/.config/briar-skills/.env`
@@ -67,7 +69,7 @@ chmod 600 "$HOME/.config/briar-skills/.env"
 
 ### 本地仓库默认目录
 
-`zan-gitlab` 拉取仓库后默认放在 `$HOME/.gitlab-repos/`；`briar-mr` 查找本地仓库时优先按域名推断（GitLab → `$HOME/Documents/gitlab`，GitHub → `$HOME/Documents/github`，兜底 `$HOME/projects/`）。
+`zan-gitlab` 拉取仓库后默认放在 `$HOME/.gitlab-repos/`；`briar-youzan-mr` 查找本地仓库时优先按域名推断（GitLab → `$HOME/Documents/gitlab`，GitHub → `$HOME/Documents/github`，兜底 `$HOME/projects/`）。
 
 拉取/定位仓库请使用 `zan-gitlab` skill：
 
@@ -108,10 +110,10 @@ python3 /Users/zhanglei/.kimi-code/user-skills/zan-gitlab/scripts/zan_gitlab.py 
 
 ```markdown
 # ✅ 推荐
-bash briar-mr.sh review <url>
+bash briar-youzan-mr.sh review <url>
 
 # ❌ 避免
-bash ./packages/briar-skills/briar-mr/scripts/briar-mr.sh review <url>
+bash ./packages/briar-skills/briar-youzan-mr/scripts/briar-youzan-mr.sh review <url>
 ```
 
 ---

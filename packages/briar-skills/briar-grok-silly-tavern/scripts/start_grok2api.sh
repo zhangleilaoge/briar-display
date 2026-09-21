@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Start grok2api (Go) on :8000 via nohup + pid file. Not for SillyTavern.
+# Start grok2api (Go) on :8904 via nohup + pid file. Not for SillyTavern.
 set -euo pipefail
 
 Grok2API_HOME="${Grok2API_HOME:-${BRIAR_G2A_HOME:-$HOME/Documents/github/grok2api}}"
-BRIAR_G2A_PORT="${BRIAR_G2A_PORT:-8000}"
+BRIAR_G2A_PORT="${BRIAR_G2A_PORT:-8904}"
 PID_FILE="${Grok2API_HOME}/grok2api.pid"
 LOG_FILE="${Grok2API_HOME}/grok2api.nohup.log"
 

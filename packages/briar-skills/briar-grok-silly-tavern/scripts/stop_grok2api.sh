@@ -3,7 +3,7 @@
 set -euo pipefail
 
 Grok2API_HOME="${Grok2API_HOME:-${BRIAR_G2A_HOME:-$HOME/Documents/github/grok2api}}"
-BRIAR_G2A_PORT="${BRIAR_G2A_PORT:-8000}"
+BRIAR_G2A_PORT="${BRIAR_G2A_PORT:-8904}"
 PID_FILE="${Grok2API_HOME}/grok2api.pid"
 
 err() { echo "ERROR: $*" >&2; exit 1; }
@@ -36,7 +36,7 @@ else
   info "no pid file at $PID_FILE"
 fi
 
-# Best-effort: if something still listens on 8000 and looks like grok2api, warn only.
+# Best-effort: if something still listens on 8904 and looks like grok2api, warn only.
 if command -v lsof >/dev/null 2>&1; then
   if lsof -iTCP:"$BRIAR_G2A_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
     info "WARN: port $BRIAR_G2A_PORT still listening — stop manually if needed (lsof -iTCP:$BRIAR_G2A_PORT -sTCP:LISTEN)"

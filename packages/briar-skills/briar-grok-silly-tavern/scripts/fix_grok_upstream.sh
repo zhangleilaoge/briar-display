@@ -6,7 +6,7 @@
 # Usage: bash fix_grok_upstream.sh
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-G2A_PORT="${BRIAR_G2A_PORT:-8000}"
+G2A_PORT="${BRIAR_G2A_PORT:-8904}"
 
 if ! curl -fsS --noproxy '*' -m 5 "http://127.0.0.1:${G2A_PORT}/healthz" >/dev/null 2>&1; then
   echo "INFO: grok2api down — starting"
