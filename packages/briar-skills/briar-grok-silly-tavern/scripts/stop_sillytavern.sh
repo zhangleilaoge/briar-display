@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ST_HOME="${ST_HOME:-${BRIAR_ST_HOME:-$HOME/Documents/github/SillyTavern}}"
-BRIAR_ST_PORT="${BRIAR_ST_PORT:-8001}"
+BRIAR_ST_PORT="${BRIAR_ST_PORT:-8905}"
 PID_FILE="${ST_HOME}/sillytavern.pid"
 
 err() { echo "ERROR: $*" >&2; exit 1; }

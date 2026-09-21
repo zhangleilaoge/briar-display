@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Stop SillyTavern (:8001) and grok2api (:8000). Best-effort; safe to re-run.
+# Stop SillyTavern (:8905) and grok2api (:8904). Best-effort; safe to re-run.
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-G2A_PORT="${BRIAR_G2A_PORT:-8000}"
-ST_PORT="${BRIAR_ST_PORT:-8001}"
+G2A_PORT="${BRIAR_G2A_PORT:-8904}"
+ST_PORT="${BRIAR_ST_PORT:-8905}"
 
 echo "INFO: stopping SillyTavern + grok2api"
 "$DIR/stop_sillytavern.sh" || true

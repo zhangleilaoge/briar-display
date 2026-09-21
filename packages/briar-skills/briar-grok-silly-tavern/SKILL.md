@@ -37,18 +37,18 @@ flowchart LR
   subgraph CDP["Kimi WebBridge CDP"]
     Bridge["127.0.0.1:10086"]
   end
-  subgraph Proxy["grok2api :8000 — Go"]
+  subgraph Proxy["grok2api :8904 — Go"]
     Admin["Admin UI / SSO import"]
     V1["OpenAI /v1"]
   end
-  subgraph ST["SillyTavern :8001 — Node.js only"]
+  subgraph ST["SillyTavern :8905 — Node.js only"]
     Chat["Chat Completion → Custom OpenAI"]
     Card["Characters / chara_card_v2"]
   end
   Grok -->|cookies sso / sso-rw| Bridge
   Bridge -->|import_grok_sso| Admin
   Admin --> V1
-  Chat -->|http://127.0.0.1:8000/v1 + g2a_ key| V1
+  Chat -->|http://127.0.0.1:8904/v1 + g2a_ key| V1
   Card --> Chat
 ```
 
@@ -56,8 +56,8 @@ flowchart LR
 
 | 组件 | 环境变量 | 默认路径 | 启动 |
 |------|----------|----------|------|
-| grok2api | `Grok2API_HOME`（兼容 `BRIAR_G2A_HOME`） | `$HOME/Documents/github/grok2api` | `./grok2api --config config.yaml` → **:8000** |
-| SillyTavern | `ST_HOME`（兼容 `BRIAR_ST_HOME`） | `$HOME/Documents/github/SillyTavern` | `./start.sh`（`config.yaml` **port: 8001**） |
+| grok2api | `Grok2API_HOME`（兼容 `BRIAR_G2A_HOME`） | `$HOME/Documents/github/grok2api` | `./grok2api --config config.yaml` → **:8904** |
+| SillyTavern | `ST_HOME`（兼容 `BRIAR_ST_HOME`） | `$HOME/Documents/github/SillyTavern` | `./start.sh`（`config.yaml` **port: 8905**） |
 
 启动脚本用 **nohup + `$HOME/.../*.pid`**，避免关掉终端时把进程带走。
 
@@ -86,7 +86,7 @@ bash scripts/fetch_chub_card_png.sh /path/to/card.json
 ## 一键启停
 
 ```bash
-bash scripts/start_all.sh   # grok2api :8000 + SillyTavern :8001
+bash scripts/start_all.sh   # grok2api :8904 + SillyTavern :8905
 bash scripts/stop_all.sh    # 停两者（含端口兜底）
 ```
 
@@ -105,7 +105,7 @@ bash scripts/stop_all.sh    # 停两者（含端口兜底）
 | 刚聊一句就 Token 计数错误 / Unexpected token S 然后未连接 | 旧标签冲空反向代理，或上游偶发非 JSON | 查 settings → configure → 关多余标签硬刷新；上游差再 refresh SSO |
 | 回复**逐字复读**（同一句话反复出现） | grok2api **不转发** temperature/frequency/presence penalty（源码里无这些字段，Grok 网页 API 本就不支持），ST 采样参数全是空调；且上下文里已堆满重复句，模型模仿自身历史形成自增强循环 | ① **删掉 / swipe 掉复读的那几条回复**切断循环（社区共识：上下文里的重复会毒化后续所有回复）；② 已在 `OpenAI Settings/Default.json` 的 `jailbreak`（Post-History Instructions）写入双语反复读指令（2026-09-19，改完需硬刷新让预设重载）；③ 单聊天可用 Author's Note 放反复读策略；④ 长聊天用自带 Summarize 扩展瘦身；⑤ **话题卡死时用画外音/OOC 强制换场景**（钟声/敲门/角色离场），复读循环靠「同一话题无进展」喂养，话题一动模板即失效——指令只能延缓不能根治，人设即复读机的卡配弱模型仍会锁死。DRY/XTC/重复惩罚等采样器方案仅本地模型（KoboldCpp/llamacpp）有效，本链路不可用 |
 
-接线要点：反向代理 `http://127.0.0.1:8000/v1`，Bearer 走 **`proxy_password`**（DOM `#openai_proxy_access_key`），不是 OpenAI API Key。改配置后必须硬刷新，避免旧会话冲掉 `settings.json`。
+接线要点：反向代理 `http://127.0.0.1:8904/v1`，Bearer 走 **`proxy_password`**（DOM `#openai_proxy_access_key`），不是 OpenAI API Key。改配置后必须硬刷新，避免旧会话冲掉 `settings.json`。
 
 
 
@@ -114,7 +114,7 @@ bash scripts/stop_all.sh    # 停两者（含端口兜底）
 ```bash
 # 仓库内或任意 cwd：
 bash packages/briar-skills/briar-grok-silly-tavern/scripts/start_all.sh
-# 打开 http://127.0.0.1:8001/
+# 打开 http://127.0.0.1:8905/
 # 停：
 bash packages/briar-skills/briar-grok-silly-tavern/scripts/stop_all.sh
 ```
@@ -137,7 +137,7 @@ bash packages/briar-skills/briar-grok-silly-tavern/scripts/stop_all.sh
 
 ### 0. 并行安装注意
 
-若其他任务已在 `$HOME/Documents/github/SillyTavern` 跑 `npm install` 或 ST 已在 **:8001** 监听：**复用该树**，不要另起安装、不要杀占用中的 npm / 已 live 的 ST。
+若其他任务已在 `$HOME/Documents/github/SillyTavern` 跑 `npm install` 或 ST 已在 **:8905** 监听：**复用该树**，不要另起安装、不要杀占用中的 npm / 已 live 的 ST。
 
 ### 1. 安装 SillyTavern（纯 Node — 两选一）
 
@@ -182,8 +182,8 @@ bash scripts/stop_sillytavern.sh
 
 健康检查（实验室曾 ok）：
 
-- grok2api：`curl -sS http://127.0.0.1:8000/healthz`
-- ST：浏览器打开 `http://127.0.0.1:8001/`
+- grok2api：`curl -sS http://127.0.0.1:8904/healthz`
+- ST：浏览器打开 `http://127.0.0.1:8905/`
 
 ### 4. 采集并导入 SSO（优先 CDP）
 
@@ -202,7 +202,7 @@ bash scripts/import_grok_sso.sh
 
 | 项 | 值 |
 |----|-----|
-| API URL | `http://127.0.0.1:8000/v1` |
+| API URL | `http://127.0.0.1:8904/v1` |
 | API Key | `g2a_...`（本地文件，勿提交） |
 | Model | `grok-chat-fast` |
 
@@ -213,7 +213,7 @@ bash scripts/import_grok_sso.sh
 > ## VERIFIED (2026-09-18, WebBridge pong e2e) / TODO
 >
 > **端到端「打开 ST 就能聊」尚未由本 skill 闭环验证。**  
-> 实验室已确认：grok2api `:8000` healthz ok + `grok-chat-fast` smoke pong；ST `:8001` 1.14.0 live。  
+> 实验室已确认：grok2api `:8904` healthz ok + `grok-chat-fast` smoke pong；ST `:8905` 1.14.0 live。  
 > **不要编造「已在 ST 里聊通」。** 待验证：
 >
 > 1. ST UI 选 `grok-chat-fast` 收到非空角色回复  
@@ -226,7 +226,7 @@ bash scripts/import_grok_sso.sh
 
 | 现象 | 可能原因 | 处理 |
 |------|----------|------|
-| ST 与代理抢端口 | ST 默认 8000 | `config.yaml` **port: 8001** |
+| ST 与代理抢端口 | ST 默认曾用 8000，现为 8904 | `config.yaml` **port: 8905** |
 | `grok-chat-auto/expert` → 503 | 账号池 | 改用 **`grok-chat-fast`** |
 | 关终端后服务死了 | 未用 nohup | 用本 skill 的 `start_*.sh` |
 | WebBridge 连不上 | CDP 端口 | 见 references/webbridge-cdp.md |
@@ -262,7 +262,7 @@ ln -s "$(pwd)/packages/briar-skills/briar-grok-silly-tavern" .agents/skills/bria
 
 ## Lab note (2026-09-18)
 
-- Live paths: `~/Documents/github/grok2api` `:8000`, `~/Documents/github/SillyTavern` `:8001`
+- Live paths: `~/Documents/github/grok2api` `:8904`, `~/Documents/github/SillyTavern` `:8905`
 - With `reverse_proxy` set, SillyTavern sends Bearer from **`proxy_password`**, not `api_key_openai`. Use `scripts/configure_st_openai.sh`.
 - API smoke (`grok-chat-fast`) verified; **browser Send still VERIFIED (2026-09-18, WebBridge pong e2e)**.
 - Admin API cheat-sheet: login `POST /api/admin/v1/auth/login` → token 在 **`data.tokens.accessToken`**（不是 `data.token`）；冷却/探活端点 `POST /egress-nodes/:id/test`、`POST /accounts/:id/clear-cooldown`（已封装进 `fix_grok_upstream.sh`）。grok2api 由 launchd `com.briar.grok2api` 托管，重启用 `launchctl kickstart -k gui/$(id -u)/com.briar.grok2api`。

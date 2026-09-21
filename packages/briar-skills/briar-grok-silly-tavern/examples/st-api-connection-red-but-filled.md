@@ -6,7 +6,7 @@ API 连接配置已选 `grok2api-local`，且：
 
 - 聊天补全来源 = OpenAI  
 - 代理预设 / 名称 = `grok2api-local`  
-- 代理服务器 URL = `http://127.0.0.1:8000/v1`  
+- 代理服务器 URL = `http://127.0.0.1:8904/v1`  
 - 代理密码 = 已填（圆点）  
 
 但底部仍显示 **未连接到 API!**，顶栏插头仍红。
@@ -23,16 +23,16 @@ SillyTavern 只有点击 **`#api_button_openai`（Connect / 连接）** 并成�
 ## 先排除上游（终端，可选）
 
 ```bash
-curl -sS http://127.0.0.1:8000/healthz
+curl -sS http://127.0.0.1:8904/healthz
 KEY=$(cat ~/Documents/github/grok2api/.client_key)
-curl -sS -H "Authorization: Bearer $KEY" http://127.0.0.1:8000/v1/models | head -c 200
+curl -sS -H "Authorization: Bearer $KEY" http://127.0.0.1:8904/v1/models | head -c 200
 ```
 
 二者正常则问题在 ST 未点连接，不是 grok2api。
 
 ## 用户手动步骤（推荐）
 
-1. 只留一个 `http://127.0.0.1:8001` 标签。  
+1. 只留一个 `http://127.0.0.1:8905` 标签。  
 2. API 连接配置选 **`grok2api-local`**。  
 3. **向下滚动**到 OpenAI 区块的 **Connect / 连接** 按钮并点击。  
 4. 若弹出 Connecting To Proxy / 代理确认 → 确认。  
