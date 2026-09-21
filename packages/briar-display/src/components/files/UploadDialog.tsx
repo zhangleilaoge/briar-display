@@ -38,13 +38,14 @@ function formatSize(bytes: number): string {
 	return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
-/** 上传按钮 + 对话框（拖拽/点击/粘贴先暂存，点「开始上传」后分片直传 COS，逐文件进度） */
+/** 上传按钮 + 对话框（页面级粘贴/拖拽自动唤起；拖拽/点击/粘贴先暂存，点「开始上传」后分片直传 COS，逐文件进度） */
 export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps) {
 	const [open, setOpen] = useState(false)
 	const [uploading, setUploading] = useState(false)
 	const [pending, setPending] = useState<PendingItem[]>([])
 	const [tasks, setTasks] = useState<UploadTask[]>([])
 	const [dragging, setDragging] = useState(false)
+	const [pageDragging, setPageDragging] = useState(false)
 	const fileInputRef = useRef<HTMLInputElement>(null)
 
 	// 拖拽/选择/粘贴只进暂存列表，不上传；同名同大小去重
@@ -122,9 +123,8 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 	)
 
 	// 剪贴板粘贴上传：div 的 onPaste 依赖焦点（div 不可聚焦时收不到），
-	// 改为弹窗打开期间挂 document 级监听
+	// 改为 document 级常驻监听；弹窗未打开时粘贴文件会自动唤起弹窗
 	useEffect(() => {
-		if (!open) return
 		const onPaste = (e: ClipboardEvent) => {
 			const target = e.target as HTMLElement | null
 			// 不抢文本输入框自身的粘贴行为
@@ -135,141 +135,199 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 				.filter(Boolean) as File[]
 			if (pasted.length > 0) {
 				e.preventDefault()
+				setOpen(true)
 				stageFiles(pasted)
 			}
 		}
 		document.addEventListener('paste', onPaste)
 		return () => document.removeEventListener('paste', onPaste)
-	}, [open, stageFiles])
+	}, [stageFiles])
+
+	// 页面级拖拽上传：操作系统文件拖到页面任意位置，唤起弹窗并暂存。
+	// 只认外部文件拖拽（types 含 Files），不影响页面内「移动文件到文件夹」的自定义拖拽
+	// （application/x-briar-file-id）。弹窗打开时落到弹窗拖拽区的 drop 会冒泡到这里，
+	// 靠 stageFiles 的同名同大小去重避免重复暂存。
+	useEffect(() => {
+		let depth = 0
+		const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files')
+		const onDragEnter = (e: DragEvent) => {
+			if (!hasFiles(e)) return
+			depth += 1
+			setPageDragging(true)
+		}
+		const onDragOver = (e: DragEvent) => {
+			// 必须阻止默认行为，浏览器才会允许 drop（否则会直接打开/下载拖入的文件）
+			if (hasFiles(e)) e.preventDefault()
+		}
+		const onDragLeave = (e: DragEvent) => {
+			if (!hasFiles(e)) return
+			depth = Math.max(0, depth - 1)
+			if (depth === 0) setPageDragging(false)
+		}
+		const onDrop = (e: DragEvent) => {
+			if (!hasFiles(e)) return
+			e.preventDefault()
+			depth = 0
+			setPageDragging(false)
+			const files = Array.from(e.dataTransfer?.files ?? [])
+			if (files.length > 0) {
+				setOpen(true)
+				stageFiles(files)
+			}
+		}
+		window.addEventListener('dragenter', onDragEnter)
+		window.addEventListener('dragover', onDragOver)
+		window.addEventListener('dragleave', onDragLeave)
+		window.addEventListener('drop', onDrop)
+		return () => {
+			window.removeEventListener('dragenter', onDragEnter)
+			window.removeEventListener('dragover', onDragOver)
+			window.removeEventListener('dragleave', onDragLeave)
+			window.removeEventListener('drop', onDrop)
+		}
+	}, [stageFiles])
 
 	return (
-		<Dialog
-			open={open}
-			onOpenChange={(next) => {
-				if (!uploading) {
-					setOpen(next)
-					if (!next) setTasks([])
-				}
-			}}
-		>
-			<DialogTrigger asChild>
-				<Button size="sm" className="gap-1.5">
-					<Upload className="h-4 w-4" />
-					上传
-				</Button>
-			</DialogTrigger>
-			<DialogContent className="sm:max-w-md">
-				<DialogHeader>
-					<DialogTitle>上传文件</DialogTitle>
-				</DialogHeader>
-				<div
-					onDrop={handleDrop}
-					onDragOver={(e) => {
-						e.preventDefault()
-						setDragging(true)
-					}}
-					onDragLeave={(e) => {
-						if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-							setDragging(false)
-						}
-					}}
-					onClick={() => fileInputRef.current?.click()}
-					className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-10 transition-all ${
-						dragging
-							? 'border-primary bg-primary/5'
-							: 'border-muted-foreground/25 bg-muted/40 hover:border-primary/50 hover:bg-muted/60'
-					}`}
-				>
-					<input
-						ref={fileInputRef}
-						type="file"
-						multiple
-						className="hidden"
-						// 阻止 input 的程序化 click 冒泡回外层区域再次触发 onClick，
-						// 否则重入的 input.click() 会被浏览器拦截，导致文件选择框打不开
-						onClick={(e) => e.stopPropagation()}
-						onChange={(e) => {
-							if (e.target.files) stageFiles(e.target.files)
-							e.target.value = ''
-						}}
-					/>
-					{uploading ? (
-						<Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
-					) : (
-						<Upload className="h-10 w-10 text-muted-foreground/60" />
-					)}
-					<div className="text-center">
-						<p className="text-sm font-medium">
-							{uploading ? '上传中...' : '拖拽、点击或粘贴文件到此处'}
-						</p>
-						<p className="mt-1 text-xs text-muted-foreground">支持任意类型文件，单文件最大 200MB</p>
+		<>
+			{/* 页面级拖拽提示遮罩（pointer-events-none，不拦截 dragleave/drop） */}
+			{pageDragging && !open && (
+				<div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+					<div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-primary bg-card px-12 py-10 shadow-lg">
+						<Upload className="h-10 w-10 text-primary" />
+						<p className="text-sm font-medium">松开鼠标，添加到上传列表</p>
 					</div>
 				</div>
+			)}
+			<Dialog
+				open={open}
+				onOpenChange={(next) => {
+					if (!uploading) {
+						setOpen(next)
+						if (!next) setTasks([])
+					}
+				}}
+			>
+				<DialogTrigger asChild>
+					<Button size="sm" className="gap-1.5">
+						<Upload className="h-4 w-4" />
+						上传
+					</Button>
+				</DialogTrigger>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>上传文件</DialogTitle>
+					</DialogHeader>
+					<div
+						onDrop={handleDrop}
+						onDragOver={(e) => {
+							e.preventDefault()
+							setDragging(true)
+						}}
+						onDragLeave={(e) => {
+							if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+								setDragging(false)
+							}
+						}}
+						onClick={() => fileInputRef.current?.click()}
+						className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-10 transition-all ${
+							dragging
+								? 'border-primary bg-primary/5'
+								: 'border-muted-foreground/25 bg-muted/40 hover:border-primary/50 hover:bg-muted/60'
+						}`}
+					>
+						<input
+							ref={fileInputRef}
+							type="file"
+							multiple
+							className="hidden"
+							// 阻止 input 的程序化 click 冒泡回外层区域再次触发 onClick，
+							// 否则重入的 input.click() 会被浏览器拦截，导致文件选择框打不开
+							onClick={(e) => e.stopPropagation()}
+							onChange={(e) => {
+								if (e.target.files) stageFiles(e.target.files)
+								e.target.value = ''
+							}}
+						/>
+						{uploading ? (
+							<Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+						) : (
+							<Upload className="h-10 w-10 text-muted-foreground/60" />
+						)}
+						<div className="text-center">
+							<p className="text-sm font-medium">
+								{uploading ? '上传中...' : '拖拽、点击或粘贴文件到此处'}
+							</p>
+							<p className="mt-1 text-xs text-muted-foreground">
+								支持任意类型文件，单文件最大 200MB
+							</p>
+						</div>
+					</div>
 
-				{/* 暂存列表：确认前可增删 */}
-				{pending.length > 0 && !uploading && (
-					<div className="mt-3 space-y-3">
-						<div className="max-h-48 space-y-1.5 overflow-auto">
-							{pending.map((p) => (
-								<div
-									key={p.id}
-									className="flex items-center gap-2 rounded-md border bg-card px-3 py-2"
-								>
-									<FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-									<span className="min-w-0 flex-1 truncate text-xs">{p.file.name}</span>
-									<span className="shrink-0 text-xs text-muted-foreground">
-										{formatSize(p.file.size)}
-									</span>
-									<button
-										type="button"
-										onClick={() => removePending(p.id)}
-										className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
-										title="移除"
+					{/* 暂存列表：确认前可增删 */}
+					{pending.length > 0 && !uploading && (
+						<div className="mt-3 space-y-3">
+							<div className="max-h-48 space-y-1.5 overflow-auto">
+								{pending.map((p) => (
+									<div
+										key={p.id}
+										className="flex items-center gap-2 rounded-md border bg-card px-3 py-2"
 									>
-										<X className="h-3.5 w-3.5" />
-									</button>
+										<FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+										<span className="min-w-0 flex-1 truncate text-xs">{p.file.name}</span>
+										<span className="shrink-0 text-xs text-muted-foreground">
+											{formatSize(p.file.size)}
+										</span>
+										<button
+											type="button"
+											onClick={() => removePending(p.id)}
+											className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
+											title="移除"
+										>
+											<X className="h-3.5 w-3.5" />
+										</button>
+									</div>
+								))}
+							</div>
+							<div className="flex justify-end gap-2">
+								<Button variant="outline" size="sm" onClick={() => setPending([])}>
+									清空
+								</Button>
+								<Button size="sm" onClick={handleConfirmUpload}>
+									开始上传（{pending.length}）
+								</Button>
+							</div>
+						</div>
+					)}
+
+					{/* 上传进度 */}
+					{tasks.length > 0 && (
+						<div className="mt-3 max-h-48 space-y-2 overflow-auto">
+							{tasks.map((t) => (
+								<div key={t.name} className="space-y-1">
+									<div className="flex items-center justify-between gap-2">
+										<span className="truncate text-xs">{t.name}</span>
+										<span
+											className={`shrink-0 text-xs ${
+												t.error ? 'text-destructive' : 'text-muted-foreground'
+											}`}
+										>
+											{t.error ? '失败' : t.done ? '完成' : `${t.percent}%`}
+										</span>
+									</div>
+									<div className="h-1 overflow-hidden rounded-full bg-muted">
+										<div
+											className={`h-full rounded-full transition-all ${
+												t.error ? 'bg-destructive' : 'bg-primary'
+											}`}
+											style={{ width: `${t.error ? 100 : t.percent}%` }}
+										/>
+									</div>
 								</div>
 							))}
 						</div>
-						<div className="flex justify-end gap-2">
-							<Button variant="outline" size="sm" onClick={() => setPending([])}>
-								清空
-							</Button>
-							<Button size="sm" onClick={handleConfirmUpload}>
-								开始上传（{pending.length}）
-							</Button>
-						</div>
-					</div>
-				)}
-
-				{/* 上传进度 */}
-				{tasks.length > 0 && (
-					<div className="mt-3 max-h-48 space-y-2 overflow-auto">
-						{tasks.map((t) => (
-							<div key={t.name} className="space-y-1">
-								<div className="flex items-center justify-between gap-2">
-									<span className="truncate text-xs">{t.name}</span>
-									<span
-										className={`shrink-0 text-xs ${
-											t.error ? 'text-destructive' : 'text-muted-foreground'
-										}`}
-									>
-										{t.error ? '失败' : t.done ? '完成' : `${t.percent}%`}
-									</span>
-								</div>
-								<div className="h-1 overflow-hidden rounded-full bg-muted">
-									<div
-										className={`h-full rounded-full transition-all ${
-											t.error ? 'bg-destructive' : 'bg-primary'
-										}`}
-										style={{ width: `${t.error ? 100 : t.percent}%` }}
-									/>
-								</div>
-							</div>
-						))}
-					</div>
-				)}
-			</DialogContent>
-		</Dialog>
+					)}
+				</DialogContent>
+			</Dialog>
+		</>
 	)
 }
