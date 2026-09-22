@@ -23,6 +23,8 @@ interface UploadTask {
 interface PendingItem {
 	id: string
 	file: File
+	/** 图片/视频本地预览 URL（object URL），卸载时 revoke */
+	previewUrl?: string
 }
 
 interface UploadDialogProps {
@@ -38,6 +40,34 @@ function formatSize(bytes: number): string {
 	return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+function isImageFile(file: File): boolean {
+	return file.type.startsWith('image/')
+}
+
+function isVideoFile(file: File): boolean {
+	return file.type.startsWith('video/')
+}
+
+function canPreviewFile(file: File): boolean {
+	return isImageFile(file) || isVideoFile(file)
+}
+
+function makePreviewUrl(file: File): string | undefined {
+	if (!canPreviewFile(file)) return undefined
+	return URL.createObjectURL(file)
+}
+
+/** 用新文件名包一层 File（File.name 不可变） */
+function renameFile(file: File, newName: string): File {
+	const trimmed = newName.trim()
+	if (!trimmed || trimmed === file.name) return file
+	return new File([file], trimmed, { type: file.type, lastModified: file.lastModified })
+}
+
+function revokePreview(url?: string) {
+	if (url) URL.revokeObjectURL(url)
+}
+
 /** 上传按钮 + 对话框（页面级粘贴/拖拽自动唤起；拖拽/点击/粘贴先暂存，点「开始上传」后分片直传 COS，逐文件进度） */
 export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps) {
 	const [open, setOpen] = useState(false)
@@ -46,7 +76,27 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 	const [tasks, setTasks] = useState<UploadTask[]>([])
 	const [dragging, setDragging] = useState(false)
 	const [pageDragging, setPageDragging] = useState(false)
+	const [previewItem, setPreviewItem] = useState<PendingItem | null>(null)
+	const [renamingId, setRenamingId] = useState<string | null>(null)
+	const [renameDraft, setRenameDraft] = useState('')
 	const fileInputRef = useRef<HTMLInputElement>(null)
+	const renameInputRef = useRef<HTMLInputElement>(null)
+	const pendingRef = useRef(pending)
+	pendingRef.current = pending
+
+	// 卸载时释放全部 object URL
+	useEffect(() => {
+		return () => {
+			for (const p of pendingRef.current) revokePreview(p.previewUrl)
+		}
+	}, [])
+
+	useEffect(() => {
+		if (renamingId) {
+			renameInputRef.current?.focus()
+			renameInputRef.current?.select()
+		}
+	}, [renamingId])
 
 	// 拖拽/选择/粘贴只进暂存列表，不上传；同名同大小去重
 	const stageFiles = useCallback((fileList: FileList | File[]) => {
@@ -56,13 +106,57 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 			const seen = new Set(prev.map((p) => `${p.file.name}:${p.file.size}`))
 			const added = files
 				.filter((f) => !seen.has(`${f.name}:${f.size}`))
-				.map((f) => ({ id: `${Date.now()}-${Math.random()}`, file: f }))
+				.map((f) => ({
+					id: `${Date.now()}-${Math.random()}`,
+					file: f,
+					previewUrl: makePreviewUrl(f),
+				}))
 			return [...prev, ...added]
 		})
 	}, [])
 
-	const removePending = useCallback((id: string) => {
-		setPending((prev) => prev.filter((p) => p.id !== id))
+	const removePending = useCallback(
+		(id: string) => {
+			setPending((prev) => {
+				const target = prev.find((p) => p.id === id)
+				revokePreview(target?.previewUrl)
+				return prev.filter((p) => p.id !== id)
+			})
+			setPreviewItem((cur) => (cur?.id === id ? null : cur))
+			if (renamingId === id) setRenamingId(null)
+		},
+		[renamingId],
+	)
+
+	const clearPending = useCallback(() => {
+		setPending((prev) => {
+			for (const p of prev) revokePreview(p.previewUrl)
+			return []
+		})
+		setPreviewItem(null)
+		setRenamingId(null)
+	}, [])
+
+	const startRename = useCallback((item: PendingItem) => {
+		setRenamingId(item.id)
+		setRenameDraft(item.file.name)
+	}, [])
+
+	const commitRename = useCallback(() => {
+		if (!renamingId) return
+		const draft = renameDraft.trim()
+		setPending((prev) =>
+			prev.map((p) => {
+				if (p.id !== renamingId) return p
+				if (!draft || draft === p.file.name) return p
+				return { ...p, file: renameFile(p.file, draft) }
+			}),
+		)
+		setRenamingId(null)
+	}, [renamingId, renameDraft])
+
+	const cancelRename = useCallback(() => {
+		setRenamingId(null)
 	}, [])
 
 	const handleConfirmUpload = useCallback(async () => {
@@ -99,12 +193,20 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 				)
 			}
 			onUploaded()
-			// 失败的保留在暂存列表可重试，成功的移除
+			// 失败的保留在暂存列表可重试，成功的移除并释放预览 URL
 			const failedNames = new Set(results.filter((r) => r.error).map((r) => r.name))
-			setPending((prev) => prev.filter((p) => failedNames.has(p.file.name)))
+			setPending((prev) => {
+				const keep: PendingItem[] = []
+				for (const p of prev) {
+					if (failedNames.has(p.file.name)) keep.push(p)
+					else revokePreview(p.previewUrl)
+				}
+				return keep
+			})
 			if (failed === 0) {
 				setOpen(false)
 				setTasks([])
+				setPreviewItem(null)
 			}
 		} catch (err: any) {
 			toast.error(err?.message || '上传失败')
@@ -203,12 +305,51 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 					</div>
 				</div>
 			)}
+			{/* 暂存文件预览（图片/视频） */}
+			<Dialog
+				open={Boolean(previewItem?.previewUrl)}
+				onOpenChange={(next) => {
+					if (!next) setPreviewItem(null)
+				}}
+			>
+				<DialogContent className="max-w-[90vw] border-none bg-transparent p-0 shadow-none sm:max-w-[90vw]">
+					<DialogHeader className="sr-only">
+						<DialogTitle>{previewItem?.file.name ?? '文件预览'}</DialogTitle>
+					</DialogHeader>
+					{previewItem?.previewUrl && (
+						<div className="flex flex-col items-center">
+							{isImageFile(previewItem.file) ? (
+								<img
+									src={previewItem.previewUrl}
+									alt={previewItem.file.name}
+									className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain"
+								/>
+							) : (
+								// biome-ignore lint/a11y/useMediaCaption: 用户本地上传预览，无字幕文件
+								<video
+									src={previewItem.previewUrl}
+									controls
+									autoPlay
+									className="max-h-[85vh] max-w-[90vw] rounded-lg"
+								/>
+							)}
+							<p className="mt-2 truncate text-center text-sm text-white/90">
+								{previewItem.file.name}
+							</p>
+						</div>
+					)}
+				</DialogContent>
+			</Dialog>
 			<Dialog
 				open={open}
 				onOpenChange={(next) => {
 					if (!uploading) {
 						setOpen(next)
-						if (!next) setTasks([])
+						if (!next) {
+							setTasks([])
+							setPreviewItem(null)
+							setRenamingId(null)
+						}
 					}
 				}}
 			>
@@ -268,7 +409,7 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 						</div>
 					</div>
 
-					{/* 暂存列表：确认前可增删 */}
+					{/* 暂存列表：确认前可增删、预览、重命名 */}
 					{pending.length > 0 && !uploading && (
 						<div className="mt-3 space-y-3">
 							<div className="max-h-48 space-y-1.5 overflow-auto">
@@ -277,8 +418,59 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 										key={p.id}
 										className="flex items-center gap-2 rounded-md border bg-card px-3 py-2"
 									>
-										<FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-										<span className="min-w-0 flex-1 truncate text-xs">{p.file.name}</span>
+										{p.previewUrl && isImageFile(p.file) ? (
+											<button
+												type="button"
+												onClick={() => setPreviewItem(p)}
+												className="h-8 w-8 shrink-0 overflow-hidden rounded border bg-muted"
+												title="预览"
+											>
+												<img src={p.previewUrl} alt="" className="h-full w-full object-cover" />
+											</button>
+										) : p.previewUrl && isVideoFile(p.file) ? (
+											<button
+												type="button"
+												onClick={() => setPreviewItem(p)}
+												className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded border bg-muted"
+												title="预览"
+											>
+												<video
+													src={p.previewUrl}
+													muted
+													playsInline
+													className="h-full w-full object-cover"
+												/>
+											</button>
+										) : (
+											<FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+										)}
+										{renamingId === p.id ? (
+											<input
+												ref={renameInputRef}
+												value={renameDraft}
+												onChange={(e) => setRenameDraft(e.target.value)}
+												onBlur={commitRename}
+												onKeyDown={(e) => {
+													if (e.key === 'Enter') {
+														e.preventDefault()
+														commitRename()
+													} else if (e.key === 'Escape') {
+														e.preventDefault()
+														cancelRename()
+													}
+												}}
+												className="min-w-0 flex-1 rounded border bg-background px-1.5 py-0.5 text-xs outline-none ring-1 ring-primary"
+											/>
+										) : (
+											<button
+												type="button"
+												onClick={() => startRename(p)}
+												className="min-w-0 flex-1 truncate text-left text-xs hover:underline"
+												title="点击重命名"
+											>
+												{p.file.name}
+											</button>
+										)}
 										<span className="shrink-0 text-xs text-muted-foreground">
 											{formatSize(p.file.size)}
 										</span>
@@ -294,7 +486,7 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 								))}
 							</div>
 							<div className="flex justify-end gap-2">
-								<Button variant="outline" size="sm" onClick={() => setPending([])}>
+								<Button variant="outline" size="sm" onClick={clearPending}>
 									清空
 								</Button>
 								<Button size="sm" onClick={handleConfirmUpload}>
