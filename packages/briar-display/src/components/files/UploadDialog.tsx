@@ -149,7 +149,12 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 	// 靠 stageFiles 的同名同大小去重避免重复暂存。
 	useEffect(() => {
 		let depth = 0
-		const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files')
+		// 站内「拖文件进文件夹」也会带 Files 类型；有自定义 mime 时不当作外部上传
+		const hasFiles = (e: DragEvent) => {
+			const types = Array.from(e.dataTransfer?.types ?? [])
+			if (types.includes('application/x-briar-file-id')) return false
+			return types.includes('Files')
+		}
 		const onDragEnter = (e: DragEvent) => {
 			if (!hasFiles(e)) return
 			depth += 1
