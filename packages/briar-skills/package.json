@@ -5,8 +5,9 @@
 	"type": "module",
 	"description": "Briar skill collection for AI agents",
 	"scripts": {
-		"sillytave2rn:start-all": "bash briar-grok-silly-tavern/scripts/start_all.sh",
-		"sillytavern:stop-all": "bash briar-grok-silly-tavern/scripts/stop_all.sh"
+		"sillytavern:start-all": "bash briar-grok-silly-tavern/scripts/start_all.sh",
+		"sillytavern:stop-all": "bash briar-grok-silly-tavern/scripts/stop_all.sh",
+		"xhs:export-cookies": "python3 ./briar-xiaohongshu-mcp/scripts/export_chrome_xhs_cookies.py"
 	},
 	"devDependencies": {}
 }
