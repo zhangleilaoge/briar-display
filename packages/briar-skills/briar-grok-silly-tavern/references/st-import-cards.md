@@ -89,6 +89,9 @@ curl -sS -b $JAR -c $JAR -X POST http://127.0.0.1:8001/api/characters/import \
   -H "X-CSRF-Token: $TOKEN" -F "avatar=@/path/to/card.png;type=image/png" -F "file_type=png"
 # 读卡 / 改卡（如绑全局世界书：body 顶层加 "world": "Cheese Lore"）
 # POST /api/characters/get {"avatar_url":"X.png"} → 改完 POST /api/characters/edit（需带 json_data 原文保嵌入书）
+# 注意 /edit 的 body 是**平铺字段**不是 get 响应原样回传：必须有 ch_name（缺了报 "Error: invalid name"），
+# description/first_mes/system_prompt/post_history_instructions/tags/alternate_greetings 等全在顶层；
+# get 响应里 data.* 嵌套的要自行拍平，post_history_instructions 读顶层（charaFormatData，ST 1.14 源码确认）。
 # 主动生成缩略图（避免懒加载前显示占位）：
 curl -sS -b $JAR -o /dev/null 'http://127.0.0.1:8001/thumbnail?type=avatar&file=X.png'
 ```
