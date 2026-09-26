@@ -63,6 +63,7 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 
 	// ==================== Media（工具箱-媒体解析，登录用户即可） ====================
 	'POST /api/media/parse': null,
+	'DELETE /api/media/history': null,
 
 	// ==================== Magnet（工具箱-磁力查询，免登录+IP 限频） ====================
 	'POST /api/magnet/parse': null,

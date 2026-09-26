@@ -51,6 +51,19 @@ export const clearAuthToken = () => {
 	apiClient.defaults.headers.common.Authorization = undefined
 }
 
+/** 本地判断登录 token 存在且未过期（解 JWT payload 的 exp；解析失败按无效处理） */
+export const isTokenUsable = () => {
+	if (typeof window === 'undefined') return false
+	const token = window.localStorage.getItem('briar_token')
+	if (!token) return false
+	try {
+		const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+		return typeof payload.exp === 'number' && payload.exp * 1000 > Date.now()
+	} catch {
+		return false
+	}
+}
+
 export const login = async (payload: LoginPayload) => {
 	const response = await apiClient.post<ApiResponse<AuthSession & { permissions: string[] }>>(
 		'/auth/login',

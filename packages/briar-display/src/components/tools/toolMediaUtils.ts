@@ -284,7 +284,8 @@ export const createZip = (entries: ZipEntry[]): Blob => {
 	return new Blob([...chunks, ...central, new Uint8Array(end.buffer)], { type: 'application/zip' })
 }
 
-// ==================== 历史记录（localStorage，最近 10 条链接 + 标题） ====================
+// ==================== 历史记录（访客走 localStorage，最近 10 条链接 + 标题） ====================
+// 登录用户的历史由服务端 media_parse_cache 承载（见 api/media.ts 的 history API），跨设备互通
 
 export interface MediaHistoryItem {
 	url: string

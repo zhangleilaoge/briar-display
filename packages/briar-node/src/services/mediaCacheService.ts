@@ -20,7 +20,15 @@ interface ParseCacheRow {
 	url: string
 	platform: string
 	result: MediaParseResult | string
+	stale: number
 	updated_at: Date
+}
+
+/** 解析历史条目（登录用户跨设备互通） */
+export interface MediaHistoryEntry {
+	url: string
+	title: string
+	parsedAt: number
 }
 
 export interface MediaCacheRecord {
@@ -64,11 +72,31 @@ const deleteCosObjects = async (keys: string[]) => {
 	}
 }
 
+/** 批量删除解析记录及其媒体缓存（DB 行 + COS 对象），LRU 淘汰与手动删历史共用 */
+const deleteParseRows = async (person: string, urls: string[]) => {
+	if (urls.length === 0) return
+	const placeholders = urls.map(() => '?').join(',')
+	const mediaRows = await query<MediaCacheRow>(
+		`SELECT cos_key FROM media_cache WHERE person = ? AND parse_url IN (${placeholders})`,
+		[person, ...urls],
+	)
+	await execute(`DELETE FROM media_cache WHERE person = ? AND parse_url IN (${placeholders})`, [
+		person,
+		...urls,
+	])
+	await execute(`DELETE FROM media_parse_cache WHERE person = ? AND url IN (${placeholders})`, [
+		person,
+		...urls,
+	])
+	// COS 删除放最后，失败只记日志（DB 已清，7 天定时任务会兜底扫不掉这些——索性这里尽力删）
+	await deleteCosObjects(mediaRows.map((r) => r.cos_key))
+}
+
 export const mediaCacheService = {
-	/** 读解析缓存（mysql2 会自动把 JSON 列解析成对象）；抖音签名 URL 时效很短（实测不足半小时），缓存超 10 分钟视为失效 */
+	/** 读解析缓存（mysql2 会自动把 JSON 列解析成对象）；stale=1（媒体地址已被上游拒绝）不命中；抖音签名 URL 时效很短（实测不足半小时），缓存超 10 分钟视为失效 */
 	async getCachedParse(person: string, url: string): Promise<MediaParseResult | null> {
 		const row = await queryOne<ParseCacheRow>(
-			'SELECT platform, result, updated_at FROM media_parse_cache WHERE person = ? AND url = ?',
+			'SELECT platform, result, updated_at FROM media_parse_cache WHERE person = ? AND url = ? AND stale = 0',
 			[person, url],
 		)
 		if (!row) return null
@@ -89,13 +117,48 @@ export const mediaCacheService = {
 		return result as MediaParseResult
 	},
 
-	/** 删除某条解析缓存（媒体 URL 过期被上游 403 时调用，让「重新解析」真正重新拉取；COS 里已缓存的媒体副本仍有效，不动） */
-	async removeCachedParse(person: string, url: string): Promise<void> {
-		await execute('DELETE FROM media_parse_cache WHERE person = ? AND url = ?', [person, url])
+	/**
+	 * 标记解析缓存失效（媒体 URL 被上游 403 时调用）：行保留作历史记录，仅让 getCachedParse 不再命中，
+	 * 「重新解析」会真正重新拉取新签名；COS 里已缓存的媒体副本仍有效，不动。
+	 * updated_at 显式赋值自身：阻止 ON UPDATE CURRENT_TIMESTAMP 自动刷新，避免打乱 LRU/历史排序。
+	 */
+	async markParseStale(person: string, url: string): Promise<void> {
+		await execute(
+			'UPDATE media_parse_cache SET stale = 1, updated_at = updated_at WHERE person = ? AND url = ?',
+			[person, url],
+		)
+	},
+
+	/** 解析历史（最近 10 条，含 stale 已失效记录——点历史会触发重新解析拿到新签名） */
+	async listParseHistory(person: string): Promise<MediaHistoryEntry[]> {
+		const rows = await query<ParseCacheRow>(
+			`SELECT url, result, updated_at FROM media_parse_cache WHERE person = ? ORDER BY updated_at DESC LIMIT ${PARSE_CACHE_MAX_PER_PERSON}`,
+			[person],
+		)
+		return rows.map((row) => {
+			const result = typeof row.result === 'string' ? JSON.parse(row.result) : row.result
+			return {
+				url: row.url,
+				title: (result as MediaParseResult)?.title || '',
+				parsedAt: new Date(row.updated_at).getTime(),
+			}
+		})
+	},
+
+	/** 删除解析历史（传 url 删单条，否则清空），连带清理对应媒体缓存 */
+	async deleteParseHistory(person: string, url?: string): Promise<void> {
+		const urls = url
+			? [url]
+			: (
+					await query<{ url: string }>('SELECT url FROM media_parse_cache WHERE person = ?', [
+						person,
+					])
+				).map((r) => r.url)
+		await deleteParseRows(person, urls)
 	},
 
 	/**
-	 * 写解析缓存（同链接覆盖），随后按 LRU 淘汰：每人最多 10 条，
+	 * 写解析缓存（同链接覆盖并复位 stale），随后按 LRU 淘汰：每人最多 10 条，
 	 * 超出的解析记录连同其媒体缓存（DB 行 + COS 对象）一起删掉。
 	 */
 	async saveCachedParse(
@@ -107,7 +170,7 @@ export const mediaCacheService = {
 		await execute(
 			`INSERT INTO media_parse_cache (id, person, url, platform, result)
 			 VALUES (?, ?, ?, ?, ?)
-			 ON DUPLICATE KEY UPDATE platform = VALUES(platform), result = VALUES(result)`,
+			 ON DUPLICATE KEY UPDATE platform = VALUES(platform), result = VALUES(result), stale = 0`,
 			[generateId(), person, url, platform, JSON.stringify(result)],
 		)
 		// LIMIT/OFFSET 不能用绑定参数，条数是我们自己的常量，直接内联
@@ -115,23 +178,10 @@ export const mediaCacheService = {
 			`SELECT url FROM media_parse_cache WHERE person = ? ORDER BY updated_at DESC LIMIT 100 OFFSET ${PARSE_CACHE_MAX_PER_PERSON}`,
 			[person],
 		)
-		if (overflow.length === 0) return
-		const urls = overflow.map((r) => r.url)
-		const placeholders = urls.map(() => '?').join(',')
-		const mediaRows = await query<MediaCacheRow>(
-			`SELECT cos_key FROM media_cache WHERE person = ? AND parse_url IN (${placeholders})`,
-			[person, ...urls],
+		await deleteParseRows(
+			person,
+			overflow.map((r) => r.url),
 		)
-		await execute(`DELETE FROM media_cache WHERE person = ? AND parse_url IN (${placeholders})`, [
-			person,
-			...urls,
-		])
-		await execute(`DELETE FROM media_parse_cache WHERE person = ? AND url IN (${placeholders})`, [
-			person,
-			...urls,
-		])
-		// COS 删除放最后，失败只记日志（DB 已清，7 天定时任务会兜底扫不掉这些——索性这里尽力删）
-		await deleteCosObjects(mediaRows.map((r) => r.cos_key))
 	},
 
 	/** 查媒体缓存（命中时顺带更新 last_access_at，失败不阻塞） */

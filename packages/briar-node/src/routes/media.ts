@@ -9,6 +9,7 @@ import { cosService } from '../services/cosService'
 import { parseDouyin } from '../services/douyinMediaService'
 import {
 	MEDIA_CACHE_MAX_RECORD_BYTES,
+	type MediaHistoryEntry,
 	hashMediaUrl,
 	mediaCacheService,
 } from '../services/mediaCacheService'
@@ -419,6 +420,39 @@ mediaRoutes.post('/parse', async (c) => {
 	}
 })
 
+/**
+ * GET /history — 解析历史（最近 10 条，需登录；按用户维度存取，跨设备互通）
+ * 未登录访客的历史仍在前端 localStorage（身份本来就绑定设备，无服务端同步意义）
+ */
+mediaRoutes.get('/history', async (c) => {
+	const user = await resolveOptionalUser(c)
+	if (!user) {
+		return c.json<ApiResponse>({ success: false, message: '请先登录' }, HTTP_STATUS.UNAUTHORIZED)
+	}
+	const items = await mediaCacheService.listParseHistory(`u:${user.id}`).catch((err) => {
+		console.error('[MediaCache] 读取解析历史失败:', err)
+		return null
+	})
+	if (!items) {
+		return c.json<ApiResponse>(
+			{ success: false, message: '历史记录加载失败' },
+			HTTP_STATUS.INTERNAL_SERVER_ERROR,
+		)
+	}
+	return c.json<ApiResponse<MediaHistoryEntry[]>>({ success: true, data: items })
+})
+
+/** DELETE /history?url=... — 移除单条；不带 url 清空（需登录，仅影响本人记录） */
+mediaRoutes.delete('/history', async (c) => {
+	const user = await resolveOptionalUser(c)
+	if (!user) {
+		return c.json<ApiResponse>({ success: false, message: '请先登录' }, HTTP_STATUS.UNAUTHORIZED)
+	}
+	const url = (c.req.query('url') || '').slice(0, 512)
+	await mediaCacheService.deleteParseHistory(`u:${user.id}`, url || undefined)
+	return c.json<ApiResponse>({ success: true })
+})
+
 /** 缓存对象 key 的扩展名：优先取 URL 里的，取不到按 MIME 映射 */
 const EXT_BY_MIME: Record<string, string> = {
 	'image/jpeg': 'jpg',
@@ -514,8 +548,8 @@ mediaRoutes.get('/proxy', async (c) => {
 		}
 		if (!upstream) throw lastErr
 		if (upstream.status === 403) {
-			// 签名 URL 过期：删掉对应解析缓存，让「重新解析」真正重新拉取新签名
-			if (from) mediaCacheService.removeCachedParse(person, from).catch(() => {})
+			// 签名 URL 过期：把对应解析缓存标记为 stale（保留行做历史记录），让「重新解析」真正重新拉取新签名
+			if (from) mediaCacheService.markParseStale(person, from).catch(() => {})
 			return c.json<ApiResponse>(
 				{ success: false, message: '链接已过期，请重新解析' },
 				HTTP_STATUS.FORBIDDEN,

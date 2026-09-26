@@ -84,3 +84,12 @@ export default function AdminXxxPage() {
 - Node fetch **只带 `User-Agent` + fresh `a1` Cookie**（a1 可本地纯算生成，见 `xhsMediaService.generateA1`）概率放行；加 `Accept`/`Accept-Language` 等"更像浏览器"的头反而提高拦截率
 - 单 IP 高频请求会短期全黑（所有变体都拦），停 1 分钟左右恢复
 - 应对：极简头 + 每次重试换 fresh a1 + 递增间隔（2s 起），3 次不过基本就是 IP 黑了，别死磕
+
+## 11. request_logs 的 created_at 存的是北京时间，查询脚本别拿 UTC 窗口去套
+
+MySQL session 时区是 +08:00，`NOW()`/`CURRENT_TIMESTAMP` 落库都是北京墙钟时间。但 mysql2 读 TIMESTAMP/DATETIME 时按**进程本地 TZ** 解释字符串：本地 Mac（Asia/Shanghai）跑脚本时 `toISOString()` 输出会比库存值少 8 小时（库存 22:07 → 打印 `14:07:00Z`）。
+
+- 写排查脚本时，`WHERE created_at BETWEEN ...` 直接填**北京时间**字面值；把脚本打印的 `...Z` 时间 +8 小时才是真实北京时间
+- 前端展示不受影响：服务端进程 TZ 同为 +8，`new Date(row.created_at)` 拿到的是正确绝对时间（媒体缓存「抖音 10 分钟失效」判断依赖这一点）
+- 反例：本次排查移动端 22:07 的报错，先拿 `01:30~02:30 UTC` 窗口查了个空——库存的是北京时间，应该查 `22:05~22:10`
+

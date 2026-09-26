@@ -247,6 +247,7 @@ CREATE TABLE IF NOT EXISTS media_parse_cache (
   url VARCHAR(512) NOT NULL COMMENT '提取后的分享链接',
   platform VARCHAR(16) NOT NULL COMMENT '平台：xhs / douyin / wechat',
   result JSON NOT NULL COMMENT '解析结果（标题/作者/封面/媒体地址）',
+  stale TINYINT(1) NOT NULL DEFAULT 0 COMMENT '媒体地址已被上游拒绝（保留行做历史记录，getCachedParse 不命中）',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间（LRU 依据）',
   UNIQUE KEY uk_person_url (person, url(191))
