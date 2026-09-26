@@ -1,4 +1,4 @@
-.PHONY: help init install dev dev-node dev-shared build build-shared build-cdn upload-cdn preview clean db-setup
+.PHONY: help init install dev dev-node dev-shared build build-shared build-cdn upload-cdn preview clean db-setup test
 
 # 默认目标
 help:
@@ -6,6 +6,7 @@ help:
 	@echo "  make init        - 初始化项目（首次使用）"
 	@echo "  make install     - 安装所有依赖"
 	@echo "  make db-setup    - 初始化数据库"
+	@echo "  make test        - 运行后端单元测试（bun test）"
 	@echo "  make dev         - 启动前端开发服务器"
 	@echo "  make dev-node    - 启动后端开发服务"
 	@echo "  make dev-shared  - 启动 shared 包监听模式"
@@ -59,6 +60,10 @@ install:
 db-setup:
 	@echo "🗄️  初始化数据库..."
 	@bun run --filter @briar/node db:setup
+
+# 后端单元测试（bun test，纯逻辑 + 路由权限契约，不碰数据库）
+test:
+	@bun run --filter @briar/node test
 
 # 配置 COS bucket CORS（前端分片直传需要，一次性；覆盖公开桶与私有桶）
 cos-cors:

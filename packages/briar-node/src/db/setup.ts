@@ -38,9 +38,9 @@ const setupDatabase = async () => {
 
 		console.log('✅ 数据库连接成功')
 
-		// 读取并执行 SQL 文件
-		const schemaPath = path.join(__dirname, 'schema.sql')
-		const schemaSql = fs.readFileSync(schemaPath, 'utf-8')
+		// 读取并执行 SQL 文件（migrate.sql 是数据库结构唯一事实来源：从零建库 + 增量迁移）
+		const migratePath = path.join(__dirname, 'migrate.sql')
+		const schemaSql = fs.readFileSync(migratePath, 'utf-8')
 
 		console.log('\n📝 执行数据库脚本...')
 

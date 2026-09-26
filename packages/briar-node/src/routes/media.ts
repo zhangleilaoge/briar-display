@@ -78,19 +78,15 @@ function refererFor(host: string): string {
 
 type AuthedUser = { id: string }
 
-/** 可选登录态：媒体解析免登录，但登录用户仍需识别（超管豁免限频） */
+/** 可选登录态：媒体解析免登录，但登录用户仍需识别（超管豁免限频、历史记录按用户维度互通） */
 async function resolveOptionalUser(c: Context): Promise<AuthedUser | null> {
 	const existing = c.get('user') as AuthedUser | undefined
 	if (existing) return existing
 	const token =
 		c.req.header('Authorization')?.replace(/^Bearer\s+/i, '') || getCookie(c, 'briar_token')
 	if (!token) return null
-	try {
-		const payload = authService.verifyToken(token)
-		return { id: payload.sub }
-	} catch {
-		return null
-	}
+	const auth = await authService.verifyLoginToken(token)
+	return auth ? { id: auth.user.id } : null
 }
 
 /** 滑动窗口限频（模块级，进程内有效），key 已含 scope 前缀 */

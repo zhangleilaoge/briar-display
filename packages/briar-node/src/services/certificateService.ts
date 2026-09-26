@@ -347,7 +347,7 @@ export const certificateService = {
 				socket.destroy()
 				resolve(null)
 			})
-			socket.on('error', (error) => {
+			socket.on('error', (error: Error) => {
 				console.error('探测线上证书失败:', error.message)
 				resolve(null)
 			})

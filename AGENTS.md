@@ -28,7 +28,9 @@ Briar Display 是一个基于 bun workspace 的 monorepo：
 bun run --filter @briar/shared build && bun run --filter @briar/display build && bun run --filter @briar/node build
 ```
 
-常用命令见 `Makefile`（`make dev` / `make build` / `make lint`）。
+常用命令见 `Makefile`（`make dev` / `make build` / `make test`）。
+
+**测试**：后端 `bun run --filter @briar/node test`（bun test，纯逻辑 + 路由权限契约，不碰数据库）；测试文件放各自包源码旁的 `*.test.ts`（briar-scripts/bid-compare 的测试只维护在其自己目录）。CI 在构建前跑后端测试。
 
 **代码规范**：Biome（见 `biome.json`）+ Lefthook（pre-commit: check + typecheck）。Tab 缩进、单引号、尾逗号、分号按需。
 
@@ -40,7 +42,7 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 
 | 文件 | 作用 |
 | :--- | :--- |
-| `packages/briar-node/src/index.ts` | 后端入口，注册中间件和路由 |
+| `packages/briar-node/src/index.ts` | 后端入口，注册中间件和路由；超管角色分配 + 定时任务调度器仅 `NODE_ENV=production`（或 `BRIAR_ENABLE_SCHEDULER=1`）启动，防止本地 dev 直连生产库时误跑清理/扫描任务 |
 | `packages/briar-node/src/routes/api.ts` | API 路由汇总 |
 | `packages/briar-node/src/routes/admin.ts` | Admin API（角色/权限/用户/日志） |
 | `packages/briar-node/src/middleware/config.ts` | 全局中间件配置 |
@@ -100,7 +102,7 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 - 存量文件从公开桶迁到私有桶：`make cos-migrate-files`（幂等，不删源桶）
 - 封禁扫描（fileModerationService）必须签 URL 再 fetch：私有桶未签名恒 403，直接 fetch 裸 URL 会把全部图片误判为封禁并删除
 - 视频封面：上传完成后客户端用 video+canvas 截首帧，直传为 `{cosKey去扩展名}.cover.jpg` 并在 confirm 时传 `thumbnailKey`；网格有封面用 `<img>`，存量无封面视频 fallback 到 `<video preload="metadata">`；删除文件/文件夹时连带删封面
-- 数据表：`files`（原 `images` 表改名）+ `folders`（嵌套文件夹，含 `is_private`），迁移见 `migrate.sql`
+- 数据表：`files`（原 `images` 表改名）+ `folders`（嵌套文件夹，含 `is_private`）；**`src/db/migrate.sql` 是数据库结构唯一事实来源**（从零建库 `make db-setup` 与每次部署的增量迁移都执行它，全部语句幂等；新变更 = 改基线段定义 + 末尾历史段追加存量库守卫）
 - **隐私文件夹**：`folders.is_private=1` 的文件夹及其全部子孙构成隐私链路（禁止嵌套设隐私）。未持有解锁 token（`x-privacy-token` header，前端 sessionStorage `briar_files_privacy_token`，12h JWT）时：链路内文件不签发 URL、不出现在列表/搜索（`excludeFolderIds`）、precheck 去重命中链路文件按新文件上传；链路文件夹 previews 置空但始终返回 `isPrivate`；链路上写操作一律 403（响应体 `code=40301` 即 shared `PRIVACY_LOCKED_CODE`，前端拦截器清 token 并弹解锁框）。设/取消隐私走 `PATCH /api/files/folders/:id` 传 `isPrivate`（需已解锁 + 祖先/后代无 private）。链路内文件前端禁用详情预览、隐藏「预览/复制链接」；管理员查看他人文件不受隐私限制
 
 ### 个人博客
@@ -143,13 +145,15 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 **第一层：authMiddleware + routes.ts（谁能访问）**
 - `routes.ts` 中的 `API_UNRESTRICTED_PATHS` 控制哪些路径跳过 JWT 验证（如登录/注册）
 - `API_PUBLIC_PATHS` / `API_PUBLIC_PREFIXES` 控制 GET 请求的公开访问（如 `/api/version`）
+- 登录 token 校验走 `authService.verifyLoginToken`：JWT 签名 + 用户存在 + `users.token_version` 与 token 的 `tv` 一致（改密码自增，旧 token 立即失效）；带 `purpose` 的专用 token（设备令牌/隐私解锁）不能当登录态
+- 滑动续期：token 剩余有效期过半时响应头带 `x-auth-token` 新 token，前端 `request.ts` 拦截器就地替换 localStorage/cookie；本地 dev 跨端口靠 CORS `exposeHeaders` 暴露该头
 
 **第二层：apiWriteGuard + apiPermissions.ts（能做什么）**
 - 全局中间件，拦截所有 POST/PUT/PATCH/DELETE 请求
 - `apiPermissions.ts` 是统一的写路由权限映射表
 - 已声明 → 检查权限；标记 null → 公开放行；未声明 → **默认拒绝（403）+ 控制台警告**
 
-**新增写路由时必须在 `apiPermissions.ts` 中注册**，否则会被拦截。这是故意设计的安全网。
+**新增写路由时必须在 `apiPermissions.ts` 中注册**，否则会被拦截。这是故意设计的安全网。契约测试 `src/config/apiPermissions.contract.test.ts` 双向校验：路由↔映射表一一对应、免登录路径不得配权限，改了路由忘了同步表会让 CI 红。
 
 ## 部署
 

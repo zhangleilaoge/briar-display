@@ -69,9 +69,9 @@ export function setupTerminalWebSocket(server: ServerType) {
 				parseCookies(req.headers.cookie).briar_token || url.searchParams.get('token') || ''
 			if (!token) return rejectSocket(socket, '401 Unauthorized')
 
-			const payload = authService.verifyToken(token)
-			const user = await authService.getUserById(payload.sub)
-			if (!user) return rejectSocket(socket, '401 Unauthorized')
+			const auth = await authService.verifyLoginToken(token)
+			if (!auth) return rejectSocket(socket, '401 Unauthorized')
+			const user = auth.user
 
 			const isAdmin = await permissionService.isAdmin(user.id)
 			const allowed =
