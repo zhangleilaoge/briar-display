@@ -72,6 +72,15 @@ apiClient.interceptors.response.use(
 		if (traceId) {
 			lastTraceId = traceId
 		}
+		// 滑动续期：后端在 token 剩余有效期过半时随响应下发新 token，这里同步到
+		// localStorage + cookie（与 api/auth.ts 的 setAuthToken 写入保持一致；
+		// request.ts 被 auth.ts 依赖，不能反向引用）
+		const refreshedToken = response.headers?.['x-auth-token']
+		if (typeof window !== 'undefined' && refreshedToken) {
+			window.localStorage.setItem('briar_token', refreshedToken)
+			document.cookie = `briar_token=${refreshedToken}; Path=/; Max-Age=604800; SameSite=Lax`
+			apiClient.defaults.headers.common.Authorization = `Bearer ${refreshedToken}`
+		}
 		return response
 	},
 	(error) => {

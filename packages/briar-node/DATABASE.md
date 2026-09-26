@@ -27,18 +27,18 @@ BRIAR_JWT_SECRET="your-jwt-secret"
 bun run --filter @briar/node db:setup
 ```
 
-该脚本会：
+该脚本执行 `src/db/migrate.sql`（全部语句幂等，可重复执行）：
 
-1. 创建 `briar` 数据库（如果不存在）
-2. 创建 `users` 表
-3. 插入默认管理员账户
+1. 创建 `briar_display` 数据库（如果不存在）
+2. 创建全部表结构（用户/RBAC/文件/日志/缓存等）
+3. 写入角色与权限种子数据
 
 ### 方式二：手动执行 SQL
 
-连接到 MySQL 服务器后，执行 `packages/briar-node/src/db/schema.sql` 文件中的 SQL 语句。
+连接到 MySQL 服务器后，执行 `packages/briar-node/src/db/migrate.sql` 文件中的 SQL 语句（数据库结构唯一事实来源：从零建库 + 增量迁移，全部幂等）。
 
 ```bash
-mysql -h your-host -u your-user -p < packages/briar-node/src/db/schema.sql
+mysql -h your-host -u your-user -p < packages/briar-node/src/db/migrate.sql
 ```
 
 ## 数据库表结构

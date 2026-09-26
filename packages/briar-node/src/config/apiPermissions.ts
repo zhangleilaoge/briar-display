@@ -25,11 +25,10 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	'PUT /api/admin/roles/:id': PERMISSIONS.ADMIN_ROLE_MANAGE,
 	'DELETE /api/admin/roles/:id': PERMISSIONS.ADMIN_ROLE_MANAGE,
 	'PUT /api/admin/roles/:id/permissions': PERMISSIONS.ADMIN_ROLE_MANAGE,
-	'POST /api/admin/roles/:id/permissions': PERMISSIONS.ADMIN_ROLE_MANAGE,
-	'PUT /api/admin/users/:id/roles': PERMISSIONS.ADMIN_USER_ROLE_ASSIGN,
-	'POST /api/admin/users/:id/roles': PERMISSIONS.ADMIN_USER_ROLE_ASSIGN,
-	'DELETE /api/admin/users/:id/roles': PERMISSIONS.ADMIN_USER_ROLE_ASSIGN,
-	'PUT /api/admin/users/:id': PERMISSIONS.ADMIN_USER_MANAGE,
+	'POST /api/admin/permissions': PERMISSIONS.ADMIN_PERMISSION_MANAGE,
+	'PUT /api/admin/permissions/:id': PERMISSIONS.ADMIN_PERMISSION_MANAGE,
+	'DELETE /api/admin/permissions/:id': PERMISSIONS.ADMIN_PERMISSION_MANAGE,
+	'PUT /api/admin/users/:userId/roles': PERMISSIONS.ADMIN_USER_ROLE_ASSIGN,
 
 	// ==================== SQL Console ====================
 	'POST /api/admin/sql/execute': PERMISSIONS.ADMIN_SQL_EXECUTE,

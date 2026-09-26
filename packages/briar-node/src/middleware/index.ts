@@ -179,8 +179,10 @@ export const loggerMiddleware = (): MiddlewareHandler => {
 export const corsMiddleware = (): MiddlewareHandler =>
 	cors({
 		origin: '*',
-		allowHeaders: ['Content-Type', 'Authorization'],
+		allowHeaders: ['Content-Type', 'Authorization', 'x-privacy-token'],
 		allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+		// 本地 dev 跨端口时浏览器只能读到暴露的响应头（生产经 nginx 同源无此限制）
+		exposeHeaders: ['x-trace-id', 'x-auth-token'],
 	})
 
 /**
@@ -199,16 +201,10 @@ export const pageAuthMiddleware = (): MiddlewareHandler => {
 			return c.redirect('/briar/login')
 		}
 
-		// 真正校验 token 签名 + 过期时间，防止伪造 cookie
-		try {
-			const payload = authService.verifyToken(token)
-			// 可选：进一步校验用户是否仍存在
-			const user = await authService.getUserById(payload.sub)
-			if (!user) {
-				return c.redirect('/briar/login')
-			}
-		} catch {
-			// token 无效/过期/签名错误 → 清掉 cookie 并重定向
+		// 校验签名 + 过期 + token_version（改密码后旧 cookie 立即失效）
+		const auth = await authService.verifyLoginToken(token)
+		if (!auth) {
+			// token 无效/过期/被吊销 → 清掉 cookie 并重定向
 			c.header('Set-Cookie', 'briar_token=; Path=/; Max-Age=0')
 			return c.redirect('/briar/login')
 		}

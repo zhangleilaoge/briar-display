@@ -98,7 +98,15 @@ const startServer = async () => {
 	console.log(`🌐 服务器地址: http://localhost:${PORT}`)
 	console.log('='.repeat(60))
 
-	startScheduler(schedulerTasks)
+	// 超管角色分配 + 定时任务只在生产环境跑：本地 dev 直连生产库，
+	// 误起调度器会从本地执行清理/扫描任务（BRIAR_ENABLE_SCHEDULER=1 可强制开启）
+	if (process.env.NODE_ENV === 'production' || process.env.BRIAR_ENABLE_SCHEDULER === '1') {
+		const { ensureAdminRole } = await import('./services/authService')
+		await ensureAdminRole()
+		startScheduler(schedulerTasks)
+	} else {
+		console.log('⏭️  非生产环境，跳过超管角色分配与定时任务调度器')
+	}
 
 	const server = serve({ fetch: app.fetch, port: Number(PORT) })
 	setupTerminalWebSocket(server)

@@ -11,6 +11,10 @@ export interface AuthPayload {
 	sub: string
 	email: string
 	name: string
+	/** 令牌版本：与 users.token_version 一致才有效（改密码即吊销旧 token） */
+	tv?: number
+	iat?: number
+	exp?: number
 }
 
 const toPublicUser = (record: UserRecord): User => ({
@@ -29,12 +33,12 @@ const generateVerificationCode = (): string => {
 }
 
 /**
- * 确保超级管理员账户拥有 admin 角色
- * 当指定邮箱的用户已存在时，自动分配 admin 角色
+ * 确保超级管理员账户拥有 admin 角色（服务启动时由 index.ts 调用，勿在模块加载期执行——
+ * 模块级副作用会让 import 它的单测碰数据库）
  */
 const ADMIN_EMAIL = 'zhangleilaoge@qq.com'
 
-const ensureAdminRole = async () => {
+export const ensureAdminRole = async () => {
 	try {
 		const adminUser = await userDal.findByEmail(ADMIN_EMAIL)
 		if (!adminUser) {
@@ -60,11 +64,6 @@ const ensureAdminRole = async () => {
 		console.error('❌ 管理员角色分配失败:', error)
 	}
 }
-
-// 延迟执行，确保数据库连接已建立
-setTimeout(() => {
-	ensureAdminRole()
-}, 1000)
 
 export const authService = {
 	async register(name: string, email: string, password: string) {
@@ -144,9 +143,10 @@ export const authService = {
 		// 标记该验证码为已使用
 		await verificationCodeDal.markAsUsed(resetCode.id)
 
-		// 更新密码
+		// 更新密码并吊销既有 token（token_version 自增，旧 token 立即失效）
 		const passwordHash = await bcrypt.hash(newPassword, 10)
-		const updatedUser = await userDal.update(user.id, { passwordHash })
+		await userDal.update(user.id, { passwordHash })
+		const updatedUser = await userDal.incrementTokenVersion(user.id)
 
 		if (!updatedUser) {
 			throw new Error('UPDATE_FAILED')
@@ -162,6 +162,7 @@ export const authService = {
 			sub: record.id,
 			email: record.email,
 			name: record.name,
+			tv: record.tokenVersion ?? 0,
 		}
 
 		return jwt.sign(payload, AUTH_CONFIG.jwtSecret, {
@@ -171,6 +172,33 @@ export const authService = {
 
 	verifyToken(token: string) {
 		return jwt.verify(token, AUTH_CONFIG.jwtSecret) as AuthPayload
+	},
+
+	/**
+	 * 校验登录 token（JWT 签名 + 用户存在 + token_version 匹配）：
+	 * 改密码后旧 token 立即失效；带 purpose 的专用 token（设备令牌/隐私解锁）不能当登录态用
+	 */
+	async verifyLoginToken(
+		token: string,
+	): Promise<{ payload: AuthPayload; user: UserRecord } | null> {
+		let payload: AuthPayload & { purpose?: string }
+		try {
+			payload = jwt.verify(token, AUTH_CONFIG.jwtSecret) as AuthPayload & { purpose?: string }
+		} catch {
+			return null
+		}
+		if (payload.purpose) return null
+		const user = await userDal.findById(payload.sub)
+		if (!user || (payload.tv ?? 0) !== user.tokenVersion) return null
+		return { payload, user }
+	},
+
+	/** 滑动续期：剩余有效期不足一半时签发新 token（7 天 token 用过 3.5 天后随响应带回新 token） */
+	maybeRefreshLoginToken(payload: AuthPayload, user: UserRecord): string | null {
+		if (!payload.exp || !payload.iat) return null
+		const nowSec = Math.floor(Date.now() / 1000)
+		if (payload.exp - nowSec >= (payload.exp - payload.iat) / 2) return null
+		return authService.createToken(user)
 	},
 
 	async getUserById(id: string) {

@@ -40,6 +40,9 @@ jobs:
       - name: Initialize project
         run: make init
 
+      - name: Run backend tests
+        run: bun run --filter @briar/node test
+
       - name: Build and upload to CDN
         run: make build-cdn
 

@@ -8,6 +8,8 @@ export interface UserRecord {
 	avatar: string | null
 	passwordHash: string
 	securityPasswordHash: string | null
+	/** 令牌版本号：JWT tv 与其不一致即失效（改密码自增，吊销全部旧 token） */
+	tokenVersion: number
 	createdAt: Date
 	updatedAt?: Date
 }
@@ -19,9 +21,13 @@ interface UserRow {
 	avatar: string | null
 	password_hash: string
 	security_password_hash: string | null
+	token_version: number
 	created_at: Date
 	updated_at: Date
 }
+
+const USER_COLUMNS =
+	'id, name, email, avatar, password_hash, security_password_hash, token_version, created_at, updated_at'
 
 const mapRowToRecord = (row: UserRow): UserRecord => ({
 	id: row.id,
@@ -30,15 +36,14 @@ const mapRowToRecord = (row: UserRow): UserRecord => ({
 	avatar: row.avatar,
 	passwordHash: row.password_hash,
 	securityPasswordHash: row.security_password_hash,
+	tokenVersion: row.token_version ?? 0,
 	createdAt: row.created_at,
 	updatedAt: row.updated_at,
 })
 
 export const userDal = {
 	async list(): Promise<UserRecord[]> {
-		const rows = await query<UserRow>(
-			'SELECT id, name, email, avatar, password_hash, security_password_hash, created_at, updated_at FROM users ORDER BY created_at DESC',
-		)
+		const rows = await query<UserRow>(`SELECT ${USER_COLUMNS} FROM users ORDER BY created_at DESC`)
 		return rows.map(mapRowToRecord)
 	},
 
@@ -65,7 +70,7 @@ export const userDal = {
 		const total = countRow?.cnt ?? 0
 
 		const rows = await query<UserRow>(
-			`SELECT u.id, u.name, u.email, u.avatar, u.password_hash, u.security_password_hash, u.created_at, u.updated_at
+			`SELECT u.id, u.name, u.email, u.avatar, u.password_hash, u.security_password_hash, u.token_version, u.created_at, u.updated_at
 			 FROM users u ${where} ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
 			[...values, params.limit, params.offset],
 		)
@@ -74,23 +79,19 @@ export const userDal = {
 	},
 
 	async findByEmail(email: string): Promise<UserRecord | null> {
-		const row = await queryOne<UserRow>(
-			'SELECT id, name, email, avatar, password_hash, security_password_hash, created_at, updated_at FROM users WHERE email = ?',
-			[email],
-		)
+		const row = await queryOne<UserRow>(`SELECT ${USER_COLUMNS} FROM users WHERE email = ?`, [
+			email,
+		])
 		return row ? mapRowToRecord(row) : null
 	},
 
 	async findById(id: string): Promise<UserRecord | null> {
-		const row = await queryOne<UserRow>(
-			'SELECT id, name, email, avatar, password_hash, security_password_hash, created_at, updated_at FROM users WHERE id = ?',
-			[id],
-		)
+		const row = await queryOne<UserRow>(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`, [id])
 		return row ? mapRowToRecord(row) : null
 	},
 
 	async create(
-		data: Omit<UserRecord, 'id' | 'createdAt' | 'securityPasswordHash'>,
+		data: Omit<UserRecord, 'id' | 'createdAt' | 'securityPasswordHash' | 'tokenVersion'>,
 	): Promise<UserRecord> {
 		const id = generateId()
 		await execute(
@@ -146,5 +147,11 @@ export const userDal = {
 	async delete(id: string): Promise<boolean> {
 		const result = await execute('DELETE FROM users WHERE id = ?', [id])
 		return result.affectedRows > 0
+	},
+
+	/** token_version 自增：吊销该用户全部已签发 token（改密码后调用），返回最新记录 */
+	async incrementTokenVersion(id: string): Promise<UserRecord | null> {
+		await execute('UPDATE users SET token_version = token_version + 1 WHERE id = ?', [id])
+		return userDal.findById(id)
 	},
 }
