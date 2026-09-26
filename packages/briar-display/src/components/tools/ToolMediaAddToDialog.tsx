@@ -37,7 +37,15 @@ export default function ToolMediaAddToDialog({ items, onClose }: ToolMediaAddToD
 					toast.error(res.message || '文件夹列表加载失败')
 				}
 			})
-			.catch(() => toast.error('文件夹列表加载失败'))
+			.catch((err) => {
+				// 401 = 登录态失效（响应拦截器已清掉死 token）：提示重新登录并关掉弹窗
+				if (err?.response?.status === 401) {
+					toast.error('登录已过期，请重新登录后再添加')
+					onClose()
+					return
+				}
+				toast.error('文件夹列表加载失败')
+			})
 	}, [items])
 
 	const handleConfirm = async () => {
@@ -64,7 +72,11 @@ export default function ToolMediaAddToDialog({ items, onClose }: ToolMediaAddToD
 			}
 			onClose()
 		} catch (err: any) {
-			toast.error(err?.response?.data?.message || '添加失败，请稍后重试')
+			toast.error(
+				err?.response?.status === 401
+					? '登录已过期，请重新登录后再添加'
+					: err?.response?.data?.message || '添加失败，请稍后重试',
+			)
 		} finally {
 			setUploading(false)
 			setProgressText('')

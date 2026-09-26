@@ -11,6 +11,31 @@ export const parseMedia = async (url: string) => {
 	return response.data
 }
 
+/** 解析历史条目（与服务端 media_parse_cache 行对应） */
+export interface MediaHistoryEntry {
+	url: string
+	title: string
+	parsedAt: number
+}
+
+/** 解析历史：登录用户走服务端（按用户维度，跨设备互通） */
+export const getMediaHistory = async () => {
+	const response = await apiClient.get<ApiResponse<MediaHistoryEntry[]>>('/media/history')
+	return response.data
+}
+
+/** 移除单条解析历史（服务端） */
+export const removeMediaHistory = async (url: string) => {
+	const response = await apiClient.delete<ApiResponse>('/media/history', { params: { url } })
+	return response.data
+}
+
+/** 清空解析历史（服务端） */
+export const clearMediaHistory = async () => {
+	const response = await apiClient.delete<ApiResponse>('/media/history')
+	return response.data
+}
+
 /** 分块大小：32MB。445MB 的 B站长视频约 14 块，单块失败只需重拉这一块 */
 const CHUNK_SIZE = 32 * 1024 * 1024
 /** 单块失败重试次数（网络抖动容错）；单块 120s 超时，卡死也能触发重试 */

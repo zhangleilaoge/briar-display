@@ -75,6 +75,20 @@ apiClient.interceptors.response.use(
 		return response
 	},
 	(error) => {
+		// 401 = 登录态失效（token 过期/被吊销）：清掉本地残留 token 自愈，
+		// 避免带着死 token 反复 401（移动端常见问题）。/auth/* 的 401 是凭证错误（如密码不对），不动现有登录态。
+		// 与 api/auth.ts 的 clearAuthToken 保持一致（request.ts 被 auth.ts 依赖，不能反向引用）
+		if (
+			typeof window !== 'undefined' &&
+			error?.response?.status === 401 &&
+			!(error?.config?.url || '').startsWith('/auth/')
+		) {
+			window.localStorage.removeItem('briar_token')
+			window.localStorage.removeItem('briar_user')
+			window.localStorage.removeItem('briar_permissions')
+			document.cookie = 'briar_token=; Path=/; Max-Age=0'
+			apiClient.defaults.headers.common.Authorization = undefined
+		}
 		// 隐私链路 403（token 缺失/过期）：清 sessionStorage 并通知页面弹解锁框
 		if (
 			typeof window !== 'undefined' &&

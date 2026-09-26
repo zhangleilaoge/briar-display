@@ -1,8 +1,15 @@
 'use client'
 
-import { fetchMediaBlob, parseMedia } from '@/api/media'
+import { isTokenUsable } from '@/api/auth'
+import {
+	clearMediaHistory,
+	fetchMediaBlob,
+	getMediaHistory,
+	parseMedia,
+	removeMediaHistory,
+} from '@/api/media'
 import type { MediaParseResult } from '@briar/shared'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import ToolMediaAddToDialog from './ToolMediaAddToDialog'
 import ToolMediaHistory from './ToolMediaHistory'
@@ -39,17 +46,40 @@ export default function ToolMediaPage() {
 	// 「添加到文件」弹窗目标（单个或多个媒体项）
 	const [addTarget, setAddTarget] = useState<MediaItem[] | null>(null)
 	const [history, setHistory] = useState<MediaHistoryItem[]>([])
-	// 未登录时隐藏「添加到」（上传文件需要登录态），下载/打包不受影响
-	const [canAddTo, setCanAddTo] = useState(false)
+	// 登录态：决定历史记录走服务端（按用户维度，跨设备互通）还是 localStorage（访客，本机）；
+	// 同时控制「添加到」按钮显隐（上传文件需要登录态），下载/打包不受影响
+	const [authed, setAuthed] = useState(false)
+	// 访客历史已从 localStorage 载入后才允许回写（避免登录用户打开页面时把访客存档覆盖成空）
+	const anonHistoryLoaded = useRef(false)
 
-	// 客户端加载历史记录（避免 SSR hydration 不匹配），变更时持久化
+	// 客户端加载历史记录（避免 SSR hydration 不匹配）
 	useEffect(() => {
-		setHistory(loadMediaHistory())
-		setCanAddTo(!!localStorage.getItem('briar_token'))
+		const ok = isTokenUsable()
+		setAuthed(ok)
+		if (ok) {
+			getMediaHistory()
+				.then((res) => {
+					if (res.success && res.data) setHistory(res.data)
+				})
+				.catch(() => {})
+		} else {
+			anonHistoryLoaded.current = true
+			setHistory(loadMediaHistory())
+		}
 	}, [])
+	// 访客历史变更时持久化到 localStorage（登录用户的历史由服务端在解析时落库）
 	useEffect(() => {
-		saveMediaHistory(history)
-	}, [history])
+		if (!authed && anonHistoryLoaded.current) saveMediaHistory(history)
+	}, [history, authed])
+
+	/** 登录用户：从服务端刷新历史（解析成功后端已落库） */
+	const refreshHistory = () => {
+		getMediaHistory()
+			.then((res) => {
+				if (res.success && res.data) setHistory(res.data)
+			})
+			.catch(() => {})
+	}
 
 	const setItemProgress = (id: string, value: MediaProgress | null) => {
 		setProgress((prev) => {
@@ -87,9 +117,13 @@ export default function ToolMediaPage() {
 			setSelected(
 				new Set((next.images.length > 0 ? next.images : next.videos).map((item) => item.id)),
 			)
-			setHistory((prev) =>
-				pushMediaHistory(prev, extractShareUrl(url), res.data!.title || '（无标题）'),
-			)
+			if (authed) {
+				refreshHistory()
+			} else {
+				setHistory((prev) =>
+					pushMediaHistory(prev, extractShareUrl(url), res.data!.title || '（无标题）'),
+				)
+			}
 			toast.success('解析成功')
 		} catch (err: any) {
 			toast.error(err?.response?.data?.message || '解析失败，请稍后重试')
@@ -103,6 +137,28 @@ export default function ToolMediaPage() {
 	const handleSelectHistory = (url: string) => {
 		setInput(url)
 		handleParse(url)
+	}
+
+	/** 移除单条历史：登录用户同步删服务端记录（连带清对应媒体缓存） */
+	const handleRemoveHistory = (url: string) => {
+		setHistory((prev) => prev.filter((item) => item.url !== url))
+		if (authed) {
+			removeMediaHistory(url).catch(() => {
+				toast.error('移除失败，请稍后重试')
+				refreshHistory()
+			})
+		}
+	}
+
+	/** 清空历史：登录用户同步清服务端记录 */
+	const handleClearHistory = () => {
+		setHistory([])
+		if (authed) {
+			clearMediaHistory().catch(() => {
+				toast.error('清空失败，请稍后重试')
+				refreshHistory()
+			})
+		}
 	}
 
 	const handleClear = () => {
@@ -225,8 +281,8 @@ export default function ToolMediaPage() {
 				<ToolMediaHistory
 					items={history}
 					onSelect={handleSelectHistory}
-					onRemove={(url) => setHistory((prev) => prev.filter((item) => item.url !== url))}
-					onClear={() => setHistory([])}
+					onRemove={handleRemoveHistory}
+					onClear={handleClearHistory}
 				/>
 				{sections && result && (
 					<ToolMediaResult
@@ -236,7 +292,7 @@ export default function ToolMediaPage() {
 						progress={progress}
 						zipping={zipping}
 						zipPercent={zipPercent}
-						canAddTo={canAddTo}
+						canAddTo={authed}
 						onDownload={handleDownload}
 						onAddTo={setAddTarget}
 						onToggle={handleToggle}

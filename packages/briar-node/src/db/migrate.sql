@@ -257,3 +257,15 @@ SET @sql = IF(@col_exists = 0, 'ALTER TABLE folders ADD COLUMN is_private TINYIN
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- ============================================================
+-- 媒体解析历史跨设备互通
+-- ============================================================
+
+-- media_parse_cache 新增 stale 标记：媒体 URL 被上游 403 时不再删行（行保留作历史记录，
+-- 登录用户经 GET /api/media/history 跨设备读取），仅标记失效让 getCachedParse 不命中
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'media_parse_cache' AND COLUMN_NAME = 'stale');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE media_parse_cache ADD COLUMN stale TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''媒体地址已被上游拒绝（保留行做历史记录）'' AFTER result', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
