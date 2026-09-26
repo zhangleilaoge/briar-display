@@ -63,6 +63,10 @@ db-setup:
 
 # 后端单元测试（bun test，纯逻辑 + 路由权限契约，不碰数据库）
 test:
+	@if [ ! -f "packages/briar-shared/dist/index.js" ]; then \
+		echo "📦 @briar/shared 未构建，先构建..."; \
+		bun run --filter @briar/shared build; \
+	fi
 	@bun run --filter @briar/node test
 
 # 配置 COS bucket CORS（前端分片直传需要，一次性；覆盖公开桶与私有桶）

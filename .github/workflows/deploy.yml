@@ -41,7 +41,7 @@ jobs:
         run: make init
 
       - name: Run backend tests
-        run: bun run --filter @briar/node test
+        run: make test
 
       - name: Build and upload to CDN
         run: make build-cdn
