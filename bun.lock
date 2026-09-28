@@ -28,6 +28,7 @@
         "@blocknote/react": "^0.51.4",
         "@briar/shared": "workspace:*",
         "@codemirror/lang-sql": "^6.8.0",
+        "@neslinesli93/qpdf-wasm": "^0.3.0",
         "@radix-ui/react-checkbox": "^1.3.4",
         "@radix-ui/react-dialog": "^1.1.20",
         "@radix-ui/react-hover-card": "^1.1.23",
@@ -436,6 +437,8 @@
     "@mantine/hooks": ["@mantine/hooks@9.3.0", "https://registry.npmmirror.com/@mantine/hooks/-/hooks-9.3.0.tgz", { "peerDependencies": { "react": "^19.2.0" } }, "sha512-QoSr9WI4WsKWrM3qFYYizHUn3+n+CVcFMYe4sdlnmFPStvs6BacPODKJSbFlYl73Z20t82JIy0eKqt4noHQI2g=="],
 
     "@marijn/find-cluster-break": ["@marijn/find-cluster-break@1.0.3", "https://registry.npmmirror.com/@marijn/find-cluster-break/-/find-cluster-break-1.0.3.tgz", {}, "sha512-FY+MKLBoTsLNJF/eLWaOsXGdz6uh3Iu1axjPf6TUq92IYumcTcXWHoS747JARLkcdlJ/Waiaxc5wQfFO8jC6NA=="],
+
+    "@neslinesli93/qpdf-wasm": ["@neslinesli93/qpdf-wasm@0.3.0", "", {}, "sha512-ObyTmabopTMwN6AGwrEkmDbdmM5wnwlRdn9jnJYQ2KbBUPdPDcfNf1QkcWFOVD+qIgSqILz9nK51e22T+x+gkQ=="],
 
     "@nodelib/fs.scandir": ["@nodelib/fs.scandir@2.1.5", "https://registry.npmmirror.com/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz", { "dependencies": { "@nodelib/fs.stat": "2.0.5", "run-parallel": "^1.1.9" } }, "sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g=="],
 
