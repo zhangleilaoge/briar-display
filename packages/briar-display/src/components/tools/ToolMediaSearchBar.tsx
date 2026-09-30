@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { platformIcon } from './toolMediaUtils'
 
 /** 支持的平台（纯图标示意） */
-const SUPPORTED_PLATFORMS = ['xiaohongshu', 'douyin', 'wechat', 'x', 'bilibili']
+const SUPPORTED_PLATFORMS = ['xiaohongshu', 'douyin', 'wechat', 'x', 'bilibili', 'pornhub']
 
 interface ToolMediaSearchBarProps {
 	input: string
