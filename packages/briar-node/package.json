@@ -31,6 +31,7 @@
 		"tencentcloud-sdk-nodejs": "^4.0.0",
 		"tencentcloud-sdk-nodejs-dnspod": "^4.1.213",
 		"tencentcloud-sdk-nodejs-ses": "^4.1.182",
+		"undici": "^6.21.0",
 		"ws": "^8.21.2"
 	},
 	"devDependencies": {

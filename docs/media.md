@@ -12,14 +12,15 @@
   - **微信公众号文章**：自研解析 `services/wechatMediaService.ts`
   - **B站**：自研解析 `services/bilibiliMediaService.ts`
   - **X/Twitter**：fxtwitter 公共 API
-- `GET /proxy` 媒体代理（白名单 xhscdn/qpic/tc.qq/douyin 系/zjcdn/twimg/bilivideo/hdslb 等），旁路缓存——inline 预览透传 Range 不缓存，下载（非 inline）拉全量 tee 到 COS 公有桶，hit 302 直发（文件名在对象 key 末段），上游 403 时把对应解析记录标记 stale（保留行做历史记录，「重新解析」会拉新签名）
+  - **Pornhub**：自研解析 `services/pornhubMediaService.ts`（依赖出站代理，见下文）
+- `GET /proxy` 媒体代理（白名单 xhscdn/qpic/tc.qq/douyin 系/zjcdn/twimg/bilivideo/hdslb/phncdn 等），旁路缓存——inline 预览透传 Range 不缓存，下载（非 inline）拉全量 tee 到 COS 公有桶，hit 302 直发（文件名在对象 key 末段），上游 403 时把对应解析记录标记 stale（保留行做历史记录，「重新解析」会拉新签名）
 - `GET/DELETE /history` 解析历史（需登录，按 `u:{userId}` 维度，跨设备互通；DELETE 带 url 删单条、不带清空，连带清对应媒体缓存）。前端登录用户走此接口，访客仍用 localStorage
 - twimg 国内服务器不可达：前端对 twimg 直连（CORS 开放，需访客有梯子），代理仅海外环境可用
 
 ### 缓存（`services/mediaCacheService.ts`）
 
 - `media_parse_cache` 按人（u:{userId}/ip:{IP}）LRU 10 条存解析结果，兼作登录用户的解析历史表（`listParseHistory`/`deleteParseHistory`，stale 列标记媒体地址已被上游拒绝——stale 行不命中缓存但保留在历史里，点历史重解析即复位；淘汰/删历史连带清对应媒体）
-- 抖音签名 URL 时效不足半小时，缓存超 10 分钟视为失效
+- 抖音签名 URL 时效不足半小时，缓存超 10 分钟视为失效；Pornhub phncdn 签名 URL 时效约 2h，缓存超 30 分钟视为失效
 - `media_cache` 记录 COS 旁路缓存（每条解析记录累计 ≤50MB 才缓存）
 - `cleanupExpiredMedia` 清 7 天前媒体（解析结果保留）；定时任务 `jobs/cleanup-media-cache.mjs`（每日 05:23，`BRIAR_CLEANUP_MEDIA_CRON` 可覆盖）
 
@@ -48,6 +49,14 @@ xhslink 短链手动跟 302（老路径 discovery/item 会二次跳信息流丢�
 ### B站（`services/bilibiliMediaService.ts`）
 
 b23.tv 短链跟 302 → BV/av 号 → `web-interface/view` 拿标题/UP主/封面/分P → `player/playurl` 取流（优先 html5 通道 muxed mp4 免登录 720P，无 durl 回退 DASH 视频/音频分离 1080P）。播放地址签名时效约 30 天，解析缓存不做短时效处理；bilivideo CDN 只校验浏览器 UA、不校验 Referer，代理直连均可。
+
+### Pornhub（`services/pornhubMediaService.ts`）
+
+视频页 HTML 抠 `var flashvars_<id> = {...}`（平衡花括号扫描，字符串/转义感知）→ `mediaDefinitions`：hls 多档流 + mp4 `remote` 条目（`/video/get_media?s=...` 接口，带页面会话 Cookie + Referer 二次请求换 240~1080P 渐进式 mp4 列表）；作者取 JSON-LD `author`，封面 `image_url`。
+
+- **出站代理**：国内不可达，页面抓取与媒体下载都走 `BRIAR_MEDIA_OUTBOUND_PROXY`（`lib/outboundProxy.ts`，undici ProxyAgent，http/https 代理；不配则直连，仅海外服务器可用）。**必须同一出口**：phncdn mp4 签名 URL（`validto` 约 2h）绑定解析方出口 IP，换 IP 即 403——所以 `/proxy` 对 `.phncdn.com` 也走 `fetchOutbound`，且前端 phncdn 视频一律走代理预览（同抖音 IP 绑定模式）
+- **部分视频 get_media 返回空**（付费/禁下载，仅 HLS 流）：报「该视频未提供 MP4 下载」，HLS m3u8 不下发（浏览器播不了、下载无意义）
+- 无效 viewkey 页面 404 →「视频不存在或已被删除」；flashvars 缺失 →「地区受限或页面结构变更」
 
 ## 磁力查询（`/api/magnet`）
 
