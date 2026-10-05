@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Link2, Loader2, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
-import { platformIcon } from './toolMediaUtils'
+import { WEB_MEDIA_PLATFORMS, platformIcon } from './toolMediaUtils'
 
-/** 支持的平台（纯图标示意） */
-const SUPPORTED_PLATFORMS = ['xiaohongshu', 'douyin', 'wechat', 'x', 'bilibili']
+/** 网页已支持平台（纯图标示意）；全量含 mrds66 见 MEDIA_PLATFORMS */
+const SUPPORTED_PLATFORMS = WEB_MEDIA_PLATFORMS
 
 interface ToolMediaSearchBarProps {
 	input: string

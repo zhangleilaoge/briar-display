@@ -1,6 +1,7 @@
 import { getApiBaseUrl } from '@/api/request'
 import bilibiliIcon from '@/assets/platforms/bilibili.png'
 import douyinIcon from '@/assets/platforms/douyin.png'
+import pornhubIcon from '@/assets/platforms/pornhub.png'
 import wechatIcon from '@/assets/platforms/wechat.png'
 import xIcon from '@/assets/platforms/x.png'
 import xiaohongshuIcon from '@/assets/platforms/xiaohongshu.png'
@@ -42,12 +43,36 @@ export interface MediaSections {
 	audio: MediaItem | null
 }
 
+/** 全平台 key（含仅本地的 mrds66）；与 skill briar-media-download / 网页媒体解析对齐 */
+export const MEDIA_PLATFORMS = [
+	'xiaohongshu',
+	'douyin',
+	'wechat',
+	'x',
+	'bilibili',
+	'pornhub',
+	'mrds66',
+] as const
+export type MediaPlatform = (typeof MEDIA_PLATFORMS)[number]
+
+/** 网页 /api/media 已实现的平台（图标条用这个，不含 mrds66） */
+export const WEB_MEDIA_PLATFORMS = [
+	'xiaohongshu',
+	'douyin',
+	'wechat',
+	'x',
+	'bilibili',
+	'pornhub',
+] as const
+
 const PLATFORM_LABELS: Record<string, string> = {
 	xiaohongshu: '小红书',
 	douyin: '抖音',
 	wechat: '微信公众号',
 	x: 'X',
 	bilibili: 'B站',
+	pornhub: 'Pornhub',
+	mrds66: 'mrds66',
 }
 
 export const platformLabel = (platform: string) => PLATFORM_LABELS[platform] || platform
@@ -58,6 +83,7 @@ const PLATFORM_ICONS: Record<string, string> = {
 	wechat: wechatIcon.src,
 	x: xIcon.src,
 	bilibili: bilibiliIcon.src,
+	pornhub: pornhubIcon.src,
 }
 
 /** 平台 favicon（取自官网 favicon，本地资源避免跨域/防盗链问题） */
@@ -69,6 +95,8 @@ export const platformFromUrl = (url: string) => {
 	if (url.includes('douyin.com') || url.includes('iesdouyin.com')) return 'douyin'
 	if (url.includes('x.com') || url.includes('twitter.com')) return 'x'
 	if (url.includes('bilibili.com') || url.includes('b23.tv')) return 'bilibili'
+	if (url.includes('pornhub.com')) return 'pornhub'
+	if (url.includes('mrds66.com')) return 'mrds66'
 	return 'xiaohongshu'
 }
 
@@ -117,14 +145,19 @@ export const formatParsedAt = (ts: number) => {
 	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** 抖音视频/音轨 CDN 域名（签名绑定解析方 IP，即咱们服务器，访客浏览器直连 403） */
-const DOUYIN_VIDEO_HOST_SUFFIXES = ['.zjcdn.com', '.douyinvod.com', '.douyinstatic.com']
+/** 视频/音轨签名绑定解析方出口 IP 的 CDN 域名（访客浏览器直连 403，必须走后端代理——服务端出口与解析一致）：抖音系 + Pornhub phncdn */
+const IP_BOUND_VIDEO_HOST_SUFFIXES = [
+	'.zjcdn.com',
+	'.douyinvod.com',
+	'.douyinstatic.com',
+	'.phncdn.com',
+]
 
 /**
  * 需要走后端代理预览（inline 模式）的情形：
  * - 图片/封面：一律走代理——<img> 全量加载，proxy 顺带旁路缓存到 COS，二次加载 302 直发
  * - qpic.cn 实况图/视频：auth 参数绑定文章页 Cookie，浏览器直连 403（服务端回带 Cookie）
- * - 抖音视频/音轨：URL 签名绑定解析方 IP，浏览器直连 403（服务端 IP 与解析一致）
+ * - 抖音视频/音轨 + Pornhub 视频：URL 签名绑定解析方出口 IP，浏览器直连 403（服务端出口与解析一致）
  * - twimg（X）例外：国内服务器不可达，代理必然失败，直连交给访客浏览器（twimg CORS 开放，有梯子即可用）
  */
 const needsProxyPreview = (url: string, kind: MediaKind) => {
@@ -135,7 +168,7 @@ const needsProxyPreview = (url: string, kind: MediaKind) => {
 		if (host.endsWith('.qpic.cn')) return true
 		if (
 			(kind === 'video' || kind === 'live' || kind === 'audio') &&
-			DOUYIN_VIDEO_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))
+			IP_BOUND_VIDEO_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))
 		) {
 			return true
 		}
@@ -179,11 +212,17 @@ export const buildMediaSections = (result: MediaParseResult, sourceUrl = ''): Me
 	const isAudio = (url: string) => isAudioLike(url) || douyinSlideshow
 	const videoUrls = rawVideos.filter((url) => !isAudio(url))
 	const audioUrl = result.audio_url || rawVideos.find(isAudio) || null
+	// Pornhub 同一视频多档清晰度：从 URL 的文件名段（720P_4000K_xxx.mp4）提取档位做标签
+	const videoLabel = (url: string, i: number) => {
+		if (result.platform === 'pornhub') {
+			const quality = /(\d{3,4})P_\d+K_/i.exec(url)?.[1]
+			if (quality) return `视频${quality}P`
+		}
+		return `视频${videoUrls.length > 1 ? pad(i + 1) : ''}`
+	}
 	return {
 		cover: result.cover ? toItem('cover', result.cover, 0, '封面') : null,
-		videos: videoUrls.map((url, i) =>
-			toItem('video', url, i, `视频${videoUrls.length > 1 ? pad(i + 1) : ''}`),
-		),
+		videos: videoUrls.map((url, i) => toItem('video', url, i, videoLabel(url, i))),
 		images: imageUrls.map((url, i) => toItem('image', url, i, `原图${pad(i + 1)}`)),
 		livePhotos: (result.live_photos || [])
 			.filter(Boolean)

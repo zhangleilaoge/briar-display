@@ -146,7 +146,7 @@ export interface MagnetParseResult {
 }
 
 /**
- * 媒体解析结果（工具箱-媒体解析，支持小红书/抖音/微信公众号/X/B站）
+ * 媒体解析结果（工具箱-媒体解析，支持小红书/抖音/微信公众号/X/B站/Pornhub）
  */
 export interface MediaParseResult {
 	platform: string

@@ -3,6 +3,7 @@ import type { ApiResponse, MediaParseResult } from '@briar/shared'
 import { HTTP_STATUS } from '@briar/shared'
 import { type Context, Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
+import { fetchOutbound } from '../lib/outboundProxy'
 import { authService } from '../services/authService'
 import { parseBilibili } from '../services/bilibiliMediaService'
 import { cosService } from '../services/cosService'
@@ -14,6 +15,7 @@ import {
 	mediaCacheService,
 } from '../services/mediaCacheService'
 import { permissionService } from '../services/permissionService'
+import { parsePornhub } from '../services/pornhubMediaService'
 import { getWechatCookieHeader, parseWechatArticle } from '../services/wechatMediaService'
 import { parseXhs } from '../services/xhsMediaService'
 
@@ -51,6 +53,8 @@ const ALLOWED_PROXY_HOST_SUFFIXES = [
 	'.bilivideo.com',
 	'.bilivideo.cn',
 	'.hdslb.com',
+	// Pornhub 视频/图片 CDN（ev/pix-cdn*.phncdn.com，签名绑定解析方出口 IP）
+	'.phncdn.com',
 ]
 
 /** 各平台 CDN 对应的 Referer */
@@ -67,6 +71,7 @@ const PLATFORM_REFERERS: [string, string][] = [
 	['.bilivideo.com', 'https://www.bilibili.com/'],
 	['.bilivideo.cn', 'https://www.bilibili.com/'],
 	['.hdslb.com', 'https://www.bilibili.com/'],
+	['.phncdn.com', 'https://www.pornhub.com/'],
 ]
 
 function refererFor(host: string): string {
@@ -158,8 +163,10 @@ function getHostname(url: string): string | null {
 	}
 }
 
-/** 识别支持的平台：小红书走 catsapi（失败回退自研解析），抖音/公众号文章/B站走自研解析，X 走 fxtwitter */
-function detectPlatform(url: string): 'xhs' | 'wechat' | 'douyin' | 'x' | 'bilibili' | null {
+/** 识别支持的平台：小红书走 catsapi（失败回退自研解析），抖音/公众号文章/B站/Pornhub 走自研解析，X 走 fxtwitter */
+function detectPlatform(
+	url: string,
+): 'xhs' | 'wechat' | 'douyin' | 'x' | 'bilibili' | 'pornhub' | null {
 	const host = getHostname(url)
 	if (!host) return null
 	if (
@@ -193,6 +200,9 @@ function detectPlatform(url: string): 'xhs' | 'wechat' | 'douyin' | 'x' | 'bilib
 		host.endsWith('.twitter.com')
 	) {
 		return 'x'
+	}
+	if (host === 'pornhub.com' || host.endsWith('.pornhub.com')) {
+		return 'pornhub'
 	}
 	return null
 }
@@ -278,7 +288,10 @@ mediaRoutes.post('/parse', async (c) => {
 	const platform = url ? detectPlatform(url) : null
 	if (!url || !platform) {
 		return c.json<ApiResponse>(
-			{ success: false, message: '目前支持小红书、抖音、微信公众号、X(Twitter)、B站 链接' },
+			{
+				success: false,
+				message: '目前支持小红书、抖音、微信公众号、X(Twitter)、B站、Pornhub 链接',
+			},
 			HTTP_STATUS.BAD_REQUEST,
 		)
 	}
@@ -332,6 +345,25 @@ mediaRoutes.post('/parse', async (c) => {
 			return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
 		} catch (err) {
 			console.error('Bilibili parse failed:', err)
+			const message = err instanceof Error ? err.message : '解析失败，请稍后重试'
+			return c.json<ApiResponse>({ success: false, message }, HTTP_STATUS.INTERNAL_SERVER_ERROR)
+		}
+	}
+
+	if (platform === 'pornhub') {
+		try {
+			const data = await parsePornhub(url)
+			if (data.videos.length === 0) {
+				return c.json<ApiResponse>(
+					{ success: false, message: '未解析到可下载的媒体' },
+					HTTP_STATUS.INTERNAL_SERVER_ERROR,
+				)
+			}
+			await saveCache(data)
+			c.header('X-Cache', 'miss')
+			return c.json<ApiResponse<MediaParseResult>>({ success: true, data })
+		} catch (err) {
+			console.error('Pornhub parse failed:', err)
 			const message = err instanceof Error ? err.message : '解析失败，请稍后重试'
 			return c.json<ApiResponse>({ success: false, message }, HTTP_STATUS.INTERNAL_SERVER_ERROR)
 		}
@@ -524,13 +556,15 @@ mediaRoutes.get('/proxy', async (c) => {
 		// undici 偶发 "fetch failed"（连接池/网络抖动、CDN 边缘节点抽风），最多重试 3 次。
 		// 超时只掐「连接 + 等响应头」阶段：body 是流式转发，B站 GB 级长视频要传十几分钟，
 		// 整体 AbortSignal.timeout 会把正常下载拦腰截断（拿到响应头后立即 clearTimeout）
+		// phncdn 签名 URL 绑定解析方出口 IP，必须走 BRIAR_MEDIA_OUTBOUND_PROXY 同一出口，否则 403
+		const doFetch = host.endsWith('.phncdn.com') ? fetchOutbound : fetch
 		let upstream: Response | null = null
 		let lastErr: unknown = null
 		for (let attempt = 0; attempt < 3 && !upstream; attempt++) {
 			const controller = new AbortController()
 			const headersTimer = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS)
 			try {
-				upstream = await fetch(url, {
+				upstream = await doFetch(url, {
 					headers: reqHeaders,
 					signal: controller.signal,
 					redirect: 'follow',
