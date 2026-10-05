@@ -21,7 +21,7 @@
 | `briar-mail` | 发邮件（支持附件）：直连收件方 MX 投递，无需邮箱凭证 |
 | `briar-subtitle` | 视频字幕提取：烧录字幕抽帧直读或 whisper 语音转录（带时间轴） |
 | `briar-grok-silly-tavern` | macOS 上安装/接线 grok2api（Go）与 SillyTavern（纯 Node），CDP 导入 grok SSO，ST 用 OpenAI 兼容接口聊 Grok |
-| `briar-mrds66-download` | 本机从 mrds66.com archives 页下 HLS 为 mp4（platform=`mrds66`；网页 /api/media 暂不支持） |
+| `briar-media-download` | 通用媒体下载路由：平台枚举对齐网页「媒体解析」+ `mrds66`；网页已支持优先自助，仅本地站点走 ffmpeg |
 
 ---
 

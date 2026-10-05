@@ -8,7 +8,7 @@
 		"sillytavern:start-all": "bash briar-grok-silly-tavern/scripts/start_all.sh",
 		"sillytavern:stop-all": "bash briar-grok-silly-tavern/scripts/stop_all.sh",
 		"xhs:export-cookies": "python3 ./briar-xiaohongshu-mcp/scripts/export_chrome_xhs_cookies.py",
-		"mrds66:download": "bash ./briar-mrds66-download/scripts/download.sh"
+		"media:mrds66": "bash ./briar-media-download/scripts/mrds66/download.sh"
 	},
 	"devDependencies": {}
 }
