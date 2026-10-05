@@ -74,3 +74,16 @@ MySQL session 时区是 +08:00，`NOW()`/`CURRENT_TIMESTAMP` 落库都是北京�
 
 - 写排查脚本时，`WHERE created_at BETWEEN ...` 直接填**北京时间**字面值；把脚本打印的 `...Z` 时间 +8 小时才是真实北京时间
 - 前端展示不受影响：服务端进程 TZ 同为 +8，`new Date(row.created_at)` 拿到的是正确绝对时间（媒体缓存「抖音 10 分钟失效」判断依赖这一点）
+
+## 10. 本地 preview 前必须清空 `BRIAR_TX_BUCKET_DOMAIN`，否则静态资源指向旧 CDN
+
+`astro.config` 的 `assetsPrefix` 读取根 `.env` 的 `BRIAR_TX_BUCKET_DOMAIN`：本地 `bun run --filter @briar/display build` 会把 JS/CSS chunk 的 URL 写成 CDN 域名，而 CDN 上只有上一次 CI 上传的旧产物——新页面/新 chunk 在 CDN 404，表现为 `astro preview` 打开页面白屏或水合失败（点击无反应）。
+
+本地验证流程：
+
+```bash
+BRIAR_TX_BUCKET_DOMAIN= bun run --filter @briar/display build
+bun run --filter @briar/display preview
+```
+
+CI/部署不受影响（流水线本来就先上传 CDN 再部署）。
