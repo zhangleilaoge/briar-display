@@ -93,17 +93,18 @@ const deleteParseRows = async (person: string, urls: string[]) => {
 }
 
 export const mediaCacheService = {
-	/** 读解析缓存（mysql2 会自动把 JSON 列解析成对象）；stale=1（媒体地址已被上游拒绝）不命中；抖音签名 URL 时效很短（实测不足半小时），缓存超 10 分钟视为失效 */
+	/** 读解析缓存（mysql2 会自动把 JSON 列解析成对象）；stale=1（媒体地址已被上游拒绝）不命中；签名 URL 短时效平台按平台 TTL 过期：抖音实测不足半小时（10 分钟失效），Pornhub phncdn 签名约 2h（30 分钟失效） */
 	async getCachedParse(person: string, url: string): Promise<MediaParseResult | null> {
 		const row = await queryOne<ParseCacheRow>(
 			'SELECT platform, result, updated_at FROM media_parse_cache WHERE person = ? AND url = ? AND stale = 0',
 			[person, url],
 		)
 		if (!row) return null
-		if (
-			row.platform === 'douyin' &&
-			Date.now() - new Date(row.updated_at).getTime() > 10 * 60_000
-		) {
+		const age = Date.now() - new Date(row.updated_at).getTime()
+		if (row.platform === 'douyin' && age > 10 * 60_000) {
+			return null
+		}
+		if (row.platform === 'pornhub' && age > 30 * 60_000) {
 			return null
 		}
 		const result = typeof row.result === 'string' ? JSON.parse(row.result) : row.result
