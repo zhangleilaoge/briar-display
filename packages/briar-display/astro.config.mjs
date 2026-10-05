@@ -58,6 +58,11 @@ export default defineConfig({
 	],
 	build: assetsPrefix ? { assetsPrefix } : undefined,
 	vite: {
+		define: {
+			// 构建期注入 CDN 前缀（与 _astro 一致），TFT 等 public 静态资源可经 tftAsset 指到 CDN；
+			// 本地/无 env 构建为空串，回退源站路径
+			__BRIAR_ASSETS_PREFIX__: JSON.stringify(assetsPrefix ?? ''),
+		},
 		resolve: {
 			alias: [
 				{ find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
