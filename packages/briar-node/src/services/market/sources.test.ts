@@ -4,6 +4,7 @@ import {
 	parseEastmoneyBoards,
 	parseEastmoneyUlist,
 	parseNaverGroups,
+	parseNaverIndexTrend,
 	parseNaverPolling,
 	parseTencentBoards,
 	parseTencentQt,
@@ -104,8 +105,10 @@ describe('行情源解析', () => {
 						f12: 'HSI',
 						f13: 100,
 						f14: '恒生指数',
+						f62: '-',
 						f124: 1791269828,
 					},
+					{ f2: 200.93, f12: 'XLK', f13: 107, f14: 'XLK', f62: 22346310.0 },
 				],
 			},
 		})
@@ -114,6 +117,25 @@ describe('行情源解析', () => {
 			changePct: 0.79,
 			amount: null,
 			quoteTime: 1791269828000,
+			netInflow: null,
+		})
+		// 东财 f62 主力净流入：港股指数为 "-"，美股 ETF 有值
+		expect(rows[1].netInflow).toBe(22346310)
+	})
+
+	test('Naver 韩国指数投资者动向：억원 → 元，带正负号', () => {
+		expect(
+			parseNaverIndexTrend({
+				bizdate: '20261006',
+				personalValue: '+7,545',
+				foreignValue: '-17,665',
+				institutionalValue: '-35',
+			}),
+		).toEqual({
+			date: '20261006',
+			foreign: -17665e8,
+			institutional: -35e8,
+			personal: 7545e8,
 		})
 	})
 

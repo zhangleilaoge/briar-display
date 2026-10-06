@@ -175,6 +175,7 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 								<span>页面刷新 {formatShanghaiTime(data?.fetchedAt)}</span>
 								<span>当地时段 {sectors.session.sessionText}</span>
 								<span>数据源 {sectors.source}</span>
+								<span>净流入口径 {sectors.netInflowBasis ?? '该市场数据源不提供资金流'}</span>
 								<span>
 									{sectors.listMode === 'dynamic' ? '板块列表从数据源实时拉取' : '固定代理列表'} ·
 									共 {sectors.items.length} 个
@@ -292,6 +293,7 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 										items={sorted}
 										sortKey={effectiveSort}
 										amountCurrency={sectors.amountCurrency}
+										netInflowBasis={sectors.netInflowBasis}
 										onSelect={openSector}
 									/>
 								</CardContent>

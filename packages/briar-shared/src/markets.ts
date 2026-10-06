@@ -40,6 +40,16 @@ export interface MarketIndexQuote {
 	quoteTime: number | null
 	/** 行情延迟分钟数，0 = 实时 */
 	delayMinutes: number
+	/** 大盘资金流（拿不到时不返回）：A股主力净流入、韩国外资/机构净买入 */
+	flows?: IndexFlow[]
+}
+
+export interface IndexFlow {
+	/** 口径：主力净流入 / 外资净买入 / 机构净买入 */
+	label: string
+	/** 正数流入（净买入），负数流出（净卖出），单位为当地货币元 */
+	value: number
+	currency: string
 }
 
 export interface SectorItem {
@@ -51,7 +61,7 @@ export interface SectorItem {
 	changePct: number | null
 	/** 成交额（元 / 当地货币，见 amountCurrency） */
 	amount: number | null
-	/** 主力净流入（元） */
+	/** 资金净流入（当地货币元，正流入负流出；口径见 MarketSectorsResponse.netInflowBasis） */
 	netInflow: number | null
 	/** 换手率 % */
 	turnoverRate: number | null
@@ -119,6 +129,8 @@ export interface MarketSectorsResponse extends MarketDataMeta {
 	delayMinutes: number
 	/** 成交额币种 */
 	amountCurrency: string
+	/** 净流入口径（如「主力净流入（超大单+大单）」），该市场/类别没有资金流数据时为 null */
+	netInflowBasis: string | null
 	session: MarketSessionInfo
 	quoteTime: number | null
 }

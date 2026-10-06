@@ -28,6 +28,17 @@ export function formatAmount(value: number | null | undefined, currency = ''): s
 	return `${sign}${abs.toFixed(0)}${unit}`
 }
 
+/** 资金净流入：带正负号（+3.20亿 / -1.10亿），币种跟成交额一致 */
+export function formatFlow(value: number | null | undefined, currency = ''): string {
+	if (value == null) return '—'
+	return `${value > 0 ? '+' : ''}${formatAmount(value, currency)}`
+}
+
+/** 净流入口径的短名（表头小字）：「主力净流入（…）」→「主力净流入」 */
+export function flowBasisShort(basis: string | null | undefined): string {
+	return basis ? basis.replace(/（.*$/, '') : '暂无数据'
+}
+
 const shanghaiDateKey = (t: number) =>
 	new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date(t))
 
