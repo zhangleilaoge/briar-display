@@ -249,6 +249,18 @@ export type AugmentEffect =
 			damageAmp?: number
 			asPct?: number
 	  }
+	/** 敌方弈子阵亡时治疗最近的友军（治疗法球） */
+	| { kind: 'deathHeal'; amount: number }
+	/** 敌方弈子被击杀时概率掉落金币（战争财宝；官方为战利品表，近似为 1 金） */
+	| { kind: 'killLoot'; chance: number }
+	/** 对敌方小小英雄造成 target 点伤害后获得宝箱（征战之路） */
+	| {
+			kind: 'playerDamageQuest'
+			target: number
+			champCount: number
+			minCost: number
+			itemCount: number
+	  }
 	/** 每次商店刷新队伍获得永久生命（大刷特刷） */
 	| { kind: 'rerollRamp'; hpFlat: number }
 
@@ -2066,6 +2078,31 @@ export const AUGMENTS: AugmentDef[] = [
 	A('DA_ClockworkAccelerator', '发条增速器', '你的队伍在战斗中每过3秒就会获得10%攻击速度。', 2, [
 		{ kind: 'combatTimer', after: 3, every: true, asPct: 0.1 },
 	]),
+	A('DA_HealingOrbsI', '治疗法球 I', '当1名敌人阵亡时，1名附近的友军治疗250生命值。', 1, [
+		{ kind: 'deathHeal', amount: 250 },
+	]),
+	A('DA_HealingOrbsII', '治疗法球 II', '当1名敌人阵亡时，1名附近的友军治疗575生命值。', 2, [
+		{ kind: 'deathHeal', amount: 575 },
+	]),
+	A('TFT9_Augment_DravenSpoilsOfWar', '战争财宝 I', '敌人在被击杀时有25%几率掉落战利品。', 1, [
+		{ kind: 'killLoot', chance: 0.25 },
+	]),
+	A('TFT9_Augment_DravenSpoilsOfWar2', '战争财宝 II', '敌人在被击杀时有30%几率掉落战利品。', 2, [
+		{ kind: 'killLoot', chance: 0.3 },
+	]),
+	A('TFT9_Augment_DravenSpoilsOfWar3', '战争财宝 III', '敌人在被击杀时有40%几率掉落战利品。', 3, [
+		{ kind: 'killLoot', chance: 0.4 },
+	]),
+	A(
+		'DA_Warpath',
+		'征战之路',
+		'获得1个2星2费弈子。在造成80玩家伤害后，获得1个装有高费弈子们和装备的宝箱。',
+		2,
+		[
+			{ kind: 'randomChamps', cost: 2, count: 1, star: 2 },
+			{ kind: 'playerDamageQuest', target: 80, champCount: 3, minCost: 4, itemCount: 2 },
+		],
+	),
 ]
 
 // Plus 强化版（如「认知税+」「窃贼帮派 II++」）为 PVE/特殊模式专属，标记后不参与常规抽取

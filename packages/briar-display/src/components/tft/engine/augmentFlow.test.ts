@@ -669,3 +669,42 @@ describe('round4 战斗内计时增益', () => {
 		expect(buffs.length).toBeGreaterThanOrEqual(6) // 飞升 1 次(12s) + 增速器 5 次(3/6/9/12/15s)
 	})
 })
+
+describe('round4 战斗事件触发', () => {
+	it('治疗法球：敌方阵亡时治疗最近友军', () => {
+		const p = makePlayer(4)
+		p.augments = ['DA_HealingOrbsI']
+		const hurt = { ...createUnit('DA_18_Shen'), pos: { col: 0, row: 0 } }
+		p.board = [hurt as never]
+		const [input] = toCombatInput(p, 1)
+		expect(input.deathHeal).toBe(250)
+		const frail = dummyInput('TFT_TrainingDummy', 'd1', {
+			pos: { col: 0, row: 0 },
+			stats: { ...dummyInput('TFT_TrainingDummy', 'dx').stats, maxHp: 1 },
+		})
+		const tough = dummyInput('TFT_TrainingDummy', 'd2', {
+			pos: { col: 1, row: 0 },
+			stats: { ...dummyInput('TFT_TrainingDummy', 'dy').stats, maxHp: 3000 },
+		})
+		const res = simulateCombat([input], [frail, tough], { rng: makeRng(5), maxSeconds: 30 })
+		expect(res.events.some((e) => e.type === 'heal' && e.value === 250)).toBe(true)
+	})
+
+	it('战争财宝：按敌方阵亡数概率掉金（PvE 不触发）', () => {
+		const deps = mockDeps(makeRng(2))
+		const p = makePlayer(4)
+		p.augments = ['TFT9_Augment_DravenSpoilsOfWar3'] // 40%
+		let goldTotal = 0
+		for (let i = 0; i < 200; i++) {
+			p.gold = 0
+			settleRoundHooks(deps, p, true, true, 10)
+			goldTotal += p.gold
+		}
+		// 期望 200*10*0.4 = 800，允许大偏差
+		expect(goldTotal).toBeGreaterThan(500)
+		expect(goldTotal).toBeLessThan(1100)
+		p.gold = 0
+		settleRoundHooks(deps, p, true, false, 10)
+		expect(p.gold).toBe(0)
+	})
+})

@@ -452,13 +452,19 @@ export function settleRoundHooks(
 	p: PlayerState,
 	won: boolean | null,
 	isPvp: boolean,
+	enemyDeaths = 0,
 ): void {
 	const bench = p.bench.filter((b) => b !== null)
 	for (const a of p.augments) {
 		const def = AUGMENT_BY_API.get(a)
 		if (!def) continue
 		for (const e of def.effects) {
-			if (e.kind === 'roundEndXp') {
+			if (e.kind === 'killLoot' && isPvp && enemyDeaths > 0) {
+				// 战争财宝：每击杀按概率掉金币（官方为战利品表，近似 1 金/次）
+				for (let i = 0; i < enemyDeaths; i++) {
+					if (deps.rng.next() < e.chance) p.gold += 1
+				}
+			} else if (e.kind === 'roundEndXp') {
 				const hit =
 					e.when === 'benchEmpty'
 						? bench.length === 0
