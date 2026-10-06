@@ -13,13 +13,14 @@ import type {
 import { CHART_PERIODS, isStockCode } from '@briar/shared'
 import { cachedLoad } from './cache'
 import {
+	CONCEPT_SECTORS,
 	HK_INDUSTRY_INDICES,
 	type IndexDef,
 	JP_TOPIX17_ETFS,
 	MARKET_INDICES,
 	US_SECTOR_ETFS,
-	US_THEME_ETFS,
 } from './catalog'
+import { CURATED_NO_TREND } from './curated'
 import { MarketInputError, getMarketOverview } from './marketService'
 import {
 	CACHE_TTL_MS,
@@ -343,10 +344,19 @@ function planSectorChart(market: MarketId, code: string): ChartPlan {
 			// 腾讯/新浪/Naver 都没有恒生行业指数的走势，只能走东财（全局限流）
 			const def = HK_INDUSTRY_INDICES.find((d) => d.code === code)
 			if (def) return eastmoneyPlan(def.name, `124.${code}`, timeZone)
+			// 概念板块：人工维护成分股组合，无对应指数走势
+			const curated = CONCEPT_SECTORS.hk.find((d) => d.code === code)
+			if (curated) {
+				return {
+					name: curated.name,
+					delayMinutes: 15,
+					reasons: Object.fromEntries(CHART_PERIODS.map((p) => [p, CURATED_NO_TREND])),
+				}
+			}
 			break
 		}
 		case 'us': {
-			const def = [...US_SECTOR_ETFS, ...US_THEME_ETFS].find((d) => d.code === code)
+			const def = US_SECTOR_ETFS.find((d) => d.code === code)
 			if (def) {
 				return {
 					name: def.name,
@@ -359,6 +369,14 @@ function planSectorChart(market: MarketId, code: string): ChartPlan {
 					candles: tencentUsKline(`us${code}`),
 					delayMinutes: US_ETF_DELAY_MINUTES,
 					reasons: {},
+				}
+			}
+			const curated = CONCEPT_SECTORS.us.find((d) => d.code === code)
+			if (curated) {
+				return {
+					name: curated.name,
+					delayMinutes: 15,
+					reasons: Object.fromEntries(CHART_PERIODS.map((p) => [p, CURATED_NO_TREND])),
 				}
 			}
 			break
