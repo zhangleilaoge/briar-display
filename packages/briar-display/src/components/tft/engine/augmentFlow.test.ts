@@ -1,16 +1,24 @@
 import { describe, expect, it } from 'bun:test'
-import { CHAMPION_BY_API, ITEM_BY_API, ITEM_COMPONENTS } from '../data/set18'
-import { CONSUMABLE_REMOVER } from '../data/set18/consumables'
+import { CHAMPIONS, CHAMPION_BY_API, ITEM_BY_API, ITEM_COMPONENTS } from '../data/set18'
+import { CONSUMABLE_LESSER_DUPLICATOR, CONSUMABLE_REMOVER } from '../data/set18/consumables'
 import {
 	ARTIFACT_POOL,
 	CRAFTABLE_POOL,
 	LUX_TRAIT_POOL,
 	RADIANT_POOL,
+	checkLevelArmories,
 	rerollPoolFor,
 } from './armory'
-import { type AugmentDeps, applyPlanningAugments, syncLuxTraits } from './augmentFlow'
+import {
+	type AugmentDeps,
+	applyAugment,
+	applyPlanningAugments,
+	settleAugmentTimers,
+	syncLuxTraits,
+} from './augmentFlow'
 import { type CombatUnitInput, simulateCombat } from './combat'
 import { toCombatInput } from './combatSetup'
+import { applyXp } from './economy'
 import { GameEngine } from './gameLoop'
 import { WITS_END_STAGE_DAMAGE } from './items'
 import { LUX_BASE } from './lux'
@@ -19,7 +27,7 @@ import { type Rng, makeRng } from './rng'
 import { makePlayer } from './testUtils'
 import { traitCounts } from './traits'
 import type { UnitInstance } from './types'
-import { createUnit, unitStats } from './units'
+import { addToBench, createUnit, unitStats } from './units'
 
 const newEngine = (seed = 42) => {
 	const g = new GameEngine(seed)
@@ -304,5 +312,177 @@ describe('近似项修正', () => {
 			(e) => e.type === 'heal' && e.uid === 'm1' && (e.value ?? 0) > 0 && e.t >= (castAt ?? 0),
 		)
 		expect(heals.length).toBeGreaterThanOrEqual(2)
+	})
+})
+
+describe('round3 扩展：delayRandom 经验/装备/弈子/复制器', () => {
+	const pvpRec = { isPvE: false } as unknown as import('./types').CombatRecord
+
+	it('爆炸式增长：即刻 7 经验；之后 3 个 PvP 回合各 7 经验，第 4 次停发', () => {
+		const p = makePlayer()
+		const deps = mockDeps(makeRng(1))
+		applyAugment(deps, p, 'DA_ExplosiveGrowth')
+		// 用同初值玩家按官方升级规则推演 N 次 7 经验作为期望值
+		const expected = (n: number) => {
+			const e = makePlayer()
+			for (let i = 0; i < n; i++) applyXp(e, 7)
+			return e
+		}
+		let want = expected(1)
+		expect(p.level).toBe(want.level)
+		expect(p.xp).toBe(want.xp)
+		for (let i = 0; i < 3; i++) settleAugmentTimers(deps, p, pvpRec, 100)
+		want = expected(4)
+		expect(p.level).toBe(want.level)
+		expect(p.xp).toBe(want.xp)
+		settleAugmentTimers(deps, p, pvpRec, 100)
+		expect(p.xp).toBe(want.xp)
+	})
+
+	it('弈子配送：3 个 2 费弈子入备战席；6 场 PvP 后再来 3 个', () => {
+		const p = makePlayer()
+		const deps = {
+			...mockDeps(makeRng(1)),
+			grantChampUnit: (pp: ReturnType<typeof makePlayer>, champApi: string, star = 1) => {
+				const u = createUnit(champApi)
+				u.star = star as typeof u.star
+				return addToBench(pp, u) ? u.uid : null
+			},
+		}
+		applyAugment(deps, p, 'DA_ChampDelivery')
+		const costOfBench = () =>
+			p.bench
+				.filter((b): b is UnitInstance => b !== null)
+				.map((u) => CHAMPION_BY_API.get(u.apiName)?.cost)
+		expect(costOfBench()).toEqual([2, 2, 2])
+		for (let i = 0; i < 6; i++) settleAugmentTimers(deps, p, pvpRec, 100)
+		expect(costOfBench()).toEqual([2, 2, 2, 2, 2, 2])
+	})
+
+	it('窃贼帮派 II：2 个手套即刻入栏，6 场 PvP 后第 3 个', () => {
+		const p = makePlayer()
+		const deps = mockDeps(makeRng(1))
+		applyAugment(deps, p, 'TFT6_Augment_BandOfThieves2')
+		expect(p.itemTray.filter((i) => i === 'DA_ThiefsGloves').length).toBe(2)
+		for (let i = 0; i < 6; i++) settleAugmentTimers(deps, p, pvpRec, 100)
+		expect(p.itemTray.filter((i) => i === 'DA_ThiefsGloves').length).toBe(3)
+	})
+
+	it('团队建设：1 个次级复制器即刻，5 场 PvP 后另一个', () => {
+		const p = makePlayer()
+		const deps = mockDeps(makeRng(1))
+		applyAugment(deps, p, 'DA_TeamBuilding')
+		expect(p.itemTray.filter((i) => i === CONSUMABLE_LESSER_DUPLICATOR).length).toBe(1)
+		for (let i = 0; i < 5; i++) settleAugmentTimers(deps, p, pvpRec, 100)
+		expect(p.itemTray.filter((i) => i === CONSUMABLE_LESSER_DUPLICATOR).length).toBe(2)
+	})
+
+	it('锅铲厨房：随机纹章即刻，3 场 PvP 后金锅铲冠冕', () => {
+		const p = makePlayer()
+		const pushEmblem = () => {
+			p.itemTray.push('DA_18_EmblemInferno')
+		}
+		const deps = { ...mockDeps(makeRng(1)), grantRandomEmblem: pushEmblem }
+		applyAugment(deps, p, 'DA_TacticiansKitchen')
+		expect(p.itemTray).toContain('DA_18_EmblemInferno')
+		for (let i = 0; i < 3; i++) settleAugmentTimers(deps, p, pvpRec, 100)
+		expect(p.itemTray).toContain('DA_TacticiansCrown')
+	})
+})
+
+describe('round3 扩展：等级钩子', () => {
+	it('后期专家：到达 9 级发 27 金币，未到达不发', () => {
+		const p = makePlayer()
+		p.level = 8
+		p.augments = ['DA_LateGameSpecialist']
+		const gold0 = p.gold
+		checkLevelArmories(makeRng(1), p)
+		expect(p.gold).toBe(gold0)
+		p.level = 9
+		checkLevelArmories(makeRng(1), p)
+		expect(p.gold).toBe(gold0 + 27)
+		checkLevelArmories(makeRng(1), p)
+		expect(p.gold).toBe(gold0 + 27)
+	})
+
+	it('生日礼物：首次检查不补发；升级发 1 金 + 等级减 4 费用的 2 星弈子', () => {
+		const p = makePlayer()
+		p.level = 4
+		p.augments = ['DA_BirthdayPresent']
+		const granted: [string, number | undefined][] = []
+		const grantChamp = (api: string, star?: number) => {
+			granted.push([api, star])
+			return 'uid'
+		}
+		const gold0 = p.gold
+		checkLevelArmories(makeRng(1), p, grantChamp)
+		expect(p.gold).toBe(gold0)
+		expect(granted.length).toBe(0)
+		p.level = 6
+		checkLevelArmories(makeRng(1), p, grantChamp)
+		expect(p.gold).toBe(gold0 + 1)
+		expect(granted.length).toBe(1)
+		expect(granted[0][1]).toBe(2)
+		expect(CHAMPION_BY_API.get(granted[0][0])?.cost).toBe(2)
+	})
+})
+
+describe('round3 扩展：携带者加成与复制器', () => {
+	it('源计划上行链路：恰好 1 件装备 +100 生命与 2 法力回复，2 件不触发', () => {
+		const p = makePlayer()
+		p.augments = ['TFT6_Augment_CyberneticUplink2']
+		const one = createUnit('DA_18_Maokai')
+		one.items = ['TFT_Item_BFSword']
+		const two = createUnit('DA_18_Shen')
+		two.items = ['TFT_Item_BFSword', 'TFT_Item_ChainVest']
+		p.board = [
+			{ ...one, pos: { col: 0, row: 0 } },
+			{ ...two, pos: { col: 1, row: 0 } },
+		]
+		const inputs = toCombatInput(p, 1)
+		const oneStats = inputs.find((i) => i.uid === one.uid)?.stats
+		const twoStats = inputs.find((i) => i.uid === two.uid)?.stats
+		const base1 = unitStats(one)
+		const base2 = unitStats(two)
+		expect(oneStats?.maxHp).toBe(base1.maxHp + 100)
+		expect(oneStats?.manaRegen).toBe(2)
+		expect(twoStats?.maxHp).toBe(base2.maxHp)
+	})
+
+	it('正义报复：正义之手携带者 +25% 暴击并获得技能暴击标签，未携带者无', () => {
+		const p = makePlayer()
+		p.augments = ['DA_Retribution']
+		const holder = createUnit('DA_18_Maokai')
+		holder.items = ['DA_HandOfJustice']
+		const plain = createUnit('DA_18_Shen')
+		p.board = [
+			{ ...holder, pos: { col: 0, row: 0 } },
+			{ ...plain, pos: { col: 1, row: 0 } },
+		]
+		const inputs = toCombatInput(p, 1)
+		const holderInput = inputs.find((i) => i.uid === holder.uid)
+		const plainInput = inputs.find((i) => i.uid === plain.uid)
+		expect(holderInput?.stats.critChance).toBeCloseTo(unitStats(holder).critChance + 0.25)
+		expect(holderInput?.extraTags).toContain('abilityCrit')
+		expect(plainInput?.extraTags).toBeUndefined()
+	})
+
+	it('英雄复制器：生成同星复制体入备战席；次级复制器拒 4 费且不退消耗品', () => {
+		const g = newEngine()
+		const me = g.state.players[0]
+		const four = createUnit(CHAMPIONS.find((c) => c.cost === 4)?.apiName ?? 'DA_18_Shen')
+		me.bench[0] = four
+		me.itemTray = ['DA_Consumable_ChampionDuplicator', 'DA_Consumable_LesserChampionDuplicator']
+		// 次级复制器：4 费拒绝，消耗品保留
+		expect(g.equipItem(0, four.uid, 'DA_Consumable_LesserChampionDuplicator')).toBe(false)
+		expect(me.itemTray.length).toBe(2)
+		// 英雄复制器：复制成功，同星复制体在备战席
+		expect(g.equipItem(0, four.uid, 'DA_Consumable_ChampionDuplicator')).toBe(true)
+		const copies = me.bench.filter(
+			(b): b is UnitInstance => b !== null && b.apiName === four.apiName,
+		)
+		expect(copies.length).toBe(2)
+		expect(copies[1].star).toBe(four.star)
+		expect(me.itemTray).toEqual(['DA_Consumable_LesserChampionDuplicator'])
 	})
 })

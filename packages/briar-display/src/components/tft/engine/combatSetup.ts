@@ -4,7 +4,7 @@ import { AUGMENT_BY_API } from '../data/set18/augments'
 import { MONSTER_BY_API, pveStatScale, pveWaveFor } from '../data/set18/monsters'
 import { CRAFTABLE_POOL, RADIANT_POOL } from './armory'
 import type { CombatUnitInput } from './combat'
-import { itemGrantedTrait } from './items'
+import { type ItemTag, itemGrantedTrait } from './items'
 import { applyPlayerBuffs } from './playerBuffs'
 import { MAOKAI_STACK_HP_VAR } from './plugins/traits/stacking'
 import type { Rng } from './rng'
@@ -48,6 +48,10 @@ export function toCombatInput(p: PlayerState, stage: number, rng?: Rng): CombatU
 	const scapegoat = augEffects.find((e) => e.kind === 'scapegoatGold')
 	// 致命丽花等：纹章携带者羁绊效能放大
 	const emblemAmps = augEffects.filter((e) => e.kind === 'emblemTraitAmp')
+	// 正义报复等：指定装备携带者获得技能暴击
+	const abilityCritItems = augEffects
+		.filter((e) => e.kind === 'holderBuff' && e.abilityCrit && e.item)
+		.map((e) => (e as { item?: string }).item as string)
 	return p.board.map((b) => {
 		const stats = applyPlayerBuffs(p, applyTraitStats(b, unitStats(b), active), b)
 		if (b.uid === strongestMao) stats.maxHp += maokaiHpBonus
@@ -56,6 +60,10 @@ export function toCombatInput(p: PlayerState, stage: number, rng?: Rng): CombatU
 		if (hpPerStage) stats.maxHp += hpPerStage * (stage - 1)
 		const isDummy = MONSTER_BY_API.has(b.apiName)
 		const items = expandThiefsGloves(rng, b.items)
+		const extraTags: ItemTag[] | undefined =
+			abilityCritItems.length > 0 && items.some((i) => abilityCritItems.includes(i))
+				? ['abilityCrit']
+				: undefined
 		let traitAmp: Record<string, number> | undefined
 		for (const e of emblemAmps) {
 			if (e.kind !== 'emblemTraitAmp') continue
@@ -72,6 +80,7 @@ export function toCombatInput(p: PlayerState, stage: number, rng?: Rng): CombatU
 			alphaMark: b.alphaMark,
 			chosenTrait: b.chosenTrait,
 			traitAmp,
+			extraTags,
 			dummyGold:
 				isDummy && dummyGold?.kind === 'dummyGold'
 					? [dummyGold.perSeconds, dummyGold.amount]

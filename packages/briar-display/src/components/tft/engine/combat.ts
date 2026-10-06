@@ -18,7 +18,7 @@ import {
 	spawnSummon,
 } from './combatInternal'
 import { hexDistance, nearestFreeInRange, stepToward, toCombatRow } from './hex'
-import { WITS_END_STAGE_DAMAGE, itemEffectNum, itemTags } from './items'
+import { type ItemTag, WITS_END_STAGE_DAMAGE, itemEffectNum, itemTags } from './items'
 import { ABILITY_PLUGINS } from './plugins/abilities'
 import { TRAIT_PLUGINS } from './plugins/traits'
 import type { AbilityCtx, TraitCtx } from './plugins/types'
@@ -49,6 +49,8 @@ export interface CombatUnitInput {
 	scapegoatGold?: number
 	/** 碰撞测试假人海克斯：开战发射至敌群并晕眩的秒数 */
 	crashTestStun?: number
+	/** 海克斯注入的额外机制标签（正义报复=技能暴击等；装备标签之外的补充） */
+	extraTags?: ItemTag[]
 }
 
 export interface CombatEvent {
@@ -109,7 +111,7 @@ export function simulateCombat(
 	let summonSeq = 0
 
 	const spawn = (input: CombatUnitInput, side: 'A' | 'B'): CombatUnit => {
-		const tags = input.items.flatMap(itemTags)
+		const tags = [...input.items.flatMap(itemTags), ...(input.extraTags ?? [])]
 		return {
 			...input,
 			side,

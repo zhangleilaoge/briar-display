@@ -33,7 +33,15 @@ export type AugmentEffect =
 	| { kind: 'randomChamps'; cost: number; count: number; star?: number }
 	/** 指定棋子（按中文名） */
 	| { kind: 'namedChamps'; champs: { name: string; count: number }[] }
-	| { kind: 'consumablesNow'; removers?: number; rerollers?: number }
+	| {
+			kind: 'consumablesNow'
+			removers?: number
+			rerollers?: number
+			/** 英雄复制器（任意费用） */
+			duplicators?: number
+			/** 次级英雄复制器（仅 3 费及以下） */
+			lesserDuplicators?: number
+	  }
 	| { kind: 'streakWin'; count: number }
 	/** 战斗开始：最前排每个己方弈子为全队提供生命 */
 	| { kind: 'hpPerFrontRow'; amount: number }
@@ -53,8 +61,18 @@ export type AugmentEffect =
 	| { kind: 'armoryPerRounds'; pool: ArmoryPool; rounds: number }
 	/** N 场玩家对战回合后开启武器库（一次性，休眠锻炉） */
 	| { kind: 'armoryAfterRounds'; pool: ArmoryPool; rounds: number }
-	/** 到达指定等级时开启武器库（游神的眷顾，可追溯已越过的等级） */
-	| { kind: 'armoryAtLevels'; pool: ArmoryPool; levels: number[] }
+	/** 到达指定等级时触发（游神的眷顾=武器库；后期专家=金币；生日礼物=每次升级），已越过的等级可追溯 */
+	| {
+			kind: 'armoryAtLevels'
+			pool?: ArmoryPool
+			levels: number[]
+			/** 到达等级时给金币（后期专家） */
+			gold?: number
+			/** 每次升级都触发（生日礼物；首次检查时以当前等级为基准，不补发） */
+			everyLevel?: boolean
+			/** 每次升级发随机弈子：费用=等级-costOffset（下限 1，上限 maxCost），指定 star */
+			levelChamp?: { star: number; costOffset: number; maxCost: number }
+	  }
 	/** N 场玩家对战回合后直接随机获得物品（repeat=每 N 场重复；times=最多发放次数，缺省不限） */
 	| {
 			kind: 'delayRandom'
@@ -66,6 +84,14 @@ export type AugmentEffect =
 			completed?: number
 			emblems?: number
 			gold?: number
+			/** 经验值（爆炸式增长：xpNow + 每回合开始的 XP 用 rounds:1/repeat/times 建模） */
+			xp?: number
+			/** 指定装备直接入装备栏（锅铲厨房的金锅铲冠冕/窃贼帮派 II 的手套） */
+			items?: string[]
+			duplicators?: number
+			lesserDuplicators?: number
+			/** 随机 N 费弈子（弈子配送） */
+			champs?: { cost: number; count: number; star?: number }[]
 	  }
 	| { kind: 'randomArtifacts'; count: number }
 	| { kind: 'randomCompleted'; count: number }
@@ -84,14 +110,25 @@ export type AugmentEffect =
 	| { kind: 'teamHpPerItem'; amount: number }
 	/** 队伍按已携带纹章数获得生命（灵活摇摆） */
 	| { kind: 'teamHpPerEmblem'; amount: number }
-	/** 携带特定装备系的棋子获得加成（加冕礼=冠冕系，厨神阿福=铲锅系） */
+	/** 携带特定装备/装备数的棋子获得加成（加冕礼=冠冕系，厨神阿福=铲锅系，源计划=1 件装备，正义报复=指定装备） */
 	| {
 			kind: 'holderBuff'
-			match: 'crown' | 'spatPan'
+			/** 装备系列匹配（加冕礼=冠冕系，厨神阿福=铲锅系）；item/itemCount 优先 */
+			match?: 'crown' | 'spatPan'
+			/** 指定装备 apiName 精确匹配（携带者加成系） */
+			item?: string
+			/** 装备件数要求（源计划系列=恰好 1 件） */
+			itemCount?: number
 			asPct?: number
 			adPct?: number
 			apPct?: number
+			hpFlat?: number
+			armor?: number
+			mr?: number
 			manaRegen?: number
+			critChance?: number
+			/** 携带者获得技能暴击（正义报复） */
+			abilityCrit?: boolean
 	  }
 	/** 出售弈子时其成装拆成基础装备（打捞桶；冠冕/纹章除外） */
 	| { kind: 'salvageSplit' }
@@ -1374,6 +1411,287 @@ export const AUGMENTS: AugmentDef[] = [
 			{ kind: 'randomEmblems', count: 1 },
 			{ kind: 'armoryNow', pool: 'completed' },
 			{ kind: 'emblemSynergyBuff', asPct: 0.3 },
+		],
+	),
+	// ---- round3 引擎扩展补录：白银 ----
+	A('DA_ChampDelivery', '弈子配送', '获得3个2费弈子。在6个回合后，再获得3个。', 1, [
+		{ kind: 'randomChamps', cost: 2, count: 3 },
+		{ kind: 'delayRandom', rounds: 6, champs: [{ cost: 2, count: 3 }] },
+	]),
+	A('DA_ChampDeliveryPlus', '弈子配送+', '获得3个3费弈子。在6个回合后，再获得3个。', 1, [
+		{ kind: 'randomChamps', cost: 3, count: 3 },
+		{ kind: 'delayRandom', rounds: 6, champs: [{ cost: 3, count: 3 }] },
+	]),
+	A('DA_ChampDeliveryPlusPlus', '弈子配送++', '获得3个4费弈子。在6个回合后，再获得3个。', 1, [
+		{ kind: 'randomChamps', cost: 4, count: 3 },
+		{ kind: 'delayRandom', rounds: 6, champs: [{ cost: 4, count: 3 }] },
+	]),
+	A('DA_LateGameSpecialist', '后期专家', '当你到达9级时，获得27金币。', 1, [
+		{ kind: 'armoryAtLevels', levels: [9], gold: 27 },
+	]),
+	A('TFT7_Augment_LategameSpecialist', '后期专家', '在你到达9级时，提供27金币。', 1, [
+		{ kind: 'armoryAtLevels', levels: [9], gold: 27 },
+	]),
+	A(
+		'DA_TeamBuilding',
+		'团队建设',
+		'获得1个【次级英雄复制器】。在5场玩家对战回合后获得另一个。这个物品允许你能复制1个3费或以下的弈子。',
+		1,
+		[
+			{ kind: 'consumablesNow', lesserDuplicators: 1 },
+			{ kind: 'delayRandom', rounds: 5, lesserDuplicators: 1 },
+		],
+	),
+	A(
+		'TFT9_Augment_ArmyBuilding',
+		'团队建设',
+		'获得1个【次级英雄复制器】。在5个玩家对战回合后获得另一个。这个物品允许你能复制一个3费或以下的弈子。',
+		1,
+		[
+			{ kind: 'consumablesNow', lesserDuplicators: 1 },
+			{ kind: 'delayRandom', rounds: 5, lesserDuplicators: 1 },
+		],
+	),
+	// ---- round3 引擎扩展补录：黄金 ----
+	A(
+		'DA_BirthdayPresent',
+		'生日礼物',
+		'在你每次升级时提供1个2星弈子和1金币。这个弈子的费用位阶是你的等级减4(最大值：5费)。',
+		2,
+		[
+			{
+				kind: 'armoryAtLevels',
+				levels: [],
+				everyLevel: true,
+				gold: 1,
+				levelChamp: { star: 2, costOffset: 4, maxCost: 5 },
+			},
+		],
+	),
+	A(
+		'TFT7_Augment_BirthdayPresents',
+		'生日礼物',
+		'在你每次升级时提供1个2星弈子和1金币。这个弈子的费用位阶是你的等级减4(最大值：5费)。',
+		2,
+		[
+			{
+				kind: 'armoryAtLevels',
+				levels: [],
+				everyLevel: true,
+				gold: 1,
+				levelChamp: { star: 2, costOffset: 4, maxCost: 5 },
+			},
+		],
+	),
+	A(
+		'DA_CyberneticImplants_Gold',
+		'源计划植入',
+		'那些携带1件装备的友军获得100生命值和15%物理加成。获得1个【暴风大剑】。',
+		2,
+		[
+			{ kind: 'holderBuff', itemCount: 1, hpFlat: 100, adPct: 0.15 },
+			{ kind: 'namedItems', apiNames: ['TFT_Item_BFSword'] },
+		],
+	),
+	A(
+		'TFT6_Augment_CyberneticImplants2',
+		'源计划植入',
+		'那些携带1件装备的友军获得100生命值和15%物理加成。获得1个【暴风大剑】。',
+		2,
+		[
+			{ kind: 'holderBuff', itemCount: 1, hpFlat: 100, adPct: 0.15 },
+			{ kind: 'namedItems', apiNames: ['TFT_Item_BFSword'] },
+		],
+	),
+	A(
+		'DA_CyberneticUplink_Gold',
+		'源计划上行链路',
+		'那些携带1件装备的友军获得100生命值和2法力回复。获得1个【女神之泪】。',
+		2,
+		[
+			{ kind: 'holderBuff', itemCount: 1, hpFlat: 100, manaRegen: 2 },
+			{ kind: 'namedItems', apiNames: ['TFT_Item_TearOfTheGoddess'] },
+		],
+	),
+	A(
+		'TFT6_Augment_CyberneticUplink2',
+		'源计划上行链路',
+		'那些携带1件装备的友军获得100生命值和2法力回复。获得1个【女神之泪】。',
+		2,
+		[
+			{ kind: 'holderBuff', itemCount: 1, hpFlat: 100, manaRegen: 2 },
+			{ kind: 'namedItems', apiNames: ['TFT_Item_TearOfTheGoddess'] },
+		],
+	),
+	A('DA_ExplosiveGrowth', '爆炸式增长', '立刻以及接下来的3个回合开始时，获得7经验值。', 2, [
+		{ kind: 'xpNow', amount: 7 },
+		{ kind: 'delayRandom', rounds: 1, repeat: true, times: 3, xp: 7 },
+	]),
+	A(
+		'TFT_Augment_ExplosiveGrowth',
+		'爆炸式增长',
+		'立刻以及接下来的3个回合开始时，获得7经验值。',
+		2,
+		[
+			{ kind: 'xpNow', amount: 7 },
+			{ kind: 'delayRandom', rounds: 1, repeat: true, times: 3, xp: 7 },
+		],
+	),
+	A('DA_ExplosiveGrowthPlus', '爆炸式增长+', '立刻以及接下来的3个回合开始时，获得10经验值。', 2, [
+		{ kind: 'xpNow', amount: 10 },
+		{ kind: 'delayRandom', rounds: 1, repeat: true, times: 3, xp: 10 },
+	]),
+	A(
+		'TFT_Augment_ExplosiveGrowthPlus',
+		'爆炸式增长+',
+		'立刻以及接下来的3个回合开始时，获得10经验值。',
+		2,
+		[
+			{ kind: 'xpNow', amount: 10 },
+			{ kind: 'delayRandom', rounds: 1, repeat: true, times: 3, xp: 10 },
+		],
+	),
+	A('DA_HeroicGrabBag', '英勇福袋', '获得2个【次级英雄复制器】。获得4金币。', 2, [
+		{ kind: 'consumablesNow', lesserDuplicators: 2 },
+		{ kind: 'goldNow', amount: 4 },
+	]),
+	A('DA_HeroicGrabBagPlus', '英勇福袋+', '获得2个【次级英雄复制器】。获得8金币。', 2, [
+		{ kind: 'consumablesNow', lesserDuplicators: 2 },
+		{ kind: 'goldNow', amount: 8 },
+	]),
+	A('DA_HeroicGrabBagPlusPlus', '英勇福袋++', '获得2个【次级英雄复制器】。获得14金币。', 2, [
+		{ kind: 'consumablesNow', lesserDuplicators: 2 },
+		{ kind: 'goldNow', amount: 14 },
+	]),
+	A(
+		'TFT10_Augment_HeroicGrabBag',
+		'英勇福袋',
+		'获得2个【次级英雄复制器】和5金币。这个物品允许你能复制一个3费或以下的弈子。',
+		2,
+		[
+			{ kind: 'consumablesNow', lesserDuplicators: 2 },
+			{ kind: 'goldNow', amount: 5 },
+		],
+	),
+	A(
+		'TFT_Augment_HeroicGrabBagPlus',
+		'英勇福袋+',
+		'获得2个【次级英雄复制器】和8金币。这个物品允许你能复制一个3费或以下的弈子。',
+		2,
+		[
+			{ kind: 'consumablesNow', lesserDuplicators: 2 },
+			{ kind: 'goldNow', amount: 8 },
+		],
+	),
+	A(
+		'TFT_Augment_HeroicGrabBagPlusPlus',
+		'英勇福袋++',
+		'获得2个【次级英雄复制器】和14金币。这个物品允许你能复制一个3费或以下的弈子。',
+		2,
+		[
+			{ kind: 'consumablesNow', lesserDuplicators: 2 },
+			{ kind: 'goldNow', amount: 14 },
+		],
+	),
+	// ---- round3 引擎扩展补录：棱彩 ----
+	A(
+		'TFT6_Augment_BandOfThieves2',
+		'窃贼帮派 II',
+		'获得2个【窃贼手套】。在6场玩家对战回合后，获得另一个。',
+		3,
+		[
+			{ kind: 'namedItems', apiNames: ['DA_ThiefsGloves', 'DA_ThiefsGloves'] },
+			{ kind: 'delayRandom', rounds: 6, items: ['DA_ThiefsGloves'] },
+		],
+	),
+	A(
+		'TFT6_Augment_BandOfThieves2Plus',
+		'窃贼帮派 II+',
+		'获得2个【窃贼手套】。在5场玩家对战回合后，获得另一个。',
+		3,
+		[
+			{ kind: 'namedItems', apiNames: ['DA_ThiefsGloves', 'DA_ThiefsGloves'] },
+			{ kind: 'delayRandom', rounds: 5, items: ['DA_ThiefsGloves'] },
+		],
+	),
+	A(
+		'TFT6_Augment_BandOfThieves2PlusPlus',
+		'窃贼帮派 II++',
+		'获得2个【窃贼手套】。在3场玩家对战回合后，获得另一个。',
+		3,
+		[
+			{ kind: 'namedItems', apiNames: ['DA_ThiefsGloves', 'DA_ThiefsGloves'] },
+			{ kind: 'delayRandom', rounds: 3, items: ['DA_ThiefsGloves'] },
+		],
+	),
+	A(
+		'TFT6_Augment_CyberneticUplink3',
+		'源计划上行链路 III',
+		'那些携带1件装备的友军获得275生命值和3法力回复。获得1个【女神之泪】。',
+		3,
+		[
+			{ kind: 'holderBuff', itemCount: 1, hpFlat: 275, manaRegen: 3 },
+			{ kind: 'namedItems', apiNames: ['TFT_Item_TearOfTheGoddess'] },
+		],
+	),
+	A(
+		'DA_OneBuffTwoBuff',
+		'1个霸符，2个霸符',
+		'获得1个【红霸符】、1个【蓝霸符】和1个【英雄复制器】。',
+		3,
+		[
+			{ kind: 'namedItems', apiNames: ['DA_RedBuff', 'DA_BlueBuff'] },
+			{ kind: 'consumablesNow', duplicators: 1 },
+		],
+	),
+	A(
+		'TFT_Augment_OneBuffTwoBuff',
+		'1个霸符，2个霸符',
+		'获得1个【红霸符】、1个【蓝霸符】和1个【英雄复制器】。',
+		3,
+		[
+			{ kind: 'namedItems', apiNames: ['DA_RedBuff', 'DA_BlueBuff'] },
+			{ kind: 'consumablesNow', duplicators: 1 },
+		],
+	),
+	A(
+		'DA_Retribution',
+		'正义报复',
+		'获得2个【正义之手】。携带【正义之手】的友军获得技能暴击和25%暴击几率。',
+		3,
+		[
+			{ kind: 'namedItems', apiNames: ['DA_HandOfJustice', 'DA_HandOfJustice'] },
+			{ kind: 'holderBuff', item: 'DA_HandOfJustice', abilityCrit: true, critChance: 0.25 },
+		],
+	),
+	A(
+		'TFT_Augment_Retribution',
+		'正义报复',
+		'获得2个【正义之手】。携带【正义之手】的友军获得技能暴击和25%暴击几率。',
+		3,
+		[
+			{ kind: 'namedItems', apiNames: ['DA_HandOfJustice', 'DA_HandOfJustice'] },
+			{ kind: 'holderBuff', item: 'DA_HandOfJustice', abilityCrit: true, critChance: 0.25 },
+		],
+	),
+	A(
+		'DA_TacticiansKitchen',
+		'锅铲厨房',
+		'获得1个随机纹章。在3个回合后，获得1个【金锅铲冠冕】。',
+		3,
+		[
+			{ kind: 'randomEmblems', count: 1 },
+			{ kind: 'delayRandom', rounds: 3, items: ['DA_TacticiansCrown'] },
+		],
+	),
+	A(
+		'TFT_Augment_TacticiansKitchen',
+		'锅铲厨房',
+		'获得1个随机纹章。在3个回合后，获得1个【金锅铲冠冕】。',
+		3,
+		[
+			{ kind: 'randomEmblems', count: 1 },
+			{ kind: 'delayRandom', rounds: 3, items: ['DA_TacticiansCrown'] },
 		],
 	),
 ]
