@@ -64,12 +64,14 @@
 - 腾讯 / Naver 日本的成交量是当日累计，后端转成每分钟量；Naver 韩国、东财是每分钟量
 - 五日：每天带自己的昨收（腾讯 `prec`；Naver/东财用前一天最后一笔；东财 `ndays=5` 的 preClose 是最新一天的，首日昨收留空、以首笔为基准），面板基准线为首日昨收
 - 东财 push2his（trends2 + kline）进程内全局限流 **6 次/分钟**，超限直接报「请求过于频繁」；东财方案缓存至少 30s。实测同 IP 秒级连发十几次就会被 Empty reply 封，且会连带 ulist（港股行业列表）一起封
-- 缓存：分时 / 五日同报价（15s / 60s / 5min）；K 线交易中 60s、午休盘前 5min、收盘后 30min。指数分时与卡片小图共用 `trends:index:{market}` 缓存
+- 缓存：分时 / 五日同报价（20s / 60s / 5min）；K 线交易中 60s、午休盘前 5min、收盘后 30min。指数分时与卡片小图共用 `trends:index:{market}` 缓存
 
 ## 缓存与轮询
 
-- 内存缓存 `cache.ts`：按 key（`sectors:{market}:{kind}:{level}` / `indices:em|naver`）TTL + 单飞；上游失败返回旧值并带 `stale: true` + `error`，失败后 10s 冷却期内不再撞上游；从未成功过才 502
-- TTL 按交易时段：交易中 15s / 午休与盘前 60s / 收盘 5min；前端轮询 `session.pollMs`：20s / 60s / 5min，页面隐藏暂停
+- 进程内全局共享缓存 `cache.ts`（所有用户共用一份）：key = 市场 + 接口类型 + 参数——`indices:em|naver|kr-flows`（overview）、`sectors:{market}:{kind}:{level}`、`flows:us:{kind}`、`trends:index:{market}`（index-trends 与面板分时共用）、`chart:{market}:{target}:{code}:{period}`
+- 单飞：同一 key 过期时只有第一个请求打上游，其余并发请求 await 同一个 in-flight Promise（`pending` Map），成功失败都在 `finally` 里删掉，失败不会锁死；上游失败返回旧值并带 `stale: true` + `error`，失败后 10s 冷却期内直接回旧值不再撞上游，冷却期过后下一次请求重新打上游；从未成功过直接 502（不设冷却，下次请求立刻重试）
+- 上限：LRU，`BRIAR_MARKET_CACHE_MAX`（默认 500，限定 50–5000）；每 60s 清理「过期超过 1 小时」的条目（保留 1 小时是为了上游挂掉时还能回旧值），定时器 `unref()`
+- TTL 按交易时段：交易中 `BRIAR_MARKET_CACHE_TTL_SECONDS`（默认 20s，限定 15–30s）/ 午休与盘前 60s / 收盘 5min；K 线交易中 60s / 午休盘前 5min / 收盘 30min；东财方案至少 30s，资金流附加数据至少 60s。前端轮询 `session.pollMs`：20s / 60s / 5min，页面隐藏暂停
 - 交易时段按各市场当地时区判断（含午休，美股自动处理夏令时）；节假日无日历，靠「最新行情日期 ≠ 当地今天 → 休市」推断（开盘头 30 分钟不判，以免早盘还没成交时误判）
 - 所有时间展示为北京时间
 

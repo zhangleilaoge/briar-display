@@ -13,7 +13,7 @@ import { getChart, getIndexTrends } from '../services/market/trendService'
 
 /**
  * 全球板块行情代理（免登录 GET，见 config/routes.ts API_PUBLIC_PREFIXES）。
- * 上游请求全部走后端内存缓存（交易中 15s / 休市 5min），缓存 key 有限，
+ * 上游请求全部走后端进程内全局缓存（交易中默认 20s，可配 15–30s；休市 5min；K 线更长），LRU 有上限，
  * 客户端请求量再大也不会放大到上游；上游失败返回最近一次缓存 + stale 标记。
  */
 const marketRoutes = new Hono()
