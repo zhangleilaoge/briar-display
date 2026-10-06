@@ -7,6 +7,18 @@ import type { CombatStats, PlayerState, UnitInstance } from './types'
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
+/** rampBuff 当前层数 = max(初始层数, 已结算回合数)，受上限约束 */
+function rampStacks(
+	p: PlayerState,
+	augApi: string,
+	e: { initialStacks?: number; maxStacks?: number },
+): number {
+	const gained = Number(p.augMemo[`${augApi}.stacks`] ?? 0)
+	let stacks = Math.max(e.initialStacks ?? 0, gained)
+	if (e.maxStacks !== undefined) stacks = Math.min(stacks, e.maxStacks)
+	return stacks
+}
+
 /** 战斗面板与属性面板同口径；unit 用于携带者判定（装备系列匹配） */
 export function applyPlayerBuffs(
 	p: PlayerState,
@@ -28,6 +40,13 @@ export function applyPlayerBuffs(
 					if (e.armor) stats.armor += e.armor
 					if (e.mr) stats.magicResist += e.mr
 					if (e.mana) stats.initialMana += e.mana
+					if (e.critChance) stats.critChance = round2(stats.critChance + e.critChance)
+					if (e.critMult) stats.critMultiplier = round2(stats.critMultiplier + e.critMult)
+					if (e.damageAmp) stats.damageAmp = round2(stats.damageAmp + e.damageAmp)
+					if (e.damageReduction)
+						stats.damageReduction = round2(stats.damageReduction + e.damageReduction)
+					if (e.omnivamp) stats.omnivamp = round2(stats.omnivamp + e.omnivamp)
+					if (e.manaRegen) stats.manaRegen += e.manaRegen
 					break
 				}
 				case 'hpPerFrontRow':
@@ -74,11 +93,73 @@ export function applyPlayerBuffs(
 					if (e.asPct) stats.attackSpeed = round2(stats.attackSpeed * (1 + e.asPct))
 					if (e.adPct) stats.attackDamage = Math.round(stats.attackDamage * (1 + e.adPct))
 					if (e.apPct) stats.abilityPower = Math.round(stats.abilityPower * (1 + e.apPct))
+					if (e.ap) stats.abilityPower += e.ap
 					if (e.hpFlat) stats.maxHp += e.hpFlat
 					if (e.armor) stats.armor += e.armor
 					if (e.mr) stats.magicResist += e.mr
 					if (e.critChance) stats.critChance = round2(stats.critChance + e.critChance)
 					if (e.manaRegen) stats.manaRegen += e.manaRegen
+					if (e.damageAmp) stats.damageAmp = round2(stats.damageAmp + e.damageAmp)
+					if (e.damageReduction)
+						stats.damageReduction = round2(stats.damageReduction + e.damageReduction)
+					if (e.omnivamp) stats.omnivamp = round2(stats.omnivamp + e.omnivamp)
+					break
+				}
+				// 条件加成：按单位装备/站位在战斗面板结算（应急护甲/玻璃大炮/浪人/C位的觉悟/双子守护神）
+				case 'condBuff': {
+					if (!unit) break
+					const boardUnit = unit as { pos?: { col: number; row: number } }
+					let hit = false
+					switch (e.when) {
+						case 'noItems':
+							hit = unit.items.length === 0
+							break
+						case 'backRow':
+							hit = (boardUnit.pos?.row ?? 0) >= 2
+							break
+						case 'noNeighborAlly':
+							hit = !p.board.some(
+								(u) =>
+									u.uid !== unit.uid &&
+									Math.abs(u.pos.col - (boardUnit.pos?.col ?? 0)) <= 1 &&
+									Math.abs(u.pos.row - (boardUnit.pos?.row ?? 0)) <= 1,
+							)
+							break
+						case 'frontRowOnly': {
+							const frontCount = p.board.filter((u) => u.pos.row === 0).length
+							hit = boardUnit.pos?.row === 0 && frontCount === (e.frontCount ?? 1)
+							break
+						}
+						case 'frontCenter': {
+							// 棋盘 4 行 7 列：最前排中心 = row 0 且 col 3
+							hit = boardUnit.pos?.row === 0 && boardUnit.pos?.col === 3
+							break
+						}
+					}
+					if (!hit) break
+					if (e.adPct) stats.attackDamage = Math.round(stats.attackDamage * (1 + e.adPct))
+					if (e.apPct) stats.abilityPower = Math.round(stats.abilityPower * (1 + e.apPct))
+					if (e.asPct) stats.attackSpeed = round2(stats.attackSpeed * (1 + e.asPct))
+					if (e.armor) stats.armor += e.armor
+					if (e.mr) stats.magicResist += e.mr
+					if (e.hpFlat) stats.maxHp += e.hpFlat
+					if (e.hpPct) stats.maxHp = Math.round(stats.maxHp * (1 + e.hpPct))
+					if (e.damageAmp) stats.damageAmp = round2(stats.damageAmp + e.damageAmp)
+					if (e.damageReduction)
+						stats.damageReduction = round2(stats.damageReduction + e.damageReduction)
+					if (e.omnivamp) stats.omnivamp = round2(stats.omnivamp + e.omnivamp)
+					if (e.critChance) stats.critChance = round2(stats.critChance + e.critChance)
+					if (e.shieldPct) stats.startShieldPct = round2((stats.startShieldPct ?? 0) + e.shieldPct)
+					break
+				}
+				// 打气/猛将的荣耀/宝宝学院：按回合数叠加的团队加成（counter 在 augMemo，gameLoop 递增）
+				case 'rampBuff': {
+					const stacks = rampStacks(p, augApi, e)
+					if (stacks <= 0) break
+					if (e.asPct) stats.attackSpeed = round2(stats.attackSpeed * (1 + e.asPct * stacks))
+					if (e.adPct) stats.attackDamage = Math.round(stats.attackDamage * (1 + e.adPct * stacks))
+					if (e.apPct) stats.abilityPower = Math.round(stats.abilityPower * (1 + e.apPct * stacks))
+					if (e.hpFlat) stats.maxHp += e.hpFlat * stacks
 					break
 				}
 				// 水乳交融：与所持纹章同羁绊的友军获得攻速

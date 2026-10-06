@@ -51,6 +51,8 @@ export interface CombatUnitInput {
 	crashTestStun?: number
 	/** 海克斯注入的额外机制标签（正义报复=技能暴击等；装备标签之外的补充） */
 	extraTags?: ItemTag[]
+	/** 海克斯战斗内计时增益（飞升=12秒后伤害增幅/发条增速器=每3秒攻速） */
+	timerBuffs?: { after: number; every?: boolean; damageAmp?: number; asPct?: number }[]
 }
 
 export interface CombatEvent {
@@ -120,7 +122,9 @@ export function simulateCombat(
 				row: toCombatRow(input.pos.row, side === 'A' ? 'defender' : 'attacker'),
 			},
 			hp: input.stats.maxHp,
-			shield: 0,
+			shield: input.stats.startShieldPct
+				? Math.round(input.stats.maxHp * input.stats.startShieldPct)
+				: 0,
 			mana: Math.min(input.stats.initialMana, input.stats.mana),
 			target: null,
 			atkCd: 0.2,
@@ -393,6 +397,20 @@ export function simulateCombat(
 				u.hp += gain
 				u.stats.damageAmp += 1.2
 				emit({ t, type: 'heal', uid: u.uid, value: gain })
+			}
+			// 海克斯战斗内计时增益（飞升系列/发条增速器）
+			if (u.timerBuffs) {
+				for (let ti = 0; ti < u.timerBuffs.length; ti++) {
+					const tb = u.timerBuffs[ti]
+					const fired = u.mem[`timer${ti}`] ?? 0
+					const threshold = tb.after * (fired + 1)
+					if (t < threshold) continue
+					u.mem[`timer${ti}`] = fired + 1
+					if (tb.damageAmp) u.stats.damageAmp += tb.damageAmp
+					if (tb.asPct)
+						u.stats.attackSpeed = Math.round(u.stats.attackSpeed * (1 + tb.asPct) * 100) / 100
+					emit({ t, type: 'buff', uid: u.uid, pos: u.cpos })
+				}
 			}
 			// 激发之匣 HoT 计时（与 DoT 同tick结算）
 			if (u.hotLeft > 0) {

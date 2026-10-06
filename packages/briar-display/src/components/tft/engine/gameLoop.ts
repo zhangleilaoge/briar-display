@@ -49,6 +49,7 @@ import {
 	pickTraitArmory,
 	rollCovenReward,
 	settleAugmentTimers,
+	settleRoundHooks,
 	syncLuxTraits,
 } from './augmentFlow'
 import { carouselPickOrder, genCarouselSlots, grantCarouselUnit } from './carousel'
@@ -192,6 +193,11 @@ export class GameEngine {
 			if (p.gold < SHOP_REFRESH_COST) return false
 			p.gold -= SHOP_REFRESH_COST
 		}
+		// 大刷特刷：每次刷新队伍获得永久生命
+		p.bonusMaxHpFlat += (p.augments ?? [])
+			.flatMap((a) => AUGMENT_BY_API.get(a)?.effects ?? [])
+			.filter((e) => e.kind === 'rerollRamp')
+			.reduce((s, e) => s + (e as { hpFlat: number }).hpFlat, 0)
 		p.shopLocked = false
 		p.ignitedSlots = []
 		p.shop = this.pool.rollShop(p.level, this.rng)
@@ -201,9 +207,28 @@ export class GameEngine {
 	buyXp(pid: number): boolean {
 		const p = this.alive(pid)
 		if (!p || this.econBlocked()) return false
+		const levelBefore = p.level
 		const ok = engineBuyXp(p)
-		if (ok) this.augDeps.checkLevelArmories(p)
+		if (ok) {
+			this.applyLevelUpBonuses(p, levelBefore)
+			this.augDeps.checkLevelArmories(p)
+		}
 		return ok
+	}
+
+	/** 上进心/大买特买：升级时发放生命与免费刷新（等级武器库另行检查） */
+	private applyLevelUpBonuses(p: PlayerState, levelBefore: number): void {
+		if (p.level <= levelBefore) return
+		for (const a of p.augments) {
+			const def = AUGMENT_BY_API.get(a)
+			if (!def) continue
+			for (const e of def.effects) {
+				if (e.kind !== 'levelUpBonus') continue
+				if (e.hp) p.hp += e.hp
+				const rerolls = (e.rerolls ?? 0) + (e.rerollsPerLevel ?? 0) * p.level
+				p.freeRerolls += rerolls
+			}
+		}
 	}
 
 	toggleShopLock(pid: number): void {
@@ -486,9 +511,11 @@ export class GameEngine {
 		if (isAugmentRound(s.stage, s.round)) s.augmentOffers = genAugmentOffers(this.rng, s.players)
 		for (const p of s.players) {
 			if (!p.alive) continue
+			const levelBefore = p.level
 			applyXp(p, PASSIVE_XP)
+			this.applyLevelUpBonuses(p, levelBefore)
 			// 海克斯周期钩子：阶段开始发放 / 金色炊具 / 等级武器库 / 免费刷新
-			applyPlanningAugments(this.augDeps, p, s.round === 1)
+			applyPlanningAugments(this.augDeps, p, s.round === 1, roundType(s.stage, s.round) === 'pvp')
 			if (p.shopLocked) p.shopLocked = false
 			else {
 				p.ignitedSlots = []
@@ -667,6 +694,8 @@ export class GameEngine {
 
 			// 海克斯 PvP 回合倒数（锻炉/打捞桶/蔓延之根）与降血阈值（神力天铸）
 			settleAugmentTimers(this.augDeps, p, rec, hpBefore)
+			// 海克斯回合结算钩子：清晰头脑/纷乱头脑/物尽其用/耐心学习/打气叠层
+			settleRoundHooks(this.augDeps, p, rec.isPvE ? null : won, !rec.isPvE)
 
 			if (p.hp <= 0) {
 				p.hp = 0

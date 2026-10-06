@@ -26,8 +26,15 @@ const augmentEffects = <T>(p: AugmentHolder | undefined, kind: string) =>
 export const interestCap = (p?: AugmentHolder) =>
 	INTEREST_MAX + augmentEffects<{ add: number }>(p, 'interestCap').reduce((s, e) => s + e.add, 0)
 
-export const interestGold = (gold: number, p?: AugmentHolder) =>
-	Math.min(Math.floor(gold / INTEREST_STEP), interestCap(p))
+export const interestGold = (gold: number, p?: AugmentHolder) => {
+	if (
+		(p?.augments ?? []).some((a) =>
+			AUGMENT_BY_API.get(a)?.effects.some((e) => e.kind === 'noInterest'),
+		)
+	)
+		return 0
+	return Math.min(Math.floor(gold / INTEREST_STEP), interestCap(p))
+}
 
 export function streakGold(count: number): number {
 	for (const [threshold, gold] of STREAK_GOLD) {
@@ -87,9 +94,20 @@ export function applyXp(p: PlayerState, amount: number): boolean {
 }
 
 export function buyXp(p: PlayerState): boolean {
-	if (p.gold < BUY_XP_COST || p.level >= MAX_LEVEL) return false
-	p.gold -= BUY_XP_COST
-	applyXp(p, BUY_XP_AMOUNT)
+	// 上进心：购买经验费用折扣（最低 1 金）
+	const discount = (p.augments ?? [])
+		.flatMap((a) => AUGMENT_BY_API.get(a)?.effects ?? [])
+		.filter((e) => e.kind === 'xpCostDiscount')
+		.reduce((s, e) => s + (e as { amount: number }).amount, 0)
+	const cost = Math.max(1, BUY_XP_COST - discount)
+	if (p.gold < cost || p.level >= MAX_LEVEL) return false
+	p.gold -= cost
+	// 升级咯！：每次购买经验值额外获得
+	const bonus = (p.augments ?? [])
+		.flatMap((a) => AUGMENT_BY_API.get(a)?.effects ?? [])
+		.filter((e) => e.kind === 'buyXpBonus')
+		.reduce((s, e) => s + (e as { amount: number }).amount, 0)
+	applyXp(p, BUY_XP_AMOUNT + bonus)
 	return true
 }
 
