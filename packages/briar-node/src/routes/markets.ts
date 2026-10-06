@@ -1,12 +1,15 @@
 import type {
 	ApiResponse,
+	MarketChartResponse,
+	MarketIndexTrendsResponse,
 	MarketOverviewResponse,
 	MarketSectorsResponse,
 	SectorKind,
 } from '@briar/shared'
-import { HTTP_STATUS, isMarketId } from '@briar/shared'
+import { HTTP_STATUS, isChartPeriod, isMarketId } from '@briar/shared'
 import { Hono } from 'hono'
 import { MarketInputError, getOverview, getSectors } from '../services/market/marketService'
+import { getChart, getIndexTrends } from '../services/market/trendService'
 
 /**
  * 全球板块行情代理（免登录 GET，见 config/routes.ts API_PUBLIC_PREFIXES）。
@@ -45,6 +48,54 @@ marketRoutes.get('/:market/sectors', async (c) => {
 		console.error(`[markets] ${market} sectors failed:`, err)
 		return c.json<ApiResponse>(
 			{ success: false, message: '行情源暂时不可用，请稍后再试' },
+			HTTP_STATUS.BAD_GATEWAY,
+		)
+	}
+})
+
+/** GET /:market/index-trends — 该市场大盘指数的当日分时 */
+marketRoutes.get('/:market/index-trends', async (c) => {
+	const market = c.req.param('market')
+	if (!isMarketId(market)) {
+		return c.json<ApiResponse>({ success: false, message: '不支持的市场' }, HTTP_STATUS.BAD_REQUEST)
+	}
+	try {
+		const data = await getIndexTrends(market)
+		return c.json<ApiResponse<MarketIndexTrendsResponse>>({ success: true, data })
+	} catch (err) {
+		console.error(`[markets] ${market} index trends failed:`, err)
+		return c.json<ApiResponse>(
+			{ success: false, message: '分时数据暂时不可用，请稍后再试' },
+			HTTP_STATUS.BAD_GATEWAY,
+		)
+	}
+})
+
+/**
+ * GET /:market/chart?target=index|sector&code=…&period=intraday|5day|day|week|month
+ * 走势面板（分时 / 五日 / 日K / 周K / 月K）；没有数据源的周期返回 available=false 和原因
+ */
+marketRoutes.get('/:market/chart', async (c) => {
+	const market = c.req.param('market')
+	if (!isMarketId(market)) {
+		return c.json<ApiResponse>({ success: false, message: '不支持的市场' }, HTTP_STATUS.BAD_REQUEST)
+	}
+	const target = c.req.query('target') || 'sector'
+	const code = (c.req.query('code') || '').trim()
+	const period = c.req.query('period') || 'intraday'
+	if ((target !== 'index' && target !== 'sector') || !code || !isChartPeriod(period)) {
+		return c.json<ApiResponse>({ success: false, message: '参数错误' }, HTTP_STATUS.BAD_REQUEST)
+	}
+	try {
+		const data = await getChart(market, target, code, period)
+		return c.json<ApiResponse<MarketChartResponse>>({ success: true, data })
+	} catch (err) {
+		if (err instanceof MarketInputError) {
+			return c.json<ApiResponse>({ success: false, message: err.message }, HTTP_STATUS.BAD_REQUEST)
+		}
+		console.error(`[markets] ${market} chart ${target}:${code}:${period} failed:`, err)
+		return c.json<ApiResponse>(
+			{ success: false, message: '走势数据暂时不可用，请稍后再试' },
 			HTTP_STATUS.BAD_GATEWAY,
 		)
 	}

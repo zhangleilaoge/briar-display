@@ -122,3 +122,90 @@ export interface MarketSectorsResponse extends MarketDataMeta {
 	session: MarketSessionInfo
 	quoteTime: number | null
 }
+
+// ───────────────────────── 当日分时 ─────────────────────────
+
+/** 分时点：[毫秒时间戳, 价格] */
+export type TrendPoint = [number, number]
+
+export interface TrendSeries {
+	code: string
+	name: string
+	/** 昨收（基准线）；数据源没给时为 null */
+	prevClose: number | null
+	points: TrendPoint[]
+	/** 该交易日的连续竞价时段（毫秒时间戳区间，按当地时间算，含午休断开） */
+	sessions: [number, number][]
+	/** 交易日（当地日期 YYYY-MM-DD），无数据时为 null */
+	tradeDate: string | null
+	delayMinutes: number
+	source: string
+}
+
+export interface MarketIndexTrendsResponse extends MarketDataMeta {
+	market: MarketId
+	timeZone: string
+	items: TrendSeries[]
+	session: MarketSessionInfo
+}
+
+/** 走势面板周期：分时 / 五日 / 日K / 周K / 月K */
+export type ChartPeriod = 'intraday' | '5day' | 'day' | 'week' | 'month'
+export type ChartTarget = 'index' | 'sector'
+export const CHART_PERIODS: ChartPeriod[] = ['intraday', '5day', 'day', 'week', 'month']
+export const CHART_PERIOD_LABELS: Record<ChartPeriod, string> = {
+	intraday: '分时',
+	'5day': '五日',
+	day: '日K',
+	week: '周K',
+	month: '月K',
+}
+
+export function isChartPeriod(value: string): value is ChartPeriod {
+	return (CHART_PERIODS as string[]).includes(value)
+}
+
+/** 分时点：[毫秒时间戳, 价格, 该分钟成交量（无量数据为 null）] */
+export type MinutePoint = [number, number, number | null]
+
+export interface MinuteDay {
+	/** 当地交易日 YYYY-MM-DD */
+	date: string
+	prevClose: number | null
+	/** 该交易日连续竞价时段（毫秒时间戳区间，含午休断开） */
+	sessions: [number, number][]
+	points: MinutePoint[]
+}
+
+/** K 线：[YYYY-MM-DD, 开, 高, 低, 收, 成交量（无量数据为 null）] */
+export type Candle = [string, number, number, number, number, number | null]
+
+export interface ChartPeriodSupport {
+	period: ChartPeriod
+	available: boolean
+	/** 不可用原因（前端 tab 置灰后的提示） */
+	reason?: string
+}
+
+export interface MarketChartResponse extends MarketDataMeta {
+	market: MarketId
+	target: ChartTarget
+	code: string
+	name: string
+	period: ChartPeriod
+	timeZone: string
+	/** 该标的各周期是否有数据源 */
+	periods: ChartPeriodSupport[]
+	/** 当前周期是否可用；false 时 reason 给出原因 */
+	available: boolean
+	reason?: string
+	/** 分时 / 五日：基准线（五日为首日昨收） */
+	prevClose: number | null
+	/** 分时（1 天）/ 五日（≤5 天），K 线周期为空数组 */
+	days: MinuteDay[]
+	/** 日K / 周K / 月K（前复权），分时周期为空数组 */
+	candles: Candle[]
+	delayMinutes: number
+	source: string
+	session: MarketSessionInfo
+}
