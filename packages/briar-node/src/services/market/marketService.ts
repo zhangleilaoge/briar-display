@@ -161,7 +161,7 @@ export async function getOverview(): Promise<MarketOverviewResponse> {
 	return { markets: MARKET_IDS.map((m) => buildOverviewItem(m, bundles, now)) }
 }
 
-async function getMarketOverview(market: MarketId): Promise<MarketOverviewItem> {
+export async function getMarketOverview(market: MarketId): Promise<MarketOverviewItem> {
 	return buildOverviewItem(market, await getIndexBundles(), Date.now())
 }
 
@@ -303,6 +303,8 @@ async function loadUsSectors(kind: SectorKind): Promise<SectorPayload> {
 	const defs = kind === 'concept' ? US_THEME_ETFS : US_SECTOR_ETFS
 	let rows: QuoteRow[]
 	let source = '腾讯行情 qt（美股 ETF）'
+	// 腾讯美股 ETF 是延迟报价（分时接口 qt[0] 明确标 delay，指数才是 real），按 15 分钟计
+	let delayMinutes = 15
 	try {
 		rows = await fetchTencentQt(defs.map((d) => `us${d.code}`))
 	} catch (err) {
@@ -312,12 +314,13 @@ async function loadUsSectors(kind: SectorKind): Promise<SectorPayload> {
 			defs.flatMap((d) => ['105', '106', '107'].map((m) => `${m}.${d.code}`)),
 		)
 		source = '东方财富 ulist（美股 ETF）'
+		delayMinutes = 0
 	}
 	const byCode = Object.fromEntries(rows.map((r) => [r.code.toUpperCase(), r]))
 	return {
 		items: proxyItems(defs, (d) => byCode[d.code]),
 		source,
-		delayMinutes: 0,
+		delayMinutes,
 		quoteTime: maxQuoteTime(rows),
 	}
 }

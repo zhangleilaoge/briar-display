@@ -17,6 +17,8 @@ interface SectorListProps {
 	sortKey: SectorSortKey
 	amountCurrency: string
 	pageSize?: number
+	/** 点击行（查看当日分时） */
+	onSelect?: (item: SectorItem) => void
 }
 
 /** 板块列表：只显示数据源确实提供的列；当前排序列在手机端也保留 */
@@ -25,6 +27,7 @@ export default function SectorList({
 	sortKey,
 	amountCurrency,
 	pageSize = 100,
+	onSelect,
 }: SectorListProps) {
 	const [showAll, setShowAll] = useState(false)
 	const shown = showAll ? items : items.slice(0, pageSize)
@@ -74,7 +77,18 @@ export default function SectorList({
 				</TableHeader>
 				<TableBody>
 					{shown.map((item, index) => (
-						<TableRow key={item.code}>
+						<TableRow
+							key={item.code}
+							tabIndex={onSelect ? 0 : undefined}
+							className={onSelect ? 'cursor-pointer' : undefined}
+							onClick={() => onSelect?.(item)}
+							onKeyDown={(e) => {
+								if (e.key === 'Enter' || e.key === ' ') {
+									e.preventDefault()
+									onSelect?.(item)
+								}
+							}}
+						>
 							<TableCell className="text-center text-xs text-muted-foreground tabular-nums">
 								{index + 1}
 							</TableCell>

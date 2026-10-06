@@ -1,6 +1,6 @@
 'use client'
 
-import { getMarketOverview, getMarketSectors } from '@/api/markets'
+import { getMarketIndexTrends, getMarketOverview, getMarketSectors } from '@/api/markets'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -15,15 +15,19 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
 	MARKET_LABELS,
 	type MarketId,
+	type MarketIndexTrendsResponse,
 	type MarketOverviewItem,
 	type MarketSectorsResponse,
+	type SectorItem,
 	type SectorKind,
 	type SectorSortKey,
 } from '@briar/shared'
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Loader2, RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { IndexList, SessionBadge, StaleBadge } from './MarketStatusBar'
+import IndexTrendCards from './IndexTrendCards'
+import MarketChartPanel, { type ChartSubject } from './MarketChartPanel'
+import { SessionBadge, StaleBadge } from './MarketStatusBar'
 import MarketsShell from './MarketsShell'
 import SectorHeatmap from './SectorHeatmap'
 import SectorList from './SectorList'
@@ -35,18 +39,20 @@ type ViewMode = 'both' | 'heatmap' | 'list'
 interface SectorsBundle {
 	sectors: MarketSectorsResponse
 	overview: MarketOverviewItem | null
+	trends: MarketIndexTrendsResponse | null
 	fetchedAt: number
 }
 
-/** 指数取不到不影响板块；板块取不到才算失败 */
+/** 指数 / 分时取不到不影响板块；板块取不到才算失败 */
 async function loadBundle(
 	market: MarketId,
 	kind: SectorKind,
 	level?: string,
 ): Promise<SectorsBundle> {
-	const [sectorsRes, overviewRes] = await Promise.allSettled([
+	const [sectorsRes, overviewRes, trendsRes] = await Promise.allSettled([
 		getMarketSectors(market, kind, level),
 		getMarketOverview(),
+		getMarketIndexTrends(market),
 	])
 	if (sectorsRes.status === 'rejected') throw sectorsRes.reason
 	const sectors = unwrap(sectorsRes.value)
@@ -54,7 +60,11 @@ async function loadBundle(
 	if (overviewRes.status === 'fulfilled' && overviewRes.value.success) {
 		overview = overviewRes.value.data?.markets.find((m) => m.market === market) ?? null
 	}
-	return { sectors, overview, fetchedAt: Date.now() }
+	const trends =
+		trendsRes.status === 'fulfilled' && trendsRes.value.success
+			? (trendsRes.value.data ?? null)
+			: null
+	return { sectors, overview, trends, fetchedAt: Date.now() }
 }
 
 export default function MarketSectorsPage({ market }: { market: MarketId }) {
@@ -63,6 +73,17 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 	const [sortKey, setSortKey] = useState<SectorSortKey>('changePct')
 	const [direction, setDirection] = useState<'desc' | 'asc'>('desc')
 	const [view, setView] = useState<ViewMode>('both')
+	const [subject, setSubject] = useState<ChartSubject | null>(null)
+	const openSector = (item: SectorItem) =>
+		setSubject({
+			target: 'sector',
+			code: item.code,
+			name: item.name,
+			subName: item.rawName,
+			price: item.price,
+			changePct: item.changePct,
+			sector: item,
+		})
 
 	const queryLevel = kind === 'industry' ? level : undefined
 	const { data, error, loading, refreshing, refresh } = useMarketPolling(
@@ -130,7 +151,21 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 							</Button>
 						</div>
 						{data?.overview ? (
-							<IndexList indices={data.overview.indices} />
+							<IndexTrendCards
+								market={market}
+								indices={data.overview.indices}
+								trends={data.trends}
+								loading={loading}
+								onSelect={(idx, code) =>
+									setSubject({
+										target: 'index',
+										code,
+										name: idx.name,
+										price: idx.price,
+										changePct: idx.changePct,
+									})
+								}
+							/>
 						) : (
 							!loading && <p className="text-sm text-muted-foreground">指数暂不可用</p>
 						)}
@@ -244,6 +279,7 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 										items={sorted}
 										sortKey={effectiveSort}
 										amountCurrency={sectors.amountCurrency}
+										onSelect={openSector}
 									/>
 								</CardContent>
 							</Card>
@@ -256,14 +292,22 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 										items={sorted}
 										sortKey={effectiveSort}
 										amountCurrency={sectors.amountCurrency}
+										onSelect={openSector}
 									/>
 								</CardContent>
 							</Card>
 						)}
 					</div>
 				)}
+				<MarketChartPanel
+					market={market}
+					subject={subject}
+					amountCurrency={sectors?.amountCurrency ?? ''}
+					onClose={() => setSubject(null)}
+				/>
 				<p className="text-center text-xs text-muted-foreground/80">
-					红涨绿跌 · 交易时段约每 20 秒自动刷新，休市时显示最近收盘数据 · 仅供参考，不构成投资建议
+					红涨绿跌 · 点击指数或板块看分时 / K 线 · 交易时段约每 20
+					秒自动刷新，休市时显示最近收盘数据 · 仅供参考，不构成投资建议
 				</p>
 			</div>
 		</MarketsShell>

@@ -8,6 +8,8 @@ interface SectorHeatmapProps {
 	amountCurrency: string
 	/** 板块太多时只画前 N 个（按当前排序） */
 	limit?: number
+	/** 点击色块（查看当日分时） */
+	onSelect?: (item: SectorItem) => void
 }
 
 /** 涨跌家数：腾讯只有「上涨/总数」，Naver 有上涨/下跌 */
@@ -47,6 +49,7 @@ export default function SectorHeatmap({
 	sortKey,
 	amountCurrency,
 	limit = 60,
+	onSelect,
 }: SectorHeatmapProps) {
 	const scale = useMemo(() => heatScale(items), [items])
 	const shown = items.slice(0, limit)
@@ -61,16 +64,18 @@ export default function SectorHeatmap({
 				{shown.map((item) => {
 					const sub = subtitle(item, sortKey, amountCurrency)
 					return (
-						<div
+						<button
+							type="button"
 							key={item.code}
 							title={tooltip(item, amountCurrency)}
 							style={heatStyle(item.changePct, scale)}
-							className="flex min-h-[68px] flex-col justify-center rounded-lg px-2 py-1.5 text-center shadow-sm transition-transform hover:scale-[1.03]"
+							onClick={() => onSelect?.(item)}
+							className="flex min-h-[68px] min-w-0 flex-col justify-center rounded-lg px-2 py-1.5 text-center shadow-sm transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
 						>
 							<div className="truncate text-xs font-medium sm:text-sm">{item.name}</div>
 							<div className="text-sm font-semibold tabular-nums">{formatPct(item.changePct)}</div>
 							{sub && <div className="truncate text-[10px] opacity-80 sm:text-[11px]">{sub}</div>}
-						</div>
+						</button>
 					)
 				})}
 			</div>

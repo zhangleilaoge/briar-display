@@ -1,4 +1,4 @@
-import type { MarketSessionStatus, SectorItem, SectorSortKey } from '@briar/shared'
+import type { MarketId, MarketSessionStatus, SectorItem, SectorSortKey } from '@briar/shared'
 
 /** 红涨绿跌（所有市场统一） */
 export function changeColorClass(pct: number | null | undefined): string {
@@ -116,4 +116,30 @@ export function heatStyle(
 		backgroundColor: `hsl(${hue} ${saturation}% ${lightness}%)`,
 		color: lightness < 60 ? '#fff' : pct > 0 ? 'hsl(0 70% 28%)' : 'hsl(142 60% 20%)',
 	}
+}
+
+/** 分时横轴/提示用的当地时区简称 */
+export const TZ_LABELS: Record<MarketId, string> = {
+	cn: '北京',
+	hk: '香港',
+	us: '美东',
+	jp: '东京',
+	kr: '首尔',
+}
+
+const zonedFormatters = new Map<string, Intl.DateTimeFormat>()
+
+/** 指定时区的 HH:mm */
+export function formatZonedHm(ts: number, timeZone: string): string {
+	let fmt = zonedFormatters.get(timeZone)
+	if (!fmt) {
+		fmt = new Intl.DateTimeFormat('zh-CN', {
+			timeZone,
+			hourCycle: 'h23',
+			hour: '2-digit',
+			minute: '2-digit',
+		})
+		zonedFormatters.set(timeZone, fmt)
+	}
+	return fmt.format(new Date(ts))
 }
