@@ -49,6 +49,8 @@ interface SectorsBundle {
 	overview: MarketOverviewItem | null
 	trends: MarketIndexTrendsResponse | null
 	fetchedAt: number
+	/** 行业源故障时降级拉到了概念（kind 已切换，用户可点回行业重试） */
+	degraded?: boolean
 }
 
 /** 指数 / 分时取不到不影响板块；板块取不到才算失败 */
@@ -62,8 +64,19 @@ async function loadBundle(
 		getMarketOverview(),
 		getMarketIndexTrends(market),
 	])
-	if (sectorsRes.status === 'rejected') throw sectorsRes.reason
-	const sectors = unwrap(sectorsRes.value)
+	let sectors: MarketSectorsResponse | null = null
+	let degraded = false
+	if (sectorsRes.status === 'rejected' && kind === 'industry') {
+		// 行业源故障（上游封禁/宕机）时降级拉概念：页面保持可用，用户可切回行业重试
+		sectors = await getMarketSectors(market, 'concept')
+			.then(unwrap)
+			.catch(() => null)
+		degraded = sectors !== null
+	}
+	if (!sectors) {
+		if (sectorsRes.status === 'rejected') throw sectorsRes.reason
+		sectors = unwrap(sectorsRes.value)
+	}
 	let overview: MarketOverviewItem | null = null
 	if (overviewRes.status === 'fulfilled' && overviewRes.value.success) {
 		overview = overviewRes.value.data?.markets.find((m) => m.market === market) ?? null
@@ -72,7 +85,7 @@ async function loadBundle(
 		trendsRes.status === 'fulfilled' && trendsRes.value.success
 			? (trendsRes.value.data ?? null)
 			: null
-	return { sectors, overview, trends, fetchedAt: Date.now() }
+	return { sectors, overview, trends, fetchedAt: Date.now(), degraded }
 }
 
 export default function MarketSectorsPage({ market }: { market: MarketId }) {
@@ -95,6 +108,15 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 	useEffect(() => {
 		if (error && data) toast.error(`行情刷新失败：${error}`)
 	}, [error, data])
+
+	// 行业源故障降级到概念：tab 同步到实际拉到的类别，之后轮询按新概念正常走
+	useEffect(() => {
+		if (data?.degraded && data.sectors.kind !== kind) {
+			const label = data.sectors.kinds.find((k) => k.kind === data.sectors.kind)?.label ?? ''
+			toast.error(`行业行情源暂时不可用，已切换到${label}板块`)
+			setKind(data.sectors.kind)
+		}
+	}, [data, kind])
 
 	const sectors = data?.sectors
 	const switching =
