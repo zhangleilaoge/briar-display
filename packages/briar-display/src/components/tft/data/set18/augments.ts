@@ -1808,7 +1808,7 @@ export const AUGMENTS: AugmentDef[] = [
 		'DA_ClearMind',
 		'清晰头脑',
 		'如果在玩家对战回合结束时，你的备战席没有任何弈子，则获得3经验值。',
-		1,
+		2,
 		[{ kind: 'roundEndXp', when: 'benchEmpty', amount: 3 }],
 	),
 	A(
@@ -1825,7 +1825,7 @@ export const AUGMENTS: AugmentDef[] = [
 		'DA_Slammin',
 		'物尽其用',
 		'获得3金币。在每场玩家对战回合结束时，如果你的备战席没有任何装备(消耗品除外)，获得2经验值。',
-		1,
+		2,
 		[
 			{ kind: 'goldNow', amount: 3 },
 			{ kind: 'roundEndXp', when: 'benchNoItems', amount: 2 },
@@ -1835,7 +1835,7 @@ export const AUGMENTS: AugmentDef[] = [
 		'DA_ClutteredMind',
 		'纷乱头脑',
 		'立刻获得4个1费弈子。如果在玩家对战回合结束时，你的备战席已满，则获得3经验值。',
-		1,
+		2,
 		[
 			{ kind: 'randomChamps', cost: 1, count: 4 },
 			{ kind: 'roundEndXp', when: 'benchFull', amount: 3 },
@@ -1845,14 +1845,14 @@ export const AUGMENTS: AugmentDef[] = [
 		'DA_WorththeWait',
 		'值得等待',
 		'获得1个随机1费弈子。每回合开始时都会获得该弈子的又一个1星复制体，持续至本局游戏结束。',
-		1,
+		2,
 		[{ kind: 'worthTheWait', cost: 1, copies: 1 }],
 	),
 	A(
 		'DA_PatientStudy',
 		'耐心学习',
 		'在玩家对战回合后，如果你赢了则获得3经验值，如果你输了则获得2经验值。',
-		1,
+		2,
 		[{ kind: 'combatResultXp', win: 3, lose: 2 }],
 	),
 	A('DA_MakeshiftArmorII', '应急护甲 II', '没有携带任何装备的弈子获得50护甲和魔抗。', 2, [
@@ -1876,7 +1876,7 @@ export const AUGMENTS: AugmentDef[] = [
 		'TFT9_PumpingUp',
 		'打气 I',
 		'你的队伍获得6%攻击速度。在之后的每个回合，他们额外获得0.5%攻击速度。',
-		2,
+		1,
 		[{ kind: 'rampBuff', per: 'round', asPct: 0.005, initialStacks: 12 }],
 	),
 	A(
@@ -1908,14 +1908,14 @@ export const AUGMENTS: AugmentDef[] = [
 		'DA_GoingLong',
 		'遥遥领先',
 		'你不再获得利息。立刻获得10金币。在每场玩家对战后，获得4经验值。利息是你每储存10金币时获得的额外金币。',
-		2,
+		3,
 		[{ kind: 'goldNow', amount: 10 }, { kind: 'noInterest' }, { kind: 'roundStartXp', amount: 4 }],
 	),
 	A(
 		'DA_UpwardMobility',
 		'上进心',
 		'购买经验值的费用减少1。每当你升级时，获得2生命值和2次刷新。',
-		2,
+		3,
 		[
 			{ kind: 'xpCostDiscount', amount: 1 },
 			{ kind: 'levelUpBonus', hp: 2, rerolls: 2 },
@@ -1925,7 +1925,7 @@ export const AUGMENTS: AugmentDef[] = [
 		'DA_ShoppingSpree',
 		'大买特买',
 		'在你升级时，获得相当于你等级数+1的商店刷新次数。获得6金币。',
-		2,
+		3,
 		[
 			{ kind: 'goldNow', amount: 6 },
 			{ kind: 'levelUpBonus', rerolls: 1, rerollsPerLevel: 1 },
@@ -1938,7 +1938,7 @@ export const AUGMENTS: AugmentDef[] = [
 		'DA_BandOfThievesII',
 		'窃贼帮派 II',
 		'获得2个【窃贼手套】。在5场玩家对战回合后，获得另一个。',
-		2,
+		3,
 		[
 			{ kind: 'namedItems', apiNames: ['DA_ThiefsGloves', 'DA_ThiefsGloves'] },
 			{ kind: 'delayRandom', rounds: 5, items: ['DA_ThiefsGloves'] },
@@ -1976,28 +1976,28 @@ export const AUGMENTS: AugmentDef[] = [
 		'TFT_Augment_TitanicTitan',
 		'巨型泰坦',
 		'使你的当前和最大玩家生命值都提升25。你会在选秀中更早被放出，但速度要慢得多。',
-		2,
+		1,
 		[{ kind: 'playerHp', amount: 25 }],
 	),
 	A(
 		'DA_FindYourCenter',
 		'C位的觉悟',
 		'战斗开始时，位于棋盘中心的那个己方弈子获得15%伤害增幅和25%最大生命值。',
-		2,
+		1,
 		[{ kind: 'condBuff', when: 'frontCenter', damageAmp: 0.15, hpPct: 0.25 }],
 	),
 	A(
 		'DA_TwinGuardians',
 		'双子守护神',
 		'如果你的第一排有且只有2名友军，为他们提供100生命值、35护甲和35魔法抗性。',
-		2,
+		1,
 		[{ kind: 'condBuff', when: 'frontRowOnly', frontCount: 2, hpFlat: 100, armor: 35, mr: 35 }],
 	),
 	A(
 		'DA_WorththeWaitII',
 		'值得等待 II',
 		'获得1个随机2费弈子的2个1星复制体。每回合开始时都会获得该弈子的又一个1星复制体，持续至本局游戏结束。',
-		2,
+		3,
 		[{ kind: 'worthTheWait', cost: 2, copies: 2 }],
 	),
 	A(
@@ -2011,7 +2011,7 @@ export const AUGMENTS: AugmentDef[] = [
 		'DA_JeweledLotus_I',
 		'珠光莲花 I',
 		'你的队伍获得10%暴击几率和技能暴击。【技能暴击】：技能伤害可以造成暴击。',
-		3,
+		2,
 		[{ kind: 'teamBuff', critChance: 0.1, abilityCrit: true }],
 	),
 	A(
@@ -2062,7 +2062,7 @@ export const AUGMENTS: AugmentDef[] = [
 	A('DA_PartialAscension', '部分飞升', '在战斗开始12秒后，你的单位们获得20%伤害增幅。', 1, [
 		{ kind: 'combatTimer', after: 12, damageAmp: 0.2 },
 	]),
-	A('DA_Ascension', '飞升', '在战斗开始12秒后，你的单位们获得35%伤害增幅。', 1, [
+	A('DA_Ascension', '飞升', '在战斗开始12秒后，你的单位们获得35%伤害增幅。', 2, [
 		{ kind: 'combatTimer', after: 12, damageAmp: 0.35 },
 	]),
 	A(
