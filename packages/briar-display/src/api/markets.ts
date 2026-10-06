@@ -7,7 +7,13 @@ import type {
 	MarketIndexTrendsResponse,
 	MarketOverviewResponse,
 	MarketSectorsResponse,
+	SectorConstituentsResponse,
 	SectorKind,
+	StockQuoteResponse,
+	StockQuotesResponse,
+	StockRef,
+	StockSearchResponse,
+	WatchlistItem,
 } from '@briar/shared'
 import { apiClient } from './request'
 
@@ -50,6 +56,66 @@ export const getMarketChart = async (
 			params: { target, code, period },
 			timeout: 20_000,
 		},
+	)
+	return response.data
+}
+
+/** 板块成分股（没有数据源的板块 available=false） */
+export const getSectorConstituents = async (market: MarketId, code: string, kind: SectorKind) => {
+	const response = await apiClient.get<ApiResponse<SectorConstituentsResponse>>(
+		`/markets/${market}/constituents`,
+		{ params: { code, kind }, timeout: 20_000 },
+	)
+	return response.data
+}
+
+/** 个股报价 */
+export const getStockQuote = async (market: MarketId, code: string) => {
+	const response = await apiClient.get<ApiResponse<StockQuoteResponse>>(
+		`/markets/${market}/stock`,
+		{
+			params: { code },
+			timeout: 20_000,
+		},
+	)
+	return response.data
+}
+
+/** 自选列表批量报价 */
+export const getStockQuotes = async (refs: Pick<StockRef, 'market' | 'code'>[]) => {
+	const response = await apiClient.get<ApiResponse<StockQuotesResponse>>('/markets/quotes', {
+		params: { items: refs.map((r) => `${r.market}:${r.code}`).join(',') },
+		timeout: 20_000,
+	})
+	return response.data
+}
+
+/** 跨市场搜索个股（后端代理 + 缓存） */
+export const searchStocks = async (q: string, signal?: AbortSignal) => {
+	const response = await apiClient.get<ApiResponse<StockSearchResponse>>('/markets/search', {
+		params: { q },
+		timeout: 10_000,
+		signal,
+	})
+	return response.data
+}
+
+/** 自选（登录用户，服务端按账号存） */
+export const getWatchlist = async () => {
+	const response = await apiClient.get<ApiResponse<WatchlistItem[]>>('/markets/watchlist')
+	return response.data
+}
+
+export const addWatchlist = async (items: StockRef[]) => {
+	const response = await apiClient.post<ApiResponse<WatchlistItem[]>>('/markets/watchlist', {
+		items,
+	})
+	return response.data
+}
+
+export const removeWatchlist = async (market: MarketId, code: string) => {
+	const response = await apiClient.delete<ApiResponse<WatchlistItem[]>>(
+		`/markets/watchlist/${market}/${encodeURIComponent(code)}`,
 	)
 	return response.data
 }

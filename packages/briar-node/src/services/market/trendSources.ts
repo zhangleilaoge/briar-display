@@ -378,29 +378,40 @@ export function parseNaverDomesticMinute(json: NaverPricePoint[]): RawTrend {
 	}
 }
 
-/** 韩国指数：KOSPI / KOSDAQ / KPI200（实时，昨收由调用方从指数报价补）；带起止时间可取多日 */
+/**
+ * 韩国指数 KOSPI / KOSDAQ / KPI200（kind=index）或个股 005930（kind=item）分钟线，实时；
+ * 昨收由调用方从报价补；带起止时间可取多日。个股含盘前/盘后（NXT 08:00–20:00），由调用方按交易时段裁剪
+ */
 export async function fetchNaverDomesticIndexMinute(
 	code: string,
 	range?: { start: string; end: string },
+	kind: 'index' | 'item' = 'index',
 ): Promise<RawTrend> {
 	const query = range ? `?startDateTime=${range.start}&endDateTime=${range.end}` : ''
 	const json = await fetchJson<NaverPricePoint[]>(
-		`https://api.stock.naver.com/chart/domestic/index/${encodeURIComponent(code)}/minute${query}`,
+		`https://api.stock.naver.com/chart/domestic/${kind}/${encodeURIComponent(code)}/minute${query}`,
 		{ headers: NAVER_HEADERS, retries: 1 },
 	)
 	return parseNaverDomesticMinute(json)
 }
 
-/** 韩国指数近 n 个交易日分时（多取几天，前一天最后一笔作为次日昨收） */
-export async function fetchNaverDomesticIndexDays(code: string, n: number): Promise<RawMultiDay> {
+/** 韩国指数 / 个股近 n 个交易日分时（多取几天，前一天最后一笔作为次日昨收） */
+export async function fetchNaverDomesticIndexDays(
+	code: string,
+	n: number,
+	kind: 'index' | 'item' = 'index',
+	clip?: (points: MinutePoint[]) => MinutePoint[],
+): Promise<RawMultiDay> {
 	const now = Date.now()
 	const today = localParts(now, 'Asia/Seoul').dateKey
 	const from = localParts(now - (n * 2 + 6) * 86_400_000, 'Asia/Seoul').dateKey
-	const raw = await fetchNaverDomesticIndexMinute(code, {
-		start: `${yyyymmdd(from)}000000`,
-		end: `${yyyymmdd(today)}235959`,
-	})
-	const days = chainPrevClose(groupByDay(raw.points, 'Asia/Seoul'), n)
+	const raw = await fetchNaverDomesticIndexMinute(
+		code,
+		{ start: `${yyyymmdd(from)}000000`, end: `${yyyymmdd(today)}235959` },
+		kind,
+	)
+	const points = clip ? clip(raw.points) : raw.points
+	const days = chainPrevClose(groupByDay(points, 'Asia/Seoul'), n)
 	if (days.length === 0) throw new Error(`naver minute days ${code}: empty`)
 	return { name: null, days, delayMinutes: 0, source: 'Naver 证券分时' }
 }

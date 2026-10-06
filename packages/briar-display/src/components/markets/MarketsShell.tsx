@@ -20,7 +20,7 @@ interface MarketsShellProps {
 	market?: MarketId
 }
 
-/** 全球板块页面外壳：与工具箱同款玻璃顶栏 + 浅蓝渐变底，详情页带市场切换 tab */
+/** 行情页面外壳：与工具箱同款玻璃顶栏 + 浅蓝渐变底，详情页带市场切换 tab */
 export default function MarketsShell({ children, market }: MarketsShellProps) {
 	const tabs = market ? (
 		<Tabs
@@ -53,9 +53,9 @@ export default function MarketsShell({ children, market }: MarketsShellProps) {
 									<BreadcrumbSeparator />
 									<BreadcrumbItem>
 										{market ? (
-											<BreadcrumbLink href="/briar/markets">全球板块</BreadcrumbLink>
+											<BreadcrumbLink href="/briar/markets">行情</BreadcrumbLink>
 										) : (
-											<BreadcrumbPage>全球板块</BreadcrumbPage>
+											<BreadcrumbPage>行情</BreadcrumbPage>
 										)}
 									</BreadcrumbItem>
 									{market && (

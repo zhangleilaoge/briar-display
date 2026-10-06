@@ -25,11 +25,12 @@ import { ArrowDownWideNarrow, ArrowUpNarrowWide, Loader2, RefreshCw } from 'luci
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import IndexTrendCards from './IndexTrendCards'
-import MarketChartPanel, { type ChartSubject } from './MarketChartPanel'
+import MarketDetailDialog from './MarketDetailDialog'
 import { SessionBadge, StaleBadge } from './MarketStatusBar'
 import MarketsShell from './MarketsShell'
 import SectorHeatmap from './SectorHeatmap'
 import SectorList from './SectorList'
+import type { DetailView } from './dialogStack'
 import {
 	type ListSortKey,
 	SORT_LABELS,
@@ -81,17 +82,7 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 	const [sortKey, setSortKey] = useState<ListSortKey>('changePct')
 	const [direction, setDirection] = useState<SortDirection>('desc')
 	const [view, setView] = useState<ViewMode>('both')
-	const [subject, setSubject] = useState<ChartSubject | null>(null)
-	const openSector = (item: SectorItem) =>
-		setSubject({
-			target: 'sector',
-			code: item.code,
-			name: item.name,
-			subName: item.rawName,
-			price: item.price,
-			changePct: item.changePct,
-			sector: item,
-		})
+	const [detail, setDetail] = useState<DetailView | null>(null)
 
 	const queryLevel = kind === 'industry' ? level : undefined
 	const { data, error, loading, refreshing, refresh } = useMarketPolling(
@@ -124,6 +115,22 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 		[sectors, effectiveSort, direction],
 	)
 	const kindOption = sectors?.kinds.find((k) => k.kind === kind)
+	const openSector = (item: SectorItem) =>
+		setDetail({
+			kind: 'chart',
+			market,
+			amountCurrency: sectors?.amountCurrency ?? '',
+			sectorKind: sectors?.kind ?? kind,
+			subject: {
+				target: 'sector',
+				code: item.code,
+				name: item.name,
+				subName: item.rawName,
+				price: item.price,
+				changePct: item.changePct,
+				sector: item,
+			},
+		})
 
 	return (
 		<MarketsShell market={market}>
@@ -175,12 +182,16 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 								trends={data.trends}
 								loading={loading}
 								onSelect={(idx, code) =>
-									setSubject({
-										target: 'index',
-										code,
-										name: idx.name,
-										price: idx.price,
-										changePct: idx.changePct,
+									setDetail({
+										kind: 'chart',
+										market,
+										subject: {
+											target: 'index',
+											code,
+											name: idx.name,
+											price: idx.price,
+											changePct: idx.changePct,
+										},
 									})
 								}
 							/>
@@ -326,14 +337,9 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 						)}
 					</div>
 				)}
-				<MarketChartPanel
-					market={market}
-					subject={subject}
-					amountCurrency={sectors?.amountCurrency ?? ''}
-					onClose={() => setSubject(null)}
-				/>
+				<MarketDetailDialog view={detail} onClose={() => setDetail(null)} />
 				<p className="text-center text-xs text-muted-foreground/80">
-					红涨绿跌 · 点击指数或板块看分时 / K 线 · 交易时段约每 20
+					红涨绿跌 · 点击指数或板块看分时 / K 线，板块里可看成分股和个股详情 · 交易时段约每 20
 					秒自动刷新，休市时显示最近收盘数据 · 仅供参考，不构成投资建议
 				</p>
 			</div>

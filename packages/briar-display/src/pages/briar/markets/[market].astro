@@ -10,6 +10,6 @@ export function getStaticPaths() {
 const market = Astro.params.market as MarketId
 ---
 
-<Layout title={`${MARKET_LABELS[market]}板块 - 全球板块`}>
+<Layout title={`${MARKET_LABELS[market]}板块 - 行情`}>
 	<MarketSectorsPage client:load market={market} />
 </Layout>
