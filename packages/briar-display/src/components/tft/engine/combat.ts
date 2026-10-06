@@ -53,6 +53,8 @@ export interface CombatUnitInput {
 	extraTags?: ItemTag[]
 	/** 海克斯战斗内计时增益（飞升=12秒后伤害增幅/发条增速器=每3秒攻速） */
 	timerBuffs?: { after: number; every?: boolean; damageAmp?: number; asPct?: number }[]
+	/** 治疗法球：敌方弈子阵亡时治疗最近友军（每方至多触发一次/次阵亡） */
+	deathHeal?: number
 }
 
 export interface CombatEvent {
@@ -170,6 +172,18 @@ export function simulateCombat(
 	const firstDeath: Record<'A' | 'B', string | null> = { A: null, B: null }
 	const recordDeath = (u: CombatUnit) => {
 		if (!firstDeath[u.side]) firstDeath[u.side] = u.apiName
+		// 治疗法球：敌方阵亡时为持有方治疗最近的友军（每方一次）
+		for (const side of ['A', 'B'] as const) {
+			if (side === u.side) continue
+			const healer = units.find((x) => x.alive && x.side === side && x.deathHeal)
+			if (!healer?.deathHeal) continue
+			const allies = units.filter((x) => x.alive && x.side === side)
+			if (allies.length === 0) continue
+			const nearest = [...allies].sort(
+				(a, b) => hexDistance(a.cpos, u.cpos) - hexDistance(b.cpos, u.cpos),
+			)[0]
+			healUnit(nearest, nearest, healer.deathHeal, t)
+		}
 	}
 
 	const emit = (e: CombatEvent) => {

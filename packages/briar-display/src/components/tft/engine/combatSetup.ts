@@ -93,6 +93,11 @@ export function toCombatInput(p: PlayerState, stage: number, rng?: Rng): CombatU
 			traitAmp,
 			extraTags,
 			timerBuffs: timerBuffs.length > 0 ? timerBuffs : undefined,
+			// 治疗法球：旗帜挂在首个单位上（recordDeath 按方结算一次）
+			deathHeal:
+				b.uid === p.board[0]?.uid && augEffects.some((e) => e.kind === 'deathHeal')
+					? augEffects.reduce((sum, e) => sum + (e.kind === 'deathHeal' ? e.amount : 0), 0)
+					: undefined,
 			dummyGold:
 				isDummy && dummyGold?.kind === 'dummyGold'
 					? [dummyGold.perSeconds, dummyGold.amount]

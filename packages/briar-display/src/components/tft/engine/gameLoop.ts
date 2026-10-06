@@ -32,6 +32,7 @@ import { COVEN_TIERS } from '../data/set18/coven'
 import { MONSTER_BY_API } from '../data/set18/monsters'
 import { aiTakeTurn, autoDeploy } from './ai'
 import {
+	CRAFTABLE_POOL,
 	checkLevelArmories,
 	grantRandomEmblem,
 	grantStageEmblemChamp,
@@ -694,8 +695,35 @@ export class GameEngine {
 
 			// 海克斯 PvP 回合倒数（锻炉/打捞桶/蔓延之根）与降血阈值（神力天铸）
 			settleAugmentTimers(this.augDeps, p, rec, hpBefore)
-			// 海克斯回合结算钩子：清晰头脑/纷乱头脑/物尽其用/耐心学习/打气叠层
-			settleRoundHooks(this.augDeps, p, rec.isPvE ? null : won, !rec.isPvE)
+			// 海克斯回合结算钩子：清晰头脑/纷乱头脑/物尽其用/耐心学习/打气叠层/战争财宝
+			const enemyTotal = rec.playerSide === 'A' ? rec.inputsB.length : rec.inputsA.length
+			const enemyLeft = rec.playerSide === 'A' ? r.survivorsB : r.survivorsA
+			settleRoundHooks(this.augDeps, p, rec.isPvE ? null : won, !rec.isPvE, enemyTotal - enemyLeft)
+
+			// 征战之路：对敌方小小英雄造成伤害累计，达标发宝箱
+			if (!rec.isPvE && !rec.isGhost && won) {
+				const dealt = playerDamage(s.stage, oppSurvivors)
+				for (const a of p.augments) {
+					const def = AUGMENT_BY_API.get(a)
+					if (!def) continue
+					for (const e of def.effects) {
+						if (e.kind !== 'playerDamageQuest' || p.augMemo[`${a}.done`]) continue
+						const cur = Number(p.augMemo[`${a}.pd`] ?? 0) + dealt
+						if (cur < e.target) {
+							p.augMemo[`${a}.pd`] = cur
+							continue
+						}
+						p.augMemo[`${a}.done`] = 1
+						const highCost = CHAMPIONS.filter((c) => c.cost >= e.minCost)
+						for (let i = 0; i < e.champCount && highCost.length > 0; i++) {
+							this.augDeps.grantChampUnit(p, highCost[this.rng.int(highCost.length)].apiName)
+						}
+						for (let i = 0; i < e.itemCount && p.itemTray.length < ITEM_TRAY_SIZE; i++) {
+							p.itemTray.push(CRAFTABLE_POOL[this.rng.int(CRAFTABLE_POOL.length)].apiName)
+						}
+					}
+				}
+			}
 
 			if (p.hp <= 0) {
 				p.hp = 0
