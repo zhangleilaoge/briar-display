@@ -14,3 +14,6 @@ export * from './constants'
 
 // 导出权限系统
 export * from './permissions'
+
+// 导出全球板块（市场定义 + 接口类型）
+export * from './markets'

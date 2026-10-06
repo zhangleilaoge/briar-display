@@ -57,6 +57,7 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 | :--- | :--- |
 | [docs/files.md](docs/files.md) | 文件管理（双 bucket、签名 URL、分片直传、隐私空间、封禁扫描） |
 | [docs/media.md](docs/media.md) | 媒体解析 / 磁力查询（小红书/抖音/公众号/B站/X 解析细节、缓存与历史） |
+| [docs/global-sectors.md](docs/global-sectors.md) | 全球板块（五市场板块行情源、实时/延迟、缓存与代理） |
 | [docs/terminal.md](docs/terminal.md) | SSH 控制台（WS 桥接、设备授权、审计） |
 | [docs/blog.md](docs/blog.md) | 个人博客（content collection、超管编辑预览） |
 | [docs/deploy.md](docs/deploy.md) | 部署细节（触发范围、手动兜底、PM2 自启、GitHub Secrets） |
