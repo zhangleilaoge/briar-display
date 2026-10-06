@@ -1,12 +1,14 @@
+// 游戏主循环：阶段编排（遭遇/选秀/备战/战斗）与玩家操作入口
+// 子系统：armory（武器库）/ augmentFlow（海克斯）/ carousel（选秀）/ combatSetup（开战装配）/ traitRoundHooks（羁绊回合钩子）/ playerBuffs（团队增益）
 import {
 	BENCH_SIZE,
-	CAROUSEL_COST_WEIGHTS,
 	CAROUSEL_PICK_SECONDS,
 	COMBAT_BUFFER_SECONDS,
 	ENCOUNTER_SECONDS,
 	ITEM_TRAY_SIZE,
 	PASSIVE_XP,
 	PLANNING_SECONDS,
+	PVE_BOSS_CONSUMABLE_ODDS,
 	PVE_DROPS,
 	SHOP_REFRESH_COST,
 	SHOP_SIZE,
@@ -16,69 +18,58 @@ import {
 	isAugmentRound,
 	roundType,
 } from '../data/rules'
-import { CHAMPIONS, ITEM_COMPONENTS } from '../data/set18'
-import { AUGMENTS, AUGMENT_BY_API, ENCOUNTERS } from '../data/set18/augments'
-import { MONSTER_BY_API, pveStatScale, pveWaveFor } from '../data/set18/monsters'
-import { aiTakeTurn } from './ai'
-import { type CombatResult, type CombatUnitInput, simulateCombat } from './combat'
+import { CHAMPIONS, CHAMPION_BY_API, ITEM_BY_API, ITEM_COMPONENTS } from '../data/set18'
+import { AUGMENT_BY_API, ENCOUNTERS } from '../data/set18/augments'
+import {
+	CONSUMABLE_ALPHA_MARK,
+	CONSUMABLE_REMOVER,
+	CONSUMABLE_REROLLER,
+	isConsumable,
+} from '../data/set18/consumables'
+import { COVEN_TIERS } from '../data/set18/coven'
+import { MONSTER_BY_API } from '../data/set18/monsters'
+import { aiTakeTurn, autoDeploy } from './ai'
+import {
+	checkLevelArmories,
+	grantRandomEmblem,
+	grantStageEmblemChamp,
+	openArmory,
+	pickArmory as pickArmoryOffer,
+	rerollPoolFor,
+} from './armory'
+import {
+	type AugmentDeps,
+	applyAugment,
+	applyPlanningAugments,
+	genAugmentOffers,
+	grantCovenReward,
+	onBuyBlossom,
+	pickTraitArmory,
+	rollCovenReward,
+	settleAugmentTimers,
+	syncLuxTraits,
+} from './augmentFlow'
+import { carouselPickOrder, genCarouselSlots, grantCarouselUnit } from './carousel'
+import { simulateCombat } from './combat'
+import { buildPveWave, toCombatInput } from './combatSetup'
 import { applyXp, buyXp as engineBuyXp, playerDamage, roundIncome } from './economy'
 import { CardPool } from './pool'
 import { type Rng, makeRng } from './rng'
-import { TRAIT_EFFECTS, applyTraitStats } from './traitEffects'
+import { applyTraitShopEffects, settleCombatMetrics, settleTraitCombat } from './traitRoundHooks'
 import { computeActiveTraits } from './traits'
-import type { Phase, PlayerState } from './types'
+import type { GameState, PlayerState } from './types'
 import {
 	addToBench,
 	costOf,
 	createUnit,
+	dummiesCanEquip,
 	equipItem as engineEquipItem,
 	sellUnit as engineSellUnit,
+	findUnit,
 	moveToBench,
 	placeOnBoard,
 	resetUidSeq,
-	unitStats,
 } from './units'
-
-export interface CarouselSlot {
-	apiName: string
-	item: string
-}
-
-export interface CombatRecord {
-	opponentId: number
-	opponentName: string
-	isGhost: boolean
-	isPvE: boolean
-	/** 本玩家视角的 side */
-	playerSide: 'A' | 'B'
-	result: CombatResult
-	/** 开战时的双方输入（UI 回放初始帧） */
-	inputsA: CombatUnitInput[]
-	inputsB: CombatUnitInput[]
-}
-
-export interface GameState {
-	phase: Phase
-	stage: number
-	round: number
-	gameTime: number
-	phaseEndsAt: number
-	players: PlayerState[]
-	winnerId: number | null
-	carousel: CarouselSlot[]
-	carouselQueue: number[]
-	currentPickerIndex: number
-	pickEndsAt: number
-	combats: Map<number, CombatRecord>
-	/** 战斗阶段开始的 gameTime（UI 回放锚点） */
-	combatStartAt: number
-	/** 每个 bot 下一次行动的 gameTime */
-	botActAt: Map<number, number>
-	/** PvE 回合备战阶段预生成并展示的野怪波次（开战时直接使用同一波） */
-	pveWave: CombatUnitInput[] | null
-	/** 海克斯/遭遇三选一：pid → 候选 apiName；选完即从 map 删除 */
-	augmentOffers: Map<number, string[]>
-}
 
 const BOT_NAMES = ['青钢影', '发条魔灵', '皮城女警', '暴走萝莉', '潮汐海灵', '暮光之眼', '荆棘之兴']
 
@@ -86,6 +77,7 @@ export class GameEngine {
 	state: GameState
 	private pool: CardPool
 	private rng: Rng
+	private augDeps: AugmentDeps
 
 	constructor(seed = Date.now()) {
 		resetUidSeq()
@@ -111,6 +103,16 @@ export class GameEngine {
 			lastOpponentId: null,
 			augments: [],
 			freeRerolls: 0,
+			ignitedSlots: [],
+			riftbeastCombats: 0,
+			covenEssence: -1,
+			covenCashouts: 0,
+			bonusMaxHpFlat: 0,
+			maokaiStacks: 0,
+			rivalTakedowns: 0,
+			armory: null,
+			armoryQueue: [],
+			augMemo: {},
 		}))
 		this.state = {
 			phase: 'encounter',
@@ -129,6 +131,29 @@ export class GameEngine {
 			botActAt: new Map(),
 			pveWave: null,
 			augmentOffers: new Map(),
+			encounterApi: null,
+		}
+		this.augDeps = {
+			rng: this.rng,
+			pool: this.pool,
+			grantChampUnit: (p, champApi, star) => this.grantChampUnit(p, champApi, star),
+			openArmory: (p, pool, options, source, chain) =>
+				openArmory(this.rng, p, pool, options, source, chain),
+			grantRandomEmblem: (p, memoKey) => grantRandomEmblem(this.rng, p, memoKey),
+			grantStageEmblemChamp: (p, augApi, gold) =>
+				grantStageEmblemChamp(this.rng, p, this.state.stage, augApi, gold, (api) =>
+					this.grantChampUnit(p, api),
+				),
+			checkLevelArmories: (p) => checkLevelArmories(this.rng, p),
+		}
+		// 开局必得一个随机 1 费棋子（官方规则）
+		const cost1 = CHAMPIONS.filter((c) => c.cost === 1)
+		for (const p of players) {
+			for (let tries = 0; tries < 10; tries++) {
+				const c = cost1[this.rng.int(cost1.length)]
+				if (this.pool.take(c.apiName) && addToBench(p, createUnit(c.apiName))) break
+				this.pool.addBack(c.apiName, 1)
+			}
 		}
 		this.genEncounter()
 	}
@@ -149,7 +174,10 @@ export class GameEngine {
 		if (!this.pool.take(apiName)) return false
 		p.gold -= cost
 		p.shop[slot] = null
+		p.ignitedSlots = p.ignitedSlots.filter((s) => s !== slot)
 		addToBench(p, createUnit(apiName))
+		onBuyBlossom(p, apiName)
+		syncLuxTraits(this.augDeps, p)
 		return true
 	}
 
@@ -162,6 +190,7 @@ export class GameEngine {
 			p.gold -= SHOP_REFRESH_COST
 		}
 		p.shopLocked = false
+		p.ignitedSlots = []
 		p.shop = this.pool.rollShop(p.level, this.rng)
 		return true
 	}
@@ -169,7 +198,9 @@ export class GameEngine {
 	buyXp(pid: number): boolean {
 		const p = this.alive(pid)
 		if (!p || this.econBlocked()) return false
-		return engineBuyXp(p)
+		const ok = engineBuyXp(p)
+		if (ok) this.augDeps.checkLevelArmories(p)
+		return ok
 	}
 
 	toggleShopLock(pid: number): void {
@@ -194,6 +225,20 @@ export class GameEngine {
 		if (!p || this.econBlocked()) return false
 		const f = p.board.find((u) => u.uid === uid) ?? p.bench.find((u) => u?.uid === uid)
 		if (!f) return false
+		// 训练假人不可出售（官方规则）
+		if (MONSTER_BY_API.has(f.apiName)) return false
+		// 打捞桶：携带的成装拆分成基础装备（冠冕系/纹章除外）
+		const hasSalvage = p.augments.some((a) =>
+			AUGMENT_BY_API.get(a)?.effects.some((e) => e.kind === 'salvageSplit'),
+		)
+		if (hasSalvage) {
+			f.items = f.items.flatMap((it) => {
+				const def = ITEM_BY_API.get(it)
+				return def && def.composition.length === 2 && !def.grantsTrait && !it.includes('Tactician')
+					? def.composition
+					: [it]
+			})
+		}
 		const gold = engineSellUnit(p, uid)
 		if (gold === null) return false
 		this.pool.addBack(f.apiName, 3 ** (f.star - 1))
@@ -203,7 +248,39 @@ export class GameEngine {
 	equipItem(pid: number, uid: string, itemApi: string): boolean {
 		const p = this.alive(pid)
 		if (!p || this.state.phase !== 'planning') return false
+		if (isConsumable(itemApi)) return this.useConsumable(p, uid, itemApi)
 		return engineEquipItem(p, uid, itemApi)
+	}
+
+	/** 消耗品：阿尔法印记给峡谷野怪独特增益；拆卸器取下全部装备回装备栏；重铸器取下并同类随机变形（冠冕/腐化装不进重铸池）；假人默认不可携带 */
+	private useConsumable(p: PlayerState, uid: string, itemApi: string): boolean {
+		const f = findUnit(p, uid)
+		if (!f) return false
+		if (MONSTER_BY_API.has(f.unit.apiName) && !dummiesCanEquip(p)) return false
+		const ti = p.itemTray.indexOf(itemApi)
+		if (ti < 0) return false
+		if (itemApi === CONSUMABLE_ALPHA_MARK) {
+			if (f.unit.alphaMark) return false
+			if (!CHAMPION_BY_API.get(f.unit.apiName)?.traits.includes('DA_Riftbeast18')) return false
+			p.itemTray.splice(ti, 1)
+			f.unit.alphaMark = true
+			return true
+		}
+		if (f.unit.items.length === 0) return false
+		p.itemTray.splice(ti, 1)
+		const pushTray = (api: string) => {
+			if (p.itemTray.length < ITEM_TRAY_SIZE) p.itemTray.push(api)
+		}
+		if (itemApi === CONSUMABLE_REMOVER) {
+			for (const it of f.unit.items) pushTray(it)
+		} else {
+			for (const it of f.unit.items) {
+				const pool = rerollPoolFor(it)
+				pushTray(pool[this.rng.int(pool.length)])
+			}
+		}
+		f.unit.items = []
+		return true
 	}
 
 	pickCarousel(pid: number, slotIndex: number): boolean {
@@ -213,9 +290,34 @@ export class GameEngine {
 		const slot = s.carousel[slotIndex]
 		if (!slot) return false
 		s.carousel.splice(slotIndex, 1)
-		this.grantCarouselUnit(pid, slot)
+		grantCarouselUnit(this.pool, s.players[pid], slot)
+		syncLuxTraits(this.augDeps, s.players[pid])
 		this.nextPicker()
 		return true
+	}
+
+	/** 发棋子入备战席（卡池抽干或备战席满时折现），成功返回 uid */
+	private grantChampUnit(p: PlayerState, champApi: string, star = 1): string | null {
+		const copies = 3 ** (star - 1)
+		for (let i = 0; i < copies; i++) {
+			if (!this.pool.take(champApi)) break
+		}
+		const u = createUnit(champApi)
+		u.star = star as typeof u.star
+		if (!addToBench(p, u)) {
+			p.gold += costOf(champApi) * copies
+			return null
+		}
+		syncLuxTraits(this.augDeps, p)
+		return u.uid
+	}
+
+	/** 武器库挑选（羁绊库走创世神拉克丝流程，其余见 armory.ts） */
+	pickArmory(pid: number, itemApi: string): boolean {
+		const p = this.alive(pid)
+		if (!p) return false
+		if (p.armory?.pool === 'trait') return pickTraitArmory(this.augDeps, p, itemApi)
+		return pickArmoryOffer(this.rng, p, itemApi)
 	}
 
 	/** 海克斯/遭遇三选一；encounter 与 augment 回合共用 */
@@ -226,8 +328,21 @@ export class GameEngine {
 		const p = s.players[pid]
 		if (!p?.alive) return false
 		s.augmentOffers.delete(pid)
-		this.applyAugment(p, apiName)
-		if (s.phase === 'encounter' && s.augmentOffers.size === 0) this.advanceRound()
+		applyAugment(this.augDeps, p, apiName)
+		return true
+	}
+
+	/** 魔女精粹兑换：达到当前档位阈值可兑换一次奖励并推进档位 */
+	redeemCoven(pid: number): boolean {
+		const p = this.alive(pid)
+		if (!p || this.econBlocked() || p.covenEssence < 0) return false
+		const tier = COVEN_TIERS[p.covenCashouts]
+		if (!tier || p.covenEssence < tier.essence) return false
+		const reward = rollCovenReward(this.rng, p.covenCashouts)
+		if (!reward) return false
+		p.covenEssence -= tier.essence
+		p.covenCashouts += 1
+		grantCovenReward(this.augDeps, p, reward)
 		return true
 	}
 
@@ -251,42 +366,6 @@ export class GameEngine {
 		}
 	}
 
-	private applyAugment(p: PlayerState, apiName: string): void {
-		const def = AUGMENT_BY_API.get(apiName)
-		if (!def) return
-		p.augments.push(apiName)
-		for (const e of def.effects) {
-			switch (e.kind) {
-				case 'goldNow':
-					p.gold += e.amount
-					break
-				case 'xpNow':
-					applyXp(p, e.amount)
-					break
-				case 'components':
-					for (let i = 0; i < e.count && p.itemTray.length < ITEM_TRAY_SIZE; i++) {
-						p.itemTray.push(ITEM_COMPONENTS[this.rng.int(ITEM_COMPONENTS.length)].apiName)
-					}
-					break
-				case 'unitWithItem': {
-					const pool = CHAMPIONS.filter((c) => c.cost === e.cost)
-					const apiName = pool[this.rng.int(pool.length)].apiName
-					const u = createUnit(apiName)
-					if (p.itemTray.length < ITEM_TRAY_SIZE) {
-						u.items = [ITEM_COMPONENTS[this.rng.int(ITEM_COMPONENTS.length)].apiName]
-					}
-					if (!this.pool.take(apiName) || !addToBench(p, u)) {
-						p.gold += e.cost
-						this.pool.addBack(apiName, 1)
-					}
-					break
-				}
-				default:
-					break
-			}
-		}
-	}
-
 	// ---------- 推进 ----------
 
 	/** dt 为已按倍速缩放后的毫秒 */
@@ -296,17 +375,8 @@ export class GameEngine {
 		s.gameTime += dtMs
 
 		if (s.phase === 'encounter') {
-			// bot 2s 后随机选；超时全部强制随机
-			for (const [pid, offers] of [...s.augmentOffers]) {
-				const p = s.players[pid]
-				if (!p?.isBot) continue
-				if (s.gameTime >= 2000) this.pickAugment(pid, offers[this.rng.int(offers.length)])
-			}
-			if (s.gameTime >= s.phaseEndsAt && s.augmentOffers.size > 0) {
-				for (const [pid, offers] of [...s.augmentOffers]) {
-					this.pickAugment(pid, offers[this.rng.int(offers.length)])
-				}
-			}
+			// 遭遇为公告阶段：无选择，倒计时结束直接进 1-2
+			if (s.gameTime >= s.phaseEndsAt) this.advanceRound()
 			return
 		}
 
@@ -336,6 +406,7 @@ export class GameEngine {
 				if (!p.isBot || !p.alive) continue
 				const offers = s.augmentOffers.get(p.id)
 				if (offers) this.pickAugment(p.id, offers[this.rng.int(offers.length)])
+				if (p.armory) this.pickArmory(p.id, p.armory.options[this.rng.int(p.armory.options.length)])
 				const at = s.botActAt.get(p.id) ?? 0
 				if (s.gameTime >= at) {
 					aiTakeTurn(this, p, this.rng)
@@ -359,30 +430,8 @@ export class GameEngine {
 
 	private genCarousel(): void {
 		const s = this.state
-		const aliveCount = s.players.filter((p) => p.alive).length
-		const weights = CAROUSEL_COST_WEIGHTS[Math.min(s.stage, 4)] ?? CAROUSEL_COST_WEIGHTS[4]
-		const byCost = [1, 2, 3, 4, 5].map((c) => CHAMPIONS.filter((x) => x.cost === c))
-		s.carousel = Array.from({ length: aliveCount }, () => {
-			let roll = this.rng.next() * weights.reduce((a, b) => a + b, 0)
-			let cost = 1
-			for (let i = 0; i < 5; i++) {
-				roll -= weights[i]
-				if (roll <= 0) {
-					cost = i + 1
-					break
-				}
-			}
-			const pool = byCost[cost - 1]
-			return {
-				apiName: pool[this.rng.int(pool.length)].apiName,
-				item: ITEM_COMPONENTS[this.rng.int(ITEM_COMPONENTS.length)].apiName,
-			}
-		})
-		// 血量最低者优先，同血按 id
-		s.carouselQueue = s.players
-			.filter((p) => p.alive)
-			.sort((a, b) => a.hp - b.hp || a.id - b.id)
-			.map((p) => p.id)
+		s.carousel = genCarouselSlots(this.rng, s.stage, s.players.filter((p) => p.alive).length)
+		s.carouselQueue = carouselPickOrder(s.players)
 		s.currentPickerIndex = 0
 		s.pickEndsAt = CAROUSEL_PICK_SECONDS * 1000
 		s.phase = 'carousel'
@@ -402,40 +451,15 @@ export class GameEngine {
 		s.pickEndsAt = s.gameTime + CAROUSEL_PICK_SECONDS * 1000
 	}
 
-	private grantCarouselUnit(pid: number, slot: CarouselSlot): void {
-		const p = this.state.players[pid]
-		this.pool.take(slot.apiName)
-		const u = createUnit(slot.apiName)
-		if (p.itemTray.length < ITEM_TRAY_SIZE) u.items = [slot.item]
-		if (!addToBench(p, u)) {
-			// 备战席满：直接折现
-			p.gold += costOf(slot.apiName)
-			this.pool.addBack(slot.apiName, 1)
-		}
-	}
-
-	/** 1-1 开局遭遇：全员从 ENCOUNTERS 三选一 */
+	/** 1-1 开局遭遇：全场随机一个直接生效（对齐官方：遭遇不可自选） */
 	private genEncounter(): void {
 		const s = this.state
 		s.phase = 'encounter'
 		s.phaseEndsAt = s.gameTime + ENCOUNTER_SECONDS * 1000
+		const enc = ENCOUNTERS[this.rng.int(ENCOUNTERS.length)]
+		s.encounterApi = enc.apiName
 		for (const p of s.players) {
-			if (p.alive)
-				s.augmentOffers.set(
-					p.id,
-					ENCOUNTERS.map((e) => e.apiName),
-				)
-		}
-	}
-
-	/** 海克斯回合：从池中随机 3 个（排除已选） */
-	private genAugmentOffers(): void {
-		const s = this.state
-		for (const p of s.players) {
-			if (!p.alive) continue
-			const pool = AUGMENTS.filter((a) => !p.augments.includes(a.apiName))
-			const picks = this.rng.shuffle(pool.map((a) => a.apiName)).slice(0, 3)
-			s.augmentOffers.set(p.id, picks)
+			if (p.alive) applyAugment(this.augDeps, p, enc.apiName)
 		}
 	}
 
@@ -444,24 +468,19 @@ export class GameEngine {
 		s.phase = 'planning'
 		s.phaseEndsAt = s.gameTime + PLANNING_SECONDS * 1000
 		// PvE 回合：预生成野怪波次，备战阶段即可见
-		s.pveWave = roundType(s.stage, s.round) === 'pve' ? this.buildPveWave() : null
-		if (isAugmentRound(s.stage, s.round)) this.genAugmentOffers()
+		s.pveWave = roundType(s.stage, s.round) === 'pve' ? buildPveWave(s.stage, s.round) : null
+		if (isAugmentRound(s.stage, s.round)) s.augmentOffers = genAugmentOffers(this.rng, s.players)
 		for (const p of s.players) {
 			if (!p.alive) continue
 			applyXp(p, PASSIVE_XP)
-			// 阶段开始金币（贪财等）
-			if (s.round === 1) {
-				p.gold += p.augments
-					.flatMap((a) => AUGMENT_BY_API.get(a)?.effects ?? [])
-					.filter((e) => e.kind === 'stageGold')
-					.reduce((sum, e) => sum + (e as { amount: number }).amount, 0)
-			}
-			p.freeRerolls = p.augments
-				.flatMap((a) => AUGMENT_BY_API.get(a)?.effects ?? [])
-				.filter((e) => e.kind === 'freeRerolls')
-				.reduce((sum, e) => sum + (e as { perRound: number }).perRound, 0)
+			// 海克斯周期钩子：阶段开始发放 / 金色炊具 / 等级武器库 / 免费刷新
+			applyPlanningAugments(this.augDeps, p, s.round === 1)
 			if (p.shopLocked) p.shopLocked = false
-			else p.shop = this.pool.rollShop(p.level, this.rng)
+			else {
+				p.ignitedSlots = []
+				p.shop = this.pool.rollShop(p.level, this.rng)
+			}
+			applyTraitShopEffects(this.rng, this.pool, p)
 			if (p.isBot) s.botActAt.set(p.id, s.gameTime + this.rng.next() * 6000)
 		}
 	}
@@ -476,15 +495,23 @@ export class GameEngine {
 			this.pickAugment(pid, offers[this.rng.int(offers.length)])
 		}
 		const alive = s.players.filter((p) => p.alive)
+		// 未选的武器库同样强制补选（含排队与套娃链）
+		for (const p of alive) {
+			while (p.armory)
+				this.pickArmory(p.id, p.armory.options[this.rng.int(p.armory.options.length)])
+		}
+		// 开战前自动补位：备战席棋子按价值填满人口（含冠冕加成）
+		for (const p of alive) autoDeploy(p, this.rng)
 
 		if (roundType(s.stage, s.round) === 'pve') {
-			const monsters = s.pveWave ?? this.buildPveWave()
+			const monsters = s.pveWave ?? buildPveWave(s.stage, s.round)
 			for (const p of alive) {
-				const input = this.toCombatInput(p)
+				const input = toCombatInput(p, s.stage, this.rng)
 				const result = simulateCombat(input, monsters, {
 					rng: this.rng,
-					traitTagsA: this.traitTagsOf(p),
+					traitsA: computeActiveTraits(p.board),
 					recordEvents: !p.isBot || p.id === 0,
+					stage: s.stage,
 				})
 				s.combats.set(p.id, {
 					opponentId: -1,
@@ -536,13 +563,14 @@ export class GameEngine {
 		const s = this.state
 		const pa = s.players[aId]
 		const pb = s.players[bId]
-		const inputsA = this.toCombatInput(pa)
-		const inputsB = this.toCombatInput(pb)
+		const inputsA = toCombatInput(pa, s.stage, this.rng)
+		const inputsB = toCombatInput(pb, s.stage, this.rng)
 		const result = simulateCombat(inputsA, inputsB, {
 			rng: this.rng,
-			traitTagsA: this.traitTagsOf(pa),
-			traitTagsB: this.traitTagsOf(pb),
+			traitsA: computeActiveTraits(pa.board),
+			traitsB: computeActiveTraits(pb.board),
 			recordEvents: !pa.isBot || !pb.isBot,
+			stage: s.stage,
 		})
 		s.combats.set(aId, {
 			opponentId: bId,
@@ -578,6 +606,7 @@ export class GameEngine {
 			const rec = s.combats.get(p.id)
 			if (!rec) continue
 			const r = rec.result
+			const hpBefore = p.hp
 			const oppSurvivors = rec.playerSide === 'A' ? r.survivorsB : r.survivorsA
 			const won =
 				(r.winner === 'A' && rec.playerSide === 'A') || (r.winner === 'B' && rec.playerSide === 'B')
@@ -598,6 +627,10 @@ export class GameEngine {
 			const inc = roundIncome(p, s.stage, s.round, rec.isPvE ? null : won)
 			p.gold += inc.total
 
+			// 羁绊结算（峡谷野怪计数/魔女精粹）+ 战斗插件指标折现（茂凯/雷恩加尔/皮克斯/假人）
+			settleTraitCombat(p, rec)
+			settleCombatMetrics(p, rec)
+
 			if (rec.isPvE) {
 				// PvE：无论胜负都给掉落，且不掉血（对齐官方规则）
 				const drop = PVE_DROPS[`${s.stage}-${s.round}`]
@@ -606,10 +639,20 @@ export class GameEngine {
 					for (let i = 0; i < drop.components && p.itemTray.length < ITEM_TRAY_SIZE; i++) {
 						p.itemTray.push(ITEM_COMPONENTS[this.rng.int(ITEM_COMPONENTS.length)].apiName)
 					}
+					// Boss 轮（x-7）额外概率掉消耗品（概率配置见 rules.ts）
+					if (s.round === STAGE_ROUNDS && p.itemTray.length < ITEM_TRAY_SIZE) {
+						const roll = this.rng.next()
+						if (roll < PVE_BOSS_CONSUMABLE_ODDS.remover) p.itemTray.push(CONSUMABLE_REMOVER)
+						else if (roll < PVE_BOSS_CONSUMABLE_ODDS.remover + PVE_BOSS_CONSUMABLE_ODDS.reroller)
+							p.itemTray.push(CONSUMABLE_REROLLER)
+					}
 				}
 			} else if (!won && !rec.isGhost) {
 				p.hp -= playerDamage(s.stage, oppSurvivors)
 			}
+
+			// 海克斯 PvP 回合倒数（锻炉/打捞桶/蔓延之根）与降血阈值（神力天铸）
+			settleAugmentTimers(this.augDeps, p, rec, hpBefore)
 
 			if (p.hp <= 0) {
 				p.hp = 0
@@ -659,78 +702,4 @@ export class GameEngine {
 		if (type === 'carousel') this.genCarousel()
 		else this.startPlanning()
 	}
-
-	private toCombatInput(p: PlayerState): CombatUnitInput[] {
-		const active = computeActiveTraits(p.board)
-		const buffs = p.augments
-			.flatMap((a) => AUGMENT_BY_API.get(a)?.effects ?? [])
-			.filter((e) => e.kind === 'teamBuff') as {
-			adPct?: number
-			ap?: number
-			hpPct?: number
-			asPct?: number
-		}[]
-		return p.board.map((b) => {
-			const stats = applyTraitStats(b, unitStats(b), active)
-			for (const buff of buffs) {
-				if (buff.adPct) stats.attackDamage = Math.round(stats.attackDamage * (1 + buff.adPct))
-				if (buff.ap) stats.abilityPower += buff.ap
-				if (buff.hpPct) stats.maxHp = Math.round(stats.maxHp * (1 + buff.hpPct))
-				if (buff.asPct) stats.attackSpeed = round2(stats.attackSpeed * (1 + buff.asPct))
-			}
-			return {
-				uid: b.uid,
-				apiName: b.apiName,
-				star: b.star,
-				pos: b.pos,
-				stats,
-				items: b.items,
-			}
-		})
-	}
-
-	private traitTagsOf(p: PlayerState): Set<string> {
-		const tags = new Set<string>()
-		for (const a of computeActiveTraits(p.board)) {
-			const tag = TRAIT_EFFECTS[a.apiName]?.[a.breakpointIndex]?.customTag
-			if (tag) tags.add(tag)
-		}
-		return tags
-	}
-
-	/** 按 stage-round 查野怪波次表；Boss 轮（5-7 起）数值按阶段放大 */
-	private buildPveWave(): CombatUnitInput[] {
-		const s = this.state
-		const scale = pveStatScale(s.stage)
-		return pveWaveFor(s.stage, s.round).map((spawn, i) => {
-			const def = MONSTER_BY_API.get(spawn.apiName)
-			const st = def?.stats
-			return {
-				uid: `pve-${s.stage}-${s.round}-${i}`,
-				apiName: spawn.apiName,
-				star: 1 as const,
-				pos: { col: spawn.col, row: spawn.row },
-				stats: {
-					maxHp: Math.round((st?.maxHp ?? 400) * scale),
-					attackDamage: Math.round((st?.attackDamage ?? 35) * scale),
-					abilityPower: 100,
-					attackSpeed: st?.attackSpeed ?? 0.6,
-					armor: st?.armor ?? 20,
-					magicResist: st?.magicResist ?? 20,
-					mana: 9999,
-					initialMana: 0,
-					range: st?.range ?? 1,
-					critChance: 0,
-					critMultiplier: 1.4,
-					manaRegen: 0,
-					damageAmp: 0,
-					damageReduction: 0,
-					omnivamp: 0,
-				},
-				items: [],
-			}
-		})
-	}
 }
-
-const round2 = (n: number) => Math.round(n * 100) / 100

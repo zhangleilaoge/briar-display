@@ -50,6 +50,12 @@ export interface SetItem {
 	/** 合成配方（散件 apiName），散件本身为空数组 */
 	composition: string[]
 	icon: string
+	/** 纹章：装备后计入的羁绊 apiName */
+	grantsTrait?: string
+	/** 神器（奥恩）：不可合成 */
+	isArtifact?: boolean
+	/** 光明武器：不可合成 */
+	isRadiant?: boolean
 }
 
 export type AbilityKind =

@@ -1,14 +1,16 @@
 import { POOL_COPIES, SHOP_ODDS, SHOP_SIZE } from '../data/rules'
 import { CHAMPIONS } from '../data/set18'
+import { isLuxVariant } from './lux'
 import type { Rng } from './rng'
 
-/** 8 人共享卡池：同费棋子按剩余张数加权抽取 */
+/** 8 人共享卡池：同费棋子按剩余张数加权抽取（拉克丝皮肤变体不进池，仅本体可获取） */
 export class CardPool {
 	private remaining = new Map<string, number>()
 	private readonly byCost: string[][] = [[], [], [], [], [], []]
 
 	constructor() {
 		for (const c of CHAMPIONS) {
+			if (isLuxVariant(c.apiName)) continue
 			this.remaining.set(c.apiName, POOL_COPIES[c.cost] ?? 0)
 			this.byCost[c.cost].push(c.apiName)
 		}

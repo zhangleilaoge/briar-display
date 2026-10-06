@@ -11,7 +11,7 @@ interface StageTrackerProps {
 
 const TYPE_LABEL = { encounter: '遭遇', pve: 'PvE', carousel: '选秀', pvp: 'PvP' } as const
 
-/** 顶部轮次指示器：当前阶段各回合图标轨道，当前回合高亮 */
+/** 顶部轮次指示器：当前阶段各回合图标轨道，当前回合高亮，hover 显示回合说明 */
 export function StageTracker({ stage, round }: StageTrackerProps) {
 	const total = stage === 1 ? STAGE1_ROUNDS : STAGE_ROUNDS
 	return (
@@ -25,9 +25,8 @@ export function StageTracker({ stage, round }: StageTrackerProps) {
 				return (
 					<div
 						key={r}
-						title={`${stage}-${r} ${TYPE_LABEL[type]}${pve ? `（${pve.label}）` : ''}${augment ? ' · 海克斯强化' : ''}`}
 						className={cn(
-							'relative flex h-7 w-7 items-center justify-center rounded-md border',
+							'group relative flex h-7 w-7 items-center justify-center rounded-md border',
 							current
 								? 'border-amber-400 bg-amber-500/20 text-amber-200'
 								: past
@@ -47,6 +46,12 @@ export function StageTracker({ stage, round }: StageTrackerProps) {
 							/>
 						)}
 						{augment && <Gem className="absolute -right-1 -top-1 h-3 w-3 text-fuchsia-400" />}
+						{/* hover 回合说明 */}
+						<div className="pointer-events-none absolute left-1/2 top-full z-50 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded border border-zinc-600 bg-zinc-900/95 px-2 py-1 text-[10px] text-zinc-300 group-hover:block">
+							{stage}-{r} {TYPE_LABEL[type]}
+							{pve ? `（${pve.label}）` : ''}
+							{augment ? ' · 海克斯强化' : ''}
+						</div>
 					</div>
 				)
 			})}

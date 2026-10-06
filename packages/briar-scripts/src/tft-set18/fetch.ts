@@ -175,6 +175,25 @@ function writeGen(rel: string, body: string) {
 
 const normalizeName = (s: string) => s.trim().replace(/\s+/g, '')
 
+// 光明武器：开关/宝箱/药水类 DA_*Radiant* 条目不是装备，排除
+const RADIANT_EXCLUDE = new Set([
+	'DA_18_Radiantize',
+	'DA_18_Radiantize_Upgrade',
+	'DA_RadiantLuckyItemChest',
+	'DA_RadiantRascal',
+	'DA_BlastPotion18_Radiant',
+	'DA_HealthPotion18_Radiant',
+	'DA_ManaPotion18_Radiant',
+])
+const isRadiantItem = (i: any) =>
+	i.apiName?.startsWith('DA_') &&
+	i.apiName.includes('Radiant') &&
+	i.isAugment !== true &&
+	!RADIANT_EXCLUDE.has(i.apiName)
+// DA 光明装条目不带本地化 desc/effects，按相同 icon 路径找 TFT5_Item_* 孪生条目补齐
+const findRadiantTwin = (items: any[], raw: any) =>
+	items.find((t) => t.apiName?.startsWith('TFT5_Item_') && t.icon && t.icon === raw.icon) ?? null
+
 function buildChampions(set: any, traitApiByName: Map<string, string>) {
 	const playable = set.champions.filter(
 		(c: any) => c.cost >= 1 && c.cost <= 5 && c.traits?.length > 0,
@@ -233,7 +252,7 @@ function buildTraits(set: any) {
 	}))
 }
 
-function buildItems(items: any[]) {
+function buildItems(items: any[], traitApiByName: Map<string, string>) {
 	const components = []
 	for (const short of COMPONENT_NAMES) {
 		const apiName = `TFT_Item_${short}`
@@ -244,10 +263,110 @@ function buildItems(items: any[]) {
 		}
 		components.push(toSetItem(raw, true))
 	}
+	// S18 成装池 = 合成材料全部是 DA_Component_* 的条目（官方当赛季口径），
+	// 配方映射回标准散件 apiName；纹章按名称关联羁绊。
+	// DA_* 条目在 CD 里不带本地化 desc/effects，需找 canonical 孪生条目合并。
+	// S18 大量装备是旧装改名（红霸符=旧疾射火炮等），apiName 对不上，
+	// 按「图标同名 → 同名 → 同图标」顺序匹配，排除各类变体。
+	const VARIANT =
+		/^DA_|Radiant|Encounter|Augment|Assist|Tutorial|Cursed|Academy|Support|Free|^TFT5_|^TFT12_|^TFT11_|^TFT9_/
+	const canonical = items.filter((t) => !VARIANT.test(t.apiName) && t.desc)
+	const twinOf = (raw: any) => {
+		if (raw.desc) return null
+		const icon = (raw.icon ?? '').split('/').pop()
+		return (
+			canonical.find((t) => t.icon?.endsWith(icon) && t.name === raw.name) ??
+			canonical.find((t) => t.name === raw.name) ??
+			canonical.find((t) => t.icon?.endsWith(icon)) ??
+			null
+		)
+	}
 	const craftable = items
-		.filter((i) => i.apiName?.startsWith('TFT_Item_') && i.composition?.length > 0)
-		.map((i) => toSetItem(i, false))
-	return { components, craftable }
+		.filter(
+			(i) =>
+				i.composition?.length === 2 &&
+				i.composition.every((c: string) => c.startsWith('DA_Component_')),
+		)
+		.map((i) => {
+			const twin = twinOf(i)
+			const merged = {
+				...i,
+				desc: i.desc || twin?.desc || '',
+				effects: Object.keys(i.effects ?? {}).length > 0 ? i.effects : (twin?.effects ?? {}),
+				composition: i.composition.map((c: string) => c.replace('DA_Component_', 'TFT_Item_')),
+			}
+			const item = toSetItem(merged, false)
+			if (item.apiName.includes('Emblem')) {
+				const traitName = normalizeName(item.name.replace('纹章', ''))
+				const traitApi = traitApiByName.get(traitName)
+				if (!traitApi) {
+					console.warn(`纹章羁绊未匹配: ${item.apiName} ${item.name}`)
+					return item
+				}
+				// 纹章 = 非铲/锅散件属性 + 羁绊计数（官方口径）
+				const compApi = item.composition.find(
+					(c) => c !== 'TFT_Item_Spatula' && c !== 'TFT_Item_FryingPan',
+				)
+				const compStats = compApi ? (items.find((x) => x.apiName === compApi)?.effects ?? {}) : {}
+				const effects: Record<string, number> = {}
+				for (const [k, v] of Object.entries(compStats)) effects[k] = round4(Number(v) || 0)
+				const traitLabel = traitApiByName.get(traitName) ? item.name.replace('纹章', '') : ''
+				return {
+					...item,
+					effects,
+					grantsTrait: traitApi,
+					desc: item.desc || `携带者获得【${traitLabel}】羁绊。`,
+				}
+			}
+			// 冠冕类：队伍规模 +1（CD 未带 effects，按官方效果补）
+			if (item.apiName.includes('Tacticians')) {
+				return {
+					...item,
+					effects: { MaxArmySizeIncrease: 1 },
+					desc: item.desc || '你的队伍规模 +1。',
+				}
+			}
+			return item
+		})
+	// 神器池（奥恩神器）：不可合成，走武器库/掉落
+	const artifacts = items
+		.filter(
+			(i) => i.apiName?.startsWith('TFT_Item_Artifact') && i.name && i.composition?.length === 0,
+		)
+		.map((i) => ({ ...toSetItem(i, false), isArtifact: true }))
+	// 纯授予纹章（无合成配方，海克斯/掉落专属，如魔女/主宰/绝命花妖纹章）
+	const grantOnlyEmblems = items
+		.filter(
+			(i) =>
+				i.apiName?.startsWith('DA_18_Emblem') &&
+				i.name &&
+				(i.composition?.length ?? 0) === 0 &&
+				!i.apiName.endsWith('Augment') &&
+				!craftable.some((c) => c.name === i.name),
+		)
+		.map((i) => {
+			const traitApi = traitApiByName.get(normalizeName(i.name.replace('纹章', '')))
+			if (!traitApi) {
+				console.warn(`授予纹章羁绊未匹配: ${i.apiName} ${i.name}`)
+				return null
+			}
+			return {
+				...toSetItem(i, false),
+				grantsTrait: traitApi,
+				desc: i.desc || `携带者获得【${i.name.replace('纹章', '')}】羁绊。`,
+			}
+		})
+		.filter(Boolean)
+	// 光明武器：apiName/name 用 DA 条目，desc/effects 取 TFT5 孪生
+	const radiant = items.filter(isRadiantItem).map((i) => {
+		const twin = findRadiantTwin(items, i)
+		if (!twin) console.warn(`光明装未找到 TFT5 孪生: ${i.apiName}`)
+		return {
+			...toSetItem({ ...i, desc: twin?.desc ?? '', effects: twin?.effects ?? {} }, false),
+			isRadiant: true,
+		}
+	})
+	return { components, craftable: [...craftable, ...grantOnlyEmblems], artifacts, radiant }
 }
 
 function toSetItem(raw: any, isComponent: boolean) {
@@ -341,6 +460,12 @@ export interface SetItem {
 	/** 合成配方（散件 apiName），散件本身为空数组 */
 	composition: string[]
 	icon: string
+	/** 纹章：装备后计入的羁绊 apiName */
+	grantsTrait?: string
+	/** 神器（奥恩）：不可合成 */
+	isArtifact?: boolean
+	/** 光明武器：不可合成 */
+	isRadiant?: boolean
 }
 
 export type AbilityKind =
@@ -366,6 +491,8 @@ function generateFiles(
 	components: any[],
 	craftable: any[],
 	archetypes: Record<string, { kind: AbilityKind; params: Record<string, number[]> }>,
+	artifacts: any[],
+	radiant: any[],
 ) {
 	writeGen('types.ts', TYPES_TS)
 
@@ -399,14 +526,29 @@ function generateFiles(
 		`import type { SetItem } from '../types'\n\nexport const CORRUPTED_ITEMS: SetItem[] = ${ser(corrupted, 0)}\n`,
 	)
 	writeGen(
+		'items/artifacts.ts',
+		`import type { SetItem } from '../types'\n\nexport const ARTIFACT_ITEMS: SetItem[] = ${ser(artifacts, 0)}\n`,
+	)
+	writeGen(
+		'items/radiant.ts',
+		`import type { SetItem } from '../types'\n\nexport const RADIANT_ITEMS: SetItem[] = ${ser(radiant, 0)}\n`,
+	)
+	writeGen(
 		'items/index.ts',
 		`import type { SetItem } from '../types'
+import { ARTIFACT_ITEMS } from './artifacts'
 import { ITEM_COMPONENTS } from './components'
 import { CORRUPTED_ITEMS } from './corrupted'
 import { CRAFTABLE_ITEMS } from './craftable'
+import { RADIANT_ITEMS } from './radiant'
 
-export { ITEM_COMPONENTS }
-export const ITEMS: SetItem[] = [...CRAFTABLE_ITEMS, ...CORRUPTED_ITEMS]
+export { ARTIFACT_ITEMS, ITEM_COMPONENTS, RADIANT_ITEMS }
+export const ITEMS: SetItem[] = [
+	...CRAFTABLE_ITEMS,
+	...CORRUPTED_ITEMS,
+	...ARTIFACT_ITEMS,
+	...RADIANT_ITEMS,
+]
 `,
 	)
 
@@ -533,14 +675,17 @@ async function main() {
 	const { champions, warnings } = buildChampions(set, traitApiByName)
 	for (const w of warnings) console.warn(`警告: ${w}`)
 	const traits = buildTraits(set)
-	const { components, craftable } = buildItems(data.items)
+	const { components, craftable, artifacts, radiant } = buildItems(data.items, traitApiByName)
+
+	console.log(`\n=== 光明武器清单（${radiant.length}）===`)
+	for (const r of radiant) console.log(`${r.apiName} | ${r.name}`)
 
 	const archetypes: Record<string, { kind: AbilityKind; params: Record<string, number[]> }> = {}
 	for (const c of champions) {
 		archetypes[c.apiName] = { kind: classify(c.ability.desc), params: c.ability.vars }
 	}
 
-	generateFiles(champions, traits, components, craftable, archetypes)
+	generateFiles(champions, traits, components, craftable, archetypes, artifacts, radiant)
 
 	const iconTasks: IconTask[] = []
 	const rawChampByApi = new Map<string, any>(set.champions.map((c: any) => [c.apiName, c]))
@@ -561,12 +706,24 @@ async function main() {
 		})
 	}
 	const rawItemByApi = new Map<string, any>(data.items.map((i: any) => [i.apiName, i]))
-	for (const item of [...components, ...craftable]) {
+	for (const item of [...components, ...craftable, ...artifacts]) {
 		const raw = rawItemByApi.get(item.apiName)!
+		// DA_* 图标缺失时回退同名 TFT_Item_* 图标
+		const twin = rawItemByApi.get(item.apiName.replace(/^DA_(?:18_)?/, 'TFT_Item_'))
 		iconTasks.push({
 			name: item.apiName,
 			dest: path.join(ICON_DIR, 'items', `${item.apiName}.png`),
-			candidates: [raw.icon].filter(Boolean).map(iconUrl),
+			candidates: [raw.icon, twin?.icon].filter(Boolean).map(iconUrl),
+		})
+	}
+	for (const item of radiant) {
+		const raw = rawItemByApi.get(item.apiName)!
+		// 光明装按 TFT5 孪生条目的 icon 路径下载，DA 自身 icon 兜底
+		const twin = findRadiantTwin(data.items, raw)
+		iconTasks.push({
+			name: item.apiName,
+			dest: path.join(ICON_DIR, 'items', `${item.apiName}.png`),
+			candidates: [twin?.icon, raw.icon].filter(Boolean).map(iconUrl),
 		})
 	}
 	const failedIcons = await downloadIcons(iconTasks)
@@ -578,7 +735,11 @@ async function main() {
 		`棋子: ${champions.length}（${[1, 2, 3, 4, 5].map((c) => `${c}费${dist[c] ?? 0}`).join(' / ')}）`,
 	)
 	console.log(`羁绊: ${traits.length}`)
-	console.log(`合成装: ${craftable.length}`)
+	console.log(
+		`合成装: ${craftable.length}（含纹章 ${craftable.filter((i) => i.grantsTrait).length}）`,
+	)
+	console.log(`神器: ${artifacts.length}`)
+	console.log(`光明装: ${radiant.length}`)
 	console.log(`散件: ${components.length}`)
 	const junk = craftable.filter((i) => i.name.startsWith('tft_item_name_'))
 	if (junk.length > 0) {

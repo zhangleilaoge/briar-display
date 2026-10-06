@@ -10,6 +10,8 @@ export interface MonsterDef {
 		CombatStats,
 		'maxHp' | 'attackDamage' | 'armor' | 'magicResist' | 'attackSpeed' | 'range'
 	>
+	/** 每阶段的固定生命成长（训练假人类：官方假人化文本为每阶段 +1150），无则面板固定 */
+	hpPerStage?: number
 }
 
 const M = (
@@ -22,11 +24,13 @@ const M = (
 	magicResist: number,
 	attackSpeed: number,
 	range: number,
+	hpPerStage?: number,
 ): MonsterDef => ({
 	apiName,
 	name,
 	icon: tftAsset(icon),
 	stats: { maxHp, attackDamage, armor, magicResist, attackSpeed, range },
+	...(hpPerStage ? { hpPerStage } : {}),
 })
 
 export const MONSTERS: MonsterDef[] = [
@@ -118,7 +122,124 @@ export const MONSTERS: MonsterDef[] = [
 		0.8,
 		2,
 	),
+	// ---- 技能/羁绊召唤物（stats 为 1 星基准，召唤方按自身面板覆盖 hp/ad）----
+	M(
+		'TFT_Voidspawn',
+		'虚空生物',
+		'/briar/tft/icons/monsters/tft_voidspawn_mobile.png',
+		600,
+		60,
+		10,
+		10,
+		0.75,
+		1,
+	),
+	M(
+		'TFT_TrainingDummy',
+		'训练假人',
+		'/briar/tft/icons/monsters/tft_trainingdummy_mobile.png',
+		700,
+		0,
+		20,
+		20,
+		0.01,
+		1,
+		1150,
+	),
+	// 高塔海克斯的巨型假人：大血量，战斗中周期性电击（见 abilities/monsters.ts 插件）
+	M(
+		'DA_TheTowerDummy',
+		'高塔假人',
+		'/briar/tft/icons/monsters/tft_trainingdummy_mobile.png',
+		2600,
+		0,
+		40,
+		40,
+		0.01,
+		1,
+		1150,
+	),
+	M(
+		'DA_Summon_AzirSoldier',
+		'沙漠士兵',
+		'/briar/tft/icons/champions/DA_18_Azir.png',
+		400,
+		70,
+		0,
+		0,
+		0.8,
+		2,
+	),
+	M(
+		'DA_Summon_ZyraPlant',
+		'荆棘喷射者',
+		'/briar/tft/icons/champions/DA_18_Zyra.png',
+		500,
+		60,
+		0,
+		0,
+		0.8,
+		2,
+	),
+	M(
+		'DA_Summon_Sapling',
+		'树苗',
+		'/briar/tft/icons/champions/DA_18_Maokai.png',
+		300,
+		50,
+		0,
+		0,
+		0.8,
+		1,
+	),
+	M(
+		'DA_Summon_Stonebark',
+		'石皮树',
+		'/briar/tft/icons/champions/DA_18_Maokai.png',
+		1500,
+		40,
+		40,
+		40,
+		0.5,
+		1,
+	),
+	M(
+		'DA_Summon_Lifebloom',
+		'生命花',
+		'/briar/tft/icons/champions/DA_18_Lillia.png',
+		700,
+		50,
+		10,
+		10,
+		0.7,
+		2,
+	),
+	M(
+		'DA_Summon_ForestGuard',
+		'深林守卫',
+		'/briar/tft/icons/champions/DA_18_Ivern.png',
+		2200,
+		120,
+		40,
+		40,
+		0.7,
+		1,
+	),
+	M(
+		'DA_Summon_BigFriend',
+		'毛茸茸大朋友',
+		'/briar/tft/icons/champions/DA_18_Kobuko.png',
+		1800,
+		90,
+		30,
+		30,
+		0.75,
+		1,
+	),
 ]
+
+/** 无法行动的单位（训练假人等） */
+export const NO_ACT_UNITS = new Set(['TFT_TrainingDummy', 'DA_TheTowerDummy'])
 
 export const MONSTER_BY_API = new Map(MONSTERS.map((m) => [m.apiName, m]))
 

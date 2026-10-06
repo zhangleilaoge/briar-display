@@ -42,7 +42,7 @@ describe('units', () => {
 		expect(s2.attackSpeed).toBeCloseTo(s1.attackSpeed)
 	})
 
-	it('合成保留场上位置，装备合并、溢出回装备栏', () => {
+	it('合成保留场上位置，散件自动合成成装、溢出回装备栏', () => {
 		const p = makePlayer(9)
 		const onBoard = createUnit(C1.apiName)
 		onBoard.items = ['TFT_Item_BFSword', 'TFT_Item_RecurveBow']
@@ -55,9 +55,28 @@ describe('units', () => {
 		addToBench(p, b2)
 		expect(p.board).toHaveLength(1)
 		expect(p.board[0].star).toBe(2)
-		expect(p.board[0].items.length).toBeLessThanOrEqual(3)
-		// 合并共 5 件散件：身上留 3 件，溢出 2 件回装备栏，总数守恒
-		expect(p.board[0].items.length + p.itemTray.length).toBe(5)
+		// 5 件散件合成 2 件成装（BF+弓→巨人杀手、锁甲+腰带→日炎），斗篷落单 → 3 件刚好全留身上
+		expect(p.board[0].items.length + p.itemTray.length).toBe(3)
+		expect(p.board[0].items).toContain('DA_GiantSlayer')
+		expect(p.board[0].items).toContain('DA_SunfireCape')
+		expect(p.board[0].items).toContain('TFT_Item_NegatronCloak')
+	})
+
+	it('合成溢出：成装不参与再合成，超出 3 件回装备栏', () => {
+		const p = makePlayer(9)
+		const crafted = ['DA_GiantSlayer', 'DA_SunfireCape']
+		const onBoard = createUnit(C1.apiName)
+		onBoard.items = [...crafted]
+		p.board.push({ ...onBoard, pos: { col: 0, row: 0 } })
+		const b1 = createUnit(C1.apiName)
+		b1.items = ['DA_EdgeOfNight']
+		const b2 = createUnit(C1.apiName)
+		b2.items = ['DA_Evenshroud']
+		addToBench(p, b1)
+		addToBench(p, b2)
+		expect(p.board[0].star).toBe(2)
+		expect(p.board[0].items).toHaveLength(3)
+		expect(p.itemTray).toHaveLength(1)
 	})
 
 	it('出售：2★ 2 费卖 6 金，装备退回', () => {
@@ -85,6 +104,19 @@ describe('units', () => {
 		u.items.push('TFT_Item_GiantsBelt', 'TFT_Item_ChainVest')
 		p.itemTray.push('TFT_Item_TearOfTheGoddess')
 		expect(equipItem(p, u.uid, 'TFT_Item_TearOfTheGoddess')).toBe(false)
+	})
+
+	it('拖动上场凑齐三张时自动合成', () => {
+		const p = makePlayer(3)
+		// 直接摆两只在棋盘（绕过 addToBench 的即时合成），第三只在备战席
+		const a = createUnit(C1.apiName)
+		const b = createUnit(C1.apiName)
+		p.board.push({ ...a, pos: { col: 0, row: 0 } }, { ...b, pos: { col: 1, row: 0 } })
+		const c = createUnit(C1.apiName)
+		p.bench[0] = c
+		expect(placeOnBoard(p, c.uid, 2, 0)).toBe(true)
+		expect(p.board).toHaveLength(1)
+		expect(p.board[0].star).toBe(2)
 	})
 
 	it('上棋子：受等级上限；占位交换；收台交换', () => {

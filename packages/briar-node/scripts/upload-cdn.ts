@@ -1,4 +1,5 @@
 import fs from 'fs'
+import crypto from 'node:crypto'
 import { gzipSync } from 'node:zlib'
 import path from 'path'
 import COS from 'cos-nodejs-sdk-v5'
@@ -117,6 +118,38 @@ const buildCacheControl = (ext: string): string => {
 	return 'public, max-age=31536000, immutable'
 }
 
+// putObject 单部分上传的 ETag 即存储体 MD5；列一次 bucket 比对，未变更的文件跳过
+const listRemoteEtags = async (): Promise<Map<string, string>> => {
+	const cos = createCOS()
+	const etags = new Map<string, string>()
+	let marker: string | undefined
+	for (;;) {
+		const res = await new Promise<{
+			Contents?: { Key: string; ETag?: string }[]
+			IsTruncated?: string | boolean
+			NextMarker?: string
+		}>((resolve, reject) => {
+			cos.getBucket(
+				{ Bucket: bucket, Region: region, Prefix: `${prefix}/`, Marker: marker, MaxKeys: 1000 },
+				(err, data) => (err ? reject(err) : resolve(data)),
+			)
+		})
+		for (const obj of res.Contents ?? []) etags.set(obj.Key, (obj.ETag ?? '').replace(/"/g, ''))
+		const truncated = res.IsTruncated === true || res.IsTruncated === 'true'
+		if (!truncated) break
+		marker = res.NextMarker ?? res.Contents?.[res.Contents.length - 1]?.Key
+		if (!marker) break
+	}
+	return etags
+}
+
+// 本地文件 → 远端存储体（gzip 后）的 MD5，与 ETag 口径一致；Node gzip 头无时间戳，输出确定
+const localEtag = (filePath: string): string => {
+	const raw = fs.readFileSync(filePath)
+	const body = GZIP_EXTENSIONS.has(path.extname(filePath).toLowerCase()) ? gzipSync(raw) : raw
+	return crypto.createHash('md5').update(body).digest('hex')
+}
+
 const uploadFile = (filePath: string, key: string, retries = 3): Promise<void> => {
 	const rawBuffer = fs.readFileSync(filePath)
 	const ext = path.extname(filePath).toLowerCase()
@@ -188,9 +221,21 @@ const main = async () => {
 		return
 	}
 
-	console.log(`Uploading ${files.length} files from ${distDir} (concurrency: ${CONCURRENCY}) ...`)
+	// 列远端失败时退回全量上传（空表 → 全部判定为已变更）
+	const remoteEtags = await listRemoteEtags().catch((e) => {
+		console.warn('List remote objects failed, fallback to full upload:', e?.message || e)
+		return new Map<string, string>()
+	})
 
-	const tasks = files.map((filePath) => {
+	const changed = files.filter((f) => {
+		const relativePath = path.relative(distDir, f).replace(/\\/g, '/')
+		return remoteEtags.get(`${prefix}/${relativePath}`) !== localEtag(f)
+	})
+	console.log(
+		`Uploading ${changed.length} changed files from ${distDir} (skipped ${files.length - changed.length} unchanged, concurrency: ${CONCURRENCY}) ...`,
+	)
+
+	const tasks = changed.map((filePath) => {
 		const relativePath = path.relative(distDir, filePath).replace(/\\/g, '/')
 		const key = `${prefix}/${relativePath}`
 		return () => uploadFile(filePath, key)

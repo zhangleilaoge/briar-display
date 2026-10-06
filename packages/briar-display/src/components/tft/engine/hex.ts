@@ -116,3 +116,27 @@ export const toCombatRow = (row: number, side: 'defender' | 'attacker') =>
 
 /** UI 以玩家视角在下方展示时，对战斗网格做整体垂直翻转 */
 export const flipCombatRow = (row: number) => COMBAT_ROWS - 1 - row
+
+/** 直线六边形：from 朝 to 方向延伸至边界 */
+export function lineHexes(from: HexPos, to: HexPos): HexPos[] {
+	if (from.col === to.col && from.row === to.row) return [from]
+	// cube 坐标步进
+	const cube = (p: HexPos) => {
+		const x = p.col - ((p.row - (p.row & 1)) >> 1)
+		return { x, z: p.row, y: -x - p.row }
+	}
+	const un = (x: number, z: number): HexPos => ({ col: x + ((z - (z & 1)) >> 1), row: z })
+	const a = cube(from)
+	const b = cube(to)
+	const dist = Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.z - b.z))
+	const dir = { x: (b.x - a.x) / dist, y: (b.y - a.y) / dist, z: (b.z - a.z) / dist }
+	const out: HexPos[] = []
+	for (let i = 0; i <= 8; i++) {
+		const cx = Math.round(a.x + dir.x * i)
+		const cz = Math.round(a.z + dir.z * i)
+		const p = un(cx, cz)
+		if (p.col < 0 || p.col > 6 || p.row < 0 || p.row > 7) break
+		if (!out.some((h) => h.col === p.col && h.row === p.row)) out.push(p)
+	}
+	return out
+}

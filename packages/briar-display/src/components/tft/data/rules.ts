@@ -122,5 +122,8 @@ export const PVE_DROPS: Record<string, { gold: number; components: number }> = {
 	'7-7': { gold: 10, components: 3 },
 }
 
+/** Boss 轮（x-7）额外消耗品掉落概率：先 roll 拆卸器，未中按余量 roll 重铸器 */
+export const PVE_BOSS_CONSUMABLE_ODDS = { remover: 0.25, reroller: 0.15 }
+
 /** 1-1 开局遭遇选择秒数 */
-export const ENCOUNTER_SECONDS = 12
+export const ENCOUNTER_SECONDS = 5

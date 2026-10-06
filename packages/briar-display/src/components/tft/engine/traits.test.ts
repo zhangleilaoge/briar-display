@@ -56,8 +56,8 @@ describe('traits', () => {
 		const active = computeActiveTraits(p.board)
 		const outsider = createUnit(nonDefender.apiName)
 		const buffed = applyTraitStats(outsider, unitStats(outsider), active)
-		expect(buffed.armor).toBe(unitStats(outsider).armor + 15)
-		expect(buffed.magicResist).toBe(unitStats(outsider).magicResist + 15)
+		expect(buffed.armor).toBe(unitStats(outsider).armor + 12)
+		expect(buffed.magicResist).toBe(unitStats(outsider).magicResist + 12)
 	})
 
 	it('效果表覆盖全部 36 个羁绊且档位对齐', () => {
