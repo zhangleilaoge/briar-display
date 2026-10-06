@@ -32,7 +32,7 @@ function EntryCard({ icon, title, description, href, gradient }: EntryCardProps)
 						<h3 className="text-base font-medium group-hover:text-primary transition-colors">
 							{title}
 						</h3>
-						<p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+						<p className="mt-0.5 truncate text-sm text-muted-foreground">{description}</p>
 					</div>
 				</CardContent>
 			</Card>
@@ -96,7 +96,7 @@ function PortalPageInner() {
 						<EntryCard
 							icon={<Globe2 className="h-5 w-5" />}
 							title="全球板块"
-							description="A股、港股、美股、日韩板块实时涨跌"
+							description="全球主要市场板块涨跌"
 							href="/briar/markets"
 							gradient="from-sky-500 to-indigo-500"
 						/>
