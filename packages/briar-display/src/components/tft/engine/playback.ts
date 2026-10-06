@@ -1,5 +1,5 @@
-import type { CombatRecord } from './gameLoop'
 import { toCombatRow } from './hex'
+import type { CombatRecord } from './types'
 import type { HexPos } from './types'
 
 export interface PlaybackUnit {
@@ -43,8 +43,19 @@ export interface Shot {
 	to: HexPos
 }
 
+/** 施法特效：技能弹道 + 落点范围提示 */
+export interface CastFx {
+	key: number
+	t: number
+	from: HexPos
+	to: HexPos
+	aoe: number
+	spell: 'damage' | 'heal' | 'shield' | 'buff'
+}
+
 const FLOAT_TTL = 0.8
 const SHOT_TTL = 0.28
+const CAST_TTL = 0.6
 const DEATH_FADE = 0.45
 
 /** 把一场战斗的事件流增量折叠成棋面帧；t 单调递增 */
@@ -53,8 +64,10 @@ export class CombatPlayback {
 	private idx = 0
 	private floatSeq = 0
 	private shotSeq = 0
+	private castSeq = 0
 	recentFloats: FloatText[] = []
 	recentShots: Shot[] = []
+	recentCasts: CastFx[] = []
 
 	constructor(private record: CombatRecord) {
 		const init = (side: 'A' | 'B') => {
@@ -104,6 +117,7 @@ export class CombatPlayback {
 		}
 		this.recentFloats = this.recentFloats.filter((f) => t - f.t < FLOAT_TTL)
 		this.recentShots = this.recentShots.filter((s) => t - s.t < SHOT_TTL)
+		this.recentCasts = this.recentCasts.filter((c) => t - c.t < CAST_TTL)
 		return [...this.units.values()].filter((u) => u.alive || t - u.deathAt < DEATH_FADE)
 	}
 
@@ -136,6 +150,15 @@ export class CombatPlayback {
 				if (u) {
 					u.castAt = e.t
 					u.mana = 0
+					this.castSeq += 1
+					this.recentCasts.push({
+						key: this.castSeq,
+						t: e.t,
+						from: { ...u.pos },
+						to: e.pos ? { ...e.pos } : { ...u.pos },
+						aoe: e.aoe ?? 0,
+						spell: e.spell ?? 'damage',
+					})
 				}
 				break
 			case 'damage':
@@ -160,7 +183,8 @@ export class CombatPlayback {
 				if (e.target && e.pos) {
 					this.units.set(e.target, {
 						uid: e.target,
-						apiName: e.uid.split('-s')[0],
+						// 召唤物沿用召唤者的棋子 apiName（事件 uid 是召唤者 uid，不能直接当 apiName）
+						apiName: u?.apiName ?? e.uid,
 						star: 1,
 						side: u?.side ?? 'A',
 						pos: e.pos,
@@ -187,6 +211,13 @@ export class CombatPlayback {
 
 	private pushFloat(t: number, pos: HexPos, value: number, crit: boolean, kind: FloatText['kind']) {
 		this.floatSeq += 1
-		this.recentFloats.push({ key: this.floatSeq, t, pos: { ...pos }, value, crit, kind })
+		this.recentFloats.push({
+			key: this.floatSeq,
+			t,
+			pos: { ...pos },
+			value: Math.round(value),
+			crit,
+			kind,
+		})
 	}
 }

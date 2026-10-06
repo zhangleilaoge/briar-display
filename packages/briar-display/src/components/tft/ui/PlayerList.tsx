@@ -6,10 +6,14 @@ interface PlayerListProps {
 	players: PlayerState[]
 	/** 当前交战对手 id（战斗阶段高亮） */
 	opponentId?: number | null
+	/** 正在查看棋盘的玩家 id */
+	viewedId?: number
+	/** 点击玩家行查看其棋盘 */
+	onView?: (id: number) => void
 }
 
-/** 右侧竖排玩家列表：血量/等级/连胜连败（对齐 TFT 实机布局） */
-export function PlayerList({ players, opponentId = null }: PlayerListProps) {
+/** 右侧竖排玩家列表：血量/等级/连胜连败；点击查看该玩家棋盘（对齐 TFT 实机） */
+export function PlayerList({ players, opponentId = null, viewedId = 0, onView }: PlayerListProps) {
 	const sorted = [...players].sort((a, b) => {
 		if (a.alive !== b.alive) return a.alive ? -1 : 1
 		return b.hp - a.hp
@@ -17,13 +21,17 @@ export function PlayerList({ players, opponentId = null }: PlayerListProps) {
 	return (
 		<div className="flex w-40 shrink-0 flex-col gap-1 overflow-y-auto">
 			{sorted.map((p) => (
-				<div
+				<button
 					key={p.id}
+					type="button"
+					onClick={() => onView?.(p.id)}
 					className={cn(
-						'flex flex-col rounded-md border px-2 py-1 text-xs',
+						'flex flex-col rounded-md border px-2 py-1 text-left text-xs transition',
 						p.id === 0 ? 'border-amber-400/70 bg-amber-950/30' : 'border-zinc-700 bg-zinc-800/60',
 						p.id === opponentId && 'border-red-500/80 bg-red-950/30',
+						p.id === viewedId && 'ring-2 ring-sky-400/80',
 						!p.alive && 'opacity-40',
+						onView && 'cursor-pointer hover:border-sky-500/60',
 					)}
 				>
 					<div className="flex items-center justify-between gap-2">
@@ -55,7 +63,7 @@ export function PlayerList({ players, opponentId = null }: PlayerListProps) {
 							<span>第 {p.placement} 名</span>
 						)}
 					</div>
-				</div>
+				</button>
 			))}
 		</div>
 	)

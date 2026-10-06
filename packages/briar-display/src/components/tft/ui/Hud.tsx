@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { FastForward, Home, SkipForward } from 'lucide-react'
-import type { CombatRecord } from '../engine/gameLoop'
+import type { CombatRecord } from '../engine/types'
 import type { Phase } from '../engine/types'
 import { StageTracker } from './StageTracker'
 
@@ -51,51 +51,55 @@ export function Hud({
 				: '失败'
 		: null
 	return (
-		<div className="flex items-center gap-3 text-sm">
-			<span className="font-mono text-zinc-200">
-				{stage}-{round}
-			</span>
-			<StageTracker stage={stage} round={round} />
-			<span
-				className={cn(
-					'rounded px-2 py-0.5 text-xs font-bold',
-					phase === 'combat'
-						? 'bg-red-900/60 text-red-200'
-						: phase === 'planning'
-							? 'bg-emerald-900/60 text-emerald-200'
-							: 'bg-zinc-700 text-zinc-200',
-				)}
-			>
-				{PHASE_LABEL[phase]} {remain > 0 && `${remain}s`}
-			</span>
-			{phase === 'combat' && record && (
-				<span className="text-xs text-zinc-400">
-					vs {record.opponentName}
-					{record.isGhost && '（镜像）'}
+		<div className="flex items-center justify-between text-sm">
+			{/* 左：回合/轮次轨道/阶段倒计时/上回合结果（紧凑胶囊条，对齐实机顶部） */}
+			<div className="flex items-center gap-3 rounded-full border border-zinc-700/40 bg-black/45 px-4 py-1 backdrop-blur-sm">
+				<span className="font-mono font-bold text-zinc-100">
+					{stage}-{round}
 				</span>
-			)}
-			{phase !== 'combat' && record && myResult && (
+				<StageTracker stage={stage} round={round} />
 				<span
 					className={cn(
-						'text-xs font-bold',
-						myResult === '胜利'
-							? 'text-green-400'
-							: myResult === '失败'
-								? 'text-red-400'
-								: 'text-zinc-400',
+						'rounded px-2 py-0.5 text-xs font-bold',
+						phase === 'combat'
+							? 'bg-red-900/60 text-red-200'
+							: phase === 'planning'
+								? 'bg-emerald-900/60 text-emerald-200'
+								: 'bg-zinc-700 text-zinc-200',
 					)}
 				>
-					上回合：{myResult}
+					{PHASE_LABEL[phase]} {remain > 0 && `${remain}s`}
 				</span>
-			)}
-			<div className="ml-auto flex items-center gap-1.5">
+				{phase === 'combat' && record && (
+					<span className="text-xs text-zinc-400">
+						vs {record.opponentName}
+						{record.isGhost && '（镜像）'}
+					</span>
+				)}
+				{phase !== 'combat' && record && myResult && (
+					<span
+						className={cn(
+							'text-xs font-bold',
+							myResult === '胜利'
+								? 'text-green-400'
+								: myResult === '失败'
+									? 'text-red-400'
+									: 'text-zinc-400',
+						)}
+					>
+						上回合：{myResult}
+					</span>
+				)}
+			</div>
+			{/* 右：倍速/调试/退出（小图标组） */}
+			<div className="flex items-center gap-0.5 rounded-full border border-zinc-700/40 bg-black/45 p-1 backdrop-blur-sm">
 				{(debug ? [1, 2, 4, 8, 16] : [1, 2, 4]).map((s) => (
 					<Button
 						key={s}
 						size="sm"
 						variant={speed === s ? 'default' : 'ghost'}
 						onClick={() => onSpeed(s)}
-						className={cn('h-7 px-2', speed !== s && 'text-zinc-300')}
+						className={cn('h-6 px-1.5 text-xs', speed !== s && 'text-zinc-400')}
 					>
 						<FastForward className="mr-0.5 h-3 w-3" />
 						{s}x
@@ -106,7 +110,7 @@ export function Hud({
 						size="sm"
 						variant="ghost"
 						onClick={onSkip}
-						className="h-7 px-2 text-amber-300"
+						className="h-6 px-1.5 text-amber-300"
 						title="跳过当前阶段（debug）"
 					>
 						<SkipForward className="h-3.5 w-3.5" />
@@ -116,7 +120,7 @@ export function Hud({
 					size="sm"
 					variant="ghost"
 					onClick={onQuit}
-					className="h-7 px-2 text-zinc-300"
+					className="h-6 px-1.5 text-zinc-400"
 					title="返回大厅"
 				>
 					<Home className="h-3.5 w-3.5" />

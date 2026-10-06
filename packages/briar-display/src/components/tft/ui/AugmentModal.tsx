@@ -5,29 +5,41 @@ import { AUGMENT_BY_API } from '../data/set18/augments'
 
 interface AugmentModalProps {
 	offers: string[]
-	/** encounter = 1-1 开局遭遇（全屏）；augment = 2-1/3-2/4-2 海克斯（浮层不挡商店） */
-	mode: 'encounter' | 'augment'
 	onPick: (apiName: string) => void
 }
 
-const TIER_STYLE: Record<number, { border: string; text: string; label: string }> = {
-	1: { border: 'border-zinc-400', text: 'text-zinc-300', label: '白银' },
-	2: { border: 'border-amber-400', text: 'text-amber-300', label: '黄金' },
-	3: { border: 'border-fuchsia-400', text: 'text-fuchsia-300', label: '棱彩' },
+const TIER_STYLE: Record<number, { border: string; text: string; label: string; glow: string }> = {
+	1: {
+		border: 'border-zinc-400',
+		text: 'text-zinc-300',
+		label: '白银',
+		glow: 'shadow-[0_0_28px_rgba(212,212,216,0.18)]',
+	},
+	2: {
+		border: 'border-amber-400',
+		text: 'text-amber-300',
+		label: '黄金',
+		glow: 'shadow-[0_0_28px_rgba(251,191,36,0.3)]',
+	},
+	3: {
+		border: 'border-fuchsia-400',
+		text: 'text-fuchsia-300',
+		label: '棱彩',
+		glow: 'shadow-[0_0_32px_rgba(232,121,249,0.35)]',
+	},
 }
 
-/** 海克斯强化 / 开局遭遇 三选一 */
-export function AugmentModal({ offers, mode, onPick }: AugmentModalProps) {
+/** 海克斯强化三选一（2-1/3-2/4-2 备战阶段浮层，不挡商店） */
+export function AugmentModal({ offers, onPick }: AugmentModalProps) {
+	const tier = TIER_STYLE[AUGMENT_BY_API.get(offers[0] ?? '')?.tier ?? 2]
 	return (
-		<div
-			className={cn(
-				'absolute inset-x-0 z-40 flex flex-col items-center',
-				mode === 'encounter' ? 'inset-y-0 justify-center bg-zinc-950/85' : 'top-10',
-			)}
-		>
+		<div className="absolute inset-x-0 top-10 z-40 flex flex-col items-center">
 			<div className="mb-3 flex items-center gap-2 text-lg font-black text-zinc-100">
 				<Hexagon className="h-5 w-5 text-fuchsia-400" />
-				{mode === 'encounter' ? '开局遭遇 · 选择恩赐' : '海克斯强化 · 三选一'}
+				海克斯强化 · 三选一
+				<span className={cn('rounded border px-1.5 py-0.5 text-xs', tier.border, tier.text)}>
+					本轮{tier.label}
+				</span>
 			</div>
 			<div className="flex gap-4">
 				{offers.map((api) => {
@@ -42,6 +54,7 @@ export function AugmentModal({ offers, mode, onPick }: AugmentModalProps) {
 							className={cn(
 								'flex w-52 flex-col items-center rounded-xl border-2 bg-zinc-900/95 p-4 transition-transform hover:scale-105 hover:bg-zinc-800',
 								t.border,
+								t.glow,
 							)}
 						>
 							<span className={cn('text-[10px] font-bold', t.text)}>{t.label}</span>
@@ -53,9 +66,7 @@ export function AugmentModal({ offers, mode, onPick }: AugmentModalProps) {
 					)
 				})}
 			</div>
-			{mode === 'encounter' && (
-				<div className="mt-3 text-xs text-zinc-500">超时未选将随机获得一项</div>
-			)}
+			<div className="mt-3 text-xs text-zinc-500">备战结束未选将随机获得一项</div>
 		</div>
 	)
 }

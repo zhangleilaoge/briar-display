@@ -12,6 +12,8 @@ export interface StatMods {
 	critChance?: number
 	initialMana?: number
 	manaRegen?: number
+	/** 攻击距离加成（疾射火炮等） */
+	range?: number
 	damageAmp?: number
 	damageReduction?: number
 	omnivamp?: number
@@ -28,6 +30,7 @@ export function applyMods(stats: CombatStats, mods: StatMods): void {
 	if (mods.critChance) stats.critChance += mods.critChance
 	if (mods.initialMana) stats.initialMana += mods.initialMana
 	if (mods.manaRegen) stats.manaRegen += mods.manaRegen
+	if (mods.range) stats.range += mods.range
 	if (mods.damageAmp) stats.damageAmp += mods.damageAmp
 	if (mods.damageReduction) stats.damageReduction += mods.damageReduction
 	if (mods.omnivamp) stats.omnivamp += mods.omnivamp

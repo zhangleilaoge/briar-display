@@ -1,7 +1,7 @@
 'use client'
 import { cn } from '@/lib/utils'
 import { CHAMPION_BY_API, ITEM_BY_API } from '../data/set18'
-import type { GameState } from '../engine/gameLoop'
+import type { GameState } from '../engine/types'
 import { COST_BORDER } from './layout'
 
 interface CarouselProps {
