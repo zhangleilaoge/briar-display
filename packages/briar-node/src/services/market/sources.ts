@@ -184,6 +184,8 @@ export interface QuoteRow {
 	amount: number | null
 	quoteTime: number | null
 	delayMinutes: number
+	/** 东财 f62 主力净流入（元）；指数 / 美股 ETF 有，港股指数、腾讯/Naver 行情没有 */
+	netInflow?: number | null
 }
 
 export function parseEastmoneyUlist(json: EmListResponse): QuoteRow[] {
@@ -199,12 +201,13 @@ export function parseEastmoneyUlist(json: EmListResponse): QuoteRow[] {
 			amount: num(r.f6),
 			quoteTime: ts ? ts * 1000 : null,
 			delayMinutes: 0,
+			netInflow: num(r.f62),
 		}
 	})
 }
 
 export async function fetchEastmoneyUlist(secids: string[]): Promise<QuoteRow[]> {
-	const url = `https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&fields=f2,f3,f4,f6,f12,f13,f14,f124&secids=${secids.join(',')}`
+	const url = `https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&fields=f2,f3,f4,f6,f12,f13,f14,f62,f124&secids=${secids.join(',')}`
 	const rows = parseEastmoneyUlist(await fetchJson<EmListResponse>(url, { headers: EM_HEADERS }))
 	if (rows.length === 0) throw new Error('eastmoney ulist: empty')
 	return rows
@@ -346,6 +349,35 @@ export async function fetchNaverPolling(
 	)
 	if (rows.length === 0) throw new Error(`naver ${path}: empty`)
 	return rows
+}
+
+interface NaverIndexTrendResponse {
+	bizdate?: string
+	personalValue?: string
+	foreignValue?: string
+	institutionalValue?: string
+}
+
+/** Naver 韩国指数投资者动向：单位 억원（1e8 KRW），"+7,545" / "-17,665" */
+export function parseNaverIndexTrend(json: NaverIndexTrendResponse) {
+	const won = (v: unknown) => {
+		const n = num(typeof v === 'string' ? v.replace('+', '') : v)
+		return n == null ? null : n * 1e8
+	}
+	return {
+		date: json.bizdate || null,
+		foreign: won(json.foreignValue),
+		institutional: won(json.institutionalValue),
+		personal: won(json.personalValue),
+	}
+}
+
+export async function fetchNaverIndexTrend(code: string) {
+	const json = await fetchJson<NaverIndexTrendResponse>(
+		`https://m.stock.naver.com/api/index/${encodeURIComponent(code)}/trend`,
+		{ headers: NAVER_HEADERS, retries: 1 },
+	)
+	return parseNaverIndexTrend(json)
 }
 
 export const toIndexQuote = (row: QuoteRow, name?: string): MarketIndexQuote => ({

@@ -1,6 +1,6 @@
 import type { SectorItem, SectorSortKey } from '@briar/shared'
 import { useMemo } from 'react'
-import { formatAmount, formatPct, heatScale, heatStyle } from './marketUtils'
+import { formatAmount, formatFlow, formatPct, heatScale, heatStyle } from './marketUtils'
 
 interface SectorHeatmapProps {
 	items: SectorItem[]
@@ -21,8 +21,6 @@ function breadth(item: SectorItem): string {
 /** 副标题：按成交额/净流入排序时显示对应数值，否则显示领涨股 */
 function subtitle(item: SectorItem, sortKey: SectorSortKey, currency: string): string {
 	if (sortKey === 'amount' && item.amount != null) return formatAmount(item.amount, currency)
-	if (sortKey === 'netInflow' && item.netInflow != null)
-		return `净流入 ${formatAmount(item.netInflow)}`
 	if (sortKey === 'turnoverRate' && item.turnoverRate != null)
 		return `换手 ${item.turnoverRate.toFixed(2)}%`
 	if (item.leader) return item.leader.name
@@ -31,12 +29,17 @@ function subtitle(item: SectorItem, sortKey: SectorSortKey, currency: string): s
 	return ''
 }
 
+/** 「流入 +3.20亿」/「流出 -1.10亿」 */
+function flowText(value: number, currency: string): string {
+	return `${value >= 0 ? '流入' : '流出'} ${formatFlow(value, currency)}`
+}
+
 function tooltip(item: SectorItem, currency: string): string {
 	const lines = [
 		`${item.name}${item.rawName ? `（${item.rawName}）` : ''}  ${formatPct(item.changePct)}`,
 	]
 	if (item.amount != null) lines.push(`成交额 ${formatAmount(item.amount, currency)}`)
-	if (item.netInflow != null) lines.push(`主力净流入 ${formatAmount(item.netInflow)}`)
+	if (item.netInflow != null) lines.push(flowText(item.netInflow, currency))
 	if (item.turnoverRate != null) lines.push(`换手率 ${item.turnoverRate.toFixed(2)}%`)
 	if (item.total) lines.push(breadth(item))
 	if (item.leader) lines.push(`领涨 ${item.leader.name} ${formatPct(item.leader.changePct)}`)
@@ -75,6 +78,11 @@ export default function SectorHeatmap({
 							<div className="truncate text-xs font-medium sm:text-sm">{item.name}</div>
 							<div className="text-sm font-semibold tabular-nums">{formatPct(item.changePct)}</div>
 							{sub && <div className="truncate text-[10px] opacity-80 sm:text-[11px]">{sub}</div>}
+							{item.netInflow != null && (
+								<div className="truncate whitespace-nowrap text-[9px] leading-tight opacity-90 sm:text-[10px]">
+									{flowText(item.netInflow, amountCurrency)}
+								</div>
+							)}
 						</button>
 					)
 				})}

@@ -10,12 +10,20 @@ import {
 import { cn } from '@/lib/utils'
 import type { SectorItem, SectorSortKey } from '@briar/shared'
 import { useState } from 'react'
-import { changeColorClass, formatAmount, formatPct } from './marketUtils'
+import {
+	changeColorClass,
+	flowBasisShort,
+	formatAmount,
+	formatFlow,
+	formatPct,
+} from './marketUtils'
 
 interface SectorListProps {
 	items: SectorItem[]
 	sortKey: SectorSortKey
 	amountCurrency: string
+	/** 净流入口径；null = 该市场没有资金流数据（列显示「—」） */
+	netInflowBasis?: string | null
 	pageSize?: number
 	/** 点击行（查看当日分时） */
 	onSelect?: (item: SectorItem) => void
@@ -26,6 +34,7 @@ export default function SectorList({
 	items,
 	sortKey,
 	amountCurrency,
+	netInflowBasis = null,
 	pageSize = 100,
 	onSelect,
 }: SectorListProps) {
@@ -34,7 +43,6 @@ export default function SectorList({
 
 	const has = {
 		amount: items.some((i) => i.amount != null),
-		netInflow: items.some((i) => i.netInflow != null),
 		turnoverRate: items.some((i) => i.turnoverRate != null),
 		breadth: items.some((i) => i.total != null && i.total > 0),
 		leader: items.some((i) => i.leader != null),
@@ -54,14 +62,22 @@ export default function SectorList({
 						<TableHead className="w-10 text-center">#</TableHead>
 						<TableHead>板块</TableHead>
 						<TableHead className="text-right">涨跌幅</TableHead>
+						<TableHead
+							className={cn('text-right', col('netInflow', 'hidden sm:table-cell'))}
+							title={
+								netInflowBasis
+									? `口径：${netInflowBasis}。正数为流入，负数为流出`
+									: '该市场数据源不提供资金流'
+							}
+						>
+							<div className="leading-tight">净流入</div>
+							<div className="text-[10px] font-normal leading-tight text-muted-foreground/80">
+								{flowBasisShort(netInflowBasis)}
+							</div>
+						</TableHead>
 						{has.amount && (
 							<TableHead className={cn('text-right', col('amount', 'hidden sm:table-cell'))}>
 								成交额
-							</TableHead>
-						)}
-						{has.netInflow && (
-							<TableHead className={cn('text-right', col('netInflow', 'hidden md:table-cell'))}>
-								主力净流入
 							</TableHead>
 						)}
 						{has.turnoverRate && (
@@ -116,22 +132,20 @@ export default function SectorList({
 							>
 								{formatPct(item.changePct)}
 							</TableCell>
+							<TableCell
+								className={cn(
+									'whitespace-nowrap text-right tabular-nums',
+									changeColorClass(item.netInflow),
+									col('netInflow', 'hidden sm:table-cell'),
+								)}
+							>
+								{formatFlow(item.netInflow, amountCurrency)}
+							</TableCell>
 							{has.amount && (
 								<TableCell
 									className={cn('text-right tabular-nums', col('amount', 'hidden sm:table-cell'))}
 								>
 									{formatAmount(item.amount, amountCurrency)}
-								</TableCell>
-							)}
-							{has.netInflow && (
-								<TableCell
-									className={cn(
-										'text-right tabular-nums',
-										changeColorClass(item.netInflow),
-										col('netInflow', 'hidden md:table-cell'),
-									)}
-								>
-									{formatAmount(item.netInflow)}
 								</TableCell>
 							)}
 							{has.turnoverRate && (

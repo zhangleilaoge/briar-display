@@ -1,7 +1,13 @@
 import { cn } from '@/lib/utils'
 import type { MarketId, MarketIndexQuote, MarketIndexTrendsResponse } from '@briar/shared'
 import IntradayChart from './IntradayChart'
-import { changeColorClass, formatPct, formatPrice, formatShanghaiTime } from './marketUtils'
+import {
+	changeColorClass,
+	formatFlow,
+	formatPct,
+	formatPrice,
+	formatShanghaiTime,
+} from './marketUtils'
 
 interface IndexTrendCardsProps {
 	market: MarketId
@@ -69,6 +75,21 @@ export default function IndexTrendCards({
 						) : (
 							<div className="mt-1.5 flex h-16 items-center justify-center text-xs text-muted-foreground">
 								{loading ? '分时加载中…' : '分时暂不可用'}
+							</div>
+						)}
+						{idx.flows && idx.flows.length > 0 && (
+							<div
+								className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] tabular-nums text-muted-foreground"
+								title="正数为流入（净买入），负数为流出（净卖出）"
+							>
+								{idx.flows.map((f) => (
+									<span key={f.label} className="whitespace-nowrap">
+										{f.label}{' '}
+										<span className={changeColorClass(f.value)}>
+											{formatFlow(f.value, f.currency)}
+										</span>
+									</span>
+								))}
 							</div>
 						)}
 						{series?.tradeDate && (

@@ -1,7 +1,9 @@
 import {
+	type IndexFlow,
 	MARKET_IDS,
 	MARKET_LABELS,
 	type MarketId,
+	type MarketIndexQuote,
 	type MarketOverviewItem,
 	type MarketOverviewResponse,
 	type MarketSectorsResponse,
@@ -27,6 +29,7 @@ import {
 	fetchEastmoneyBoards,
 	fetchEastmoneyUlist,
 	fetchNaverGroups,
+	fetchNaverIndexTrend,
 	fetchNaverPolling,
 	fetchTencentBoards,
 	fetchTencentQt,
@@ -86,6 +89,26 @@ async function loadNaverIndexBundle(): Promise<IndexBundle> {
 	return { rows: Object.fromEntries(rows.map((r) => [r.key, r])), source: 'Naver 证券' }
 }
 
+/** 韩国指数投资者动向（外资 / 机构净买入），key = Naver 指数代码 */
+type KrFlows = Record<string, IndexFlow[]>
+
+async function loadKrFlows(): Promise<KrFlows> {
+	const codes = MARKET_INDICES.kr.flatMap((d) => (d.naver ? [d.naver.code] : []))
+	const settled = await Promise.allSettled(codes.map((c) => fetchNaverIndexTrend(c)))
+	const out: KrFlows = {}
+	settled.forEach((s, i) => {
+		if (s.status !== 'fulfilled') return
+		const flows: IndexFlow[] = []
+		if (s.value.foreign != null)
+			flows.push({ label: '外资净买入', value: s.value.foreign, currency: 'KRW' })
+		if (s.value.institutional != null)
+			flows.push({ label: '机构净买入', value: s.value.institutional, currency: 'KRW' })
+		if (flows.length) out[codes[i]] = flows
+	})
+	if (Object.keys(out).length === 0) throw new Error('naver index trend: empty')
+	return out
+}
+
 type Settled<T> = { ok: true; result: CachedResult<T> } | { ok: false; error: string }
 
 const settle = async <T>(p: Promise<CachedResult<T>>): Promise<Settled<T>> =>
@@ -95,11 +118,13 @@ const settle = async <T>(p: Promise<CachedResult<T>>): Promise<Settled<T>> =>
 	)
 
 async function getIndexBundles() {
-	const [em, naver] = await Promise.all([
+	const [em, naver, krFlows] = await Promise.all([
 		settle(cachedLoad('indices:em', ttlFor(['cn', 'hk', 'us', 'jp', 'kr']), loadEmIndexBundle)),
 		settle(cachedLoad('indices:naver', ttlFor(['jp', 'kr']), loadNaverIndexBundle)),
+		// 资金流只是附加信息：至少缓存 60s，失败就不显示
+		settle(cachedLoad('indices:kr-flows', Math.max(60_000, ttlFor(['kr'])), loadKrFlows)),
 	])
-	return { em, naver }
+	return { em, naver, krFlows }
 }
 
 function buildOverviewItem(
@@ -107,7 +132,7 @@ function buildOverviewItem(
 	bundles: Awaited<ReturnType<typeof getIndexBundles>>,
 	now: number,
 ): MarketOverviewItem {
-	const indices = []
+	const indices: MarketIndexQuote[] = []
 	const sources = new Set<string>()
 	const errors = new Set<string>()
 	let stale = false
@@ -130,7 +155,17 @@ function buildOverviewItem(
 		const row = preferNaver ? (naverRow ?? emRow) : (emRow ?? naverRow)
 		if (!row) continue
 		use(row === emRow ? bundles.em : bundles.naver)
-		indices.push(toIndexQuote(row, def.name))
+		const quote = toIndexQuote(row, def.name)
+		// A股指数：东财 f62 主力净流入；韩国：Naver 投资者动向（外资 / 机构净买入）
+		if (market === 'cn' && row === emRow && row.netInflow != null) {
+			quote.flows = [{ label: '主力净流入', value: row.netInflow, currency: 'CNY' }]
+		}
+		const krFlows =
+			market === 'kr' && def.naver && bundles.krFlows.ok
+				? bundles.krFlows.result.value[def.naver.code]
+				: undefined
+		if (krFlows) quote.flows = krFlows
+		indices.push(quote)
 	}
 	if (indices.length === 0) {
 		if (!bundles.em.ok) errors.add(bundles.em.error)
@@ -173,6 +208,8 @@ interface SectorPayload {
 	delayMinutes: number
 	/** 板块自带的行情时间（ETF/指数代理才有），没有就用大盘指数时间 */
 	quoteTime: number | null
+	/** 净流入口径；没有资金流数据的源不填 */
+	netInflowBasis?: string
 }
 
 interface MarketSectorConfig {
@@ -252,7 +289,7 @@ function proxyItems(defs: ProxyDef[], rowFor: (d: ProxyDef) => QuoteRow | undefi
 				price: row.price,
 				changePct: row.changePct,
 				amount: row.amount,
-				netInflow: null,
+				netInflow: row.netInflow ?? null,
 				turnoverRate: null,
 				upCount: null,
 				downCount: null,
@@ -261,6 +298,33 @@ function proxyItems(defs: ProxyDef[], rowFor: (d: ProxyDef) => QuoteRow | undefi
 			},
 		]
 	})
+}
+
+const CN_NET_INFLOW_BASIS = '主力净流入（超大单+大单净额）'
+const US_NET_INFLOW_BASIS = '主力净流入（东方财富按大单估算，ETF 二级市场成交，非申购赎回）'
+
+/**
+ * 美股 ETF 主力净流入：腾讯没有，单独用一次东财 ulist（105/106/107 三个前缀一起问）补，
+ * 缓存至少 60s，失败只是不显示资金流，不影响行情
+ */
+async function loadUsNetInflow(
+	kind: SectorKind,
+	defs: ProxyDef[],
+): Promise<Record<string, number>> {
+	const status = getSessionStatus('us', Date.now())
+	const result = await cachedLoad(
+		`flows:us:${kind}`,
+		Math.max(60_000, CACHE_TTL_MS[status]),
+		async () => {
+			const rows = await fetchEastmoneyUlist(
+				defs.flatMap((d) => ['105', '106', '107'].map((m) => `${m}.${d.code}`)),
+			)
+			const out: Record<string, number> = {}
+			for (const r of rows) if (r.netInflow != null) out[r.code.toUpperCase()] = r.netInflow
+			return out
+		},
+	)
+	return result.value
 }
 
 async function loadCnSectors(kind: SectorKind, level: string): Promise<SectorPayload> {
@@ -272,6 +336,7 @@ async function loadCnSectors(kind: SectorKind, level: string): Promise<SectorPay
 			source: '腾讯自选股 板块排行（申万行业 / 概念）',
 			delayMinutes: 0,
 			quoteTime: null,
+			netInflowBasis: CN_NET_INFLOW_BASIS,
 		}
 	} catch (err) {
 		console.warn('[markets] 腾讯板块失败，改用东财:', errorMessage(err))
@@ -284,6 +349,7 @@ async function loadCnSectors(kind: SectorKind, level: string): Promise<SectorPay
 			source: '东方财富 push2 板块（东财行业 / 概念）',
 			delayMinutes: 0,
 			quoteTime: null,
+			netInflowBasis: CN_NET_INFLOW_BASIS,
 		}
 	}
 }
@@ -316,12 +382,20 @@ async function loadUsSectors(kind: SectorKind): Promise<SectorPayload> {
 		source = '东方财富 ulist（美股 ETF）'
 		delayMinutes = 0
 	}
+	if (rows.every((r) => r.netInflow == null)) {
+		const flows = await loadUsNetInflow(kind, defs).catch((err) => {
+			console.warn('[markets] 美股 ETF 资金流（东财）失败:', errorMessage(err))
+			return {} as Record<string, number>
+		})
+		rows = rows.map((r) => ({ ...r, netInflow: flows[r.code.toUpperCase()] ?? null }))
+	}
 	const byCode = Object.fromEntries(rows.map((r) => [r.code.toUpperCase(), r]))
 	return {
 		items: proxyItems(defs, (d) => byCode[d.code]),
 		source,
 		delayMinutes,
 		quoteTime: maxQuoteTime(rows),
+		netInflowBasis: US_NET_INFLOW_BASIS,
 	}
 }
 
@@ -406,6 +480,10 @@ export async function getSectors(
 		realtime: payload.delayMinutes === 0,
 		delayMinutes: payload.delayMinutes,
 		amountCurrency: config.currency,
+		netInflowBasis:
+			payload.netInflowBasis && items.some((i) => i.netInflow != null)
+				? payload.netInflowBasis
+				: null,
 		session: getSessionInfo(market, Date.now(), quoteTime),
 		quoteTime,
 		fetchedAt: result.fetchedAt,
