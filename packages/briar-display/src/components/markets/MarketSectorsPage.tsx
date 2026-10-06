@@ -160,7 +160,7 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 											延迟 {sectors.delayMinutes} 分钟
 										</Badge>
 									))}
-								{sectors?.listMode === 'fixed-proxy' && sectors.proxyNote && (
+								{sectors && sectors.listMode !== 'dynamic' && sectors.proxyNote && (
 									<Badge
 										variant="outline"
 										className="border-transparent bg-violet-500/10 text-violet-700"
@@ -206,8 +206,12 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 								<span>数据源 {sectors.source}</span>
 								<span>净流入口径 {sectors.netInflowBasis ?? '该市场数据源不提供资金流'}</span>
 								<span>
-									{sectors.listMode === 'dynamic' ? '板块列表从数据源实时拉取' : '固定代理列表'} ·
-									共 {sectors.items.length} 个
+									{sectors.listMode === 'dynamic'
+										? '板块列表从数据源实时拉取'
+										: sectors.listMode === 'curated'
+											? '人工维护题材名单，行情按成分股聚合'
+											: '固定代理列表'}{' '}
+									· 共 {sectors.items.length} 个
 								</span>
 							</div>
 						)}

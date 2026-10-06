@@ -21,8 +21,8 @@ import {
 	MARKET_INDICES,
 	type ProxyDef,
 	US_SECTOR_ETFS,
-	US_THEME_ETFS,
 } from './catalog'
+import { loadCuratedSectors } from './curated'
 import { CACHE_TTL_MS, getSessionInfo, getSessionStatus } from './session'
 import {
 	type QuoteRow,
@@ -237,21 +237,27 @@ export const SECTOR_CONFIG: Record<MarketId, MarketSectorConfig> = {
 		proxyNote: {},
 	},
 	hk: {
-		kinds: [{ kind: 'industry', label: '行业' }],
+		kinds: [
+			{ kind: 'industry', label: '行业' },
+			{ kind: 'concept', label: '概念' },
+		],
 		currency: 'HKD',
-		listMode: { industry: 'fixed-proxy' },
-		proxyNote: { industry: '以恒生综合行业指数代理（12 个行业）' },
+		listMode: { industry: 'fixed-proxy', concept: 'curated' },
+		proxyNote: {
+			industry: '以恒生综合行业指数代理（12 个行业）',
+			concept: '热门题材板块（人工维护名单，行情按成分股聚合）',
+		},
 	},
 	us: {
 		kinds: [
 			{ kind: 'industry', label: '行业' },
-			{ kind: 'concept', label: '细分/主题' },
+			{ kind: 'concept', label: '概念' },
 		],
 		currency: 'USD',
-		listMode: { industry: 'fixed-proxy', concept: 'fixed-proxy' },
+		listMode: { industry: 'fixed-proxy', concept: 'curated' },
 		proxyNote: {
 			industry: '以 SPDR 行业 ETF 代理（11 个 GICS 一级行业）',
-			concept: '以细分行业 / 主题 ETF 代理',
+			concept: '热门题材板块（人工维护名单，行情按成分股聚合）',
 		},
 	},
 	jp: {
@@ -365,8 +371,8 @@ async function loadHkSectors(): Promise<SectorPayload> {
 	}
 }
 
-async function loadUsSectors(kind: SectorKind): Promise<SectorPayload> {
-	const defs = kind === 'concept' ? US_THEME_ETFS : US_SECTOR_ETFS
+async function loadUsSectors(): Promise<SectorPayload> {
+	const defs = US_SECTOR_ETFS
 	let rows: QuoteRow[]
 	let source = '腾讯行情 qt（美股 ETF）'
 	// 腾讯美股 ETF 是延迟报价（分时接口 qt[0] 明确标 delay，指数才是 real），按 15 分钟计
@@ -383,7 +389,7 @@ async function loadUsSectors(kind: SectorKind): Promise<SectorPayload> {
 		delayMinutes = 0
 	}
 	if (rows.every((r) => r.netInflow == null)) {
-		const flows = await loadUsNetInflow(kind, defs).catch((err) => {
+		const flows = await loadUsNetInflow('industry', defs).catch((err) => {
 			console.warn('[markets] 美股 ETF 资金流（东财）失败:', errorMessage(err))
 			return {} as Record<string, number>
 		})
@@ -427,13 +433,25 @@ async function loadKrSectors(kind: SectorKind): Promise<SectorPayload> {
 }
 
 function loadSectors(market: MarketId, kind: SectorKind, level: string): Promise<SectorPayload> {
+	// 港股 / 美股概念 tab：人工维护题材名单，按成分股聚合
+	if ((market === 'hk' || market === 'us') && kind === 'concept') {
+		return (async () => {
+			const { items, quoteTime } = await loadCuratedSectors(market)
+			return {
+				items,
+				source: '腾讯行情 qt（题材成分股聚合）',
+				delayMinutes: 15,
+				quoteTime,
+			}
+		})()
+	}
 	switch (market) {
 		case 'cn':
 			return loadCnSectors(kind, level)
 		case 'hk':
 			return loadHkSectors()
 		case 'us':
-			return loadUsSectors(kind)
+			return loadUsSectors()
 		case 'jp':
 			return loadJpSectors()
 		case 'kr':

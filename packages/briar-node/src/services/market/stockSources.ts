@@ -1,4 +1,5 @@
 import type { ConstituentItem, MarketId, StockQuote, StockSearchItem } from '@briar/shared'
+import { isStockCode } from '@briar/shared'
 import { fetchJson, fetchText } from './http'
 import { num, parseTencentTime } from './sources'
 import { takeEastmoneyTrendSlot } from './trendSources'
@@ -11,7 +12,10 @@ import { takeEastmoneyTrendSlot } from './trendSources'
  *   含现价、涨跌幅、成交额(万)、换手率、PE(TTM)、总市值(亿)，没有主力净流入
  * - 东财 push2 clist fs=b:BKxxxx（A股板块走东财兜底时）：含 f62 主力净流入；共用东财全局限流
  * - Naver m.stock.naver.com/api/stocks/{industry|theme}/{no}：韩国业种 / 主题成分股（实时，pageSize ≤ 100）
- * - 恒生综合行业指数、美股/日本行业 ETF：没有免费的成分股/持仓接口
+ * - 纳斯达克 api.nasdaq.com/api/screener/stocks?sector=GICS行业：美股行业成分股名单（limit=100 翻页），
+ *   剔除权证/优先股等杂项后用腾讯 qt 批量补报价（中文名 / 成交额 / 换手率 / PE / 市值）
+ * - 港股/美股概念板块：人工维护题材名单（catalog.ts CONCEPT_SECTORS），腾讯 qt 批量报价后聚合
+ *   （涨跌幅等权平均、成交额求和、涨跌家数、领涨股）；恒生综合行业指数、日本行业 ETF 仍无免费成分股接口
  * 个股报价
  * - 腾讯 qt.gtimg.cn：A股（实时）、港股（延迟 15 分钟）、美股（延迟报价，按 15 分钟计）
  * - Naver polling domestic/stock（韩国实时）+ m.stock.naver.com/api/stock/{code}/integration（PER/PBR）
@@ -253,6 +257,112 @@ export async function fetchNaverGroupStocks(
 		total,
 		...(total > seen.size
 			? { truncatedNote: `成分股共 ${total} 只，只展示前 ${seen.size} 只` }
+			: {}),
+	}
+}
+
+// ───────────────────────── 纳斯达克 美股行业成分股 ─────────────────────────
+
+const NASDAQ_HEADERS = {
+	Referer: 'https://www.nasdaq.com/',
+	Accept: 'application/json, text/plain, */*',
+}
+
+interface NasdaqScreenerResponse {
+	data?: {
+		totalrecords?: number
+		table?: { rows?: Array<Record<string, string>> } | null
+	} | null
+}
+
+/** 剔除权证 / 优先股 / 债券型等杂项（保留普通股、ADR、单位信托等） */
+const NASDAQ_JUNK_NAME = /(warrant|preferred|rights?\b|notes?\b|debenture|subordinated|units?$)/i
+
+/** "Apple Inc. Common Stock" → "Apple Inc."；ADR 等带括号说明的保留主体 */
+export function cleanNasdaqName(raw: string): string {
+	return raw
+		.replace(/\s*\(?Common Stock\)?$/i, '')
+		.replace(/\s+Common Units.*$/i, '')
+		.trim()
+}
+
+export function parseNasdaqScreener(json: NasdaqScreenerResponse): {
+	items: ConstituentItem[]
+	total: number
+} {
+	const rows = json.data?.table?.rows
+	if (!rows) throw new Error('nasdaq screener: no rows')
+	const items = rows.flatMap((r) => {
+		const symbol = (r.symbol ?? '').toUpperCase()
+		if (!isStockCode('us', symbol)) return []
+		if (NASDAQ_JUNK_NAME.test(r.name ?? '')) return []
+		return [
+			{
+				code: symbol,
+				name: cleanNasdaqName(r.name ?? symbol),
+				price: looseNum(r.lastsale),
+				changePct: looseNum(r.pctchange),
+				amount: null,
+				turnoverRate: null,
+				netInflow: null,
+				marketCap: looseNum(r.marketCap),
+				pe: null,
+			} satisfies ConstituentItem,
+		]
+	})
+	return { items, total: json.data?.totalrecords ?? items.length }
+}
+
+/**
+ * 美股行业成分股：纳斯达克筛选器按 GICS 行业拉名单（limit=100 翻页，cap 封顶），
+ * 再用腾讯 qt 批量补实时字段（中文名 / 现价 / 涨跌幅 / 成交额 / 换手率 / PE / 总市值），
+ * 腾讯缺失的用纳斯达克数据兜底
+ */
+export async function fetchUsSectorConstituents(gics: string, cap = 400): Promise<RawConstituents> {
+	const pageSize = 100
+	const seen = new Map<string, ConstituentItem>()
+	let total = 0
+	for (let offset = 0; offset < cap; offset += pageSize) {
+		const url = `https://api.nasdaq.com/api/screener/stocks?tableOnly=true&sector=${encodeURIComponent(gics)}&limit=${pageSize}&offset=${offset}`
+		const parsed = parseNasdaqScreener(
+			await fetchJson<NasdaqScreenerResponse>(url, { headers: NASDAQ_HEADERS, retries: 1 }),
+		)
+		total = parsed.total
+		for (const item of parsed.items) seen.set(item.code, item)
+		if (parsed.items.length < pageSize || seen.size >= Math.min(total, cap)) break
+	}
+	if (seen.size === 0) throw new Error(`nasdaq screener ${gics}: empty`)
+	// 腾讯 qt 批量报价，100 个一批
+	const refs = [...seen.keys()].map((code) => ({ market: 'us' as const, code }))
+	const quotes = new Map<string, StockQuote>()
+	for (let i = 0; i < refs.length; i += 100) {
+		try {
+			for (const q of await fetchTencentStockQuotes(refs.slice(i, i + 100))) {
+				quotes.set(q.code, q)
+			}
+		} catch {
+			// 腾讯批次失败不致命，纳斯达克数据兜底
+		}
+	}
+	const items = [...seen.values()].map((item) => {
+		const q = quotes.get(item.code)
+		if (!q) return item
+		return {
+			...item,
+			name: q.name || item.name,
+			price: q.price ?? item.price,
+			changePct: q.changePct ?? item.changePct,
+			amount: q.amount ?? item.amount,
+			turnoverRate: q.turnoverRate ?? item.turnoverRate,
+			marketCap: q.marketCap ?? item.marketCap,
+			pe: q.pe ?? item.pe,
+		}
+	})
+	return {
+		items,
+		total,
+		...(total > items.length
+			? { truncatedNote: `成分股共 ${total} 只，只展示前 ${items.length} 只` }
 			: {}),
 	}
 }

@@ -27,8 +27,8 @@ export type SectorSortKey = 'changePct' | 'amount' | 'netInflow' | 'turnoverRate
 /** 交易状态（按当地时间 + 最近行情日期判断，含午休） */
 export type MarketSessionStatus = 'pre' | 'open' | 'break' | 'closed'
 
-/** 板块清单来源：dynamic = 每次从数据源实时拉取清单；fixed-proxy = 固定代理列表（如行业 ETF） */
-export type SectorListMode = 'dynamic' | 'fixed-proxy'
+/** 板块清单来源：dynamic = 每次从数据源实时拉取清单；fixed-proxy = 固定代理列表（如行业 ETF）；curated = 人工维护题材名单（行情按成分股聚合） */
+export type SectorListMode = 'dynamic' | 'fixed-proxy' | 'curated'
 
 export interface MarketIndexQuote {
 	code: string

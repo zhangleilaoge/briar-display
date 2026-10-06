@@ -154,11 +154,9 @@ describe('成分股解析', () => {
 })
 
 describe('板块成分股：无数据源的板块给原因，未知代码 400', () => {
-	test('港股恒生行业 / 美股 ETF / 日本 ETF → available=false', async () => {
+	test('港股恒生行业 / 日本 ETF → available=false', async () => {
 		for (const [m, code] of [
 			['hk', 'HSCIIT'],
-			['us', 'XLK'],
-			['us', 'SMH'],
 			['jp', '1617'],
 		] as const) {
 			const r = await getConstituents(m, code, 'industry')
@@ -170,6 +168,7 @@ describe('板块成分股：无数据源的板块给原因，未知代码 400', 
 
 	test('不在白名单的代码抛 MarketInputError', async () => {
 		await expect(getConstituents('us', 'ZZZZ', 'industry')).rejects.toThrow('未知的板块代码')
+		await expect(getConstituents('us', 'SMH', 'industry')).rejects.toThrow('未知的板块代码')
 		await expect(getConstituents('cn', '../x', 'industry')).rejects.toThrow('未知的板块代码')
 	})
 
@@ -494,5 +493,50 @@ describe('个股分时按交易时段裁剪', () => {
 			[kr(18, 0), 5, 1],
 		]
 		expect(clipToSessions('kr', points).map((p) => p[1])).toEqual([2, 3])
+	})
+})
+
+describe('纳斯达克行业成分股', () => {
+	test('解析：去掉 Common Stock 后缀、过滤权证/优先股等杂项、市值去逗号', async () => {
+		const { parseNasdaqScreener } = await import('./stockSources')
+		const { items, total } = parseNasdaqScreener({
+			data: {
+				totalrecords: 183,
+				table: {
+					rows: [
+						{
+							symbol: 'nee',
+							name: 'NextEra Energy, Inc. Common Stock',
+							lastsale: '$76.28',
+							netchange: '-0.55',
+							pctchange: '-0.716%',
+							marketCap: '159,118,417,783',
+						},
+						{ symbol: 'XYZW', name: 'XYZ Warrant', lastsale: '$1' },
+						{ symbol: 'ABCP', name: 'ABC Preferred Stock', lastsale: '$1' },
+						{ symbol: 'BAD!', name: 'Bad Symbol', lastsale: '$1' },
+					],
+				},
+			},
+		})
+		expect(total).toBe(183)
+		expect(items).toEqual([
+			{
+				code: 'NEE',
+				name: 'NextEra Energy, Inc.',
+				price: 76.28,
+				changePct: -0.716,
+				amount: null,
+				turnoverRate: null,
+				netInflow: null,
+				marketCap: 159118417783,
+				pe: null,
+			},
+		])
+	})
+
+	test('表格缺失抛异常', async () => {
+		const { parseNasdaqScreener } = await import('./stockSources')
+		expect(() => parseNasdaqScreener({ data: null })).toThrow('no rows')
 	})
 })
