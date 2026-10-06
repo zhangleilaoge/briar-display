@@ -1,0 +1,15 @@
+---
+import { MARKET_IDS, MARKET_LABELS, type MarketId } from '@briar/shared'
+import MarketSectorsPage from '../../../components/markets/MarketSectorsPage'
+import Layout from '../../../layouts/Layout.astro'
+
+export function getStaticPaths() {
+	return MARKET_IDS.map((market) => ({ params: { market } }))
+}
+
+const market = Astro.params.market as MarketId
+---
+
+<Layout title={`${MARKET_LABELS[market]}板块 - 行情`}>
+	<MarketSectorsPage client:load market={market} />
+</Layout>

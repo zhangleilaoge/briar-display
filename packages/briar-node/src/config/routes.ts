@@ -13,7 +13,7 @@ export const RouteConfig = {
 	]),
 
 	/** 公开的路径前缀 */
-	PUBLIC_PREFIXES: ['/demo', '/briar/tools'],
+	PUBLIC_PREFIXES: ['/demo', '/briar/tools', '/briar/markets'],
 
 	/** 所有方法都公开的 API 路径（跳过 JWT 验证，如登录/注册）
 	 *  与 apiPermissions.ts 中标记为 null 的条目保持一致 */
@@ -33,7 +33,10 @@ export const RouteConfig = {
 	API_PUBLIC_PATHS: ['/api/version'],
 
 	/** API GET 公开的路径前缀（写操作仍需认证） */
-	API_PUBLIC_PREFIXES: [] as string[],
+	API_PUBLIC_PREFIXES: [
+		// 全球板块行情（只读，后端内存缓存兜住上游请求量）
+		'/api/markets/',
+	] as string[],
 
 	/** 资源文件前缀 */
 	ASSET_PREFIXES: ['/_astro'],
