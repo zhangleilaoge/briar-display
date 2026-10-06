@@ -20,7 +20,6 @@ import {
 	type MarketSectorsResponse,
 	type SectorItem,
 	type SectorKind,
-	type SectorSortKey,
 } from '@briar/shared'
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Loader2, RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -31,7 +30,15 @@ import { SessionBadge, StaleBadge } from './MarketStatusBar'
 import MarketsShell from './MarketsShell'
 import SectorHeatmap from './SectorHeatmap'
 import SectorList from './SectorList'
-import { SORT_LABELS, formatShanghaiTime, sortSectors } from './marketUtils'
+import {
+	type ListSortKey,
+	SORT_LABELS,
+	type SortDirection,
+	availableSortKeys,
+	formatShanghaiTime,
+	nextSort,
+	sortSectors,
+} from './marketUtils'
 import { unwrap, useMarketPolling } from './useMarketPolling'
 
 type ViewMode = 'both' | 'heatmap' | 'list'
@@ -70,8 +77,9 @@ async function loadBundle(
 export default function MarketSectorsPage({ market }: { market: MarketId }) {
 	const [kind, setKind] = useState<SectorKind>('industry')
 	const [level, setLevel] = useState<string | undefined>(market === 'cn' ? '1' : undefined)
-	const [sortKey, setSortKey] = useState<SectorSortKey>('changePct')
-	const [direction, setDirection] = useState<'desc' | 'asc'>('desc')
+	// 排序状态只在用户操作时变：轮询刷新数据不会重置；表头点击、下拉、方向按钮共用
+	const [sortKey, setSortKey] = useState<ListSortKey>('changePct')
+	const [direction, setDirection] = useState<SortDirection>('desc')
 	const [view, setView] = useState<ViewMode>('both')
 	const [subject, setSubject] = useState<ChartSubject | null>(null)
 	const openSector = (item: SectorItem) =>
@@ -100,7 +108,17 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 	const sectors = data?.sectors
 	const switching =
 		loading || (sectors && (sectors.kind !== kind || (queryLevel && sectors.level !== queryLevel)))
-	const effectiveSort: SectorSortKey = sectors?.sortKeys.includes(sortKey) ? sortKey : 'changePct'
+	const sortOptions = useMemo(
+		() => (sectors ? availableSortKeys(sectors.items, sectors.sortKeys) : []),
+		[sectors],
+	)
+	// 当前市场没有该字段（如切到韩国时按净流入）就退回涨跌幅，但不改用户选择，切回来还在
+	const effectiveSort: ListSortKey = sortOptions.includes(sortKey) ? sortKey : 'changePct'
+	const onHeaderSort = (key: ListSortKey) => {
+		const next = nextSort({ key: effectiveSort, direction }, key)
+		setSortKey(next.key)
+		setDirection(next.direction)
+	}
 	const sorted = useMemo(
 		() => (sectors ? sortSectors(sectors.items, effectiveSort, direction) : []),
 		[sectors, effectiveSort, direction],
@@ -212,13 +230,13 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 							</SelectContent>
 						</Select>
 					)}
-					{sectors && sectors.sortKeys.length > 1 && (
-						<Select value={effectiveSort} onValueChange={(v) => setSortKey(v as SectorSortKey)}>
+					{sectors && sortOptions.length > 1 && (
+						<Select value={effectiveSort} onValueChange={(v) => setSortKey(v as ListSortKey)}>
 							<SelectTrigger className="h-9 w-[140px] bg-white/60">
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
-								{sectors.sortKeys.map((k) => (
+								{sortOptions.map((k) => (
 									<SelectItem key={k} value={k}>
 										按{SORT_LABELS[k]}
 									</SelectItem>
@@ -238,13 +256,17 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 						) : (
 							<ArrowUpNarrowWide className="h-4 w-4" />
 						)}
-						{direction === 'desc'
-							? effectiveSort === 'changePct'
+						{effectiveSort === 'changePct'
+							? direction === 'desc'
 								? '涨幅榜'
-								: '从高到低'
-							: effectiveSort === 'changePct'
-								? '跌幅榜'
-								: '从低到高'}
+								: '跌幅榜'
+							: effectiveSort === 'name'
+								? direction === 'desc'
+									? '名称降序'
+									: '名称升序'
+								: direction === 'desc'
+									? '从高到低'
+									: '从低到高'}
 					</Button>
 					<Tabs value={view} onValueChange={(v) => setView(v as ViewMode)} className="ml-auto">
 						<TabsList>
@@ -294,6 +316,9 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 										sortKey={effectiveSort}
 										amountCurrency={sectors.amountCurrency}
 										netInflowBasis={sectors.netInflowBasis}
+										direction={direction}
+										sortableKeys={sortOptions}
+										onSort={onHeaderSort}
 										onSelect={openSector}
 									/>
 								</CardContent>

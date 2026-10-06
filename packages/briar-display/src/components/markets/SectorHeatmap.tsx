@@ -1,10 +1,17 @@
-import type { SectorItem, SectorSortKey } from '@briar/shared'
+import type { SectorItem } from '@briar/shared'
 import { useMemo } from 'react'
-import { formatAmount, formatFlow, formatPct, heatScale, heatStyle } from './marketUtils'
+import {
+	type ListSortKey,
+	formatAmount,
+	formatFlow,
+	formatPct,
+	heatScale,
+	heatStyle,
+} from './marketUtils'
 
 interface SectorHeatmapProps {
 	items: SectorItem[]
-	sortKey: SectorSortKey
+	sortKey: ListSortKey
 	amountCurrency: string
 	/** 板块太多时只画前 N 个（按当前排序） */
 	limit?: number
@@ -19,8 +26,11 @@ function breadth(item: SectorItem): string {
 }
 
 /** 副标题：按成交额/净流入排序时显示对应数值，否则显示领涨股 */
-function subtitle(item: SectorItem, sortKey: SectorSortKey, currency: string): string {
+function subtitle(item: SectorItem, sortKey: ListSortKey, currency: string): string {
 	if (sortKey === 'amount' && item.amount != null) return formatAmount(item.amount, currency)
+	if (sortKey === 'breadth' && item.total) return breadth(item)
+	if (sortKey === 'leaderPct' && item.leader)
+		return `${item.leader.name} ${formatPct(item.leader.changePct)}`
 	if (sortKey === 'turnoverRate' && item.turnoverRate != null)
 		return `换手 ${item.turnoverRate.toFixed(2)}%`
 	if (item.leader) return item.leader.name

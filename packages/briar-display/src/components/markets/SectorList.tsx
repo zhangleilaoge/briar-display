@@ -8,9 +8,13 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
-import type { SectorItem, SectorSortKey } from '@briar/shared'
-import { useState } from 'react'
+import type { SectorItem } from '@briar/shared'
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
+import { type ReactNode, useState } from 'react'
 import {
+	BREADTH_SORT_HINT,
+	type ListSortKey,
+	type SortDirection,
 	changeColorClass,
 	flowBasisShort,
 	formatAmount,
@@ -20,19 +24,85 @@ import {
 
 interface SectorListProps {
 	items: SectorItem[]
-	sortKey: SectorSortKey
+	sortKey: ListSortKey
+	direction?: SortDirection
+	/** 当前可排序的维度（没有数据的列不可点） */
+	sortableKeys?: ListSortKey[]
+	/** 点击表头排序（与上方下拉共用状态） */
+	onSort?: (key: ListSortKey) => void
 	amountCurrency: string
 	/** 净流入口径；null = 该市场没有资金流数据（列显示「—」） */
 	netInflowBasis?: string | null
 	pageSize?: number
-	/** 点击行（查看当日分时） */
+	/** 点击行（打开走势面板） */
 	onSelect?: (item: SectorItem) => void
 }
 
-/** 板块列表：只显示数据源确实提供的列；当前排序列在手机端也保留 */
+interface SortHeadProps {
+	sortKey: ListSortKey
+	label: ReactNode
+	current: ListSortKey
+	direction: SortDirection
+	sortable: boolean
+	onSort?: (key: ListSortKey) => void
+	className?: string
+	align?: 'left' | 'right'
+	title?: string
+}
+
+/** 可点击排序的表头：当前列显示方向箭头，其余列悬停时显示淡箭头 */
+function SortHead({
+	sortKey,
+	label,
+	current,
+	direction,
+	sortable,
+	onSort,
+	className,
+	align = 'right',
+	title,
+}: SortHeadProps) {
+	const active = current === sortKey
+	const Icon = !active ? ArrowUpDown : direction === 'desc' ? ArrowDown : ArrowUp
+	return (
+		<TableHead
+			className={cn(align === 'right' && 'text-right', className)}
+			aria-sort={active ? (direction === 'desc' ? 'descending' : 'ascending') : undefined}
+			title={title}
+		>
+			{sortable && onSort ? (
+				<button
+					type="button"
+					onClick={() => onSort(sortKey)}
+					className={cn(
+						'group inline-flex items-start gap-0.5 hover:text-foreground',
+						align === 'right' && 'flex-row-reverse text-right',
+						active && 'text-foreground',
+					)}
+					title={title ? `${title}（点击排序：先降序，再点升序）` : '点击排序：先降序，再点升序'}
+				>
+					<span>{label}</span>
+					<Icon
+						className={cn(
+							'mt-0.5 h-3.5 w-3.5 shrink-0',
+							active ? 'text-sky-600' : 'opacity-0 transition-opacity group-hover:opacity-50',
+						)}
+					/>
+				</button>
+			) : (
+				label
+			)}
+		</TableHead>
+	)
+}
+
+/** 板块列表：只显示数据源确实提供的列；表头可点击排序；当前排序列在手机端也保留 */
 export default function SectorList({
 	items,
 	sortKey,
+	direction = 'desc',
+	sortableKeys = [],
+	onSort,
 	amountCurrency,
 	netInflowBasis = null,
 	pageSize = 100,
@@ -48,7 +118,14 @@ export default function SectorList({
 		leader: items.some((i) => i.leader != null),
 	}
 	/** 非当前排序列在小屏隐藏 */
-	const col = (key: SectorSortKey, base: string) => (sortKey === key ? '' : base)
+	const col = (key: ListSortKey, base: string) => (sortKey === key ? '' : base)
+	const head = (key: ListSortKey) => ({
+		sortKey: key,
+		current: sortKey,
+		direction,
+		sortable: sortableKeys.includes(key),
+		onSort,
+	})
 
 	if (items.length === 0) {
 		return <p className="py-10 text-center text-sm text-muted-foreground">暂无板块数据</p>
@@ -60,35 +137,56 @@ export default function SectorList({
 				<TableHeader>
 					<TableRow>
 						<TableHead className="w-10 text-center">#</TableHead>
-						<TableHead>板块</TableHead>
-						<TableHead className="text-right">涨跌幅</TableHead>
-						<TableHead
-							className={cn('text-right', col('netInflow', 'hidden sm:table-cell'))}
+						<SortHead {...head('name')} label="板块" align="left" title="按板块名称（中文排序）" />
+						<SortHead {...head('changePct')} label="涨跌幅" />
+						<SortHead
+							{...head('netInflow')}
+							className={col('netInflow', 'hidden sm:table-cell')}
 							title={
 								netInflowBasis
 									? `口径：${netInflowBasis}。正数为流入，负数为流出`
 									: '该市场数据源不提供资金流'
 							}
-						>
-							<div className="leading-tight">净流入</div>
-							<div className="text-[10px] font-normal leading-tight text-muted-foreground/80">
-								{flowBasisShort(netInflowBasis)}
-							</div>
-						</TableHead>
+							label={
+								<>
+									<div className="leading-tight">净流入</div>
+									<div className="text-[10px] font-normal leading-tight text-muted-foreground/80">
+										{flowBasisShort(netInflowBasis)}
+									</div>
+								</>
+							}
+						/>
 						{has.amount && (
-							<TableHead className={cn('text-right', col('amount', 'hidden sm:table-cell'))}>
-								成交额
-							</TableHead>
+							<SortHead
+								{...head('amount')}
+								label="成交额"
+								className={col('amount', 'hidden sm:table-cell')}
+							/>
 						)}
 						{has.turnoverRate && (
-							<TableHead className={cn('text-right', col('turnoverRate', 'hidden md:table-cell'))}>
-								换手率
-							</TableHead>
+							<SortHead
+								{...head('turnoverRate')}
+								label="换手率"
+								className={col('turnoverRate', 'hidden md:table-cell')}
+							/>
 						)}
 						{has.breadth && (
-							<TableHead className="hidden text-right lg:table-cell">涨跌家数</TableHead>
+							<SortHead
+								{...head('breadth')}
+								label="涨跌家数"
+								className={col('breadth', 'hidden lg:table-cell')}
+								title={BREADTH_SORT_HINT}
+							/>
 						)}
-						{has.leader && <TableHead className="hidden sm:table-cell">领涨股</TableHead>}
+						{has.leader && (
+							<SortHead
+								{...head('leaderPct')}
+								label="领涨股"
+								align="left"
+								className={col('leaderPct', 'hidden sm:table-cell')}
+								title="按领涨股涨幅排序"
+							/>
+						)}
 					</TableRow>
 				</TableHeader>
 				<TableBody>
@@ -159,7 +257,9 @@ export default function SectorList({
 								</TableCell>
 							)}
 							{has.breadth && (
-								<TableCell className="hidden text-right tabular-nums lg:table-cell">
+								<TableCell
+									className={cn('text-right tabular-nums', col('breadth', 'hidden lg:table-cell'))}
+								>
 									{!item.total ? (
 										'--'
 									) : item.downCount != null ? (
@@ -178,7 +278,7 @@ export default function SectorList({
 								</TableCell>
 							)}
 							{has.leader && (
-								<TableCell className="hidden sm:table-cell">
+								<TableCell className={col('leaderPct', 'hidden sm:table-cell')}>
 									{item.leader ? (
 										<span className="whitespace-nowrap">
 											{item.leader.name}{' '}
