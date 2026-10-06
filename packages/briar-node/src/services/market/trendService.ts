@@ -7,9 +7,10 @@ import type {
 	MarketIndexTrendsResponse,
 	MarketSessionStatus,
 	MinuteDay,
+	MinutePoint,
 	TrendSeries,
 } from '@briar/shared'
-import { CHART_PERIODS } from '@briar/shared'
+import { CHART_PERIODS, isStockCode } from '@briar/shared'
 import { cachedLoad } from './cache'
 import {
 	HK_INDUSTRY_INDICES,
@@ -29,6 +30,7 @@ import {
 	zonedTimeToTs,
 } from './session'
 import { fetchEastmoneyUlist } from './sources'
+import { getStockQuote } from './stockService'
 import {
 	type KlinePeriod,
 	type RawCandles,
@@ -48,9 +50,10 @@ import {
 	resolveTencentUsKlineCode,
 } from './trendSources'
 
-/** 东证行情在 Naver 上延迟 15 分钟；腾讯美股 ETF 报价也是延迟行情 */
+/** 东证行情在 Naver 上延迟 15 分钟；腾讯美股 ETF / 个股报价也是延迟行情；腾讯港股个股按 15 分钟延迟计 */
 const JP_DELAY_MINUTES = 15
 const US_ETF_DELAY_MINUTES = 15
+const HK_STOCK_DELAY_MINUTES = 15
 
 /** K 线根数：日K 约一年，周K 约四年，月K 十年（MA20 需要多 19 根） */
 const KLINE_COUNT: Record<KlinePeriod, number> = { day: 320, week: 220, month: 140 }
@@ -383,6 +386,88 @@ function planSectorChart(market: MarketId, code: string): ChartPlan {
 	throw new MarketInputError('未知的板块代码')
 }
 
+/** 只保留连续竞价时段内的分钟点（韩国个股分钟线含 NXT 盘前 08:00 / 盘后至 20:00） */
+export function clipToSessions(market: MarketId, points: MinutePoint[]): MinutePoint[] {
+	const { timeZone } = MARKET_SESSIONS[market]
+	const rangesByDay = new Map<string, [number, number][]>()
+	return points.filter(([ts]) => {
+		const day = localParts(ts, timeZone).dateKey
+		let ranges = rangesByDay.get(day)
+		if (!ranges) {
+			ranges = sessionRanges(market, day)
+			rangesByDay.set(day, ranges)
+		}
+		return ranges.some(([start, end]) => ts >= start && ts <= end)
+	})
+}
+
+/** 个股：A股 / 港股 / 美股走腾讯，日韩走 Naver（与指数同源） */
+function planStockChart(market: MarketId, code: string): ChartPlan {
+	if (!isStockCode(market, code)) throw new MarketInputError('股票代码格式不正确')
+	const { timeZone } = MARKET_SESSIONS[market]
+	switch (market) {
+		case 'cn':
+			return {
+				name: code,
+				intraday: () => fetchTencentMinute(code, timeZone),
+				fiveDay: () => fetchTencentFiveDay(code, timeZone),
+				candles: (period) => fetchTencentKline(code, period, KLINE_COUNT[period]),
+				delayMinutes: 0,
+				reasons: {},
+			}
+		case 'hk': {
+			const t = `hk${code}`
+			const delayed = <T extends { delayMinutes: number }>(p: Promise<T>) =>
+				p.then((raw) => ({ ...raw, delayMinutes: HK_STOCK_DELAY_MINUTES }))
+			return {
+				name: code,
+				intraday: () => delayed(fetchTencentMinute(t, timeZone)),
+				fiveDay: () => delayed(fetchTencentFiveDay(t, timeZone)),
+				candles: (period) => fetchTencentKline(t, period, KLINE_COUNT[period]),
+				delayMinutes: HK_STOCK_DELAY_MINUTES,
+				reasons: {},
+			}
+		}
+		case 'us': {
+			const t = `us${code}`
+			return {
+				name: code,
+				intraday: () => fetchTencentUsMinute(t),
+				fiveDay: () => fetchTencentFiveDay(t, timeZone, true),
+				candles: tencentUsKline(t),
+				delayMinutes: US_ETF_DELAY_MINUTES,
+				reasons: {},
+			}
+		}
+		case 'jp':
+			return {
+				name: code,
+				intraday: () => fetchNaverWorldTrend(`${code}.T`, 'item', timeZone, JP_DELAY_MINUTES),
+				candles: (period) => fetchNaverCandles(`foreign/item/${code}.T`, period, timeZone),
+				delayMinutes: JP_DELAY_MINUTES,
+				reasons: { '5day': NO_JP_5DAY },
+			}
+		case 'kr': {
+			const clip = (points: MinutePoint[]) => clipToSessions('kr', points)
+			return {
+				name: code,
+				intraday: async () => {
+					// 分钟线不带昨收：从个股报价（同一份全局缓存）补
+					const [raw, quote] = await Promise.all([
+						fetchNaverDomesticIndexMinute(code, undefined, 'item'),
+						getStockQuote('kr', code).catch(() => null),
+					])
+					return { ...raw, points: clip(raw.points), prevClose: quote?.quote.prevClose ?? null }
+				},
+				fiveDay: () => fetchNaverDomesticIndexDays(code, 5, 'item', clip),
+				candles: (period) => fetchNaverCandles(`domestic/item/${code}`, period, timeZone),
+				delayMinutes: 0,
+				reasons: {},
+			}
+		}
+	}
+}
+
 function periodSupport(plan: ChartPlan): ChartPeriodSupport[] {
 	return CHART_PERIODS.map((period) => {
 		const has =
@@ -440,7 +525,7 @@ async function loadPeriod(market: MarketId, plan: ChartPlan, period: ChartPeriod
 	return null
 }
 
-/** 走势面板数据：target=index|sector，period=intraday|5day|day|week|month */
+/** 走势面板数据：target=index|sector|stock，period=intraday|5day|day|week|month */
 export async function getChart(
 	market: MarketId,
 	target: ChartTarget,
@@ -448,7 +533,12 @@ export async function getChart(
 	period: ChartPeriod,
 ): Promise<MarketChartResponse> {
 	const { timeZone } = MARKET_SESSIONS[market]
-	const plan = target === 'index' ? planIndexChart(market, code) : planSectorChart(market, code)
+	const plan =
+		target === 'index'
+			? planIndexChart(market, code)
+			: target === 'stock'
+				? planStockChart(market, code)
+				: planSectorChart(market, code)
 	const periods = periodSupport(plan)
 	const support = periods.find((p) => p.period === period)
 	const now = Date.now()

@@ -1,10 +1,11 @@
-# 全球板块
+# 行情（原「全球板块」）
 
-首页「全球板块」入口：A股 / 港股 / 美股 / 日本 / 韩国的大盘指数与板块涨跌（红涨绿跌，所有市场统一）。免登录（与工具箱同为 `PUBLIC_PREFIXES`），API 走 `API_PUBLIC_PREFIXES: /api/markets/`。
+首页「全球板块」入口卡片保留不变；进入后面包屑 / 页面标题 / 文档标题统一叫「行情」（2026-10 起：板块之外还有成分股、个股详情和自选股）。A股 / 港股 / 美股 / 日本 / 韩国的大盘指数与板块涨跌（红涨绿跌，所有市场统一）。免登录（与工具箱同为 `PUBLIC_PREFIXES`），API 走 `API_PUBLIC_PREFIXES: /api/markets/`。
 
-- 页面：`/briar/markets`（五市场卡片）、`/briar/markets/{cn|hk|us|jp|kr}`（热力图 + 列表、行业/概念切换、排序切换）
+- 页面：`/briar/markets`（五市场卡片 + 自选股 + 个股搜索）、`/briar/markets/{cn|hk|us|jp|kr}`（热力图 + 列表、行业/概念切换、排序切换）
 - API：`GET /api/markets/overview`、`GET /api/markets/:market/sectors?kind=industry|concept&level=1|2`（level 仅 A股行业：申万一级/二级）、`GET /api/markets/:market/index-trends`（指数卡片分时小图）、`GET /api/markets/:market/chart?target=index|sector&code=…&period=intraday|5day|day|week|month`（走势面板）
-- 代码：后端 `packages/briar-node/src/services/market/`（http / cache / session / catalog / sources / marketService / trendSources / trendService）+ `routes/markets.ts`；共享类型 `briar-shared/src/markets.ts`；前端 `components/markets/`（走势面板 `MarketChartPanel` + `TrendChart`）
+- 个股 API：`GET /api/markets/:market/constituents?code=&kind=`（板块成分股）、`GET /api/markets/:market/stock?code=`（个股报价）、`GET /api/markets/:market/chart?target=stock&code=…`（个股走势）、`GET /api/markets/search?q=`（跨市场搜索）、`GET /api/markets/quotes?items=cn:sh600519,us:AAPL`（批量报价，自选列表用）、`GET|POST /api/markets/watchlist`、`DELETE /api/markets/watchlist/:market/:code`
+- 代码：后端 `packages/briar-node/src/services/market/`（http / cache / session / catalog / sources / marketService / trendSources / trendService / stockSources / stockService / watchlist）+ `routes/markets.ts` + `dal/marketWatchlistDal.ts`；共享类型 `briar-shared/src/markets.ts`；前端 `components/markets/`（详情弹窗 `MarketDetailDialog` + 导航栈 `dialogStack`、走势 `MarketChartPanel`(`ChartPanelBody`) + `TrendChart`、成分股 `SectorConstituents`、个股 `StockDetailView`、自选 `WatchlistCard` / `watchlistStore`）
 - 前端不直连任何第三方，全部经 briar-node 代理
 
 ## 数据源（2026-10 实测，均国内直连可达）
@@ -66,6 +67,43 @@
 - 东财 push2his（trends2 + kline）进程内全局限流 **6 次/分钟**，超限直接报「请求过于频繁」；东财方案缓存至少 30s。实测同 IP 秒级连发十几次就会被 Empty reply 封，且会连带 ulist（港股行业列表）一起封
 - 缓存：分时 / 五日同报价（20s / 60s / 5min）；K 线交易中 60s、午休盘前 5min、收盘后 30min。指数分时与卡片小图共用 `trends:index:{market}` 缓存
 
+## 板块详情弹窗：成分股 → 个股（导航栈）
+
+板块弹窗在走势面板下面列成分股；点某只股票在**同一个弹窗**里压栈打开个股详情（标题换成股票名 + 代码，左上「返回 板块名」回到板块，栈逻辑在 `dialogStack.ts`：同一只重复点不重复压栈，点栈里已有的层截回那一层）。自选列表和搜索结果打开的是只有一层的个股弹窗。
+
+成分股表：名称/代码、现价、涨跌幅、净流入（仅有资金流的源）、成交额、换手率、总市值、市盈率；表头排序与板块列表同一套（`nextSort`：新列先降序，同列切升序，箭头标方向，空值永远最后，名称按 `zh-CN` 排序）。默认按涨跌幅降序，前端每页 50 行（「再显示 50 只 / 显示全部 / 收起」），轮询节奏同板块。
+
+| 市场 | 成分股来源 | 上限 | 字段 | 延迟 |
+| :--- | :--- | :--- | :--- | :--- |
+| A股（腾讯 `pt01*`/`pt02*` 板块） | 腾讯 `proxy.finance.qq.com/cgi/cgi-bin/rank/pt/getBoardRankList?board_code=…&sort_type=priceRatio`（`count` ≤ 200） | ≤ 400 全取；超过（如大概念上千只）取涨幅前 200 + 跌幅前 200，表下注明 | 现价 / 涨跌幅 / 成交额 / 换手率 / 总市值 / 市盈率（TTM）；**无个股净流入** | 实时 |
+| A股（东财兜底时的 `BK*` 板块） | 东财 clist `fs=b:BKxxxx`，每页 100 | 涨幅前 400 | 另有主力净流入（`f62`）、市盈率（动态） | 实时；**每页占一次东财全局限流（6 次/分钟）**，缓存 ≥ 30s |
+| 韩国业种 / 主题 | Naver `m.stock.naver.com/api/stocks/{industry\|theme}/{no}?pageSize=100` | 前 400 | 现价 / 涨跌幅 / 成交额（KRW）/ 总市值 | 实时 |
+| 港股恒生综合行业 | — 不支持：恒指公司成分股只向授权机构提供，无免费公开源 | | | |
+| 美股 / 日本 | — 不支持：板块以 ETF 代理，ETF 持仓没有免费实时源 | | | |
+
+不支持时接口 `available: false` + `reason`，弹窗显示空状态和原因。
+
+## 个股详情
+
+报价头（现价、涨跌额/幅、实时/延迟、行情时间、今开/最高/最低/昨收/成交额/成交量/换手率/总市值/市盈率/市净率）+ 与板块同一个走势面板（`target=stock`）+「加自选 / 已自选」按钮。
+
+| 市场 | 代码格式 | 报价 | 分时 | 五日 | 日/周/月K | 延迟 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| A股 | `sh600519` / `sz000001` / `bj8xxxxx` | 腾讯 qt（PE 动态、PB、市值） | 腾讯 `minute/query` | 腾讯 `day/query` | 腾讯 `newfqkline`（前复权） | 实时 |
+| 港股 | `00700` | 腾讯 qt `hk00700` | 腾讯 `minute/query` | 腾讯 `day/query` | 腾讯 `newfqkline` | 15 分钟 |
+| 美股 | `AAPL`（大写） | 腾讯 qt `usAAPL` | 腾讯 `UsMinute/query` | 腾讯 `dayus/query` | 腾讯 `newfqkline`（代码带交易所后缀，取自 qt） | 15 分钟 |
+| 日本 | `7203` | Naver `api.stock.naver.com/stock/{code}.T/basic`（英文名、PER/PBR/市值） | Naver `pricesByPeriod` | — 无 | Naver `chart/foreign/item/{code}.T/…` | 15 分钟 |
+| 韩国 | `005930` | Naver polling `domestic/stock` + integration（PER/PBR，缓存 10 分钟） | Naver `chart/domestic/item/{code}/minute`（裁掉 NXT 08:00–20:00 盘外段，只留 KRX 正规时段） | 同接口取多日 | Naver `chart/domestic/item/{code}/{day,week,month}` | 实时 |
+
+## 自选股与搜索
+
+`/briar/markets` 市场卡片下方「自选股」卡片：搜索框 + 自选列表（名称、市场、代码、现价、涨跌幅红涨绿跌、移除按钮；点行打开个股弹窗）。列表用 `/quotes` 批量报价，按 `pollMs` 轮询（交易中约 20s），页面隐藏暂停。上限 100 只（`WATCHLIST_LIMIT`）。
+
+- **存储**：登录用户存服务端表 `market_watchlist`（`user_id + market + code` 唯一，随用户删除级联），多设备同步；未登录存 `localStorage`（`briar_market_watchlist`），登录后首次打开把本机自选合并进账号再清掉本地。与「媒体历史」同一模式。`/briar/markets` 本身免登录，所以不能强制登录。
+- `GET /watchlist` 在公开前缀下（GET 不过 authMiddleware），路由里自行用 Bearer / `briar_token` cookie 校验，未登录 401；`POST` / `DELETE` 走 authMiddleware，已在 `apiPermissions.ts` 声明（登录即可）
+- **搜索**：搜全部个股（不限自选），代码 / 名称 / 拼音首字母。前端输入防抖 300ms，新输入会 abort 旧请求；后端按规范化后的查询词缓存 10 分钟（`search:{q}`，单飞）。来源：腾讯 smartbox `smartbox.gtimg.cn/s3/?t=all&q=`（A股个股+ETF、港股、美股，支持 `gzmt` 这类拼音首字母）+ Naver 自动补全 `ac.stock.naver.com/ac?target=stock`（韩国、日本；纯中文查询不打 Naver）。结果代码完全匹配的排最前，去重后最多 30 条。
+- 缓存 key：`constituents:{market}:{kind}:{code}`、`stock:quote:{market}:{code}`、`stock:quotes:{tencent|kr|jp}:{ids}`、`stock:valuation:kr:{code}`、`chart:{market}:stock:{code}:{period}`、`search:{q}`；报价 / 成分股 TTL 同板块（交易中 20s / 午休盘前 60s / 收盘 5min），东财方案 ≥ 30s
+
 ## 缓存与轮询
 
 - 进程内全局共享缓存 `cache.ts`（所有用户共用一份）：key = 市场 + 接口类型 + 参数——`indices:em|naver|kr-flows`（overview）、`sectors:{market}:{kind}:{level}`、`flows:us:{kind}`、`trends:index:{market}`（index-trends 与面板分时共用）、`chart:{market}:{target}:{code}:{period}`
@@ -86,4 +124,7 @@
 - 韩国主题名为韩文（无稳定翻译源）
 - 东财 clist 有封 IP 风险（只做 A股兜底）
 - 节假日只靠行情日期推断；美股指数（东财）收盘后无法确认是否有延迟，按实时标注
+- 成分股：港股、美股、日本不支持（见上）；A股腾讯源没有个股净流入；大板块只展示 400 只
+- 个股：日本没有五日分时；港股 / 美股 / 日股报价延迟 15 分钟；美股只有常规时段（无盘前盘后）
+- 搜索：日韩个股依赖 Naver 自动补全（中文名搜不到日韩股，需用代码 / 英文 / 韩文）；只收股票（A股另含 ETF），不含基金、债券、期权、期货
 - 每次轮询都经过 logger 写入 `request_logs`（公开接口，访问量大时注意表增长）

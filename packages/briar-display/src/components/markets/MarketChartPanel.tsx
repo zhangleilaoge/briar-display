@@ -2,13 +2,6 @@
 
 import { getMarketChart } from '@/api/markets'
 import { Badge } from '@/components/ui/badge'
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import {
 	CHART_PERIODS,
@@ -34,7 +27,7 @@ import {
 } from './marketUtils'
 import { unwrap, useMarketPolling } from './useMarketPolling'
 
-/** 面板打开的标的：指数卡片或板块（热力图色块 / 列表行） */
+/** 面板打开的标的：指数卡片、板块（热力图色块 / 列表行）或个股 */
 export interface ChartSubject {
 	target: ChartTarget
 	code: string
@@ -46,12 +39,15 @@ export interface ChartSubject {
 	sector?: SectorItem
 }
 
-interface MarketChartPanelProps {
+interface ChartPanelBodyProps {
 	market: MarketId
-	subject: ChartSubject | null
+	subject: ChartSubject
 	amountCurrency?: string
-	onClose: () => void
+	/** 顶部最新价 / 涨跌幅（个股详情页有自己的报价头，传 false） */
+	showQuote?: boolean
 }
+
+const WHAT: Record<ChartTarget, string> = { index: '该指数', sector: '该板块', stock: '该股票' }
 
 const isKline = (p: ChartPeriod): p is 'day' | 'week' | 'month' =>
 	p === 'day' || p === 'week' || p === 'month'
@@ -73,11 +69,13 @@ function latestQuote(data: MarketChartResponse) {
 	return { price: last[1], pct: base ? ((last[1] - base) / base) * 100 : null }
 }
 
-function PanelBody({
+/** 同花顺式走势面板主体：分时 / 五日 / 日K / 周K / 月K；指数、板块、个股共用（外层弹窗见 MarketDetailDialog） */
+export function ChartPanelBody({
 	market,
 	subject,
 	amountCurrency = '',
-}: Omit<MarketChartPanelProps, 'onClose'> & { subject: ChartSubject }) {
+	showQuote = true,
+}: ChartPanelBodyProps) {
 	const [period, setPeriod] = useState<ChartPeriod>('intraday')
 	const [support, setSupport] = useState<ChartPeriodSupport[] | null>(null)
 
@@ -123,35 +121,39 @@ function PanelBody({
 	const price = quote?.price ?? subject.price
 	const pct = quote ? quote.pct : subject.changePct
 	const label = CHART_PERIOD_LABELS[period]
-	const what = subject.target === 'sector' ? '该板块' : '该指数'
+	const what = WHAT[subject.target]
 	const sector = subject.sector
 	const lastDay = current?.days[current.days.length - 1]
 	const lastTs = lastDay?.points[lastDay.points.length - 1]?.[0]
 
 	return (
 		<div className="space-y-3">
-			<div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm tabular-nums">
-				{price != null && <span className="text-lg font-semibold">{formatPrice(price)}</span>}
-				<span className={cn('text-lg font-semibold', changeColorClass(pct))}>{formatPct(pct)}</span>
-				{period !== 'intraday' && quote && (
-					<span className="text-xs text-muted-foreground">
-						{isKline(period) ? `较上一${label.replace('K', '')}收盘` : '较当日昨收'}
+			{showQuote && (
+				<div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm tabular-nums">
+					{price != null && <span className="text-lg font-semibold">{formatPrice(price)}</span>}
+					<span className={cn('text-lg font-semibold', changeColorClass(pct))}>
+						{formatPct(pct)}
 					</span>
-				)}
-				{sector?.amount != null && (
-					<span className="text-muted-foreground">
-						成交额 {formatAmount(sector.amount, amountCurrency)}
-					</span>
-				)}
-				{sector?.leader && (
-					<span className="text-muted-foreground">
-						领涨 {sector.leader.name}{' '}
-						<span className={changeColorClass(sector.leader.changePct)}>
-							{formatPct(sector.leader.changePct)}
+					{period !== 'intraday' && quote && (
+						<span className="text-xs text-muted-foreground">
+							{isKline(period) ? `较上一${label.replace('K', '')}收盘` : '较当日昨收'}
 						</span>
-					</span>
-				)}
-			</div>
+					)}
+					{sector?.amount != null && (
+						<span className="text-muted-foreground">
+							成交额 {formatAmount(sector.amount, amountCurrency)}
+						</span>
+					)}
+					{sector?.leader && (
+						<span className="text-muted-foreground">
+							领涨 {sector.leader.name}{' '}
+							<span className={changeColorClass(sector.leader.changePct)}>
+								{formatPct(sector.leader.changePct)}
+							</span>
+						</span>
+					)}
+				</div>
+			)}
 
 			<div className="grid grid-cols-5 gap-1 rounded-lg bg-muted p-1" role="tablist">
 				{CHART_PERIODS.map((p) => {
@@ -246,43 +248,5 @@ function PanelBody({
 				</div>
 			)}
 		</div>
-	)
-}
-
-/** 同花顺式走势面板：分时 / 五日 / 日K / 周K / 月K；指数卡片和板块共用（手机上接近全宽） */
-export default function MarketChartPanel({
-	market,
-	subject,
-	amountCurrency,
-	onClose,
-}: MarketChartPanelProps) {
-	return (
-		<Dialog open={subject != null} onOpenChange={(open) => !open && onClose()}>
-			<DialogContent className="w-[calc(100%-1rem)] max-w-3xl rounded-2xl p-3 sm:p-6">
-				{subject && (
-					<>
-						<DialogHeader className="text-left">
-							<DialogTitle className="pr-6">
-								{subject.name}
-								{subject.subName && subject.subName !== subject.name && (
-									<span className="ml-2 text-sm font-normal text-muted-foreground">
-										{subject.subName}
-									</span>
-								)}
-							</DialogTitle>
-							<DialogDescription>
-								{subject.target === 'index' ? '大盘指数' : '板块'}走势 · 红涨绿跌
-							</DialogDescription>
-						</DialogHeader>
-						<PanelBody
-							key={`${subject.target}:${subject.code}`}
-							market={market}
-							subject={subject}
-							amountCurrency={amountCurrency}
-						/>
-					</>
-				)}
-			</DialogContent>
-		</Dialog>
 	)
 }

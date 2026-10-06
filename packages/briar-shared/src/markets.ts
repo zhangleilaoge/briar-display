@@ -163,7 +163,7 @@ export interface MarketIndexTrendsResponse extends MarketDataMeta {
 
 /** 走势面板周期：分时 / 五日 / 日K / 周K / 月K */
 export type ChartPeriod = 'intraday' | '5day' | 'day' | 'week' | 'month'
-export type ChartTarget = 'index' | 'sector'
+export type ChartTarget = 'index' | 'sector' | 'stock'
 export const CHART_PERIODS: ChartPeriod[] = ['intraday', '5day', 'day', 'week', 'month']
 export const CHART_PERIOD_LABELS: Record<ChartPeriod, string> = {
 	intraday: '分时',
@@ -221,3 +221,140 @@ export interface MarketChartResponse extends MarketDataMeta {
 	source: string
 	session: MarketSessionInfo
 }
+
+// ───────────────────────── 个股：成分股 / 详情 / 搜索 / 自选 ─────────────────────────
+
+/**
+ * 个股代码（接口与自选统一用这一套）：
+ * - cn：腾讯风格带交易所前缀 sh600519 / sz000001 / bj830799
+ * - hk：5 位数字 00700
+ * - us：大写代码 AAPL（不带交易所后缀）
+ * - jp：东证代码 7203（Naver 用 7203.T）
+ * - kr：6 位代码 005930
+ */
+export const STOCK_CODE_PATTERNS: Record<MarketId, RegExp> = {
+	cn: /^(sh|sz|bj)\d{6}$/,
+	hk: /^\d{5}$/,
+	us: /^[A-Z][A-Z0-9.-]{0,9}$/,
+	jp: /^[0-9][0-9A-Z]{3}$/,
+	kr: /^[0-9A-Z]{6}$/,
+}
+
+export function isStockCode(market: MarketId, code: string): boolean {
+	return STOCK_CODE_PATTERNS[market].test(code)
+}
+
+/** 个股引用（自选 / 搜索结果 / 成分股点击） */
+export interface StockRef {
+	market: MarketId
+	code: string
+	name: string
+}
+
+/** 板块成分股一行 */
+export interface ConstituentItem {
+	code: string
+	name: string
+	price: number | null
+	changePct: number | null
+	/** 成交额（元 / 当地货币） */
+	amount: number | null
+	/** 换手率 % */
+	turnoverRate: number | null
+	/** 主力净流入（数据源提供时才有） */
+	netInflow: number | null
+	/** 总市值（当地货币） */
+	marketCap: number | null
+	/** 市盈率（TTM / 动态，见 peBasis） */
+	pe: number | null
+}
+
+export type ConstituentSortKey =
+	| 'changePct'
+	| 'price'
+	| 'amount'
+	| 'turnoverRate'
+	| 'netInflow'
+	| 'marketCap'
+	| 'pe'
+
+export interface SectorConstituentsResponse extends MarketDataMeta {
+	market: MarketId
+	/** 板块代码（与 sectors 接口一致） */
+	code: string
+	kind: SectorKind
+	/** false = 该板块没有成分股数据源（reason 说明原因） */
+	available: boolean
+	reason?: string
+	items: ConstituentItem[]
+	/** 成分股总数（可能大于 items.length） */
+	total: number
+	/** 超过上限时的截取说明 */
+	truncatedNote?: string
+	/** 有数据的列 */
+	sortKeys: ConstituentSortKey[]
+	netInflowBasis: string | null
+	peBasis: string | null
+	amountCurrency: string
+	source: string
+	delayMinutes: number
+	session: MarketSessionInfo
+}
+
+/** 个股报价（详情页头部 / 自选列表） */
+export interface StockQuote {
+	market: MarketId
+	code: string
+	name: string
+	price: number | null
+	change: number | null
+	changePct: number | null
+	prevClose: number | null
+	open: number | null
+	high: number | null
+	low: number | null
+	/** 成交额（当地货币） */
+	amount: number | null
+	volume: number | null
+	turnoverRate: number | null
+	/** 总市值（当地货币） */
+	marketCap: number | null
+	pe: number | null
+	pb: number | null
+	currency: string
+	quoteTime: number | null
+	delayMinutes: number
+	source: string
+}
+
+export interface StockQuoteResponse extends MarketDataMeta {
+	quote: StockQuote
+	session: MarketSessionInfo
+}
+
+export interface StockQuotesResponse extends MarketDataMeta {
+	/** 与请求顺序一致；拿不到的标的不在列表里 */
+	items: StockQuote[]
+	/** 各市场建议轮询间隔里最短的那个 */
+	pollMs: number
+}
+
+export interface StockSearchItem extends StockRef {
+	/** stock / etf */
+	type: 'stock' | 'etf'
+	/** 交易所 / 板块简称（如 科创板、KOSDAQ、东证） */
+	exchange?: string
+}
+
+export interface StockSearchResponse {
+	query: string
+	items: StockSearchItem[]
+	sources: string[]
+}
+
+export interface WatchlistItem extends StockRef {
+	addedAt: number
+}
+
+/** 自选上限（每个用户 / 每台设备） */
+export const WATCHLIST_LIMIT = 100

@@ -126,7 +126,7 @@ export function availableSortKeys(items: SectorItem[], serverKeys: SectorSortKey
 	return SORT_ORDER.filter((k) => keys.has(k))
 }
 
-const nameCollator = new Intl.Collator('zh-CN')
+export const nameCollator = new Intl.Collator('zh-CN')
 
 /** 排序：数值维度按值，名称按中文 localeCompare('zh-CN')；缺失值无论升降序都排最后；稳定排序 */
 export function sortSectors(
@@ -149,10 +149,10 @@ export function sortSectors(
 }
 
 /** 表头点击：点新列从降序开始，再点同一列切换升降序 */
-export function nextSort(
-	current: { key: ListSortKey; direction: SortDirection },
-	clicked: ListSortKey,
-): { key: ListSortKey; direction: SortDirection } {
+export function nextSort<K extends string = ListSortKey>(
+	current: { key: K; direction: SortDirection },
+	clicked: K,
+): { key: K; direction: SortDirection } {
 	if (current.key !== clicked) return { key: clicked, direction: 'desc' }
 	return { key: clicked, direction: current.direction === 'desc' ? 'asc' : 'desc' }
 }

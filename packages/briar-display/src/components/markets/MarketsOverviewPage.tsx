@@ -3,10 +3,14 @@
 import { getMarketOverview } from '@/api/markets'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import type { MarketOverviewItem } from '@briar/shared'
+import type { MarketOverviewItem, StockRef } from '@briar/shared'
 import { ChevronRight, Loader2, RefreshCw } from 'lucide-react'
+import { useState } from 'react'
+import MarketDetailDialog from './MarketDetailDialog'
 import { IndexList, SessionBadge, StaleBadge } from './MarketStatusBar'
 import MarketsShell from './MarketsShell'
+import WatchlistCard from './WatchlistCard'
+import type { DetailView } from './dialogStack'
 import { formatShanghaiTime } from './marketUtils'
 import { unwrap, useMarketPolling } from './useMarketPolling'
 
@@ -50,6 +54,13 @@ function MarketCard({ item }: { item: MarketOverviewItem }) {
 }
 
 export default function MarketsOverviewPage() {
+	const [detail, setDetail] = useState<DetailView | null>(null)
+	const openStock = (s: StockRef) =>
+		setDetail({
+			kind: 'stock',
+			market: s.market,
+			stock: { market: s.market, code: s.code, name: s.name },
+		})
 	const { data, error, loading, refreshing, refresh } = useMarketPolling(
 		async () => unwrap(await getMarketOverview()),
 		(d) => Math.min(...d.markets.map((m) => m.session.pollMs)),
@@ -60,9 +71,9 @@ export default function MarketsOverviewPage() {
 		<MarketsShell>
 			<div className="mb-4 flex flex-wrap items-end justify-between gap-3">
 				<div>
-					<h1 className="text-xl font-semibold tracking-tight">全球板块</h1>
+					<h1 className="text-xl font-semibold tracking-tight">行情</h1>
 					<p className="mt-1 text-sm text-muted-foreground">
-						A股、港股、美股、日本、韩国主要市场的大盘与板块涨跌，红涨绿跌；时间均为北京时间
+						A股、港股、美股、日本、韩国主要市场的大盘、板块与个股，红涨绿跌；时间均为北京时间
 					</p>
 				</div>
 				<Button variant="outline" size="sm" onClick={refresh} disabled={refreshing}>
@@ -86,6 +97,10 @@ export default function MarketsOverviewPage() {
 					))}
 				</div>
 			)}
+			<div className="mt-4">
+				<WatchlistCard onOpen={openStock} />
+			</div>
+			<MarketDetailDialog view={detail} onClose={() => setDetail(null)} />
 		</MarketsShell>
 	)
 }
