@@ -220,11 +220,11 @@ describe('分时数据源解析', () => {
 		expect(parseEastmoneyTrends({ data: null }).points).toEqual([])
 	})
 
-	test('东财五日：按当地日期分组，次日昨收用前一天最后一笔', () => {
+	test('东财五日：按当地日期分组，次日昨收用前一天最后一笔，首日不用 preClose（那是最新一天的）', () => {
 		const r = parseEastmoneyMultiDay(
 			{
 				data: {
-					prePrice: 100,
+					preClose: 102,
 					trends: [
 						'2026-10-05 09:30,1,101,1,1,10',
 						'2026-10-05 16:00,1,102,1,1,10',
@@ -236,7 +236,7 @@ describe('分时数据源解析', () => {
 			5,
 		)
 		expect(r.days.map((d) => [d.date, d.prevClose])).toEqual([
-			['2026-10-05', 100],
+			['2026-10-05', null],
 			['2026-10-06', 102],
 		])
 	})

@@ -479,7 +479,7 @@ export function __resetEastmoneyTrendSlots() {
 const EM_BUSY = '东财走势请求过于频繁，稍后再试'
 
 interface EmTrendsResponse {
-	data?: { name?: string; preClose?: number; prePrice?: number; trends?: string[] } | null
+	data?: { name?: string; preClose?: number; trends?: string[] } | null
 }
 
 /** "2026-10-06 15:54,开,收(现价),高,低,量,…"，时间为北京时间；量为每分钟量 */
@@ -505,11 +505,13 @@ export function parseEastmoneyTrends(json: EmTrendsResponse): RawTrend {
 	}
 }
 
-/** 多日：按标的当地日期分组，首日昨收用 prePrice（没有就留空），之后用前一天最后一笔 */
+/**
+ * 多日：按标的当地日期分组，次日昨收用前一天最后一笔。
+ * 线上实测 ndays=5 时 preClose/prePrice 都是「最新一天」的昨收，不是首日的，所以首日昨收留空（前端以首笔为基准）
+ */
 export function parseEastmoneyMultiDay(json: EmTrendsResponse, timeZone: string, n: number) {
 	const d = json.data
 	const days = groupByDay(emTrendPoints(d?.trends), timeZone)
-	if (days[0]) days[0].prevClose = num(d?.prePrice)
 	return {
 		name: d?.name || null,
 		days: chainPrevClose(days, n),
