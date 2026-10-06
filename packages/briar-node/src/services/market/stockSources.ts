@@ -1,7 +1,7 @@
 import type { ConstituentItem, MarketId, StockQuote, StockSearchItem } from '@briar/shared'
 import { isStockCode } from '@briar/shared'
 import { fetchJson, fetchText } from './http'
-import { num, parseTencentTime } from './sources'
+import { fetchEastmoneyPush2, num, parseTencentTime } from './sources'
 import { takeEastmoneyTrendSlot } from './trendSources'
 
 /**
@@ -27,7 +27,6 @@ import { takeEastmoneyTrendSlot } from './trendSources'
 
 const TENCENT_HEADERS = { Referer: 'https://gu.qq.com/' }
 const NAVER_HEADERS = { Referer: 'https://m.stock.naver.com/' }
-const EM_HEADERS = { Referer: 'https://quote.eastmoney.com/' }
 
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err))
 
@@ -180,10 +179,8 @@ export async function fetchEastmoneyBoardStocks(
 			if (seen.size) break
 			throw new Error(EM_BUSY)
 		}
-		const url = `https://push2.eastmoney.com/api/qt/clist/get?pn=${pn}&pz=100&po=1&np=1&fltt=2&invt=2&fid=f3&fs=b:${encodeURIComponent(board)}+f:!50&fields=${fields}`
-		const parsed = parseEastmoneyBoardStocks(
-			await fetchJson<EmListResponse>(url, { headers: EM_HEADERS }),
-		)
+		const url = `/api/qt/clist/get?pn=${pn}&pz=100&po=1&np=1&fltt=2&invt=2&fid=f3&fs=b:${encodeURIComponent(board)}+f:!50&fields=${fields}`
+		const parsed = parseEastmoneyBoardStocks(await fetchEastmoneyPush2<EmListResponse>(url))
 		total = parsed.total
 		for (const item of parsed.items) seen.set(item.code, item)
 		if (parsed.items.length === 0 || seen.size >= total) break

@@ -17,6 +17,24 @@ const EM_HEADERS = { Referer: 'https://quote.eastmoney.com/' }
 const TENCENT_HEADERS = { Referer: 'https://gu.qq.com/' }
 const NAVER_HEADERS = { Referer: 'https://m.stock.naver.com/' }
 
+/**
+ * 东财 push2 主域名被封（Empty reply，通常封 IP 一段时间）时按同路径换备用域名重试。
+ * push2delay 是东财延迟行情边缘节点，API 路径与 push2 一致；都失败才抛最后一个错。
+ */
+const EM_PUSH2_HOSTS = ['push2.eastmoney.com', 'push2delay.eastmoney.com']
+
+export async function fetchEastmoneyPush2<T>(path: string): Promise<T> {
+	let lastErr: unknown = null
+	for (const host of EM_PUSH2_HOSTS) {
+		try {
+			return await fetchJson<T>(`https://${host}${path}`, { headers: EM_HEADERS })
+		} catch (err) {
+			lastErr = err
+		}
+	}
+	throw lastErr instanceof Error ? lastErr : new Error(String(lastErr))
+}
+
 /** 数字解析：兼容 "1,234.5" / "-" / 空串 / undefined */
 export function num(value: unknown): number | null {
 	if (typeof value === 'number') return Number.isFinite(value) ? value : null
@@ -155,8 +173,8 @@ export async function fetchEastmoneyBoards(t: 2 | 3, level?: string): Promise<Se
 	const seen = new Set<string>()
 	let fetched = 0
 	for (let pn = 1; pn <= 8; pn++) {
-		const url = `https://push2.eastmoney.com/api/qt/clist/get?pn=${pn}&pz=100&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:90+t:${t}+f:!50&fields=${fields}`
-		const json = await fetchJson<EmListResponse>(url, { headers: EM_HEADERS })
+		const url = `/api/qt/clist/get?pn=${pn}&pz=100&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:90+t:${t}+f:!50&fields=${fields}`
+		const json = await fetchEastmoneyPush2<EmListResponse>(url)
 		const rows = emRows(json)
 		fetched += rows.length
 		for (const item of parseEastmoneyBoards(json, level)) {
@@ -207,8 +225,8 @@ export function parseEastmoneyUlist(json: EmListResponse): QuoteRow[] {
 }
 
 export async function fetchEastmoneyUlist(secids: string[]): Promise<QuoteRow[]> {
-	const url = `https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&fields=f2,f3,f4,f6,f12,f13,f14,f62,f124&secids=${secids.join(',')}`
-	const rows = parseEastmoneyUlist(await fetchJson<EmListResponse>(url, { headers: EM_HEADERS }))
+	const path = `/api/qt/ulist.np/get?fltt=2&invt=2&fields=f2,f3,f4,f6,f12,f13,f14,f62,f124&secids=${secids.join(',')}`
+	const rows = parseEastmoneyUlist(await fetchEastmoneyPush2<EmListResponse>(path))
 	if (rows.length === 0) throw new Error('eastmoney ulist: empty')
 	return rows
 }
