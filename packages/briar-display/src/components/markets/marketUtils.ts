@@ -74,28 +74,87 @@ export function sessionBadgeClass(status: MarketSessionStatus): string {
 	}
 }
 
-export const SORT_LABELS: Record<SectorSortKey, string> = {
+/**
+ * 列表 / 热力图排序维度：后端给的热度字段（sortKeys）+ 前端可算的名称 / 涨跌家数 / 领涨股涨幅。
+ * 表头点击和上方下拉共用这一份状态。
+ */
+export type ListSortKey = SectorSortKey | 'name' | 'breadth' | 'leaderPct'
+export type SortDirection = 'desc' | 'asc'
+
+export const SORT_LABELS: Record<ListSortKey, string> = {
 	changePct: '涨跌幅',
 	amount: '成交额',
 	netInflow: '资金净流入',
 	turnoverRate: '换手率',
+	breadth: '上涨占比',
+	leaderPct: '领涨股涨幅',
+	name: '板块名称',
 }
 
-/** 按热度维度降序；涨跌幅支持升序看跌幅榜；缺失值排最后 */
+/** 下拉 / 表头的展示顺序 */
+const SORT_ORDER: ListSortKey[] = [
+	'changePct',
+	'netInflow',
+	'amount',
+	'turnoverRate',
+	'breadth',
+	'leaderPct',
+	'name',
+]
+
+/** 涨跌家数按「上涨家数 / 成分股总数」排（腾讯只给上涨和总数，Naver 还有下跌，统一用占比可比） */
+export const BREADTH_SORT_HINT = '按上涨占比（上涨家数 / 成分股总数）排序'
+
+/** 某维度的排序值；null = 缺失（永远排最后） */
+export function sortValue(item: SectorItem, key: Exclude<ListSortKey, 'name'>): number | null {
+	switch (key) {
+		case 'breadth':
+			return item.total && item.upCount != null ? item.upCount / item.total : null
+		case 'leaderPct':
+			return item.leader?.changePct ?? null
+		default:
+			return item[key]
+	}
+}
+
+/** 当前数据可用的排序维度：后端 sortKeys + 有数据的前端维度 + 名称 */
+export function availableSortKeys(items: SectorItem[], serverKeys: SectorSortKey[]): ListSortKey[] {
+	const extra: ListSortKey[] = ['name']
+	if (items.some((i) => sortValue(i, 'breadth') != null)) extra.push('breadth')
+	if (items.some((i) => sortValue(i, 'leaderPct') != null)) extra.push('leaderPct')
+	const keys = new Set<ListSortKey>([...serverKeys, ...extra])
+	return SORT_ORDER.filter((k) => keys.has(k))
+}
+
+const nameCollator = new Intl.Collator('zh-CN')
+
+/** 排序：数值维度按值，名称按中文 localeCompare('zh-CN')；缺失值无论升降序都排最后；稳定排序 */
 export function sortSectors(
 	items: SectorItem[],
-	key: SectorSortKey,
-	direction: 'desc' | 'asc' = 'desc',
+	key: ListSortKey,
+	direction: SortDirection = 'desc',
 ): SectorItem[] {
 	const sign = direction === 'desc' ? -1 : 1
+	if (key === 'name') {
+		return [...items].sort((a, b) => sign * nameCollator.compare(a.name, b.name))
+	}
 	return [...items].sort((a, b) => {
-		const va = a[key]
-		const vb = b[key]
+		const va = sortValue(a, key)
+		const vb = sortValue(b, key)
 		if (va == null && vb == null) return 0
 		if (va == null) return 1
 		if (vb == null) return -1
 		return sign * (va - vb)
 	})
+}
+
+/** 表头点击：点新列从降序开始，再点同一列切换升降序 */
+export function nextSort(
+	current: { key: ListSortKey; direction: SortDirection },
+	clicked: ListSortKey,
+): { key: ListSortKey; direction: SortDirection } {
+	if (current.key !== clicked) return { key: clicked, direction: 'desc' }
+	return { key: clicked, direction: current.direction === 'desc' ? 'asc' : 'desc' }
 }
 
 /**
