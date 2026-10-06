@@ -5,7 +5,7 @@ import UserMenu from '@/components/common/UserMenu'
 import { Card, CardContent } from '@/components/ui/card'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { Folder, PenLine, Shield, Wrench } from 'lucide-react'
+import { Folder, Globe2, PenLine, Shield, Wrench } from 'lucide-react'
 
 interface EntryCardProps {
 	icon: React.ReactNode
@@ -93,6 +93,13 @@ function PortalPageInner() {
 								gradient="from-amber-500 to-orange-500"
 							/>
 						)}
+						<EntryCard
+							icon={<Globe2 className="h-5 w-5" />}
+							title="全球板块"
+							description="A股、港股、美股、日韩板块实时涨跌"
+							href="/briar/markets"
+							gradient="from-sky-500 to-indigo-500"
+						/>
 					</div>
 				</div>
 			</main>
