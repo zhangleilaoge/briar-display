@@ -55,9 +55,16 @@ export const POLL_MS: Record<MarketSessionStatus, number> = {
 	closed: 300_000,
 }
 
-/** 后端缓存 TTL：交易中 15s，午休/盘前 60s，休市 5min */
+/** 交易中缓存 TTL：BRIAR_MARKET_CACHE_TTL_SECONDS，限定 15–30 秒，默认 20 秒 */
+export function resolveOpenTtlMs(raw = process.env.BRIAR_MARKET_CACHE_TTL_SECONDS): number {
+	const n = Number(raw)
+	if (!raw || !Number.isFinite(n)) return 20_000
+	return Math.round(Math.min(30, Math.max(15, n)) * 1000)
+}
+
+/** 后端缓存 TTL（报价 / 板块 / 分时 / 五日）：交易中 20s（可配 15–30s），午休/盘前 60s，休市 5min */
 export const CACHE_TTL_MS: Record<MarketSessionStatus, number> = {
-	open: 15_000,
+	open: resolveOpenTtlMs(),
 	break: 60_000,
 	pre: 60_000,
 	closed: 300_000,
