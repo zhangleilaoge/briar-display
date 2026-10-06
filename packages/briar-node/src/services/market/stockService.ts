@@ -14,7 +14,8 @@ import {
 	isStockCode,
 } from '@briar/shared'
 import { cachedLoad } from './cache'
-import { HK_INDUSTRY_INDICES, JP_TOPIX17_ETFS, US_SECTOR_ETFS, US_THEME_ETFS } from './catalog'
+import { HK_INDUSTRY_INDICES, JP_TOPIX17_ETFS, US_SECTOR_ETFS, US_SECTOR_GICS } from './catalog'
+import { loadCuratedConstituents } from './curated'
 import { MarketInputError, SECTOR_CONFIG } from './marketService'
 import { CACHE_TTL_MS, POLL_MS, getSessionInfo, getSessionStatus } from './session'
 import {
@@ -28,6 +29,7 @@ import {
 	fetchTencentBoardStocks,
 	fetchTencentSmartbox,
 	fetchTencentStockQuotes,
+	fetchUsSectorConstituents,
 } from './stockSources'
 
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err))
@@ -111,12 +113,37 @@ function planConstituents(market: MarketId, code: string, kind: SectorKind): Con
 			}
 			break
 		case 'hk':
+			if (kind === 'concept') {
+				return {
+					load: () => loadCuratedConstituents('hk', code),
+					source: '腾讯行情 qt（题材成分股）',
+					delayMinutes: 15,
+					netInflowBasis: null,
+					peBasis: '市盈率',
+				}
+			}
 			if (HK_INDUSTRY_INDICES.some((d) => d.code === code)) return none(NO_HK_CONSTITUENTS)
 			break
 		case 'us':
-			if ([...US_SECTOR_ETFS, ...US_THEME_ETFS].some((d) => d.code === code)) {
-				return none(NO_ETF_CONSTITUENTS)
+			if (kind === 'concept') {
+				return {
+					load: () => loadCuratedConstituents('us', code),
+					source: '腾讯行情 qt（题材成分股）',
+					delayMinutes: 15,
+					netInflowBasis: null,
+					peBasis: '市盈率',
+				}
 			}
+			if (US_SECTOR_GICS[code]) {
+				return {
+					load: () => fetchUsSectorConstituents(US_SECTOR_GICS[code], CONSTITUENT_CAP),
+					source: '纳斯达克行业成分股 + 腾讯行情',
+					delayMinutes: 15,
+					netInflowBasis: null,
+					peBasis: '市盈率',
+				}
+			}
+			if (US_SECTOR_ETFS.some((d) => d.code === code)) return none(NO_ETF_CONSTITUENTS)
 			break
 		case 'jp':
 			if (JP_TOPIX17_ETFS.some((d) => d.code === code)) return none(NO_ETF_CONSTITUENTS)

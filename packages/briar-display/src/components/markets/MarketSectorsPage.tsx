@@ -49,6 +49,8 @@ interface SectorsBundle {
 	overview: MarketOverviewItem | null
 	trends: MarketIndexTrendsResponse | null
 	fetchedAt: number
+	/** 行业源故障时降级拉到了概念（kind 已切换，用户可点回行业重试） */
+	degraded?: boolean
 }
 
 /** 指数 / 分时取不到不影响板块；板块取不到才算失败 */
@@ -62,8 +64,19 @@ async function loadBundle(
 		getMarketOverview(),
 		getMarketIndexTrends(market),
 	])
-	if (sectorsRes.status === 'rejected') throw sectorsRes.reason
-	const sectors = unwrap(sectorsRes.value)
+	let sectors: MarketSectorsResponse | null = null
+	let degraded = false
+	if (sectorsRes.status === 'rejected' && kind === 'industry') {
+		// 行业源故障（上游封禁/宕机）时降级拉概念：页面保持可用，用户可切回行业重试
+		sectors = await getMarketSectors(market, 'concept')
+			.then(unwrap)
+			.catch(() => null)
+		degraded = sectors !== null
+	}
+	if (!sectors) {
+		if (sectorsRes.status === 'rejected') throw sectorsRes.reason
+		sectors = unwrap(sectorsRes.value)
+	}
 	let overview: MarketOverviewItem | null = null
 	if (overviewRes.status === 'fulfilled' && overviewRes.value.success) {
 		overview = overviewRes.value.data?.markets.find((m) => m.market === market) ?? null
@@ -72,7 +85,7 @@ async function loadBundle(
 		trendsRes.status === 'fulfilled' && trendsRes.value.success
 			? (trendsRes.value.data ?? null)
 			: null
-	return { sectors, overview, trends, fetchedAt: Date.now() }
+	return { sectors, overview, trends, fetchedAt: Date.now(), degraded }
 }
 
 export default function MarketSectorsPage({ market }: { market: MarketId }) {
@@ -95,6 +108,15 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 	useEffect(() => {
 		if (error && data) toast.error(`行情刷新失败：${error}`)
 	}, [error, data])
+
+	// 行业源故障降级到概念：tab 同步到实际拉到的类别，之后轮询按新概念正常走
+	useEffect(() => {
+		if (data?.degraded && data.sectors.kind !== kind) {
+			const label = data.sectors.kinds.find((k) => k.kind === data.sectors.kind)?.label ?? ''
+			toast.error(`行业行情源暂时不可用，已切换到${label}板块`)
+			setKind(data.sectors.kind)
+		}
+	}, [data, kind])
 
 	const sectors = data?.sectors
 	const switching =
@@ -160,7 +182,7 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 											延迟 {sectors.delayMinutes} 分钟
 										</Badge>
 									))}
-								{sectors?.listMode === 'fixed-proxy' && sectors.proxyNote && (
+								{sectors && sectors.listMode !== 'dynamic' && sectors.proxyNote && (
 									<Badge
 										variant="outline"
 										className="border-transparent bg-violet-500/10 text-violet-700"
@@ -206,8 +228,12 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 								<span>数据源 {sectors.source}</span>
 								<span>净流入口径 {sectors.netInflowBasis ?? '该市场数据源不提供资金流'}</span>
 								<span>
-									{sectors.listMode === 'dynamic' ? '板块列表从数据源实时拉取' : '固定代理列表'} ·
-									共 {sectors.items.length} 个
+									{sectors.listMode === 'dynamic'
+										? '板块列表从数据源实时拉取'
+										: sectors.listMode === 'curated'
+											? '人工维护题材名单，行情按成分股聚合'
+											: '固定代理列表'}{' '}
+									· 共 {sectors.items.length} 个
 								</span>
 							</div>
 						)}

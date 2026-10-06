@@ -84,38 +84,472 @@ export const US_SECTOR_ETFS: ProxyDef[] = [
 	{ code: 'XLC', name: '通信服务' },
 ]
 
-/** 美股：细分行业 / 主题 ETF（「概念」tab 代理） */
-export const US_THEME_ETFS: ProxyDef[] = [
-	{ code: 'SMH', name: '半导体' },
-	{ code: 'IGV', name: '软件' },
-	{ code: 'CIBR', name: '网络安全' },
-	{ code: 'SKYY', name: '云计算' },
-	{ code: 'BOTZ', name: '机器人与AI' },
-	{ code: 'ARKK', name: '颠覆式创新' },
-	{ code: 'KWEB', name: '中概互联网' },
-	{ code: 'XBI', name: '生物科技' },
-	{ code: 'IBB', name: '大盘生物技术' },
-	{ code: 'XPH', name: '制药' },
-	{ code: 'IHI', name: '医疗器械' },
-	{ code: 'KBE', name: '银行' },
-	{ code: 'KRE', name: '地区银行' },
-	{ code: 'ITB', name: '住宅建筑' },
-	{ code: 'XHB', name: '家居建材' },
-	{ code: 'XRT', name: '零售' },
-	{ code: 'XOP', name: '油气开采' },
-	{ code: 'OIH', name: '油服' },
-	{ code: 'GDX', name: '金矿' },
-	{ code: 'REMX', name: '稀土战略金属' },
-	{ code: 'URA', name: '铀' },
-	{ code: 'LIT', name: '锂电池' },
-	{ code: 'TAN', name: '太阳能' },
-	{ code: 'ICLN', name: '清洁能源' },
-	{ code: 'XAR', name: '航天军工' },
-	{ code: 'JETS', name: '航空' },
-	{ code: 'IYT', name: '交通运输' },
-	{ code: 'PAVE', name: '基建' },
-	{ code: 'MOO', name: '农业' },
+/**
+ * 美股行业 ETF → 纳斯达克 screener 的 GICS 行业名。
+ * 成分股按 GICS 行业从纳斯达克筛选器拉名单（11 个一级行业都有），
+ * 主题/细分 ETF（概念 tab）没有对应的免费成分股接口。
+ */
+export const US_SECTOR_GICS: Record<string, string> = {
+	XLK: 'Technology',
+	XLC: 'Telecommunications',
+	XLF: 'Finance',
+	XLV: 'Health Care',
+	XLY: 'Consumer Discretionary',
+	XLP: 'Consumer Staples',
+	XLI: 'Industrials',
+	XLE: 'Energy',
+	XLB: 'Basic Materials',
+	XLU: 'Utilities',
+	XLRE: 'Real Estate',
+}
+
+/**
+ * 人工维护的题材板块（港股 / 美股「概念」tab）。
+ * 免费源没有港美股的题材聚合接口，这里用静态名单划定板块，行情按成分股聚合
+ * （腾讯 qt 批量报价：涨跌幅等权平均、成交额求和、涨跌家数、领涨股）。
+ * 名单是静态数据，新热点手工收录；成员缺失报价时该板块聚合自动按有报价的部分算。
+ */
+export interface CuratedMember {
+	market: 'hk' | 'us'
+	/** hk：5 位代码 00700；us：大写代码 AAPL */
+	code: string
+}
+
+export interface CuratedSectorDef {
+	/** 板块代码（slug，全局唯一） */
+	code: string
+	name: string
+	members: CuratedMember[]
+}
+
+/** 美股题材板块 */
+export const US_CONCEPT_SECTORS: CuratedSectorDef[] = [
+	{
+		code: 'storage',
+		name: '存储',
+		members: [
+			{ market: 'us', code: 'MU' },
+			{ market: 'us', code: 'WDC' },
+			{ market: 'us', code: 'STX' },
+			{ market: 'us', code: 'SNDK' },
+			{ market: 'us', code: 'SIMO' },
+		],
+	},
+	{
+		code: 'optical-cpo',
+		name: '光模块 / CPO',
+		members: [
+			{ market: 'us', code: 'COHR' },
+			{ market: 'us', code: 'LITE' },
+			{ market: 'us', code: 'FN' },
+			{ market: 'us', code: 'AAOI' },
+			{ market: 'us', code: 'CIEN' },
+			{ market: 'us', code: 'CRDO' },
+			{ market: 'us', code: 'ALAB' },
+		],
+	},
+	{
+		code: 'ai-compute',
+		name: 'AI 算力',
+		members: [
+			{ market: 'us', code: 'NVDA' },
+			{ market: 'us', code: 'AMD' },
+			{ market: 'us', code: 'AVGO' },
+			{ market: 'us', code: 'MRVL' },
+			{ market: 'us', code: 'ANET' },
+			{ market: 'us', code: 'SMCI' },
+			{ market: 'us', code: 'ARM' },
+		],
+	},
+	{
+		code: 'ai-software',
+		name: 'AI 应用 / 软件',
+		members: [
+			{ market: 'us', code: 'MSFT' },
+			{ market: 'us', code: 'GOOGL' },
+			{ market: 'us', code: 'AMZN' },
+			{ market: 'us', code: 'META' },
+			{ market: 'us', code: 'PLTR' },
+			{ market: 'us', code: 'CRM' },
+			{ market: 'us', code: 'ORCL' },
+			{ market: 'us', code: 'NOW' },
+		],
+	},
+	{
+		code: 'semi-equip',
+		name: '半导体设备',
+		members: [
+			{ market: 'us', code: 'AMAT' },
+			{ market: 'us', code: 'LRCX' },
+			{ market: 'us', code: 'KLAC' },
+			{ market: 'us', code: 'ASML' },
+			{ market: 'us', code: 'TER' },
+		],
+	},
+	{
+		code: 'robotics',
+		name: '机器人',
+		members: [
+			{ market: 'us', code: 'ISRG' },
+			{ market: 'us', code: 'ROK' },
+			{ market: 'us', code: 'ABB' },
+			{ market: 'us', code: 'SYM' },
+			{ market: 'us', code: 'PATH' },
+		],
+	},
+	{
+		code: 'ev',
+		name: '电动车',
+		members: [
+			{ market: 'us', code: 'TSLA' },
+			{ market: 'us', code: 'NIO' },
+			{ market: 'us', code: 'XPEV' },
+			{ market: 'us', code: 'LI' },
+			{ market: 'us', code: 'RIVN' },
+			{ market: 'us', code: 'LCID' },
+		],
+	},
+	{
+		code: 'adas',
+		name: '自动驾驶',
+		members: [
+			{ market: 'us', code: 'TSLA' },
+			{ market: 'us', code: 'MBLY' },
+			{ market: 'us', code: 'RIVN' },
+			{ market: 'us', code: 'GOOGL' },
+			{ market: 'us', code: 'GM' },
+		],
+	},
+	{
+		code: 'biotech',
+		name: '创新药',
+		members: [
+			{ market: 'us', code: 'LLY' },
+			{ market: 'us', code: 'NVO' },
+			{ market: 'us', code: 'VRTX' },
+			{ market: 'us', code: 'REGN' },
+			{ market: 'us', code: 'AMGN' },
+			{ market: 'us', code: 'MRNA' },
+		],
+	},
+	{
+		code: 'china-web',
+		name: '中概互联网',
+		members: [
+			{ market: 'us', code: 'BABA' },
+			{ market: 'us', code: 'JD' },
+			{ market: 'us', code: 'PDD' },
+			{ market: 'us', code: 'BIDU' },
+			{ market: 'us', code: 'NTES' },
+			{ market: 'us', code: 'TCOM' },
+			{ market: 'us', code: 'BILI' },
+		],
+	},
+	{
+		code: 'lithium-battery',
+		name: '锂电 / 储能',
+		members: [
+			{ market: 'us', code: 'ALB' },
+			{ market: 'us', code: 'SQM' },
+			{ market: 'us', code: 'QS' },
+			{ market: 'us', code: 'ENPH' },
+			{ market: 'us', code: 'FLNC' },
+		],
+	},
+	{
+		code: 'rare-earth',
+		name: '稀土 / 战略金属',
+		members: [
+			{ market: 'us', code: 'MP' },
+			{ market: 'us', code: 'USAR' },
+			{ market: 'us', code: 'UUUU' },
+			{ market: 'us', code: 'TMC' },
+		],
+	},
+	{
+		code: 'gold',
+		name: '贵金属',
+		members: [
+			{ market: 'us', code: 'NEM' },
+			{ market: 'us', code: 'GOLD' },
+			{ market: 'us', code: 'AEM' },
+			{ market: 'us', code: 'KGC' },
+			{ market: 'us', code: 'WPM' },
+		],
+	},
+	{
+		code: 'oil-gas',
+		name: '油气',
+		members: [
+			{ market: 'us', code: 'XOM' },
+			{ market: 'us', code: 'CVX' },
+			{ market: 'us', code: 'COP' },
+			{ market: 'us', code: 'EOG' },
+			{ market: 'us', code: 'OXY' },
+			{ market: 'us', code: 'SLB' },
+		],
+	},
+	{
+		code: 'nuclear',
+		name: '核能 / 铀',
+		members: [
+			{ market: 'us', code: 'CCJ' },
+			{ market: 'us', code: 'UEC' },
+			{ market: 'us', code: 'NXE' },
+			{ market: 'us', code: 'LEU' },
+			{ market: 'us', code: 'SMR' },
+			{ market: 'us', code: 'OKLO' },
+		],
+	},
+	{
+		code: 'crypto',
+		name: '加密货币概念',
+		members: [
+			{ market: 'us', code: 'COIN' },
+			{ market: 'us', code: 'MSTR' },
+			{ market: 'us', code: 'MARA' },
+			{ market: 'us', code: 'RIOT' },
+			{ market: 'us', code: 'CLSK' },
+		],
+	},
+	{
+		code: 'quantum',
+		name: '量子计算',
+		members: [
+			{ market: 'us', code: 'IONQ' },
+			{ market: 'us', code: 'RGTI' },
+			{ market: 'us', code: 'QBTS' },
+			{ market: 'us', code: 'QUBT' },
+		],
+	},
+	{
+		code: 'defense',
+		name: '军工航天',
+		members: [
+			{ market: 'us', code: 'LMT' },
+			{ market: 'us', code: 'RTX' },
+			{ market: 'us', code: 'NOC' },
+			{ market: 'us', code: 'GD' },
+			{ market: 'us', code: 'RKLB' },
+		],
+	},
+	{
+		code: 'cloud',
+		name: '云计算',
+		members: [
+			{ market: 'us', code: 'AMZN' },
+			{ market: 'us', code: 'MSFT' },
+			{ market: 'us', code: 'GOOGL' },
+			{ market: 'us', code: 'ORCL' },
+			{ market: 'us', code: 'SNOW' },
+			{ market: 'us', code: 'DDOG' },
+			{ market: 'us', code: 'CRWD' },
+			{ market: 'us', code: 'NET' },
+		],
+	},
+	{
+		code: 'ecommerce',
+		name: '电商零售',
+		members: [
+			{ market: 'us', code: 'AMZN' },
+			{ market: 'us', code: 'EBAY' },
+			{ market: 'us', code: 'SHOP' },
+			{ market: 'us', code: 'MELI' },
+			{ market: 'us', code: 'WMT' },
+			{ market: 'us', code: 'COST' },
+		],
+	},
+	{
+		code: 'games',
+		name: '游戏',
+		members: [
+			{ market: 'us', code: 'TTWO' },
+			{ market: 'us', code: 'EA' },
+			{ market: 'us', code: 'RBLX' },
+			{ market: 'us', code: 'U' },
+		],
+	},
+	{
+		code: 'consumer-elec',
+		name: '消费电子',
+		members: [
+			{ market: 'us', code: 'AAPL' },
+			{ market: 'us', code: 'SONY' },
+			{ market: 'us', code: 'DELL' },
+			{ market: 'us', code: 'HPQ' },
+			{ market: 'us', code: 'LOGI' },
+		],
+	},
 ]
+
+/** 港股题材板块 */
+export const HK_CONCEPT_SECTORS: CuratedSectorDef[] = [
+	{
+		code: 'china-web',
+		name: '中概互联网',
+		members: [
+			{ market: 'hk', code: '00700' },
+			{ market: 'hk', code: '09988' },
+			{ market: 'hk', code: '09618' },
+			{ market: 'hk', code: '03690' },
+			{ market: 'hk', code: '09999' },
+			{ market: 'hk', code: '09888' },
+			{ market: 'hk', code: '01024' },
+		],
+	},
+	{
+		code: 'ai-compute',
+		name: 'AI / 算力',
+		members: [
+			{ market: 'hk', code: '00763' },
+			{ market: 'hk', code: '00981' },
+			{ market: 'hk', code: '01347' },
+			{ market: 'hk', code: '00522' },
+		],
+	},
+	{
+		code: 'semi',
+		name: '半导体',
+		members: [
+			{ market: 'hk', code: '00981' },
+			{ market: 'hk', code: '01347' },
+			{ market: 'hk', code: '00522' },
+		],
+	},
+	{
+		code: 'new-consumer',
+		name: '新消费 / 潮玩',
+		members: [
+			{ market: 'hk', code: '09992' },
+			{ market: 'hk', code: '02020' },
+			{ market: 'hk', code: '02331' },
+			{ market: 'hk', code: '06862' },
+			{ market: 'hk', code: '09633' },
+		],
+	},
+	{
+		code: 'biotech',
+		name: '创新药',
+		members: [
+			{ market: 'hk', code: '01801' },
+			{ market: 'hk', code: '06160' },
+			{ market: 'hk', code: '03692' },
+			{ market: 'hk', code: '02269' },
+			{ market: 'hk', code: '02359' },
+			{ market: 'hk', code: '01093' },
+			{ market: 'hk', code: '01177' },
+		],
+	},
+	{
+		code: 'ev',
+		name: '新能源车',
+		members: [
+			{ market: 'hk', code: '01211' },
+			{ market: 'hk', code: '09868' },
+			{ market: 'hk', code: '02015' },
+			{ market: 'hk', code: '09866' },
+		],
+	},
+	{
+		code: 'property',
+		name: '内房股',
+		members: [
+			{ market: 'hk', code: '00688' },
+			{ market: 'hk', code: '01109' },
+			{ market: 'hk', code: '00960' },
+			{ market: 'hk', code: '02007' },
+		],
+	},
+	{
+		code: 'banks',
+		name: '银行',
+		members: [
+			{ market: 'hk', code: '00939' },
+			{ market: 'hk', code: '01398' },
+			{ market: 'hk', code: '03988' },
+			{ market: 'hk', code: '01288' },
+			{ market: 'hk', code: '00005' },
+			{ market: 'hk', code: '02388' },
+		],
+	},
+	{
+		code: 'insurance',
+		name: '保险',
+		members: [
+			{ market: 'hk', code: '01299' },
+			{ market: 'hk', code: '02318' },
+			{ market: 'hk', code: '02628' },
+		],
+	},
+	{
+		code: 'telecom',
+		name: '电讯运营商',
+		members: [
+			{ market: 'hk', code: '00941' },
+			{ market: 'hk', code: '00728' },
+			{ market: 'hk', code: '00762' },
+		],
+	},
+	{
+		code: 'oil',
+		name: '石油石化',
+		members: [
+			{ market: 'hk', code: '00386' },
+			{ market: 'hk', code: '00857' },
+			{ market: 'hk', code: '00883' },
+		],
+	},
+	{
+		code: 'utility-coal',
+		name: '电力煤炭',
+		members: [
+			{ market: 'hk', code: '01088' },
+			{ market: 'hk', code: '00902' },
+			{ market: 'hk', code: '00002' },
+		],
+	},
+	{
+		code: 'gold-metal',
+		name: '黄金有色',
+		members: [
+			{ market: 'hk', code: '02899' },
+			{ market: 'hk', code: '01818' },
+			{ market: 'hk', code: '03993' },
+		],
+	},
+	{
+		code: 'food-bev',
+		name: '食品饮料',
+		members: [
+			{ market: 'hk', code: '00291' },
+			{ market: 'hk', code: '02319' },
+			{ market: 'hk', code: '00322' },
+		],
+	},
+	{
+		code: 'casino',
+		name: '博彩',
+		members: [
+			{ market: 'hk', code: '00880' },
+			{ market: 'hk', code: '01928' },
+			{ market: 'hk', code: '00027' },
+		],
+	},
+	{
+		code: 'logistics',
+		name: '快递物流',
+		members: [
+			{ market: 'hk', code: '02057' },
+			{ market: 'hk', code: '02618' },
+			{ market: 'hk', code: '00619' },
+		],
+	},
+]
+
+export const CONCEPT_SECTORS: Record<'hk' | 'us', CuratedSectorDef[]> = {
+	hk: HK_CONCEPT_SECTORS,
+	us: US_CONCEPT_SECTORS,
+}
 
 /** 日本：野村 NEXT FUNDS TOPIX-17 行业 ETF（1617–1633.T，东证 17 行业代理） */
 export const JP_TOPIX17_ETFS: ProxyDef[] = [
