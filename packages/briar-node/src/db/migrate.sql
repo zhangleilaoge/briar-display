@@ -329,6 +329,19 @@ CREATE TABLE IF NOT EXISTS media_cache (
   INDEX idx_person_parse (person, parse_url(191))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='媒体资源缓存（COS 旁路）';
 
+-- 行情自选股：登录用户按账号存（跨设备互通）；访客存在前端 localStorage
+CREATE TABLE IF NOT EXISTS market_watchlist (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  user_id VARCHAR(36) NOT NULL COMMENT '用户 ID',
+  market VARCHAR(8) NOT NULL COMMENT '市场：cn / hk / us / jp / kr',
+  code VARCHAR(16) NOT NULL COMMENT '个股代码（sh600519 / 00700 / AAPL / 7203 / 005930）',
+  name VARCHAR(100) NOT NULL DEFAULT '' COMMENT '加入时的名称（行情拿不到时兜底显示）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
+  UNIQUE KEY uk_user_stock (user_id, market, code),
+  INDEX idx_user_created (user_id, created_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='行情自选股';
+
 -- ============================================================
 -- 历史增量守卫（存量库修补；全新库执行均为 no-op）
 -- 权限/角色种子以基线段为准（幂等，每次部署自动补全），此处不再重复
