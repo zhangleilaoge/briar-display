@@ -110,6 +110,8 @@ export interface CombatStats {
 	damageReduction: number
 	/** 全能吸血（造成伤害按比例回血） */
 	omnivamp: number
+	/** 战斗开始护盾（最大生命比例；浪人等条件加成注入，战斗开始一次性） */
+	startShieldPct?: number
 }
 
 export const emptyCombatStats = (): CombatStats => ({

@@ -98,6 +98,24 @@ export function applyAugment(deps: AugmentDeps, p: PlayerState, apiName: string)
 			case 'rerollsNow':
 				p.freeRerolls += e.count
 				break
+			case 'playerHp':
+				p.hp += e.amount
+				break
+			case 'worthTheWait': {
+				// 值得等待：随机 N 费弈子记名，之后每回合开始发其 1 星复制体
+				const champPool = CHAMPIONS.filter((c) => c.cost === e.cost)
+				if (champPool.length > 0) {
+					const api = champPool[rng.int(champPool.length)].apiName
+					p.augMemo[`${def.apiName}.champ`] = api
+					for (let i = 0; i < e.copies; i++) grantChamp(api)
+				}
+				break
+			}
+			case 'stageKit':
+				// 新纪元：立刻生效部分；每阶段开始部分在 applyPlanningAugments
+				if (e.xp) applyXp(p, e.xp)
+				if (e.rerolls) p.freeRerolls += e.rerolls
+				break
 			case 'streakWin':
 				p.streakType = 'win'
 				p.streakCount = e.count
@@ -121,6 +139,7 @@ export function applyAugment(deps: AugmentDeps, p: PlayerState, apiName: string)
 				const augPool = AUGMENTS.filter(
 					(a) =>
 						a.tier === e.tier &&
+						!a.pveOnly &&
 						!p.augments.includes(a.apiName) &&
 						!a.effects.some((x) => x.kind === 'randomAugment'),
 				)
@@ -276,7 +295,7 @@ export function genAugmentOffers(rng: Rng, players: PlayerState[]): Map<number, 
 	const offers = new Map<number, string[]>()
 	for (const p of players) {
 		if (!p.alive) continue
-		const unpicked = AUGMENTS.filter((a) => !p.augments.includes(a.apiName))
+		const unpicked = AUGMENTS.filter((a) => !a.pveOnly && !p.augments.includes(a.apiName))
 		const tierPool = unpicked.filter((a) => a.tier === tier)
 		// 该品质余量不足 3 个时用其余品质补齐
 		const fills = rng.shuffle(unpicked.filter((a) => a.tier !== tier).map((a) => a.apiName))
@@ -287,17 +306,25 @@ export function genAugmentOffers(rng: Rng, players: PlayerState[]): Map<number, 
 	return offers
 }
 
-/** 备战开始的海克斯钩子：阶段开始发放（贪财/灵活摇摆/硬性承诺）+ 潘朵拉变形 + 金色炊具 + 等级武器库 + 免费刷新重算 */
+/** 备战开始的海克斯钩子：阶段开始发放（贪财/灵活摇摆/硬性承诺/新纪元）+ 潘朵拉变形 + 金色炊具 + 等级武器库 + 免费刷新重算 + 回合开始金币/经验 + 值得等待 */
 export function applyPlanningAugments(
 	deps: AugmentDeps,
 	p: PlayerState,
 	isStageStart: boolean,
+	isPvp = false,
 ): void {
 	const effects = effectsOf(p)
 	if (isStageStart) {
 		p.gold += effects
 			.filter((e) => e.kind === 'stageGold')
 			.reduce((sum, e) => sum + (e as { amount: number }).amount, 0)
+		// 新纪元：每阶段开始的经验与免费刷新
+		for (const e of effects) {
+			if (e.kind === 'stageKit') {
+				if (e.xp) applyXp(p, e.xp)
+				if (e.rerolls) p.freeRerolls += e.rerolls
+			}
+		}
 		for (const a of p.augments) {
 			const def = AUGMENT_BY_API.get(a)
 			if (!def) continue
@@ -306,6 +333,22 @@ export function applyPlanningAugments(
 				else if (e.kind === 'stageEmblemChamp') deps.grantStageEmblemChamp(p, a, e.gold)
 			}
 		}
+	}
+	// 花到上头：玩家对战回合开始获得金币；遥遥领先：每回合开始获得经验
+	if (isPvp) {
+		p.gold += effects
+			.filter((e) => e.kind === 'roundStartGold')
+			.reduce((sum, e) => sum + (e as { amount: number }).amount, 0)
+	}
+	for (const e of effects) {
+		if (e.kind === 'roundStartXp') applyXp(p, e.amount)
+	}
+	// 值得等待：每回合开始获得记名弈子的 1 星复制体
+	for (const a of p.augments) {
+		const def = AUGMENT_BY_API.get(a)
+		if (!def?.effects.some((e) => e.kind === 'worthTheWait')) continue
+		const api = p.augMemo[`${a}.champ`]
+		if (typeof api === 'string') deps.grantChampUnit(p, api, 1)
 	}
 	// 潘朵拉的装备：装备栏每回合同类随机变形（消耗品/铲锅系除外，对齐官方排除规则）
 	if (effects.some((e) => e.kind === 'pandoraTray')) {
@@ -398,6 +441,40 @@ export function settleAugmentTimers(
 					pushTray(p, CRAFTABLE_POOL[rng.int(CRAFTABLE_POOL.length)].apiName)
 				for (let i = 0; i < (e.components ?? 0); i++)
 					pushTray(p, ITEM_COMPONENTS[rng.int(ITEM_COMPONENTS.length)].apiName)
+			}
+		}
+	}
+}
+
+/** 战斗结算后的海克斯钩子：清晰头脑/纷乱头脑/物尽其用（回合结束条件经验）+ 耐心学习（胜负经验）+ 打气等叠层 */
+export function settleRoundHooks(
+	deps: AugmentDeps,
+	p: PlayerState,
+	won: boolean | null,
+	isPvp: boolean,
+): void {
+	const bench = p.bench.filter((b) => b !== null)
+	for (const a of p.augments) {
+		const def = AUGMENT_BY_API.get(a)
+		if (!def) continue
+		for (const e of def.effects) {
+			if (e.kind === 'roundEndXp') {
+				const hit =
+					e.when === 'benchEmpty'
+						? bench.length === 0
+						: e.when === 'benchFull'
+							? bench.length >= p.bench.length
+							: bench.every((u) => u.items.length === 0)
+				if (hit) applyXp(p, e.amount)
+			} else if (e.kind === 'combatResultXp' && isPvp && won !== null) {
+				applyXp(p, won ? e.win : e.lose)
+			} else if (e.kind === 'rampBuff') {
+				const needPvp = e.per === 'pvp'
+				if (needPvp && !isPvp) continue
+				const key = `${a}.stacks`
+				const cur = Number(p.augMemo[key] ?? 0)
+				if (e.maxStacks !== undefined && cur + 1 > e.maxStacks) continue
+				p.augMemo[key] = cur + 1
 			}
 		}
 	}

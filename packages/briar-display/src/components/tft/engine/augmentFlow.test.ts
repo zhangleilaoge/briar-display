@@ -14,14 +14,16 @@ import {
 	applyAugment,
 	applyPlanningAugments,
 	settleAugmentTimers,
+	settleRoundHooks,
 	syncLuxTraits,
 } from './augmentFlow'
 import { type CombatUnitInput, simulateCombat } from './combat'
 import { toCombatInput } from './combatSetup'
-import { applyXp } from './economy'
+import { applyXp, buyXp, interestGold } from './economy'
 import { GameEngine } from './gameLoop'
 import { WITS_END_STAGE_DAMAGE } from './items'
 import { LUX_BASE } from './lux'
+import { applyPlayerBuffs } from './playerBuffs'
 import { CardPool } from './pool'
 import { type Rng, makeRng } from './rng'
 import { makePlayer } from './testUtils'
@@ -484,5 +486,186 @@ describe('round3 扩展：携带者加成与复制器', () => {
 		expect(copies.length).toBe(2)
 		expect(copies[1].star).toBe(four.star)
 		expect(me.itemTray).toEqual(['DA_Consumable_LesserChampionDuplicator'])
+	})
+})
+
+describe('round4 属性/条件/回合钩子', () => {
+	it('condBuff noItems：应急护甲只给无装备弈子加双抗', () => {
+		const p = makePlayer()
+		p.augments = ['DA_MakeshiftArmorII']
+		const naked = createUnit('DA_18_Shen')
+		const geared = createUnit('DA_18_Shen')
+		geared.items = ['TFT_Item_BFSword']
+		const sNaked = applyPlayerBuffs(p, unitStats(naked), naked)
+		const sGeared = applyPlayerBuffs(p, unitStats(geared), geared)
+		expect(sNaked.armor).toBe(unitStats(naked).armor + 50)
+		expect(sGeared.armor).toBe(unitStats(geared).armor)
+	})
+
+	it('condBuff backRow：玻璃大炮后排 -20% 生命 +16% 伤害增幅', () => {
+		const p = makePlayer()
+		p.augments = ['DA_GlassCannon_Silver']
+		const back = { ...createUnit('DA_18_Shen'), pos: { col: 0, row: 3 } }
+		const front = { ...createUnit('DA_18_Shen'), pos: { col: 0, row: 0 } }
+		p.board = [back as never, front as never]
+		const sBack = applyPlayerBuffs(p, unitStats(back), back)
+		const sFront = applyPlayerBuffs(p, unitStats(front), front)
+		expect(sBack.maxHp).toBe(Math.round(unitStats(back).maxHp * 0.8))
+		expect(sBack.damageAmp).toBeCloseTo(0.16)
+		expect(sFront.maxHp).toBe(unitStats(front).maxHp)
+		expect(sFront.damageAmp).toBe(0)
+	})
+
+	it('condBuff frontCenter：C位的觉悟只命中前排中心', () => {
+		const p = makePlayer()
+		p.augments = ['DA_FindYourCenter']
+		const center = { ...createUnit('DA_18_Shen'), pos: { col: 3, row: 0 } }
+		const off = { ...createUnit('DA_18_Shen'), pos: { col: 2, row: 0 } }
+		p.board = [center as never, off as never]
+		const sCenter = applyPlayerBuffs(p, unitStats(center), center)
+		const sOff = applyPlayerBuffs(p, unitStats(off), off)
+		expect(sCenter.damageAmp).toBeCloseTo(0.15)
+		expect(sOff.damageAmp).toBe(0)
+	})
+
+	it('浪人：无邻格友军的弈子获得 20% 开战护盾', () => {
+		const p = makePlayer()
+		p.augments = ['TFT6_Augment_Distancing']
+		const lone = { ...createUnit('DA_18_Shen'), pos: { col: 0, row: 0 } }
+		const buddy = { ...createUnit('DA_18_Shen'), pos: { col: 5, row: 3 } }
+		const buddy2 = { ...createUnit('DA_18_Shen'), pos: { col: 5, row: 2 } }
+		p.board = [lone as never, buddy as never, buddy2 as never]
+		const sLone = applyPlayerBuffs(p, unitStats(lone), lone)
+		const sBuddy = applyPlayerBuffs(p, unitStats(buddy), buddy)
+		expect(sLone.startShieldPct).toBeCloseTo(0.2)
+		expect(sBuddy.startShieldPct).toBeUndefined()
+	})
+
+	it('teamBuff 新维度：星界赐福全能吸血/珠光莲花暴击+技能暴击入战斗', () => {
+		const p = makePlayer()
+		p.augments = ['DA_CelestialBlessingI', 'DA_JeweledLotus_I']
+		const u = { ...createUnit('DA_18_Shen'), pos: { col: 0, row: 0 } }
+		p.board = [u as never]
+		const [input] = toCombatInput(p, 1)
+		expect(input.stats.omnivamp).toBeCloseTo(0.12)
+		expect(input.stats.critChance).toBeCloseTo(0.35) // 基础 0.25 + 珠光 0.1
+		expect(input.extraTags).toContain('abilityCrit')
+	})
+
+	it('roundEndXp：清晰头脑备战席空 +3 经验；纷乱头脑备战席满 +3', () => {
+		const deps = mockDeps(makeRng(1))
+		const p1 = makePlayer(4)
+		p1.augments = ['DA_ClearMind']
+		settleRoundHooks(deps, p1, true, true)
+		expect(p1.xp).toBe(3)
+		p1.bench[0] = createUnit('DA_18_Shen')
+		settleRoundHooks(deps, p1, true, true)
+		expect(p1.xp).toBe(3)
+		const p2 = makePlayer(4)
+		p2.augments = ['DA_ClutteredMind']
+		for (let i = 0; i < p2.bench.length; i++) p2.bench[i] = createUnit('DA_18_Shen')
+		settleRoundHooks(deps, p2, true, true)
+		expect(p2.xp).toBe(3)
+	})
+
+	it('combatResultXp：耐心学习胜 3 负 2（PvE 不触发）', () => {
+		const deps = mockDeps(makeRng(1))
+		const p = makePlayer(4)
+		p.augments = ['DA_PatientStudy']
+		settleRoundHooks(deps, p, true, true)
+		expect(p.xp).toBe(3)
+		p.xp = 0
+		settleRoundHooks(deps, p, false, true)
+		expect(p.xp).toBe(2)
+		p.xp = 0
+		settleRoundHooks(deps, p, null, false)
+		expect(p.xp).toBe(0)
+	})
+
+	it('rampBuff：打气每回合叠层并反映在攻速；猛将的荣耀封顶 4 层', () => {
+		const deps = mockDeps(makeRng(1))
+		const p = makePlayer(4)
+		p.augments = ['TFT9_PumpingUp', 'TFT_Augment_Unforgotten']
+		const u = createUnit('DA_18_Shen')
+		const base = unitStats(u).attackSpeed
+		// 初始：打气 12 层*0.5%=6%；猛将的荣耀只加物法不加攻速
+		const s0 = applyPlayerBuffs(p, unitStats(u), u)
+		expect(s0.attackSpeed).toBeCloseTo(base * 1.06, 2)
+		for (let i = 0; i < 30; i++) settleRoundHooks(deps, p, true, true)
+		const sN = applyPlayerBuffs(p, unitStats(u), u)
+		expect(sN.attackSpeed).toBeGreaterThan(s0.attackSpeed)
+		// 猛将的荣耀 maxStacks=4 → adPct 封顶 20%
+		const sAd = applyPlayerBuffs(p, { ...unitStats(u), attackDamage: 100 }, u)
+		expect(sAd.attackDamage).toBe(120)
+	})
+
+	it('playerHp/noInterest/buyXpBonus/xpCostDiscount', () => {
+		const p = makePlayer(5)
+		const deps = mockDeps(makeRng(1))
+		applyAugment(deps, p, 'TFT6_Augment_TinyTitans')
+		applyAugment(deps, p, 'DA_Hustler')
+		expect(p.hp).toBe(120)
+		p.gold = 60
+		expect(interestGold(p.gold, p)).toBe(0)
+		applyAugment(deps, p, 'DA_LevelUp')
+		applyAugment(deps, p, 'DA_UpwardMobility')
+		p.gold = 10
+		const xpBefore = p.xp
+		expect(buyXp(p)).toBe(true)
+		expect(p.gold).toBe(7) // 4-1 折扣
+		expect(p.xp - xpBefore).toBe(6) // 4+2 升级咯
+	})
+
+	it('worthTheWait：每回合开始发记名弈子复制体', () => {
+		const deps = mockDeps(makeRng(7))
+		const granted: string[] = []
+		deps.grantChampUnit = (pp, api) => {
+			granted.push(api)
+			return null
+		}
+		const p = makePlayer()
+		applyAugment(deps, p, 'DA_WorththeWait')
+		expect(granted.length).toBe(1)
+		expect(typeof p.augMemo['DA_WorththeWait.champ']).toBe('string')
+		applyPlanningAugments(deps, p, false, true)
+		expect(granted.length).toBe(2)
+	})
+
+	it('levelUpBonus：大买特买升级发 等级+1 次刷新；花到上头 PvP 回合开始 +3 金', () => {
+		const g = newEngine()
+		const me = offerAndPick(g, 'DA_ShoppingSpree')
+		expect(me.gold).toBe(6)
+		me.level = 5
+		me.gold = 50
+		me.xp = 16
+		g.buyXp(0) // 5→6 级
+		expect(me.freeRerolls).toBe(7) // 等级 6 + 1
+		const g2 = newEngine()
+		const me2 = offerAndPick(g2, 'DA_Hustler')
+		expect(me2.gold).toBe(3)
+		me2.gold = 0
+		applyPlanningAugments(mockDeps(makeRng(1)), me2, false, true)
+		expect(me2.gold).toBe(3)
+	})
+})
+
+describe('round4 战斗内计时增益', () => {
+	it('飞升：12 秒后伤害增幅生效；发条增速器每 3 秒叠加攻速', () => {
+		const p = makePlayer(4)
+		p.augments = ['DA_Ascension', 'DA_ClockworkAccelerator']
+		const u = { ...createUnit('DA_18_Shen'), pos: { col: 0, row: 0 } }
+		p.board = [u as never]
+		const [input] = toCombatInput(p, 1)
+		expect(input.timerBuffs?.length).toBe(2)
+		// 单弈子对战假人：12 秒后才出现 buff 事件
+		const dummy = dummyInput('TFT_TrainingDummy', 'd1', {
+			pos: { col: 0, row: 0 },
+			stats: { ...dummyInput('TFT_TrainingDummy', 'dx').stats, maxHp: 3000, mana: 9999 },
+		})
+		const early = simulateCombat([input], [dummy], { rng: makeRng(3), maxSeconds: 5 })
+		expect(early.events.filter((e) => e.type === 'buff').length).toBe(1) // 增速器 3 秒首次触发
+		const full = simulateCombat([input], [dummy], { rng: makeRng(3), maxSeconds: 16 })
+		const buffs = full.events.filter((e) => e.type === 'buff')
+		expect(buffs.length).toBeGreaterThanOrEqual(6) // 飞升 1 次(12s) + 增速器 5 次(3/6/9/12/15s)
 	})
 })

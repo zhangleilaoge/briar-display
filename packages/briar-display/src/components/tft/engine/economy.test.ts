@@ -30,11 +30,7 @@ describe('economy', () => {
 	it('海克斯：弑君突刺/投资策略II/摇钱树', () => {
 		const p = makePlayer()
 		p.gold = 60
-		p.augments = [
-			'TFT_Augment_Kingslayer',
-			'TFT_Augment_InvestmentStrategy2',
-			'TFT_Augment_MoneyMonsoon',
-		]
+		p.augments = ['DA_Kingslayer', 'TFT_Augment_InvestmentStrategy2', 'TFT_Augment_MoneyMonsoon']
 		const win = roundIncome(p, 2, 2, true)
 		expect(win.win).toBe(1)
 		expect(win.bonus).toBe(8)

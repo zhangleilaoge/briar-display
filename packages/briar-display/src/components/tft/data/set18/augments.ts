@@ -26,6 +26,16 @@ export type AugmentEffect =
 			mr?: number
 			/** 初始法力（成吨的属性系） */
 			mana?: number
+			/** 暴击几率（权杖意志/珠光莲花） */
+			critChance?: number
+			critMult?: number
+			/** 伤害增幅（乘区，飞升类常驻版） */
+			damageAmp?: number
+			damageReduction?: number
+			omnivamp?: number
+			manaRegen?: number
+			/** 全队技能可暴击（珠光莲花） */
+			abilityCrit?: boolean
 	  }
 	| { kind: 'teamHpPerInterest'; amount: number }
 	| { kind: 'unitWithItem'; cost: number }
@@ -122,11 +132,15 @@ export type AugmentEffect =
 			asPct?: number
 			adPct?: number
 			apPct?: number
+			ap?: number
 			hpFlat?: number
 			armor?: number
 			mr?: number
 			manaRegen?: number
 			critChance?: number
+			damageAmp?: number
+			damageReduction?: number
+			omnivamp?: number
 			/** 携带者获得技能暴击（正义报复） */
 			abilityCrit?: boolean
 	  }
@@ -164,6 +178,79 @@ export type AugmentEffect =
 	| { kind: 'dummiesCanEquip' }
 	/** 携带指定羁绊纹章的弈子从该羁绊获得额外效能（致命丽花） */
 	| { kind: 'emblemTraitAmp'; trait: string; pct: number }
+	/** 条件团队加成：按单位站位/装备状态在战斗面板结算（应急护甲=无装备/玻璃大炮=后排/浪人=无邻格友军/C位的觉悟=前排中心/双子守护神=前排仅N个） */
+	| {
+			kind: 'condBuff'
+			when: 'noItems' | 'backRow' | 'noNeighborAlly' | 'frontRowOnly' | 'frontCenter'
+			/** frontRowOnly 用：第一排恰好 N 个时这些弈子获得加成 */
+			frontCount?: number
+			adPct?: number
+			apPct?: number
+			asPct?: number
+			armor?: number
+			mr?: number
+			hpFlat?: number
+			/** 负值为惩罚（玻璃大炮最大生命降低） */
+			hpPct?: number
+			damageAmp?: number
+			damageReduction?: number
+			omnivamp?: number
+			critChance?: number
+			/** 战斗开始护盾（最大生命比例；引擎护盾无持续时间，近似） */
+			shieldPct?: number
+	  }
+	/** 每回合成长叠加的团队加成（打气=攻速/猛将的荣耀=物法/宝宝学院=物法）；counter 存 augMemo */
+	| {
+			kind: 'rampBuff'
+			/** 触发节奏：round=每个回合 / pvp=仅玩家对战回合 */
+			per: 'round' | 'pvp'
+			asPct?: number
+			adPct?: number
+			apPct?: number
+			hpFlat?: number
+			/** 初始层数（猛将的荣耀等） */
+			initialStacks?: number
+			/** 层数上限（缺省不限） */
+			maxStacks?: number
+	  }
+	/** 回合结束条件经验（清晰头脑=备战席空/纷乱头脑=备战席满/物尽其用=备战席无装备） */
+	| { kind: 'roundEndXp'; when: 'benchEmpty' | 'benchFull' | 'benchNoItems'; amount: number }
+	/** 玩家对战结算经验（耐心学习：胜 win / 负 lose） */
+	| { kind: 'combatResultXp'; win: number; lose: number }
+	/** 玩家生命立刻提升（小巨人/巨型泰坦） */
+	| { kind: 'playerHp'; amount: number }
+	/** 不再获得利息（花到上头/遥遥领先） */
+	| { kind: 'noInterest' }
+	/** 玩家对战回合开始获得金币（花到上头） */
+	| { kind: 'roundStartGold'; amount: number }
+	/** 每个回合开始获得经验值（遥遥领先） */
+	| { kind: 'roundStartXp'; amount: number }
+	/** 购买经验值时额外获得（升级咯！） */
+	| { kind: 'buyXpBonus'; amount: number }
+	/** 购买经验费用折扣（上进心，单位金币） */
+	| { kind: 'xpCostDiscount'; amount: number }
+	/** 每次升级时：生命 + 刷新次数（+每级额外次数，大买特买=等级+1） */
+	| {
+			kind: 'levelUpBonus'
+			hp?: number
+			rerolls?: number
+			/** 每级额外刷新次数（大买特买：等级数+1 次 → rerollsPerLevel=1, rerolls=1） */
+			rerollsPerLevel?: number
+	  }
+	/** 值得等待：随机 N 费弈子（记名），每回合开始获得其 1 星复制体 */
+	| { kind: 'worthTheWait'; cost: number; copies: number }
+	/** 立刻及每阶段开始获得经验值与免费刷新（新纪元） */
+	| { kind: 'stageKit'; xp?: number; rerolls?: number }
+	/** 战斗内计时增益：every=每 after 秒重复（发条增速器），缺省一次性（飞升系列） */
+	| {
+			kind: 'combatTimer'
+			after: number
+			every?: boolean
+			damageAmp?: number
+			asPct?: number
+	  }
+	/** 每次商店刷新队伍获得永久生命（大刷特刷） */
+	| { kind: 'rerollRamp'; hpFlat: number }
 
 /** 武器库选项池（trait = 拉克丝大元素使的羁绊选择） */
 export type ArmoryPool = 'artifact' | 'component' | 'completed' | 'emblem' | 'radiant' | 'trait'
@@ -175,13 +262,15 @@ export interface ArmoryChain {
 }
 
 export interface AugmentDef {
-	/** 官方 apiName（TFT_Augment_* / ENC_* 自定义遭遇） */
+	/** 官方 apiName（TFT_Augment_* / DA_* / ENC_* 自定义遭遇） */
 	apiName: string
 	name: string
 	desc: string
 	/** 1 银 / 2 金 / 3 彩，影响边框色 */
 	tier: 1 | 2 | 3
 	effects: AugmentEffect[]
+	/** PVE/特殊模式专属（Plus 强化版），不参与常规 2-1/3-2/4-2 随机抽取 */
+	pveOnly?: boolean
 }
 
 const A = (
@@ -202,9 +291,6 @@ export const AUGMENTS: AugmentDef[] = [
 	A('TFT_Augment_Placebo', '安慰剂', '你的弈子们获得1%攻击速度。获得8金币。', 1, [
 		{ kind: 'teamBuff', asPct: 0.01 },
 		{ kind: 'goldNow', amount: 8 },
-	]),
-	A('TFT_Augment_Kingslayer', '弑君突刺', '每场玩家对战回合获胜后，获得1金币。', 1, [
-		{ kind: 'winGold', amount: 1 },
 	]),
 	A('TFT_Augment_MarksMan', '集中火力', '你的队伍获得10%物理加成。每5秒，额外获得5%。', 1, [
 		{ kind: 'teamBuff', adPct: 0.1 },
@@ -543,9 +629,6 @@ export const AUGMENTS: AugmentDef[] = [
 		{ kind: 'goldNow', amount: 7 },
 		{ kind: 'roundGold', amount: 7 },
 	]),
-	A('TFT_Augment_GrowthMindset', '成长型思维', '获得50经验值。', 3, [
-		{ kind: 'xpNow', amount: 50 },
-	]),
 	A(
 		'TFT_Augment_GiantAndMighty',
 		'大而有力',
@@ -577,9 +660,6 @@ export const AUGMENTS: AugmentDef[] = [
 			{ kind: 'onBuyBlossom', hpFlat: 10 },
 		],
 	),
-	A('TFT_Augment_CalculatedEnhancement', '精心赋能', '你的弈子们获得40%物理加成和50法术加成。', 3, [
-		{ kind: 'teamBuff', adPct: 0.4, ap: 50 },
-	]),
 	A('DA_LivingForge', '活体锻炉', '立刻以及每10场玩家对战回合后，获得1个【神器锻造器】。', 3, [
 		{ kind: 'armoryNow', pool: 'artifact' },
 		{ kind: 'armoryPerRounds', pool: 'artifact', rounds: 10 },
@@ -1694,7 +1774,304 @@ export const AUGMENTS: AugmentDef[] = [
 			{ kind: 'delayRandom', rounds: 3, items: ['DA_TacticiansCrown'] },
 		],
 	),
+	// ---- round4：属性维度/条件加成/回合钩子 ----
+	A('DA_MakeshiftArmorI', '应急护甲 I', '没有携带任何装备的弈子获得30护甲和魔抗。', 1, [
+		{ kind: 'condBuff', when: 'noItems', armor: 30, mr: 30 },
+	]),
+	A(
+		'DA_GlassCannon_Silver',
+		'玻璃大炮 I',
+		'在后排开始战斗的友军，在战斗开始时的生命值为80%，但会获得16%伤害增幅。',
+		1,
+		[{ kind: 'condBuff', when: 'backRow', hpPct: -0.2, damageAmp: 0.16 }],
+	),
+	A(
+		'TFT6_Augment_Distancing',
+		'浪人 I',
+		'战斗开始时，你的邻格内没有弈子的单位获得相当于其20%最大生命值的护盾值，持续10秒。',
+		1,
+		[{ kind: 'condBuff', when: 'noNeighborAlly', shieldPct: 0.2 }],
+	),
+	A(
+		'DA_ClearMind',
+		'清晰头脑',
+		'如果在玩家对战回合结束时，你的备战席没有任何弈子，则获得3经验值。',
+		1,
+		[{ kind: 'roundEndXp', when: 'benchEmpty', amount: 3 }],
+	),
+	A(
+		'DA_CelestialBlessingI',
+		'星界赐福 I',
+		'你的队伍获得12%全能吸血。溢出的治疗量会转换为护盾，至多转化为200生命值护盾。',
+		1,
+		[{ kind: 'teamBuff', omnivamp: 0.12 }],
+	),
+	A('TFT6_Augment_TinyTitans', '小巨人', '使你的当前玩家生命值和最大玩家生命值都提升20。', 1, [
+		{ kind: 'playerHp', amount: 20 },
+	]),
+	A(
+		'DA_Slammin',
+		'物尽其用',
+		'获得3金币。在每场玩家对战回合结束时，如果你的备战席没有任何装备(消耗品除外)，获得2经验值。',
+		1,
+		[
+			{ kind: 'goldNow', amount: 3 },
+			{ kind: 'roundEndXp', when: 'benchNoItems', amount: 2 },
+		],
+	),
+	A(
+		'DA_ClutteredMind',
+		'纷乱头脑',
+		'立刻获得4个1费弈子。如果在玩家对战回合结束时，你的备战席已满，则获得3经验值。',
+		1,
+		[
+			{ kind: 'randomChamps', cost: 1, count: 4 },
+			{ kind: 'roundEndXp', when: 'benchFull', amount: 3 },
+		],
+	),
+	A(
+		'DA_WorththeWait',
+		'值得等待',
+		'获得1个随机1费弈子。每回合开始时都会获得该弈子的又一个1星复制体，持续至本局游戏结束。',
+		1,
+		[{ kind: 'worthTheWait', cost: 1, copies: 1 }],
+	),
+	A(
+		'DA_PatientStudy',
+		'耐心学习',
+		'在玩家对战回合后，如果你赢了则获得3经验值，如果你输了则获得2经验值。',
+		1,
+		[{ kind: 'combatResultXp', win: 3, lose: 2 }],
+	),
+	A('DA_MakeshiftArmorII', '应急护甲 II', '没有携带任何装备的弈子获得50护甲和魔抗。', 2, [
+		{ kind: 'condBuff', when: 'noItems', armor: 50, mr: 50 },
+	]),
+	A(
+		'TFT6_Augment_Distancing2',
+		'浪人 II',
+		'战斗开始时，你的邻格内没有弈子的单位获得相当于其30%最大生命值的护盾值，持续10秒。',
+		2,
+		[{ kind: 'condBuff', when: 'noNeighborAlly', shieldPct: 0.3 }],
+	),
+	A(
+		'DA_GlassCannon_Gold',
+		'玻璃大炮 II',
+		'在后排开始战斗的友军，在战斗开始时的生命值为80%，但会获得25%伤害增幅。',
+		2,
+		[{ kind: 'condBuff', when: 'backRow', hpPct: -0.2, damageAmp: 0.25 }],
+	),
+	A(
+		'TFT9_PumpingUp',
+		'打气 I',
+		'你的队伍获得6%攻击速度。在之后的每个回合，他们额外获得0.5%攻击速度。',
+		2,
+		[{ kind: 'rampBuff', per: 'round', asPct: 0.005, initialStacks: 12 }],
+	),
+	A(
+		'TFT9_PumpingUp2',
+		'打气 II',
+		'你的队伍获得10%攻击速度。在之后的每个回合，他们额外获得1%攻击速度。',
+		2,
+		[{ kind: 'rampBuff', per: 'round', asPct: 0.01, initialStacks: 10 }],
+	),
+	A(
+		'DA_EarlyLearnings',
+		'宝宝学院',
+		'你的队伍获得5%物理加成和法术加成。在每场玩家对战回合结束后，该加成提升1%。1费弈子们获得双倍该加成。',
+		2,
+		[{ kind: 'rampBuff', per: 'pvp', adPct: 0.01, apPct: 0.01, initialStacks: 5 }],
+	),
+	A('DA_LevelUp', '升级咯！', '在你购买经验值时，获得额外2经验值。立刻获得6经验值。', 2, [
+		{ kind: 'xpNow', amount: 6 },
+		{ kind: 'buyXpBonus', amount: 2 },
+	]),
+	A(
+		'DA_Hustler',
+		'花到上头',
+		'你不再获得利息，但会在每个玩家对战回合开始时获得3金币。立刻获得3金币。利息是你每储存10金币时获得的额外金币。',
+		2,
+		[{ kind: 'goldNow', amount: 3 }, { kind: 'noInterest' }, { kind: 'roundStartGold', amount: 3 }],
+	),
+	A(
+		'DA_GoingLong',
+		'遥遥领先',
+		'你不再获得利息。立刻获得10金币。在每场玩家对战后，获得4经验值。利息是你每储存10金币时获得的额外金币。',
+		2,
+		[{ kind: 'goldNow', amount: 10 }, { kind: 'noInterest' }, { kind: 'roundStartXp', amount: 4 }],
+	),
+	A(
+		'DA_UpwardMobility',
+		'上进心',
+		'购买经验值的费用减少1。每当你升级时，获得2生命值和2次刷新。',
+		2,
+		[
+			{ kind: 'xpCostDiscount', amount: 1 },
+			{ kind: 'levelUpBonus', hp: 2, rerolls: 2 },
+		],
+	),
+	A(
+		'DA_ShoppingSpree',
+		'大买特买',
+		'在你升级时，获得相当于你等级数+1的商店刷新次数。获得6金币。',
+		2,
+		[
+			{ kind: 'goldNow', amount: 6 },
+			{ kind: 'levelUpBonus', rerolls: 1, rerollsPerLevel: 1 },
+		],
+	),
+	A('DA_Epoch', '新纪元', '立刻以及每阶段开始时，获得4经验值和2次免费刷新。', 2, [
+		{ kind: 'stageKit', xp: 4, rerolls: 2 },
+	]),
+	A(
+		'DA_BandOfThievesII',
+		'窃贼帮派 II',
+		'获得2个【窃贼手套】。在5场玩家对战回合后，获得另一个。',
+		2,
+		[
+			{ kind: 'namedItems', apiNames: ['DA_ThiefsGloves', 'DA_ThiefsGloves'] },
+			{ kind: 'delayRandom', rounds: 5, items: ['DA_ThiefsGloves'] },
+		],
+	),
+	A(
+		'DA_CelestialBlessingII',
+		'星界赐福 II',
+		'你的队伍获得18%全能吸血。溢出的治疗量会转换为护盾，至多转化为400生命值护盾。',
+		2,
+		[{ kind: 'teamBuff', omnivamp: 0.18 }],
+	),
+	A('TFT_Augment_GuardbreakerSpirit', '权杖意志', '获得1个【拳套】。你的队伍获得25%暴击几率。', 2, [
+		{ kind: 'namedItems', apiNames: ['TFT_Item_SparringGloves'] },
+		{ kind: 'teamBuff', critChance: 0.25 },
+	]),
+	A(
+		'TFT_Augment_HeftyRolls',
+		'大刷特刷',
+		'你在这局游戏每次刷新时，你的队伍就会获得8生命值和体型。获得5金币。',
+		2,
+		[
+			{ kind: 'goldNow', amount: 5 },
+			{ kind: 'rerollRamp', hpFlat: 8 },
+		],
+	),
+	A(
+		'TFT_Augment_Unforgotten',
+		'猛将的荣耀',
+		'每回合，你的队伍获得5%物理加成和法术加成。英雄们初始拥有1层此效果，并且至多可叠加至4层。',
+		2,
+		[{ kind: 'rampBuff', per: 'round', adPct: 0.05, apPct: 0.05, initialStacks: 1, maxStacks: 4 }],
+	),
+	A(
+		'TFT_Augment_TitanicTitan',
+		'巨型泰坦',
+		'使你的当前和最大玩家生命值都提升25。你会在选秀中更早被放出，但速度要慢得多。',
+		2,
+		[{ kind: 'playerHp', amount: 25 }],
+	),
+	A(
+		'DA_FindYourCenter',
+		'C位的觉悟',
+		'战斗开始时，位于棋盘中心的那个己方弈子获得15%伤害增幅和25%最大生命值。',
+		2,
+		[{ kind: 'condBuff', when: 'frontCenter', damageAmp: 0.15, hpPct: 0.25 }],
+	),
+	A(
+		'DA_TwinGuardians',
+		'双子守护神',
+		'如果你的第一排有且只有2名友军，为他们提供100生命值、35护甲和35魔法抗性。',
+		2,
+		[{ kind: 'condBuff', when: 'frontRowOnly', frontCount: 2, hpFlat: 100, armor: 35, mr: 35 }],
+	),
+	A(
+		'DA_WorththeWaitII',
+		'值得等待 II',
+		'获得1个随机2费弈子的2个1星复制体。每回合开始时都会获得该弈子的又一个1星复制体，持续至本局游戏结束。',
+		2,
+		[{ kind: 'worthTheWait', cost: 2, copies: 2 }],
+	),
+	A(
+		'TFT9_PumpingUp3',
+		'打气 III',
+		'你的队伍获得16%攻击速度。在之后的每个回合，他们额外获得2%攻击速度。',
+		3,
+		[{ kind: 'rampBuff', per: 'round', asPct: 0.02, initialStacks: 8 }],
+	),
+	A(
+		'DA_JeweledLotus_I',
+		'珠光莲花 I',
+		'你的队伍获得10%暴击几率和技能暴击。【技能暴击】：技能伤害可以造成暴击。',
+		3,
+		[{ kind: 'teamBuff', critChance: 0.1, abilityCrit: true }],
+	),
+	A(
+		'DA_JeweledLotus_II',
+		'珠光莲花 II',
+		'你的队伍获得25%暴击几率，10%暴击伤害和【技能暴击】。【技能暴击】：技能伤害可以造成暴击。',
+		3,
+		[{ kind: 'teamBuff', critChance: 0.25, critMult: 0.1, abilityCrit: true }],
+	),
+	A(
+		'DA_CelestialBlessingIII',
+		'星界赐福 III',
+		'你的队伍获得25%全能吸血。溢出的治疗量会转换为护盾，至多转化为1000生命值护盾。',
+		3,
+		[{ kind: 'teamBuff', omnivamp: 0.25 }],
+	),
+	A('DA_SwordOverflow', '大剑溢流', '获得4个【暴风大剑】。你的【暴风大剑】提供+4%攻击速度。', 3, [
+		{
+			kind: 'namedItems',
+			apiNames: ['TFT_Item_BFSword', 'TFT_Item_BFSword', 'TFT_Item_BFSword', 'TFT_Item_BFSword'],
+		},
+		{ kind: 'holderBuff', item: 'TFT_Item_BFSword', asPct: 0.04 },
+	]),
+	A('DA_WandOverflow', '法杖溢流', '获得4个【无用大棒】。你的【无用大棒】提供+5%攻击速度。', 3, [
+		{
+			kind: 'namedItems',
+			apiNames: [
+				'TFT_Item_NeedlesslyLargeRod',
+				'TFT_Item_NeedlesslyLargeRod',
+				'TFT_Item_NeedlesslyLargeRod',
+				'TFT_Item_NeedlesslyLargeRod',
+			],
+		},
+		{ kind: 'holderBuff', item: 'TFT_Item_NeedlesslyLargeRod', asPct: 0.05 },
+	]),
+	A('DA_BeltOverflow', '腰带溢流', '获得4个【巨人腰带】。你的【巨人腰带】提供+85额外生命值。', 3, [
+		{
+			kind: 'namedItems',
+			apiNames: [
+				'TFT_Item_GiantsBelt',
+				'TFT_Item_GiantsBelt',
+				'TFT_Item_GiantsBelt',
+				'TFT_Item_GiantsBelt',
+			],
+		},
+		{ kind: 'holderBuff', item: 'TFT_Item_GiantsBelt', hpFlat: 85 },
+	]),
+	A('DA_PartialAscension', '部分飞升', '在战斗开始12秒后，你的单位们获得20%伤害增幅。', 1, [
+		{ kind: 'combatTimer', after: 12, damageAmp: 0.2 },
+	]),
+	A('DA_Ascension', '飞升', '在战斗开始12秒后，你的单位们获得35%伤害增幅。', 1, [
+		{ kind: 'combatTimer', after: 12, damageAmp: 0.35 },
+	]),
+	A(
+		'TFT9_Augment_Commander_FinalAscension',
+		'终极飞升',
+		'己方弈子获得20%伤害增幅。在15秒后，这个效果提升至60%伤害增幅。',
+		3,
+		[
+			{ kind: 'teamBuff', damageAmp: 0.2 },
+			{ kind: 'combatTimer', after: 15, damageAmp: 0.4 },
+		],
+	),
+	A('DA_ClockworkAccelerator', '发条增速器', '你的队伍在战斗中每过3秒就会获得10%攻击速度。', 2, [
+		{ kind: 'combatTimer', after: 3, every: true, asPct: 0.1 },
+	]),
 ]
+
+// Plus 强化版（如「认知税+」「窃贼帮派 II++」）为 PVE/特殊模式专属，标记后不参与常规抽取
+for (const a of AUGMENTS) {
+	if (/Plus/i.test(a.apiName)) a.pveOnly = true
+}
 
 /** 每个海克斯回合全员统一品质；权重近似官方（银/金/彩） */
 export const AUGMENT_TIER_ODDS: { tier: 1 | 2 | 3; weight: number }[] = [

@@ -48,10 +48,20 @@ export function toCombatInput(p: PlayerState, stage: number, rng?: Rng): CombatU
 	const scapegoat = augEffects.find((e) => e.kind === 'scapegoatGold')
 	// 致命丽花等：纹章携带者羁绊效能放大
 	const emblemAmps = augEffects.filter((e) => e.kind === 'emblemTraitAmp')
-	// 正义报复等：指定装备携带者获得技能暴击
+	// 正义报复等：指定装备携带者获得技能暴击；珠光莲花：全队技能暴击
 	const abilityCritItems = augEffects
 		.filter((e) => e.kind === 'holderBuff' && e.abilityCrit && e.item)
 		.map((e) => (e as { item?: string }).item as string)
+	const teamAbilityCrit = augEffects.some((e) => e.kind === 'teamBuff' && e.abilityCrit)
+	// 飞升系列/发条增速器：战斗内计时增益（挂在每个单位上，战斗循环统一结算）
+	const timerBuffs = augEffects
+		.filter((e) => e.kind === 'combatTimer')
+		.map((e) => ({
+			after: (e as { after: number }).after,
+			every: (e as { every?: boolean }).every,
+			damageAmp: (e as { damageAmp?: number }).damageAmp,
+			asPct: (e as { asPct?: number }).asPct,
+		}))
 	return p.board.map((b) => {
 		const stats = applyPlayerBuffs(p, applyTraitStats(b, unitStats(b), active), b)
 		if (b.uid === strongestMao) stats.maxHp += maokaiHpBonus
@@ -61,7 +71,8 @@ export function toCombatInput(p: PlayerState, stage: number, rng?: Rng): CombatU
 		const isDummy = MONSTER_BY_API.has(b.apiName)
 		const items = expandThiefsGloves(rng, b.items)
 		const extraTags: ItemTag[] | undefined =
-			abilityCritItems.length > 0 && items.some((i) => abilityCritItems.includes(i))
+			teamAbilityCrit ||
+			(abilityCritItems.length > 0 && items.some((i) => abilityCritItems.includes(i)))
 				? ['abilityCrit']
 				: undefined
 		let traitAmp: Record<string, number> | undefined
@@ -81,6 +92,7 @@ export function toCombatInput(p: PlayerState, stage: number, rng?: Rng): CombatU
 			chosenTrait: b.chosenTrait,
 			traitAmp,
 			extraTags,
+			timerBuffs: timerBuffs.length > 0 ? timerBuffs : undefined,
 			dummyGold:
 				isDummy && dummyGold?.kind === 'dummyGold'
 					? [dummyGold.perSeconds, dummyGold.amount]
