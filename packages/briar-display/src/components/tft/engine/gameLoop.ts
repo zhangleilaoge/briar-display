@@ -22,6 +22,8 @@ import { CHAMPIONS, CHAMPION_BY_API, ITEM_BY_API, ITEM_COMPONENTS } from '../dat
 import { AUGMENT_BY_API, ENCOUNTERS } from '../data/set18/augments'
 import {
 	CONSUMABLE_ALPHA_MARK,
+	CONSUMABLE_DUPLICATOR,
+	CONSUMABLE_LESSER_DUPLICATOR,
 	CONSUMABLE_REMOVER,
 	CONSUMABLE_REROLLER,
 	isConsumable,
@@ -144,7 +146,8 @@ export class GameEngine {
 				grantStageEmblemChamp(this.rng, p, this.state.stage, augApi, gold, (api) =>
 					this.grantChampUnit(p, api),
 				),
-			checkLevelArmories: (p) => checkLevelArmories(this.rng, p),
+			checkLevelArmories: (p) =>
+				checkLevelArmories(this.rng, p, (api, star) => this.grantChampUnit(p, api, star)),
 		}
 		// 开局必得一个随机 1 费棋子（官方规则）
 		const cost1 = CHAMPIONS.filter((c) => c.cost === 1)
@@ -252,7 +255,7 @@ export class GameEngine {
 		return engineEquipItem(p, uid, itemApi)
 	}
 
-	/** 消耗品：阿尔法印记给峡谷野怪独特增益；拆卸器取下全部装备回装备栏；重铸器取下并同类随机变形（冠冕/腐化装不进重铸池）；假人默认不可携带 */
+	/** 消耗品：阿尔法印记给峡谷野怪独特增益；拆卸器取下全部装备回装备栏；重铸器取下并同类随机变形（冠冕/腐化装不进重铸池）；复制器生成同星复制体入备战席（次级限 3 费及以下）；假人默认不可携带 */
 	private useConsumable(p: PlayerState, uid: string, itemApi: string): boolean {
 		const f = findUnit(p, uid)
 		if (!f) return false
@@ -264,6 +267,17 @@ export class GameEngine {
 			if (!CHAMPION_BY_API.get(f.unit.apiName)?.traits.includes('DA_Riftbeast18')) return false
 			p.itemTray.splice(ti, 1)
 			f.unit.alphaMark = true
+			return true
+		}
+		// 英雄复制器/次级英雄复制器：复制棋子到备战席（不占卡池名额；次级仅 3 费及以下）
+		if (itemApi === CONSUMABLE_DUPLICATOR || itemApi === CONSUMABLE_LESSER_DUPLICATOR) {
+			const def = CHAMPION_BY_API.get(f.unit.apiName)
+			if (!def) return false
+			if (itemApi === CONSUMABLE_LESSER_DUPLICATOR && def.cost > 3) return false
+			const copy = createUnit(f.unit.apiName)
+			copy.star = f.unit.star
+			if (!addToBench(p, copy)) return false
+			p.itemTray.splice(ti, 1)
 			return true
 		}
 		if (f.unit.items.length === 0) return false

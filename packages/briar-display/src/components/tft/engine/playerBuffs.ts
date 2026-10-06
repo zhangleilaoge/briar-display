@@ -60,16 +60,24 @@ export function applyPlayerBuffs(
 					stats.maxHp += e.amount * n
 					break
 				}
-				// 加冕礼（冠冕系）/厨神阿福（铲锅系）：携带者获得加成
+				// 加冕礼（冠冕系）/厨神阿福（铲锅系）/源计划（1 件装备）/正义报复（指定装备）：携带者获得加成
 				case 'holderBuff': {
 					if (!unit) break
-					const hit = unit.items.some((i) =>
-						e.match === 'crown' ? i.includes('Tactician') : isSpatFamily(i),
-					)
+					const hit = e.item
+						? unit.items.includes(e.item)
+						: e.itemCount !== undefined
+							? unit.items.length === e.itemCount
+							: e.match === 'crown'
+								? unit.items.some((i) => i.includes('Tactician'))
+								: unit.items.some(isSpatFamily)
 					if (!hit) break
 					if (e.asPct) stats.attackSpeed = round2(stats.attackSpeed * (1 + e.asPct))
 					if (e.adPct) stats.attackDamage = Math.round(stats.attackDamage * (1 + e.adPct))
 					if (e.apPct) stats.abilityPower = Math.round(stats.abilityPower * (1 + e.apPct))
+					if (e.hpFlat) stats.maxHp += e.hpFlat
+					if (e.armor) stats.armor += e.armor
+					if (e.mr) stats.magicResist += e.mr
+					if (e.critChance) stats.critChance = round2(stats.critChance + e.critChance)
 					if (e.manaRegen) stats.manaRegen += e.manaRegen
 					break
 				}

@@ -8,7 +8,13 @@ import {
 	type ArmoryChain,
 	type ArmoryPool,
 } from '../data/set18/augments'
-import { CONSUMABLE_REMOVER, CONSUMABLE_REROLLER, isConsumable } from '../data/set18/consumables'
+import {
+	CONSUMABLE_DUPLICATOR,
+	CONSUMABLE_LESSER_DUPLICATOR,
+	CONSUMABLE_REMOVER,
+	CONSUMABLE_REROLLER,
+	isConsumable,
+} from '../data/set18/consumables'
 import { COVEN_TIERS, type CovenReward } from '../data/set18/coven'
 import { MONSTER_BY_API } from '../data/set18/monsters'
 import { ARTIFACT_POOL, CRAFTABLE_POOL, EMBLEM_POOL, RADIANT_POOL, rerollPoolFor } from './armory'
@@ -85,6 +91,9 @@ export function applyAugment(deps: AugmentDeps, p: PlayerState, apiName: string)
 			case 'consumablesNow':
 				for (let i = 0; i < (e.removers ?? 0); i++) pushTray(p, CONSUMABLE_REMOVER)
 				for (let i = 0; i < (e.rerollers ?? 0); i++) pushTray(p, CONSUMABLE_REROLLER)
+				for (let i = 0; i < (e.duplicators ?? 0); i++) pushTray(p, CONSUMABLE_DUPLICATOR)
+				for (let i = 0; i < (e.lesserDuplicators ?? 0); i++)
+					pushTray(p, CONSUMABLE_LESSER_DUPLICATOR)
 				break
 			case 'rerollsNow':
 				p.freeRerolls += e.count
@@ -353,6 +362,17 @@ export function settleAugmentTimers(
 				if (left <= 0) continue
 				if (left === 1) {
 					if (e.gold) p.gold += e.gold
+					if (e.xp) applyXp(p, e.xp)
+					for (const api of e.items ?? []) pushTray(p, api)
+					for (let i = 0; i < (e.duplicators ?? 0); i++) pushTray(p, CONSUMABLE_DUPLICATOR)
+					for (let i = 0; i < (e.lesserDuplicators ?? 0); i++)
+						pushTray(p, CONSUMABLE_LESSER_DUPLICATOR)
+					for (const c of e.champs ?? []) {
+						const champPool = CHAMPIONS.filter((x) => x.cost === c.cost)
+						for (let i = 0; i < c.count && champPool.length > 0; i++) {
+							deps.grantChampUnit(p, champPool[rng.int(champPool.length)].apiName, c.star ?? 1)
+						}
+					}
 					for (let i = 0; i < (e.artifacts ?? 0); i++)
 						pushTray(p, ARTIFACT_POOL[rng.int(ARTIFACT_POOL.length)])
 					for (let i = 0; i < (e.completed ?? 0); i++)

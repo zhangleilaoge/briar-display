@@ -158,18 +158,47 @@ export function grantStageEmblemChamp(
 	p.gold += gold
 }
 
-/** 游神的眷顾：到达指定等级时开基础装备锻造器（已越过的等级可追溯补发） */
-export function checkLevelArmories(rng: Rng, p: PlayerState): void {
+/**
+ * 等级钩子（游神的眷顾=武器库；后期专家=金币；生日礼物=每次升级发金币+弈子），已越过的等级可追溯。
+ * grantChamp 由宿主注入（卡池/备战席约束在 gameLoop 的 grantChampUnit 内处理）
+ */
+export function checkLevelArmories(
+	rng: Rng,
+	p: PlayerState,
+	grantChamp?: (champApi: string, star?: number) => string | null,
+): void {
 	for (const a of p.augments) {
 		const def = AUGMENT_BY_API.get(a)
 		if (!def) continue
 		for (const e of def.effects) {
 			if (e.kind !== 'armoryAtLevels') continue
+			// 生日礼物系：每次升级触发（首次检查以当前等级为基准，不补发之前的升级）
+			if (e.everyLevel) {
+				const seenKey = `${a}.lvlSeen`
+				const seen = typeof p.augMemo[seenKey] === 'number' ? (p.augMemo[seenKey] as number) : null
+				if (seen === null) {
+					p.augMemo[seenKey] = p.level
+					continue
+				}
+				if (p.level <= seen) continue
+				p.augMemo[seenKey] = p.level
+				if (e.gold) p.gold += e.gold
+				if (e.levelChamp && grantChamp) {
+					const cost = Math.min(
+						Math.max(p.level - e.levelChamp.costOffset, 1),
+						e.levelChamp.maxCost,
+					)
+					const pool = CHAMPIONS.filter((c) => c.cost === cost)
+					if (pool.length > 0) grantChamp(pool[rng.int(pool.length)].apiName, e.levelChamp.star)
+				}
+				continue
+			}
 			for (const lvl of e.levels) {
 				const key = `${a}.lvl${lvl}`
 				if (p.level >= lvl && !p.augMemo[key]) {
 					p.augMemo[key] = 1
-					openArmory(rng, p, e.pool, 4, a)
+					if (e.pool) openArmory(rng, p, e.pool, 4, a)
+					if (e.gold) p.gold += e.gold
 				}
 			}
 		}
