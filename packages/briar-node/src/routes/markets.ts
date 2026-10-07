@@ -1,5 +1,7 @@
 import type {
 	ApiResponse,
+	FearGreedBatchResponse,
+	FearGreedBoardResponse,
 	MarketChartResponse,
 	MarketIndexTrendsResponse,
 	MarketOverviewResponse,
@@ -16,6 +18,7 @@ import { type Context, Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { marketWatchlistDal } from '../dal/marketWatchlistDal'
 import { authService } from '../services/authService'
+import { getFearGreedBatch, getFearGreedBoard } from '../services/market/fearGreedService'
 import { MarketInputError, getOverview, getSectors } from '../services/market/marketService'
 import {
 	getConstituents,
@@ -195,6 +198,25 @@ marketRoutes.get('/quotes', async (c) => {
 		return c.json<ApiResponse<StockQuotesResponse>>({ success: true, data })
 	} catch (err) {
 		console.error('[markets] quotes failed:', err)
+		return upstreamError(c, '行情源暂时不可用，请稍后再试')
+	}
+})
+
+/** GET /fear-greed?items=cn:sh600519,us:AAPL — 自选股恐贪指数（批量，最多 100 个，按标的缓存 8 分钟） */
+marketRoutes.get('/fear-greed', async (c) => {
+	const refs = parseStockRefs(c.req.query('items'))
+	if (refs.length === 0) return badRequest(c, '参数错误')
+	const data = await getFearGreedBatch(refs)
+	return c.json<ApiResponse<FearGreedBatchResponse>>({ success: true, data })
+})
+
+/** GET /fear-greed/board — A股主要指数 + 恒指 / 恒生科技 + 申万一级行业恐贪 */
+marketRoutes.get('/fear-greed/board', async (c) => {
+	try {
+		const data = await getFearGreedBoard()
+		return c.json<ApiResponse<FearGreedBoardResponse>>({ success: true, data })
+	} catch (err) {
+		console.error('[markets] fear-greed board failed:', err)
 		return upstreamError(c, '行情源暂时不可用，请稍后再试')
 	}
 })

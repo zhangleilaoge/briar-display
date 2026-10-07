@@ -358,3 +358,79 @@ export interface WatchlistItem extends StockRef {
 
 /** 自选上限（每个用户 / 每台设备） */
 export const WATCHLIST_LIMIT = 100
+
+// ───────────────────────── 恐贪指数（0 恐惧 – 100 贪婪，按日 K 计算） ─────────────────────────
+
+export type FearGreedBand = 'extreme-fear' | 'fear' | 'neutral' | 'greed' | 'extreme-greed'
+
+export const FEAR_GREED_BANDS: { band: FearGreedBand; label: string; min: number; max: number }[] =
+	[
+		{ band: 'extreme-fear', label: '极度恐惧', min: 0, max: 24 },
+		{ band: 'fear', label: '恐惧', min: 25, max: 44 },
+		{ band: 'neutral', label: '中性', min: 45, max: 55 },
+		{ band: 'greed', label: '贪婪', min: 56, max: 75 },
+		{ band: 'extreme-greed', label: '极度贪婪', min: 76, max: 100 },
+	]
+
+/** 按四舍五入后的整数分数划档 */
+export function fearGreedBand(score: number | null | undefined): FearGreedBand | null {
+	if (score == null || !Number.isFinite(score)) return null
+	const s = Math.round(score)
+	return (FEAR_GREED_BANDS.find((b) => s >= b.min && s <= b.max) ?? FEAR_GREED_BANDS[4]).band
+}
+
+export const fearGreedLabel = (band: FearGreedBand | null) =>
+	FEAR_GREED_BANDS.find((b) => b.band === band)?.label ?? '—'
+
+export type FearGreedComponentKey =
+	| 'ma125'
+	| 'ma20'
+	| 'rsi14'
+	| 'momentum20'
+	| 'volume'
+	| 'volatility'
+	| 'range52w'
+	| 'netInflow'
+
+export interface FearGreedComponent {
+	key: FearGreedComponentKey
+	label: string
+	/** 原始指标值（比例 / RSI 数值 / 百分位），数据不足为 null */
+	value: number | null
+	/** 归一化后 0–100（越高越贪婪），数据不足为 null，不计入均值 */
+	score: number | null
+	/** 原始值的人话描述，如「高于 125 日均线 8.2%」 */
+	detail: string
+}
+
+export interface FearGreedResult {
+	market: MarketId
+	target: ChartTarget
+	code: string
+	name: string
+	/** 综合分 0–100（有效分项的等权平均，保留 1 位）；有效分项不足 4 个为 null */
+	score: number | null
+	band: FearGreedBand | null
+	components: FearGreedComponent[]
+	/** 计算所用最后一根日 K 的日期 */
+	asOf: string | null
+	/** 参与计算的日 K 根数 */
+	candles: number
+	/** 无法计算时的原因 */
+	reason?: string
+}
+
+export interface FearGreedBatchResponse extends MarketDataMeta {
+	items: FearGreedResult[]
+	/** 前端刷新间隔（恐贪按日 K，5 分钟足够） */
+	pollMs: number
+}
+
+export interface FearGreedBoardResponse extends MarketDataMeta {
+	/** A股主要指数 + 港股恒指 / 恒生科技 */
+	indices: FearGreedResult[]
+	/** 申万一级行业（按分数降序） */
+	sectors: FearGreedResult[]
+	sectorSource: string
+	pollMs: number
+}
