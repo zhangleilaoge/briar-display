@@ -4,6 +4,7 @@
 
 - 页面：`/briar/markets`（五市场卡片 + 自选股 + 个股搜索）、`/briar/markets/{cn|hk|us|jp|kr}`（热力图 + 列表、行业/概念切换、排序切换）
 - API：`GET /api/markets/overview`、`GET /api/markets/:market/sectors?kind=industry|concept&level=1|2`（level 仅 A股行业：申万一级/二级）、`GET /api/markets/:market/index-trends`（指数卡片分时小图）、`GET /api/markets/:market/chart?target=index|sector&code=…&period=intraday|5day|day|week|month`（走势面板）
+- 恐贪 API：`GET /api/markets/fear-greed?items=`（自选批量）、`GET /api/markets/fear-greed/board`（指数 + 申万行业）
 - 个股 API：`GET /api/markets/:market/constituents?code=&kind=`（板块成分股）、`GET /api/markets/:market/stock?code=`（个股报价）、`GET /api/markets/:market/chart?target=stock&code=…`（个股走势）、`GET /api/markets/search?q=`（跨市场搜索）、`GET /api/markets/quotes?items=cn:sh600519,us:AAPL`（批量报价，自选列表用）、`GET|POST /api/markets/watchlist`、`DELETE /api/markets/watchlist/:market/:code`
 - 代码：后端 `packages/briar-node/src/services/market/`（http / cache / session / catalog / sources / curated（题材板块聚合）/ marketService / trendSources / trendService / stockSources / stockService / watchlist）+ `routes/markets.ts` + `dal/marketWatchlistDal.ts`；共享类型 `briar-shared/src/markets.ts`；前端 `components/markets/`（详情弹窗 `MarketDetailDialog` + 导航栈 `dialogStack`、走势 `MarketChartPanel`(`ChartPanelBody`) + `TrendChart`、成分股 `SectorConstituents`、个股 `StockDetailView`、自选 `WatchlistCard` / `watchlistStore`）
 - 前端不直连任何第三方，全部经 briar-node 代理
@@ -108,6 +109,47 @@
 - **搜索**：搜全部个股（不限自选），代码 / 名称 / 拼音首字母。前端输入防抖 300ms，新输入会 abort 旧请求；后端按规范化后的查询词缓存 10 分钟（`search:{q}`，单飞）。来源：腾讯 smartbox `smartbox.gtimg.cn/s3/?t=all&q=`（A股个股+ETF、港股、美股，支持 `gzmt` 这类拼音首字母）+ Naver 自动补全 `ac.stock.naver.com/ac?target=stock`（韩国、日本；纯中文查询不打 Naver）。结果代码完全匹配的排最前，去重后最多 30 条。
 - 缓存 key：`constituents:{market}:{kind}:{code}`、`stock:quote:{market}:{code}`、`stock:quotes:{tencent|kr|jp}:{ids}`、`stock:valuation:kr:{code}`、`chart:{market}:stock:{code}:{period}`、`search:{q}`；报价 / 成分股 TTL 同板块（交易中 20s / 午休盘前 60s / 收盘 5min），东财方案 ≥ 30s
 
+## 恐贪指数（0 恐惧 – 100 贪婪）
+
+自选股每行一个小徽章（「62 贪婪」，绿 = 恐惧 → 红 = 贪婪，与红涨绿跌一致；没有数据为「—」），悬停或点击弹出分项。概览页「恐贪指数」卡片切换「大盘指数」（上证指数 / 深证成指 / 创业板指 / 科创50 / 沪深300 / 上证50 / 中证500 + 恒生指数 / 恒生科技）和「申万行业」（31 个申万一级，默认显示最贪婪 5 个 + 最恐惧 5 个，可展开全部）。
+
+代码：`services/market/fearGreed.ts`（纯函数）、`fearGreedService.ts`；前端 `FearGreedBadge` / `FearGreedBoardCard` / `fearGreedUi.ts`。
+
+**输入**：前复权日 K（与走势面板「日K」同一份数据和 `chart:{market}:{target}:{code}:day` 缓存，约 320 根 ≈ 15 个月）。记 `C` 为收盘序列、`c` 为最后收盘，`H/L/V` 为最高 / 最低 / 成交量。盘中（交易中 / 午休）最后一根未走完，**只在量能分项里剔除**，价格分项用当前价。
+
+**分项**（每项归一化到 0–100，越高越贪婪；`lin(x, a, b) = clamp((x − a) / (b − a) × 100, 0, 100)`）：
+
+| 分项 | 原始值 | 分数 | 最少数据 |
+| :--- | :--- | :--- | :--- |
+| 125 日均线偏离 | `d = c / MA125 − 1` | `lin(d, −20%, +20%)` | 125 根 |
+| 20 日均线偏离 | `d = c / MA20 − 1` | `lin(d, −10%, +10%)` | 20 根 |
+| RSI(14) | Wilder RSI：首 14 日涨跌简单平均，之后 `avg = (avg × 13 + 当日) / 14`，`RSI = 100 − 100 / (1 + 涨均 / 跌均)` | `= RSI` | 15 根 |
+| 20 日动量 | `m = c / C[t−20] − 1` | `lin(m, −15%, +15%)` | 21 根 |
+| 量能 | `v = ln(近 5 日均量 / 近 60 日均量)`，方向 `s = sign(近 5 日涨跌)` | `50 + 50 × s × clamp(v / ln2, −1, 1)`：放量上涨 → 贪婪，放量下跌 → 恐惧，缩量向 50 回归，2 倍量封顶 | 60 根且都有成交量 |
+| 20 日波动率 | `σ = 近 20 日对数日收益标准差`；`p` = σ 在全部历史滚动 σ 里的分位（严格小于的个数 + 相等个数 / 2）/ 总数 | `100 × (1 − p)`（越波动越恐惧） | 80 根 |
+| 52 周位置 | `p = (c − 近 250 日最低) / (近 250 日最高 − 最低)`（不足 250 根用全部） | `100 × p` | 60 根 |
+| 主力净流入（仅 A股申万行业） | `r = 主力净流入 / 成交额`（腾讯板块排行当日值） | `lin(r, −10%, +10%)` | 当日有资金流 |
+
+**综合分** = 有效分项（非 null）的等权算术平均，保留 1 位小数；有效分项少于 4 个时为 null（显示「—」）。缺的分项不补 50、不计入分母。个股和指数没有主力净流入项（腾讯个股 / 指数接口无资金流，东财个股资金流受限流），只有 A股行业多这一项。
+
+**分档**（按四舍五入后的整数）：0–24 极度恐惧、25–44 恐惧、45–55 中性、56–75 贪婪、76–100 极度贪婪。徽章色相 `140 × (1 − 分数 / 100)`（140 绿 → 0 红）。
+
+**接口与缓存**：
+
+- `GET /api/markets/fear-greed?items=cn:sh600519,us:AAPL`：自选批量（最多 100 个），每个标的单独缓存 `feargreed:{market}:stock:{code}`，单飞，**TTL 8 分钟**；单个失败返回 `score: null` + `reason`，不影响其他。并发上限 6
+- `GET /api/markets/fear-greed/board`：看板整体缓存 `feargreed:board`（8 分钟，单飞），内部每个指数 / 行业也各自缓存 `feargreed:{market}:{index|sector}:{code}`。不在大盘卡片目录里的指数（沪深300 / 上证50 / 中证500）日 K 直接取腾讯 `newfqkline`，缓存 `kline:day:cn:{code}`
+- 行业只在腾讯 `pt01*` 板块时计算；A股行业列表落到东财兜底（`BK*`）时不算（日 K 要走东财 push2his，31 个板块会撞 6 次/分钟限流），卡片显示原因
+- 前端每 5 分钟刷新（`pollMs`）
+
+| 类别 | 市场 | 日 K 来源 | 资金流项 |
+| :--- | :--- | :--- | :--- |
+| 自选个股 | A股 / 港股 / 美股 | 腾讯 `newfqkline` | 无 |
+| 自选个股 | 日本 / 韩国 | Naver `chart/{foreign,domestic}/item/…/day` | 无 |
+| 大盘指数 | A股 7 个、港股恒指 / 恒生科技 | 腾讯 `newfqkline` | 无 |
+| 行业 | A股申万一级 31 个 | 腾讯 `newfqkline`（pt 板块） | 有 |
+
+注意：这是基于单一标的价格 / 成交量的技术面情绪刻画，不是 CNN 那种全市场宽度 / 期权 / 避险资产的合成指数；阈值（±20% / ±10% / ±15% / 2 倍量）是固定经验值，不随标的波动率自适应，高波动个股更容易落到两端。
+
 ## 缓存与轮询
 
 - 进程内全局共享缓存 `cache.ts`（所有用户共用一份）：key = 市场 + 接口类型 + 参数——`indices:em|naver|kr-flows`（overview）、`sectors:{market}:{kind}:{level}`、`flows:us:{kind}`、`trends:index:{market}`（index-trends 与面板分时共用）、`chart:{market}:{target}:{code}:{period}`
@@ -131,4 +173,5 @@
 - 成分股：港股恒生行业、日本 ETF 仍不支持（见上）；港美股概念板块名单是人工维护的静态数据（有滞后，新热点需改 catalog）；美股行业按 GICS 行业口径，与 SPDR ETF 实际持仓略有差异；A股腾讯源没有个股净流入；大板块只展示 400 只
 - 个股：日本没有五日分时；港股 / 美股 / 日股报价延迟 15 分钟；美股只有常规时段（无盘前盘后）
 - 搜索：日韩个股依赖 Naver 自动补全（中文名搜不到日韩股，需用代码 / 英文 / 韩文）；只收股票（A股另含 ETF），不含基金、债券、期权、期货
+- 恐贪指数：个股 / 指数没有资金流项；A股行业依赖腾讯板块（东财兜底时不算）；固定阈值不随标的波动率自适应；美股日 K 只有常规时段
 - 每次轮询都经过 logger 写入 `request_logs`（公开接口，访问量大时注意表增长）

@@ -2,6 +2,8 @@ import type {
 	ApiResponse,
 	ChartPeriod,
 	ChartTarget,
+	FearGreedBatchResponse,
+	FearGreedBoardResponse,
 	MarketChartResponse,
 	MarketId,
 	MarketIndexTrendsResponse,
@@ -116,6 +118,26 @@ export const addWatchlist = async (items: StockRef[]) => {
 export const removeWatchlist = async (market: MarketId, code: string) => {
 	const response = await apiClient.delete<ApiResponse<WatchlistItem[]>>(
 		`/markets/watchlist/${market}/${encodeURIComponent(code)}`,
+	)
+	return response.data
+}
+
+/** 自选股恐贪指数（批量，后端按标的缓存 8 分钟） */
+export const getFearGreed = async (refs: Pick<StockRef, 'market' | 'code'>[]) => {
+	const response = await apiClient.get<ApiResponse<FearGreedBatchResponse>>('/markets/fear-greed', {
+		params: { items: refs.map((r) => `${r.market}:${r.code}`).join(',') },
+		timeout: 30_000,
+	})
+	return response.data
+}
+
+/** 恐贪看板：A股主要指数 + 恒指 / 恒生科技 + 申万一级行业 */
+export const getFearGreedBoard = async () => {
+	const response = await apiClient.get<ApiResponse<FearGreedBoardResponse>>(
+		'/markets/fear-greed/board',
+		{
+			timeout: 30_000,
+		},
 	)
 	return response.data
 }

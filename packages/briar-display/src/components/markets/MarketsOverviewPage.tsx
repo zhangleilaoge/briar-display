@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import type { MarketOverviewItem, StockRef } from '@briar/shared'
 import { ChevronRight, Loader2, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
+import FearGreedBoardCard from './FearGreedBoardCard'
 import MarketDetailDialog from './MarketDetailDialog'
 import { IndexList, SessionBadge, StaleBadge } from './MarketStatusBar'
 import MarketsShell from './MarketsShell'
@@ -99,6 +100,9 @@ export default function MarketsOverviewPage() {
 			)}
 			<div className="mt-4">
 				<WatchlistCard onOpen={openStock} />
+			</div>
+			<div className="mt-4">
+				<FearGreedBoardCard />
 			</div>
 			<MarketDetailDialog view={detail} onClose={() => setDetail(null)} />
 		</MarketsShell>

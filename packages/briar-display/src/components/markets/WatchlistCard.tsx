@@ -1,12 +1,13 @@
 'use client'
 
-import { getStockQuotes, searchStocks } from '@/api/markets'
+import { getFearGreed, getStockQuotes, searchStocks } from '@/api/markets'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import {
+	type FearGreedResult,
 	MARKET_LABELS,
 	type StockQuote,
 	type StockRef,
@@ -15,6 +16,7 @@ import {
 } from '@briar/shared'
 import { Loader2, Plus, Search, Star, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import FearGreedBadge from './FearGreedBadge'
 import { StaleBadge } from './MarketStatusBar'
 import { displayCode } from './constituents'
 import { changeColorClass, formatPct, formatPrice, formatShanghaiTime } from './marketUtils'
@@ -196,6 +198,19 @@ export default function WatchlistCard({ onOpen }: { onOpen: (s: StockRef) => voi
 		(d) => d.pollMs,
 		[idsKey],
 	)
+	// 恐贪指数：日 K 计算，后端缓存 8 分钟，前端 5 分钟刷新一次
+	const fg = useMarketPolling(
+		async () => {
+			if (refs.length === 0) return { items: [] as FearGreedResult[], pollMs: 5 * 60_000 }
+			return unwrap(await getFearGreed(refs))
+		},
+		(d) => d.pollMs,
+		[idsKey],
+	)
+	const fearGreed = useMemo(
+		() => new Map((fg.data?.items ?? []).map((r) => [stockId(r), r])),
+		[fg.data],
+	)
 	const quotes = useMemo(() => new Map((data?.items ?? []).map((q) => [stockId(q), q])), [data])
 	const lastTime = useMemo(
 		() => Math.max(0, ...(data?.items ?? []).map((q) => q.quoteTime ?? 0)),
@@ -261,18 +276,25 @@ export default function WatchlistCard({ onOpen }: { onOpen: (s: StockRef) => voi
 												)}
 											</div>
 										</div>
-										<div className="w-24 text-right text-sm font-medium tabular-nums">
+										<div className="w-20 text-right text-sm font-medium tabular-nums sm:w-24">
 											{q ? formatPrice(q.price) : loading ? '…' : '--'}
 										</div>
 										<div
 											className={cn(
-												'w-20 text-right text-sm font-medium tabular-nums',
+												'w-16 text-right text-sm font-medium tabular-nums sm:w-20',
 												changeColorClass(q?.changePct),
 											)}
 										>
 											{q ? formatPct(q.changePct) : '--'}
 										</div>
 									</button>
+									<div className="flex w-12 justify-end sm:w-[5.5rem]">
+										<FearGreedBadge
+											result={fearGreed.get(stockId(item))}
+											loading={fg.loading}
+											compact
+										/>
+									</div>
 									<Button
 										variant="ghost"
 										size="icon"
@@ -291,7 +313,10 @@ export default function WatchlistCard({ onOpen }: { onOpen: (s: StockRef) => voi
 				{refs.length > 0 && (
 					<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
 						{lastTime > 0 && <span>最新行情 {formatShanghaiTime(lastTime)}</span>}
-						<span>交易时段约 20 秒刷新 · 港股 / 美股 / 日股延迟 15 分钟</span>
+						<span>
+							交易时段约 20 秒刷新 · 港股 / 美股 / 日股延迟 15 分钟 · 恐贪指数按日 K
+							计算，悬停或点击徽章看分项
+						</span>
 						{data?.stale && <StaleBadge error={data.error} />}
 						{error && !data && <span>{error}</span>}
 					</div>
