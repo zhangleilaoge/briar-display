@@ -87,3 +87,9 @@ bun run --filter @briar/display preview
 ```
 
 CI/部署不受影响（流水线本来就先上传 CDN 再部署）。
+
+## 11. 抖音 detail 接口报错 `Uifid Not Found` 不是缺 uifid 参数，而是整个签名栈过期
+
+2026-10-09 前后抖音把 web 端签名 SDK 从 1.0.1.5（盐 "cus"）升到 bdms.js v1.0.1.19-fix.01，旧 a_bogus 被整体拒绝，报文一律 `403 Blocked by ArgusSecurityPlugin Uifid Not Found`——**这个报错字面指向 uifid，实际是签名版本不对**；同时 detail 接口转为签保护，光有新 a_bogus 还不够，还要 `x-secsdk-web-signature`（md5）+ 真实浏览器签发的 `UIFID_TEMP`/`UIFID` cookie（算法伪造不出来，只能配置 `BRIAR_DOUYIN_COOKIE`）。
+
+排查此类问题的顺序：先拿同一条链接在本地 `parseDouyin` 复现（排除 IP 因素）→ 看 403 报文点名什么 → 与上游参考实现（Evil0ctal `dtk/signing/native/`）对表 → 改完用黄金回归测试固化。改签名算法时 `aBogus.test.ts` 的 golden 必须用 Python 参考实现重新生成，不能拿旧输出改期望值。

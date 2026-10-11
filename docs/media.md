@@ -36,11 +36,12 @@ xhslink 短链手动跟 302（老路径 discovery/item 会二次跳信息流丢�
 
 ### 抖音（`services/douyinMediaService.ts`）
 
-短链手动跟 302 取 aweme_id → ttwid 游客凭证 + a_bogus 签名 → `douyin.com/aweme/v1/web/aweme/detail/`。
+短链手动跟 302 取 aweme_id → ttwid 游客凭证 + a_bogus 签名 + websign → `douyin.com/aweme/v1/web/aweme/detail/`。
 
 - 视频 play_addr 即无水印；图集 images[].url_list；动态照片 images[].video.play_addr；音轨 music.play_url
+- 2026-10 风控升级后 detail 为签保护接口，须三层凭证：**a_bogus**（bdms.js v1.0.1.19，`lib/aBogus.ts`，绑定 query 逐字节+UA）+ **x-secsdk-web-signature**（`lib/webSign.ts`，md5 绑定 uifid+整段 query+秒级时间戳，verifyFp/fp/uifid/timestamp 一并追加进 query）+ **访客 cookie jar**（uifid 只能由真实浏览器会话签发，配置 `BRIAR_DOUYIN_COOKIE`，至少含 `UIFID_TEMP`/`UIFID`，长效数月，失效报 403 后换值重启；s_v_web_id 可本地伪造，msToken 伪造即可平台不校验真伪）
 - Argus 风控概率拦截（403 Uifid/空 body）时换 fresh ttwid 重试 3 次；审核中/已删除（filter_reason）报「作品不存在、已删除或仅作者本人可见」
-- 签名实现：`lib/sm3.ts`（国密 SM3，OpenSSL 测试向量有单测）+ `lib/aBogus.ts`（SDK 1.0.1.5 变体盐 "cus"，与 Evil0ctal abogus.py 逐字节对齐，有黄金回归测试；UA 与 UA_CODE 绑定勿单改）
+- 签名实现：`lib/sm3.ts`（国密 SM3，OpenSSL 测试向量有单测）+ `lib/aBogus.ts`（与上游 Python 参考实现逐字节对齐，固定 LCG 随机源的黄金回归测试；UA 与请求参数 browser_version/engine_version 绑定勿单改）
 
 ### 微信公众号（`services/wechatMediaService.ts`）
 
