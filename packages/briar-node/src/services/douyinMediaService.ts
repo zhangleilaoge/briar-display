@@ -1,12 +1,21 @@
 import type { MediaParseResult } from '@briar/shared'
-import { A_BOGUS_UA, generateABogus } from '../lib/aBogus'
+import { generateABogus } from '../lib/aBogus'
+import { genMsToken, genVerifyFp, webSign } from '../lib/webSign'
 
 /**
- * 抖音自研解析（catsapi 抖音通道 2026-09 起持续 502，逆向 douyin.com web 端 detail 接口自研）：
- * 短链/分享页解析出 aweme_id → ttwid（游客凭证）+ a_bogus 签名 → web detail 接口取完整作品数据。
+ * 抖音自研解析：短链/分享页解析出 aweme_id → web 端 detail 接口取完整作品数据。
  * 视频：play_addr 即无水印地址；图集：images[].url_list；动态照片：images[].video.play_addr；音轨：music.play_url。
+ *
+ * 2026-10 风控升级后 detail 接口为签保护接口，请求须携带三层凭证（缺一则 403 Argus Uifid Not Found）：
+ * 1. a_bogus：bdms.js v1.0.1.19 签名（lib/aBogus.ts），绑定 query 逐字节 + UA
+ * 2. x-secsdk-web-signature：secsdk 策略签名（lib/webSign.ts），绑定 uifid + 整段 query + 秒级时间戳
+ * 3. 访客 cookie jar：uifid（UIFID_TEMP/UIFID，只能由真实浏览器会话取得，配置 BRIAR_DOUYIN_COOKIE）
+ *    + s_v_web_id（可本地伪造）+ ttwid（注册接口自取）
  */
 
+/** 签名绑定的 UA：与请求参数 browser_version/engine_version 130 自洽（家族探测带 chrome） */
+const DOUYIN_UA =
+	'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
 const MOBILE_UA =
 	'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 const DETAIL_API = 'https://www.douyin.com/aweme/v1/web/aweme/detail/'
@@ -17,7 +26,7 @@ const DETAIL_TIMEOUT_MS = 20_000
 /** aweme_id 提取：video/note/slides（含 share/ 前缀路径） */
 const AWEME_ID_RE = /\/(?:share\/)?(?:video|slides|note)\/(\d{6,25})/
 
-/** detail 接口固定参数（字段顺序即签名顺序，勿动） */
+/** detail 接口固定参数（签名按序列化后的 query 计算，顺序即线上顺序） */
 const BASE_PARAMS: [string, string][] = [
 	['device_platform', 'webapp'],
 	['aid', '6383'],
@@ -52,8 +61,51 @@ const BASE_PARAMS: [string, string][] = [
 	['time_list_query', '0'],
 	['whale_cut_token', ''],
 	['update_version_code', '170400'],
-	['msToken', ''],
 ]
+
+interface DouyinVisitor {
+	/** uifid 的原始 cookie 名（UIFID_TEMP / UIFID / uifid 等拼写） */
+	cookieName: string
+	value: string
+	verifyFp: string
+}
+
+/** uifid 的全部可接受拼写（SDK 按此顺序取值） */
+const UIFID_COOKIE_NAMES = ['uifid', 'uifid_temp', 'uifidtemp', 'UIFID', 'UIFID_TEMP', 'UIFIDTEMP']
+
+/**
+ * 访客身份：解析 BRIAR_DOUYIN_COOKIE（浏览器devtools 复制的 douyin.com cookie 串，
+ * 至少含 UIFID_TEMP/UIFID，s_v_web_id 缺失时本地伪造一个）。uifid 无法计算获得，
+ * 只能由真实浏览器会话签发；未配置则跳过 websign 层，签保护接口会被拒。
+ */
+function loadVisitor(): DouyinVisitor | null {
+	const raw = process.env.BRIAR_DOUYIN_COOKIE?.trim()
+	if (!raw) return null
+	const cookies: [string, string][] = raw
+		.split(';')
+		.map((part) => part.trim())
+		.filter(Boolean)
+		.map((part) => {
+			const eq = part.indexOf('=')
+			return [part.slice(0, eq), part.slice(eq + 1)] as [string, string]
+		})
+	const uifidEntry = UIFID_COOKIE_NAMES.map(
+		(name) => [name, cookies.find(([k]) => k === name)?.[1]] as const,
+	).find((entry): entry is readonly [string, string] => Boolean(entry[1]))
+	if (!uifidEntry) return null
+	return {
+		cookieName: uifidEntry[0],
+		value: uifidEntry[1],
+		verifyFp: cookies.find(([k]) => k === 's_v_web_id')?.[1] || genVerifyFp(),
+	}
+}
+
+const visitor = loadVisitor()
+if (!visitor) {
+	console.warn(
+		'[Douyin] 未配置 BRIAR_DOUYIN_COOKIE（需含 UIFID_TEMP/UIFID），签保护接口将被风控拒绝',
+	)
+}
 
 /** ttwid 游客凭证（长效，进程内缓存；接口偶发下发失败时允许重取） */
 let ttwidCache: string | null = null
@@ -63,7 +115,7 @@ async function fetchTtwid(): Promise<string | null> {
 	try {
 		const res = await fetch(TTWID_API, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json', 'User-Agent': A_BOGUS_UA },
+			headers: { 'Content-Type': 'application/json', 'User-Agent': DOUYIN_UA },
 			body: JSON.stringify({
 				region: 'cn',
 				aid: 1768,
@@ -175,21 +227,48 @@ const pickUrl = (list?: DouyinUrlList | null): string | null => {
 	return url ? url.replace(/^http:\/\//i, 'https://') : null
 }
 
-/** 构造带签名的 detail 请求 URL（query 顺序与签名输入逐字节一致） */
-function buildDetailUrl(awemeId: string): string {
-	const query = [...BASE_PARAMS, ['aweme_id', awemeId] as [string, string]]
-		.map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
-		.join('&')
-	return `${DETAIL_API}?${query}&a_bogus=${encodeURIComponent(generateABogus(query))}`
+/**
+ * 构造带完整签名的 detail 请求：msToken（本地伪造即可）→ a_bogus（对业务参数序列签名）
+ * → 追加 verifyFp/fp → websign（追加 uifid/timestamp，md5 整段 query）→ 最终 URL + 签名头。
+ */
+function buildDetailRequest(awemeId: string): { url: string; headers: Record<string, string> } {
+	const pairs: [string, string][] = [
+		...BASE_PARAMS,
+		['aweme_id', awemeId],
+		['msToken', genMsToken()],
+	]
+	const unsignedQuery = pairs.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
+	const withBogus: [string, string][] = [
+		...pairs,
+		['a_bogus', generateABogus(unsignedQuery, DOUYIN_UA)],
+	]
+	if (!visitor) {
+		const query = withBogus.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
+		return { url: `${DETAIL_API}?${query}`, headers: {} }
+	}
+	const withVisitor: [string, string][] = [
+		...withBogus,
+		['verifyFp', visitor.verifyFp],
+		['fp', visitor.verifyFp],
+	]
+	const { query, headers } = webSign(withVisitor, visitor.value)
+	return { url: `${DETAIL_API}?${query}`, headers }
 }
 
-async function fetchDetail(awemeId: string, ttwid: string | null): Promise<Response> {
-	return fetch(buildDetailUrl(awemeId), {
+function fetchDetail(awemeId: string, ttwid: string | null): Promise<Response> {
+	const { url, headers } = buildDetailRequest(awemeId)
+	const cookieParts = [
+		ttwid ? `ttwid=${ttwid}` : '',
+		visitor ? `${visitor.cookieName}=${visitor.value}` : '',
+		visitor ? `s_v_web_id=${visitor.verifyFp}` : '',
+	].filter(Boolean)
+	return fetch(url, {
 		headers: {
-			'User-Agent': A_BOGUS_UA,
+			'User-Agent': DOUYIN_UA,
 			Referer: 'https://www.douyin.com/',
 			Accept: 'application/json, text/plain, */*',
-			...(ttwid ? { Cookie: `ttwid=${ttwid}` } : {}),
+			...(cookieParts.length ? { Cookie: cookieParts.join('; ') } : {}),
+			...headers,
 		},
 		signal: AbortSignal.timeout(DETAIL_TIMEOUT_MS),
 	})
@@ -228,7 +307,7 @@ export function mapAwemeDetail(detail: DouyinAwemeDetail): MediaParseResult {
 export async function parseDouyin(url: string): Promise<MediaParseResult> {
 	const awemeId = await resolveAwemeId(url)
 
-	// Argus 风控按概率拦截（403 Uifid Not Found / 200 空 body），换 fresh ttwid 重试可过
+	// Argus 风控按概率拦截（403 Uifid/空 body）时换 fresh ttwid 重试可过
 	let text = ''
 	let ok = false
 	for (let attempt = 0; attempt < 3 && !ok; attempt++) {
