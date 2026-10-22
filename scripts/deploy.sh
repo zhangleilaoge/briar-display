@@ -230,6 +230,18 @@ main() {
   # 更新子模块
   log_info "更新子模块..."
   git submodule update --init --recursive
+  # 防回退：主仓库 gitlink 可能被落后的本地子模块误提交成旧 commit（2026-10 曾因此把续期后的证书回滚成旧证书）。
+  # 若 briar-assets 远端 main 是 gitlink 的后代，则快进到远端最新，确保证书/凭证不被旧版本覆盖。
+  if git -C briar-assets fetch -q origin main 2>/dev/null; then
+    PINNED=$(git -C briar-assets rev-parse HEAD)
+    REMOTE=$(git -C briar-assets rev-parse origin/main)
+    if [ "$PINNED" != "$REMOTE" ] && git -C briar-assets merge-base --is-ancestor "$PINNED" "$REMOTE"; then
+      log_warn "briar-assets gitlink ($PINNED) 落后于 origin/main ($REMOTE)，快进到远端最新"
+      git -C briar-assets checkout -q "$REMOTE"
+    fi
+  else
+    log_warn "briar-assets fetch 失败，使用 gitlink 指定版本"
+  fi
   
   # 安装依赖
   if [ "$SKIP_INSTALL" = false ]; then
