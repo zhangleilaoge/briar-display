@@ -14,13 +14,17 @@ tags: youzan-internal, dubbo, scrm, guide, ai-profile, testing
 
 ## 快速通道（例行造数）
 
-`scripts/ai_profile_push.py` 把下文步骤 1B → 2 固化成一条命令（选客户 → `appendCustomer` → 轮询 `reGenState` → 对比 `pendingCount`）：
+`scripts/ai_profile_push.py` 把下文步骤 1B → 2 固化成一条命令（选客户 → `appendCustomer` → 轮询 `reGenState` → 失败自动重生成 → 对比 `pendingCount`）：
 
 ```bash
-python3 ai_profile_push.py run --env pre --rootKdtId <rootKdtId> --guideId <guideId> -n 2
+python3 ai_profile_push.py run --env pre --rootKdtId <rootKdtId> --guide <导购标识> -n 5
 ```
 
-其他子命令：`pool`（池内状态：operateType / reGenState / reachTime）、`pending`（今日待触达队列）、`generate`（单客户 `mockGenerate` 兜底）、`reset`（删触达记录，重复测试）。写操作仅 qa/pre，禁止 prod。脚本口径与下文一致，run 报 WARN/HINT 时回到对应步骤手动排查。
+`--guide` 接受任意导购标识：**userId / 手机号 / 导购表主键 dbId**，自动识别（手机号走 uic 批量接口；其余先按 userId 查，查不到再按 dbId 扫 `listPaged`），识别不准时 `--guideKind userId|mobile|dbId` 显式指定。脚本自动校验导购 status/guideType/belongToQw 并解析出 kdtId。
+
+其他子命令：`resolve`（只解析导购身份）、`pool`（池内状态：operateType / reGenState / reachTime，自动翻页）、`pending`（今日待触达队列）、`generate`（单客户 `mockGenerate` 兜底，不需 --guide）、`reset`（删触达记录，重复测试）。写操作仅 qa/pre，禁止 prod。脚本口径与下文一致，run 报 WARN/HINT 时回到对应步骤手动排查。
+
+健壮性：Dubbo 调用抖动自动重试 2 次；LLM 判定不稳定（operateType=2 / reachTime 陈旧）时 run 默认自动重生成 2 轮（`--rounds` 可调）。pool 候选不足时自动从导购的 CRM 专属客户补充（`CustomerReadApiService.listCustomersPaged` 按 `belongGuideInfo.guideUserId` 过滤）；CRM 也没有专属客户时才真的无解（`appendCustomer` 不建 CRM 归属，见步骤 1B）。
 
 ## 链路总览
 
@@ -41,6 +45,8 @@ flowchart LR
 ## 前置
 
 1. 确认环境（QA / 预发）、总部 `rootKdtId`、导购 `guideId`（有赞 userId，须为有效**付费导购**、有企微绑定才会发企微卡）、若干客户 `userId`（归属该总部）。导购在 H5 页面 Console 读 `_global` 可拿：`buyer_id` = guideId、`kdtId` / `rootKdtId`、`nodeEnv=pre` 表示预发。
+   - **别人给的「导购ID」可能是导购表主键 dbId（≠ userId）**，所有导购读接口都按 userId 查，dbId 直查全空。手里只有手机号/昵称时，先调 uic 换 userId：
+     `com.youzan.uic.api.userBatch.service.UserBatchService#getMobileUserInfoListByMobileList`（app=`uic`），args `[{"mobileList":["<手机号>"],"appName":"guide"}]`，返回 `userId` / `nickName` / `mobile`；再 `getShoppingGuide` 校验导购身份。注意 `UserInfoService#getMobileInfo` 单查接口实测按文档参数返回空，别用，用批量接口。
 2. 先只读核查导购有效性，再决定写操作：
    `com.youzan.guide.api.service.shoppingguide.ShoppingGuideReadApiService#getShoppingGuide`（app=`guide`），args `[{"rootKdtId":<rootKdtId>,"guideId":<guideId>}]`（guideId = 导购有赞 userId），确认 `status=1`、`guideType=1`（付费导购）、`belongToQw=1`（企微绑定）。
 3. 依赖技能：`zan-dubbo-invoke`（Dubbo 调用、Ticket/CAS 登录态）、`zan-log-query` / `briar-youzan-skynet`（天网验证）、`briar-youzan-get-session-id`（需要模拟导购登录 H5 时）。
@@ -96,7 +102,7 @@ python3 "$ZAN_DUBBO_INVOKE_SKILL_DIR/scripts/dubbo_query.py" \
   --args '[{"rootKdtId":<rootKdtId>,"guideId":<guideId>}]' --env <qa|pre>
 ```
 
-看 `pendingCount > 0` 且 `list[].reachMessage` 有话术。为 0 时先 `CusServiceV2#listCustomers` 对一下池内状态（判断「是否今天」用 `reachTime`，V2 返回的 `operateTime` 恒为 null）：`operateType=2` 是 LLM 判定本轮无需触达（LLM 判定不稳定，同一客户两次结果可能相反，直接重跑 `mockGenerate` / `appendCustomer` 重试即可）；`reachTime` 不在今天是排期落到了未来（reachTime 由 LLM 按店铺 outputLogic 产出、必须晚于生成时刻——已验证傍晚生成会稳定排到次日 10:00，`appendCustomer` 与 `mockGenerate` 均是，当天想进队列需在白天触达时段内生成）；近 3 天触达过的被去重排除（用步骤 4 重置）；`operateType=1` 且 `reachTime` 是今天却仍不进队列 = 客户与导购没有 CRM 归属关系（见步骤 1B）。注意「生成完成」≠ 立刻进队列：`reGenState` 归 0、`reachTime` 已是今天后，`listTodayPendingCustomers` 读侧仍有约 30s~1min 传播延迟——刚生成完 `pendingCount` 没动先等 1 分钟再查，别急着 `mockGenerate`。都不是再回到第 1 步查 adminId / 生成状态。
+看 `pendingCount > 0` 且 `list[].reachMessage` 有话术。为 0 时先 `CusServiceV2#listCustomers` 对一下池内状态（判断「是否今天」用 `reachTime`，V2 返回的 `operateTime` 恒为 null）：`operateType=2` 是 LLM 判定本轮无需触达（LLM 判定不稳定，同一客户两次结果可能相反，直接重跑 `mockGenerate` / `appendCustomer` 重试即可）；`reachTime` 不在今天是排期落到了未来（reachTime 由 LLM 按店铺 outputLogic 产出、必须晚于生成时刻——已验证傍晚生成会稳定排到次日 10:00，`appendCustomer` 与 `mockGenerate` 均是，当天想进队列需在白天触达时段内生成）；注意**部分客户被 LLM 稳定排在 10:00——上午 10 点后无论何时生成都会落次日 10:00，重跑多少轮都不变（实测 3 轮相同），这种钉子户别再重试，换新客户**（脚本 `--exclude` 排除后从 CRM 补新的）；近 3 天触达过的被去重排除（用步骤 4 重置）；`operateType=1` 且 `reachTime` 是今天却仍不进队列 = 客户与导购没有 CRM 归属关系（见步骤 1B）。注意「生成完成」≠ 立刻进队列：`reGenState` 归 0、`reachTime` 已是今天后，`listTodayPendingCustomers` 读侧仍有约 30s~1min 传播延迟——刚生成完 `pendingCount` 没动先等 1 分钟再查，别急着 `mockGenerate`。都不是再回到第 1 步查 adminId / 生成状态。
 
 ### 3. 触发下发（按要验证的端选）
 
