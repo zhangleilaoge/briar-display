@@ -102,7 +102,7 @@ export interface SiteMessage {
 /**
  * 定时任务运行记录
  */
-export type SchedulerRunStatus = 'running' | 'success' | 'failed'
+export type SchedulerRunStatus = 'running' | 'success' | 'skipped' | 'failed'
 export type SchedulerTriggerType = 'scheduled' | 'manual'
 
 export interface SchedulerRunItem {
@@ -113,6 +113,44 @@ export interface SchedulerRunItem {
 	message: string | null
 	startedAt: string
 	finishedAt: string | null
+	/** 结构化明细（计数等），旧记录为 null */
+	detail?: Record<string, unknown> | null
+}
+
+/**
+ * 通用运行记录（定时任务 / 证书续期 / 部署 共用的历史展示格式）
+ */
+export type RunRecordStatus = 'running' | 'success' | 'skipped' | 'failed'
+
+export interface RunRecord {
+	id: string
+	/** 触发方式：scheduled / manual / push 等 */
+	trigger: string
+	status: RunRecordStatus
+	/** 摘要信息 */
+	message: string | null
+	startedAt: string
+	finishedAt: string | null
+	durationMs: number | null
+	/** 结构化明细（可展开查看 JSON） */
+	detail: Record<string, unknown> | null
+}
+
+/** 近期运行统计（最近 N 次） */
+export interface RunStats {
+	window: number
+	total: number
+	success: number
+	failed: number
+	skipped: number
+	/** 最近 N 次状态（新→旧），用于迷你成功率条 */
+	recent: RunRecordStatus[]
+}
+
+export interface RunHistoryPage {
+	items: RunRecord[]
+	total: number
+	stats: RunStats
 }
 
 /**

@@ -1,5 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
+import { deployRunDal } from '../dal/deployRunDal'
 import { findRepoRoot } from './certificate/utils'
 
 export interface DeployHistoryItem {
@@ -250,7 +251,10 @@ export const deploymentService = {
 			byRun.set(item.run, item)
 		}
 
-		return [...byRun.values()].sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit)
+		const merged = [...byRun.values()].sort((a, b) => b.at.localeCompare(a.at))
+		// 落库：部署记录持久化到 deploy_runs（写库失败不影响列表返回）
+		await deployRunDal.upsertMany(merged).catch((e) => console.error('部署记录落库失败:', e))
+		return merged.slice(0, limit)
 	},
 
 	/**

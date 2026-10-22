@@ -280,12 +280,27 @@ CREATE TABLE IF NOT EXISTS scheduler_runs (
   id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
   task_name VARCHAR(64) NOT NULL COMMENT '任务名（schedulerConfig 注册）',
   trigger_type ENUM('scheduled','manual') NOT NULL COMMENT '触发方式',
-  status ENUM('running','success','failed') NOT NULL DEFAULT 'running' COMMENT '执行状态',
+  status ENUM('running','success','skipped','failed') NOT NULL DEFAULT 'running' COMMENT '执行状态',
   message TEXT COMMENT '结果信息或错误原因',
+  detail JSON NULL COMMENT '结构化明细（计数等）',
   started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '开始时间',
   finished_at TIMESTAMP NULL DEFAULT NULL COMMENT '结束时间',
-  INDEX idx_task_started (task_name, started_at)
+  INDEX idx_task_started (task_name, started_at),
+  INDEX idx_started_at (started_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='定时任务运行记录';
+
+-- 部署记录（CI deploy-history.jsonl + GitHub Actions runs 落库，按 run_id 幂等 upsert）
+CREATE TABLE IF NOT EXISTS deploy_runs (
+  run_id VARCHAR(32) PRIMARY KEY COMMENT 'GitHub Actions run id',
+  commit_sha VARCHAR(64) NOT NULL DEFAULT '' COMMENT '提交 SHA',
+  ref VARCHAR(255) NOT NULL DEFAULT '' COMMENT '分支/ref',
+  actor VARCHAR(128) NOT NULL DEFAULT '' COMMENT '触发者',
+  status VARCHAR(32) NOT NULL DEFAULT '' COMMENT '状态（success/failure/in_progress 等）',
+  msg TEXT COMMENT 'commit message',
+  deployed_at TIMESTAMP NULL DEFAULT NULL COMMENT '部署时间',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  INDEX idx_deployed_at (deployed_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='部署记录';
 
 -- SSH 控制台会话审计日志
 CREATE TABLE IF NOT EXISTS terminal_audit_logs (
@@ -432,6 +447,19 @@ DEALLOCATE PREPARE stmt;
 -- 登录用户经 GET /api/media/history 跨设备读取），仅标记失效让 getCachedParse 不命中
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'media_parse_cache' AND COLUMN_NAME = 'stale');
 SET @sql = IF(@col_exists = 0, 'ALTER TABLE media_parse_cache ADD COLUMN stale TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''媒体地址已被上游拒绝（保留行做历史记录）'' AFTER result', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- scheduler_runs 新增 skipped 状态（MODIFY 幂等）+ detail 明细列 + started_at 索引（保留期清理用）
+ALTER TABLE scheduler_runs MODIFY COLUMN status ENUM('running','success','skipped','failed') NOT NULL DEFAULT 'running' COMMENT '执行状态';
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'scheduler_runs' AND COLUMN_NAME = 'detail');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE scheduler_runs ADD COLUMN detail JSON NULL COMMENT ''结构化明细（计数等）'' AFTER message', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+SET @idx_exists = (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'scheduler_runs' AND INDEX_NAME = 'idx_started_at');
+SET @sql = IF(@idx_exists = 0, 'ALTER TABLE scheduler_runs ADD INDEX idx_started_at (started_at)', 'SELECT 1');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;

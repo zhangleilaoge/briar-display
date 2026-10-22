@@ -74,7 +74,9 @@ try {
 	await schedulerRunService.runWithLog('renew-certificates', 'scheduled', async () => {
 		const result = await certificateService.renewCertificate(domain, false, 'scheduled')
 		if (!result.success) throw new Error(result.error || '续期失败')
-		return result.skipped ? '证书尚未到期，已跳过' : '证书续期成功'
+		return result.skipped
+			? { status: 'skipped', message: '证书尚未到期，已跳过', detail: { domain } }
+			: { message: '证书续期成功', detail: { domain } }
 	})
 	process.exit(0)
 } catch (error) {

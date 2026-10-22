@@ -35,7 +35,10 @@ const RETENTION_DAYS = 90
 try {
 	await schedulerRunService.runWithLog('cleanup-request-logs', 'scheduled', async () => {
 		const deleted = await logDal.cleanup(RETENTION_DAYS)
-		return `已清理 ${RETENTION_DAYS} 天前的请求日志 ${deleted} 条`
+		return {
+			message: `已清理 ${RETENTION_DAYS} 天前的请求日志 ${deleted} 条`,
+			detail: { deleted, retentionDays: RETENTION_DAYS },
+		}
 	})
 	process.exit(0)
 } catch (error) {
