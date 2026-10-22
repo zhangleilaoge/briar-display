@@ -12,6 +12,10 @@ export interface DeployHistoryItem {
 	run: string
 	/** commit message（CI 追加 jsonl 时写入；GitHub API 源取 display_title；旧记录无此字段） */
 	msg?: string
+	/** 运行开始时间（GitHub run_started_at / CI 记录的 started_at；旧记录无） */
+	startedAt?: string
+	/** 运行结束时间（GitHub completed 时 updated_at / CI 记录的 at；运行中无） */
+	finishedAt?: string
 }
 
 export interface DeployRunLogs {
@@ -231,9 +235,11 @@ export const deploymentService = {
 		const history = await this.listDeployHistory(50)
 
 		let apiRuns: DeployHistoryItem[] = []
+		let workingToken: string | null = null
 		for (const { token, source } of resolveGithubTokenCandidates()) {
 			try {
 				apiRuns = await fetchRecentRuns(token, limit)
+				workingToken = token
 				break
 			} catch (error) {
 				console.warn(
@@ -248,12 +254,24 @@ export const deploymentService = {
 			if (item.run) byRun.set(item.run, item)
 		}
 		for (const item of apiRuns) {
-			byRun.set(item.run, item)
+			const prev = byRun.get(item.run)
+			// API 优先；API 缺结束时间（运行中）时不覆盖 jsonl 已有的起止
+			byRun.set(item.run, {
+				...item,
+				startedAt: item.startedAt ?? prev?.startedAt,
+				finishedAt: item.finishedAt ?? prev?.finishedAt,
+			})
 		}
 
 		const merged = [...byRun.values()].sort((a, b) => b.at.localeCompare(a.at))
 		// 落库：部署记录持久化到 deploy_runs（写库失败不影响列表返回）
 		await deployRunDal.upsertMany(merged).catch((e) => console.error('部署记录落库失败:', e))
+		// 回填：库中缺起止时间的旧记录，按 run_id 逐个查 GitHub（每次同步最多 BACKFILL_BATCH 条）
+		if (workingToken) {
+			await backfillDeployDurations(workingToken).catch((e) =>
+				console.error('部署耗时回填失败:', e),
+			)
+		}
 		return merged.slice(0, limit)
 	},
 
@@ -377,20 +395,64 @@ const fetchRecentRuns = async (token: string, limit: number): Promise<DeployHist
 			status: string
 			conclusion: string | null
 			created_at: string
+			updated_at?: string
+			run_started_at?: string
 			display_title?: string
 			actor: { login: string } | null
 		}>
 	}
 
-	return workflow_runs.map((run) => ({
-		commit: run.head_sha,
-		ref: run.head_branch,
-		actor: run.actor?.login ?? '',
-		status: run.status === 'completed' ? (run.conclusion ?? 'completed') : run.status,
-		at: run.created_at,
-		run: String(run.id),
-		msg: run.display_title,
-	}))
+	return workflow_runs.map(githubRunToItem)
+}
+
+type GithubRun = {
+	id: number
+	head_sha: string
+	head_branch: string
+	status: string
+	conclusion: string | null
+	created_at: string
+	updated_at?: string
+	run_started_at?: string
+	display_title?: string
+	actor: { login: string } | null
+}
+
+/** GitHub run → 部署记录（耗时 = run_started_at → completed 时的 updated_at） */
+const githubRunToItem = (run: GithubRun): DeployHistoryItem => ({
+	commit: run.head_sha,
+	ref: run.head_branch,
+	actor: run.actor?.login ?? '',
+	status: run.status === 'completed' ? (run.conclusion ?? 'completed') : run.status,
+	at: run.created_at,
+	run: String(run.id),
+	msg: run.display_title,
+	startedAt: run.run_started_at ?? run.created_at,
+	finishedAt: run.status === 'completed' ? run.updated_at : undefined,
+})
+
+const BACKFILL_BATCH = 20
+
+const backfillDeployDurations = async (token: string): Promise<void> => {
+	const runIds = await deployRunDal.listMissingDuration(BACKFILL_BATCH)
+	const items: DeployHistoryItem[] = []
+	for (const runId of runIds) {
+		if (!/^\d+$/.test(runId)) continue
+		const item = await fetchRunById(token, runId).catch(() => null)
+		if (item?.startedAt && item.finishedAt) items.push(item)
+	}
+	if (items.length > 0) await deployRunDal.upsertMany(items)
+}
+
+/** 单个 run 详情（用于回填旧记录的开始/结束时间） */
+const fetchRunById = async (token: string, runId: string): Promise<DeployHistoryItem | null> => {
+	const repo = resolveGithubRepo()
+	const res = await fetch(`${GITHUB_API}/repos/${repo}/actions/runs/${runId}`, {
+		headers: githubHeaders(token),
+	})
+	if (res.status === 404) return null
+	if (!res.ok) throw new Error(`查询 run ${runId} 失败: HTTP ${res.status}`)
+	return githubRunToItem((await res.json()) as GithubRun)
 }
 
 /** 用指定 token 拉取 run 状态 + job 步骤进度（steps 在运行中即可用） */

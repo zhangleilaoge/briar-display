@@ -26,6 +26,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Record start time
+        run: echo "DEPLOY_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -142,6 +145,7 @@ jobs:
             --arg at "$AT" \
             --arg run "${{ github.run_id }}" \
             --arg msg "$MSG" \
-            '{commit:$commit,ref:$ref,actor:$actor,status:$status,at:$at,run:$run,msg:$msg}')
+            --arg startedAt "${DEPLOY_STARTED_AT:-$AT}" \
+            '{commit:$commit,ref:$ref,actor:$actor,status:$status,at:$at,run:$run,msg:$msg,startedAt:$startedAt,finishedAt:$at}')
           echo "$RECORD" | ssh $SSH_OPTS ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
             "cd $PROJECT_DIR && mkdir -p briar-assets && cat >> briar-assets/deploy-history.jsonl && echo '记录已追加' && tail -n 1 briar-assets/deploy-history.jsonl"
