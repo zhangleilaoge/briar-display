@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Query recent valid shopping-guide login sessions by kdtId or custom page key."""
+"""Query recent valid shopping-guide login sessions by userId, kdtId or custom page key."""
 
 import argparse
 import fcntl
@@ -245,7 +245,7 @@ def resolve_page_key_kdt_ids(page_key: str) -> list[str]:
 
 def query_logs(
     skill_dir: Path,
-    kdt_id: str,
+    keyword: str,
     start: datetime,
     end: datetime,
 ) -> dict:
@@ -258,7 +258,7 @@ def query_logs(
         "--levels",
         "INFO",
         "--keyword",
-        f'{kdt_id} "sourceType":"H5"',
+        keyword,
         "--env",
         "prod",
         "--bu",
@@ -334,6 +334,38 @@ def extract_candidates(logs: list[dict]) -> list[dict]:
             }
         )
     return candidates
+
+
+def extract_sessions_for_user(logs: list[dict], user_id: str) -> list[dict]:
+    """直达模式：只保留目标 userId 的登录记录，按 sessionId 去重（日志新到旧）。"""
+    buyer_pattern = re.compile(r'"buyerId"\s*:\s*(\d+)')
+    session_pattern = re.compile(r"uic:session:([A-Za-z0-9]+)")
+    kdt_pattern = re.compile(r'"kdtId"\s*:\s*(\d+)')
+    seen: set[str] = set()
+    sessions: list[dict] = []
+    for item in logs:
+        message = item.get("message") or ""
+        buyer_match = buyer_pattern.search(message)
+        session_match = session_pattern.search(message)
+        if not buyer_match or not session_match:
+            continue
+        if buyer_match.group(1) != user_id:
+            continue
+        session_id = session_match.group(1)
+        if session_id in seen:
+            continue
+        seen.add(session_id)
+        kdt_match = kdt_pattern.search(message)
+        sessions.append(
+            {
+                "mobile": None,
+                "userId": user_id,
+                "sessionId": session_id,
+                "time": item.get("time"),
+                "kdtId": int(kdt_match.group(1)) if kdt_match else None,
+            }
+        )
+    return sessions
 
 
 def parse_dubbo_stdout(stdout: str) -> dict:
@@ -489,7 +521,7 @@ def query_shop(
         shop_meta = (root_response.get("data") or {}).get("shopMetaInfo") or {}
         root_kdt_id = int(shop_meta.get("rootKdtId") or kdt_id)
 
-    log_result = query_logs(log_skill_dir, kdt_id, start, end)
+    log_result = query_logs(log_skill_dir, f'{kdt_id} "sourceType":"H5"', start, end)
     candidates = extract_candidates(log_result.get("logs", []))
     progress(
         f"候选提取完成 kdtId={kdt_id} unique={len(candidates)} "
@@ -561,7 +593,65 @@ def query_shop(
     }
 
 
+def execute_user_fast_path(args: argparse.Namespace) -> tuple[Path, Path, dict]:
+    """已知 userId 的直达查询：单次天网查询，不走 Dubbo 校验。"""
+    output_dir = safe_output_dir(args.output_dir)
+    log_skill_dir = find_zan_log_skill(args.zan_log_skill_dir)
+    run_skill_pre_execute(log_skill_dir, "zan-log-query")
+
+    end = datetime.now(SHANGHAI)
+    start = end - timedelta(hours=args.window_hours)
+    keyword = f'{args.user_id} "sourceType":"H5"'
+    if args.kdt_id:
+        keyword = f'{args.user_id} {args.kdt_id} "sourceType":"H5"'
+    progress(f"直达查询开始 userId={mask(args.user_id)}")
+    log_result = query_logs(log_skill_dir, keyword, start, end)
+    sessions = extract_sessions_for_user(log_result.get("logs", []), args.user_id)
+    progress(f"直达查询完成 userId={mask(args.user_id)} matched={len(sessions)}")
+
+    stamp = datetime.now(SHANGHAI).strftime("%Y%m%d-%H%M%S")
+    record_path = output_dir / f"session-request-records-user-{args.user_id}-{stamp}.jsonl"
+    result_path = output_dir / f"session-results-user-{args.user_id}-{stamp}.json"
+    secure_touch(record_path)
+
+    output = {
+        "kdtId": int(args.kdt_id) if args.kdt_id else None,
+        "userId": args.user_id,
+        "pageKey": None,
+        "windowHours": args.window_hours,
+        "timeRange": {
+            "start": start.isoformat(timespec="seconds"),
+            "end": end.isoformat(timespec="seconds"),
+        },
+        "matchedShopCount": None,
+        "shopsTried": 0,
+        "maxShops": None,
+        "expectedValidCount": 1,
+        "targetReached": len(sessions) > 0,
+        "validGuideCount": len(sessions),
+        "failedGuideRequests": 0,
+        "truncated": bool(log_result.get("truncated")),
+        "shops": [],
+        "guides": sessions,
+        "requestRecordFile": str(record_path),
+    }
+    secure_write_json(result_path, output)
+    return result_path, record_path, output
+
+
 def execute(args: argparse.Namespace) -> tuple[Path, Path, dict]:
+    if args.user_id:
+        if args.page_key:
+            raise ValueError("--user-id 与 --page-key 不能同时使用")
+        if not args.user_id.isdigit() or int(args.user_id) <= 0:
+            raise ValueError("user-id 必须为正整数")
+        if args.kdt_id and (not args.kdt_id.isdigit() or int(args.kdt_id) <= 0):
+            raise ValueError("kdtId 必须为正整数")
+        if not 1 <= args.window_hours <= MAX_WINDOW_HOURS:
+            raise ValueError(
+                f"window-hours 必须在 1 到 {MAX_WINDOW_HOURS} 之间（天网最多保留 7 天）"
+            )
+        return execute_user_fast_path(args)
     if bool(args.kdt_id) == bool(args.page_key):
         raise ValueError("必须且只能提供 --kdt-id 或 --page-key 之一")
     if args.kdt_id and (not args.kdt_id.isdigit() or int(args.kdt_id) <= 0):
@@ -665,8 +755,9 @@ def execute(args: argparse.Namespace) -> tuple[Path, Path, dict]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="按 kdtId 或定制页面 key 查询有效导购登录 sessionId"
+        description="按 userId / kdtId / 定制页面 key 查询有效导购登录 sessionId"
     )
+    parser.add_argument("--user-id", help="直达模式：已知导购 userId，单次天网查询，不做 Dubbo 校验")
     parser.add_argument("--kdt-id")
     parser.add_argument("--page-key")
     parser.add_argument("--output-dir", required=True)
