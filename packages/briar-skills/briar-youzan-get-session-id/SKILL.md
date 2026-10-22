@@ -1,6 +1,6 @@
 ---
 name: briar-youzan-get-session-id
-description: 按时间窗口 + （定制页面 key 或 kdtId）查询有效导购登录 sessionId。通过 columbus 白名单解析定制页面商家，从 uic-session 天网日志提取 C 端 H5 登录候选并按 userId 去重，再用 zan-dubbo-invoke 以不超过 3 QPS 调用生产只读 Dubbo 接口校验导购身份，返回手机号、userId、sessionId 和登录时间。当用户提到有效导购登录信息、导购 SessionKey、导购 sessionId、模拟导购登录、定制页面商家导购、按页面 key 找店铺导购，或需要复现“模拟导购登录：获取SessionKey”流程时，应使用本技能。
+description: 按时间窗口 + （userId / 定制页面 key / kdtId）查询有效导购登录 sessionId。已知导购 userId 时走直达模式：单次 uic-session 天网查询秒级返回 sessionId，零 Dubbo 调用。不知道 userId 时通过 columbus 白名单解析定制页面商家，从 uic-session 天网日志提取 C 端 H5 登录候选并按 userId 去重，再用 zan-dubbo-invoke 以不超过 3 QPS 调用生产只读 Dubbo 接口校验导购身份，返回手机号、userId、sessionId 和登录时间。当用户提到有效导购登录信息、导购 SessionKey、导购 sessionId、模拟导购登录、定制页面商家导购、按页面 key 找店铺导购，或需要复现“模拟导购登录：获取SessionKey”流程时，应使用本技能。
 tags: python, dubbo, youzan-internal, retail, session
 ---
 
@@ -30,11 +30,13 @@ bash scripts/pre-execute.sh briar-youzan-get-session-id
 用户必须提供以下两类条件：
 
 1. **时间窗口**：`--window-hours`，默认 24 小时，最大 168 小时（天网日志只保留最近 7 天，超出无意义）。
-2. **店铺条件**，二选一：
-   - `--kdt-id <KDT_ID>`：直接指定店铺。拒绝空值、非数字、零或负数。
-   - `--page-key <定制页面key>`：如 `guide-customer-detail-page`。脚本通过 columbus 白名单解析出所有绑定该 key 的店铺，按顺序逐店查询，找到预期数量的有效记录或尝试满 `--max-shops`（默认 3）家后停止。
+2. **目标条件**，分两种模式：
+   - **直达模式（已知 userId，首选）**：`--user-id <USER_ID>`。单次天网查询、零 Dubbo 调用，秒级返回该用户最近全部登录 session；可叠加 `--kdt-id <KDT_ID>` 过滤店铺。已知目标导购 userId 时一律用此模式，不要走店铺扫描。
+   - **店铺扫描模式（不知道 userId 时）**，二选一：
+     - `--kdt-id <KDT_ID>`：直接指定店铺。拒绝空值、非数字、零或负数。
+     - `--page-key <定制页面key>`：如 `guide-customer-detail-page`。脚本通过 columbus 白名单解析出所有绑定该 key 的店铺，按顺序逐店查询，找到预期数量的有效记录或尝试满 `--max-shops`（默认 3）家后停止。
 
-可选参数：`--expected-valid-count`（预期有效记录数，默认 2，正整数）。
+可选参数：`--expected-valid-count`（预期有效记录数，默认 2，正整数，仅店铺扫描模式）。
 
 ## 执行流程
 
@@ -46,6 +48,15 @@ bash scripts/pre-execute.sh briar-youzan-get-session-id
 6. 在技能目录中执行查询脚本（推荐用 `uv` 提供 Python 3.12 与依赖）：
 
 ```bash
+# 直达模式：已知 userId（最快，单次天网查询、零 Dubbo）
+uv run --system-certs --python 3.12 --with requests --with browser_cookie3 \
+  --with truststore \
+  scripts/query_user_sessions.py \
+  --user-id <USER_ID> \
+  --window-hours 48 \
+  --output-dir <安全输出目录>
+# 可加 --kdt-id <KDT_ID> 只保留该店铺的登录记录
+
 # 按 kdtId 查询
 uv run --system-certs --python 3.12 --with requests --with browser_cookie3 \
   --with truststore \
@@ -71,7 +82,8 @@ uv run --system-certs --python 3.12 --with requests --with browser_cookie3 \
 脚本固定执行以下规则：
 
 - 天网应用：`uic-session`；环境和业务线：`prod` / `main`
-- 关键字：`<kdtId> "sourceType":"H5"`；候选按 `userId` 去重，不设上限
+- 关键字：店铺模式为 `<kdtId> "sourceType":"H5"`，直达模式为 `<userId> [kdtId] "sourceType":"H5"`；候选按 `userId` 去重，不设上限
+- 直达模式不做 Dubbo 导购校验（调用方已明确目标），结果不含手机号；`kdtId` 依赖日志行内字段，可能为空
 - 白名单：`https://columbus.prod.qima-inc.com/columbus/getWhiteList`，使用本机 Chrome CAS 会话拉取，只提取 `<pageKey>_<kdtId>` 条目，不落盘原始响应
 - 店铺元数据和导购 RPC：通过 `zan-dubbo-invoke` 在 `prod` 串行执行，相邻请求启动时间至少间隔 350 毫秒
 - 重试：最多重试一次并退避，重试也必须经过限流器
