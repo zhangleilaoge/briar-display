@@ -12,6 +12,16 @@ tags: youzan-internal, dubbo, scrm, guide, ai-profile, testing
 > `POST /api/v1/dubbo/invoke`（body 同 DubboMan：`{app,env,service,method,args,sc,timeout,retries}`），与手动点 Send 等价。
 > zan-dubbo-invoke 登录态失效时，只读查询同样可走这个通道（只读方法不受 Ticket 白名单限制）。
 
+## 快速通道（例行造数）
+
+`scripts/ai_profile_push.py` 把下文步骤 1B → 2 固化成一条命令（选客户 → `appendCustomer` → 轮询 `reGenState` → 对比 `pendingCount`）：
+
+```bash
+python3 ai_profile_push.py run --env pre --rootKdtId <rootKdtId> --guideId <guideId> -n 2
+```
+
+其他子命令：`pool`（池内状态：operateType / reGenState / reachTime）、`pending`（今日待触达队列）、`generate`（单客户 `mockGenerate` 兜底）、`reset`（删触达记录，重复测试）。写操作仅 qa/pre，禁止 prod。脚本口径与下文一致，run 报 WARN/HINT 时回到对应步骤手动排查。
+
 ## 链路总览
 
 ```mermaid
@@ -66,7 +76,8 @@ args: [{"kdtId":<rootKdtId>,"userId":<customerUserId>,"adminId":<guideId>,
 - 已存在客户会**覆盖 adminId** 并置 `reGenState=1`；`generateImmediately=true` 异步串行跑「画像 → 话术」，成功后 `reGenState` 回 0（4=画像待重试，3=话术待重试）；`sourceScene` 只用于排查日志，无枚举校验。
 - `generateImmediately=false` 只入池不生成（guide-promotion 的 `AiCustomerProfileClient` 走的就是这个），测试别用。
 - **只改池内 adminId，不建 CRM 归属关系**：无归属关系的客户（如从未分配 `adminId=1` 里捞来的）即使 `operateType=1`、`reachTime` 是今天也进不了今日队列。造数必须选本来就归属该导购的客户（`listCustomers` 按 `adminId=guideId` 能查到的老客户最稳）。
-- 池内状态只读查询：`CusServiceV2#listCustomers`，args `[{"kdtId":<rootKdtId>,"adminId":<guideId>,"pageNum":1,"pageSize":20}]`，看 `operateType`（1=需触达，2=本轮无需触达）、`operateTime` / `reachTime`、`reachMessage`、`portraitGeneratedAt` / `reachGeneratedAt`。
+- 池内状态只读查询：`CusServiceV2#listCustomers`，args `[{"kdtId":<rootKdtId>,"adminId":<guideId>,"pageNum":1,"pageSize":20}]`，看 `operateType`（1=需触达，2=本轮无需触达）、`reachTime`、`reachMessage`、`portraitGeneratedAt` / `reachGeneratedAt`。**V2 返回里 `operateTime` 恒为 null**（字段不落地），判断「是否今天」一律用 `reachTime`。
+- 选客户时注意：导购自己的账号（`userId == guideId`）也可能挂在池里，**不要选**，挑本来 CRM 归属该导购的真实客户。
 
 **C. 单客户试跑生成**（已在池子里，只缺画像/话术时）：
 
@@ -85,7 +96,7 @@ python3 "$ZAN_DUBBO_INVOKE_SKILL_DIR/scripts/dubbo_query.py" \
   --args '[{"rootKdtId":<rootKdtId>,"guideId":<guideId>}]' --env <qa|pre>
 ```
 
-看 `pendingCount > 0` 且 `list[].reachMessage` 有话术。为 0 时先 `CusServiceV2#listCustomers` 对一下池内状态：`operateType=2` 是 LLM 判定本轮无需触达（LLM 判定不稳定，同一客户两次结果可能相反，直接重跑 `mockGenerate` / `appendCustomer` 重试即可）；`operateTime` 不在今天是排期落到了未来（reachTime 由 LLM 按店铺 outputLogic 产出、必须晚于生成时刻——已验证傍晚生成会稳定排到次日 10:00，`appendCustomer` 与 `mockGenerate` 均是，当天想进队列需在白天触达时段内生成）；近 3 天触达过的被去重排除（用步骤 4 重置）；`operateType=1` 且 `operateTime` 是今天却仍不进队列 = 客户与导购没有 CRM 归属关系（见步骤 1B）。注意「生成完成」≠ operateTime 已刷新，以 `listCustomers` 里的实际值为准，不对就重跑生成。都不是再回到第 1 步查 adminId / 生成状态。
+看 `pendingCount > 0` 且 `list[].reachMessage` 有话术。为 0 时先 `CusServiceV2#listCustomers` 对一下池内状态（判断「是否今天」用 `reachTime`，V2 返回的 `operateTime` 恒为 null）：`operateType=2` 是 LLM 判定本轮无需触达（LLM 判定不稳定，同一客户两次结果可能相反，直接重跑 `mockGenerate` / `appendCustomer` 重试即可）；`reachTime` 不在今天是排期落到了未来（reachTime 由 LLM 按店铺 outputLogic 产出、必须晚于生成时刻——已验证傍晚生成会稳定排到次日 10:00，`appendCustomer` 与 `mockGenerate` 均是，当天想进队列需在白天触达时段内生成）；近 3 天触达过的被去重排除（用步骤 4 重置）；`operateType=1` 且 `reachTime` 是今天却仍不进队列 = 客户与导购没有 CRM 归属关系（见步骤 1B）。注意「生成完成」≠ 立刻进队列：`reGenState` 归 0、`reachTime` 已是今天后，`listTodayPendingCustomers` 读侧仍有约 30s~1min 传播延迟——刚生成完 `pendingCount` 没动先等 1 分钟再查，别急着 `mockGenerate`。都不是再回到第 1 步查 adminId / 生成状态。
 
 ### 3. 触发下发（按要验证的端选）
 
@@ -122,7 +133,7 @@ com.youzan.guide.promotion.api.service.test.TestService#deleteGuideAiProfileReac
 | 现象 | 处理 |
 |---|---|
 | 预发「之前的接口不灵了」 | 先确认接口是否改名/迁服务：在本地 `scrm-ai-brain`、`guide-promotion` 仓库 `git pull` 后 `rg` 上面的类名与方法名；Garden 网关路由头可能变化，以 scrm-profile-front 页面实际请求为准（DevTools 复制请求，去掉 cookie 后对照） |
-| `listTodayPendingCustomers` 为 0 | adminId 不是该导购 / 生成未完成（`getImportTask` 或 `CusServiceV2#listCustomers` 看状态）/ 近 3 天已触达（步骤 4 重置）/ `operateTime` 不在今天 |
+| `listTodayPendingCustomers` 为 0 | 刚生成完读侧有 30s~1min 传播延迟，先等 1 分钟再查；再对池内状态：adminId 不是该导购 / 生成未完成（`getImportTask` 或 `CusServiceV2#listCustomers` 看状态，「是否今天」看 `reachTime`，V2 的 `operateTime` 恒 null）/ 近 3 天已触达（步骤 4 重置）/ `reachTime` 不在今天 |
 | 企微卡不来 | 同一分钟幂等；导购非付费导购或无企微绑定；导购 Topic 消费实例版本不支持 `ignoreShopWhitelist` |
 | H5 卡片一直是旧推荐 | 当天欢迎语已生成会复用；`triggerGuideDailyActionPlan` 后重新轮询，或次日再测；前端曾有「会话较早位置消息时间更晚拦截新欢迎语」问题（guide-b-h5 已修） |
 | 「还剩N项」不变 | 任务完成由后端异步落库，看紧随其后的 `queryDailyTaskOverview` 返回的 `pendingCount` 与任务 `status`，不变则找后端 |
