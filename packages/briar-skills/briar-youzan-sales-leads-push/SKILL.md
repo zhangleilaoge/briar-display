@@ -23,7 +23,7 @@ S=~/.kimi-code/skills/briar-youzan-sales-leads-push/scripts/sales_leads_push.py 
 python3 $S run --env pre --kdtId <kdtId> --rootKdtId <rootKdtId> --guideId <guideId> -n 3
 ```
 
-- 默认**轻校验**：推完对比一次 `listLeadsDetail` 总数并打印新 leadsNo，生成即收工；不逐条查天网、不轮询今日任务聚合。店铺/导购首次使用或排查时才跑 `precheck`。
+- 默认**轻校验**：推完短轮询 `listLeadsDetail` 对比总数（ES binlog 同步有秒级~数十秒延迟，最多等 40s），打印新 leadsNo 即收工；不逐条查天网、不轮询今日任务聚合。店铺/导购首次使用或排查时才跑 `precheck`。
 - 其他子命令：`precheck`（4 项只读核查一次跑完出 PASS/FAIL）、`list`（生效线索）、`pick`（只选客户）、`push`（推单条）、`cleanup --leadsNo`（关闭并删除）。
 - 时间窗（近一年）与 `processTime` 由脚本内计算，不要手填毫秒（手填算错年份已踩过一次）。
 - 输出 `HINT 写返回 true 但无新增` 时，按步骤 7 天网关键字表排查（skynet `/v3/skynet/log/search/search` 响应的日志列表在**顶层 `logEvents`** 字段，不是 `data.logs`）。
