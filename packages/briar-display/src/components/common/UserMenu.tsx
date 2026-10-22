@@ -63,9 +63,11 @@ export default function UserMenu() {
 	const [open, setOpen] = useState(false)
 	const [user, setUser] = useState<StoredUser | null>(null)
 	const [token, setToken] = useState<string | null>(null)
+	// 首帧（SSR/hydration）还读不到 localStorage：先显示骨架，避免整页跳转时闪「登录」
+	const [mounted, setMounted] = useState(false)
 	// 登录链接（mount 后带上当前页 redirect 参数，避免 SSR/hydration 不一致）
 	const [loginUrl, setLoginUrl] = useState('/briar/login')
-	const { roles, isAdmin, isLoggedIn } = usePermissions()
+	const { roles, isAdmin } = usePermissions()
 	const { unread } = useUnreadMessages()
 
 	useEffect(() => {
@@ -73,6 +75,7 @@ export default function UserMenu() {
 		setToken(t)
 		if (t) setUser(getStoredUser())
 		setLoginUrl(buildLoginUrl())
+		setMounted(true)
 	}, [])
 
 	// 跨标签页登录/登出同步
@@ -101,8 +104,13 @@ export default function UserMenu() {
 	const initial = user?.name?.charAt(0)?.toUpperCase() || 'U'
 	const roleDisplay = roles.length > 0 ? roles.map((r) => r.displayName).join(' · ') : null
 
-	// 未登录：直接显示「登录」按钮
-	if (!token || !isLoggedIn) {
+	if (!mounted) {
+		return <span className="inline-block h-7 w-16 animate-pulse rounded-md bg-muted" aria-hidden />
+	}
+
+	// 未登录：直接显示「登录」按钮。有 token 即按已登录展示（用缓存的 briar_user 渲染头像），
+	// 不等 PermissionContext 的请求回来，否则每次整页跳转都会先闪一下「登录」
+	if (!token) {
 		return (
 			<a
 				href={loginUrl}
