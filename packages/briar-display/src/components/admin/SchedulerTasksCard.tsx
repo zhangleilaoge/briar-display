@@ -1,12 +1,13 @@
 'use client'
 
-import { getSchedulerTasks, runSchedulerTask } from '@/api/deploy'
+import { getSchedulerTaskRuns, getSchedulerTasks, runSchedulerTask } from '@/api/deploy'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { SchedulerRunStatus, SchedulerTaskInfo } from '@briar/shared'
-import { CalendarClock, ChevronDown, ChevronUp, Loader2, Play } from 'lucide-react'
+import { CalendarClock, ChevronDown, ChevronUp, History, Loader2, Play } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import RunHistoryDialog from './RunHistoryDialog'
 
 /** 默认展示条数，超出后折叠为「加载更多」 */
 const COLLAPSED_COUNT = 3
@@ -14,6 +15,7 @@ const COLLAPSED_COUNT = 3
 const STATUS_STYLE: Record<SchedulerRunStatus, { label: string; className: string }> = {
 	running: { label: '运行中', className: 'animate-pulse bg-blue-100 text-blue-700' },
 	success: { label: '成功', className: 'bg-green-100 text-green-700' },
+	skipped: { label: '跳过', className: 'bg-gray-100 text-gray-600' },
 	failed: { label: '失败', className: 'bg-red-100 text-red-700' },
 }
 
@@ -35,6 +37,12 @@ export default function SchedulerTasksCard() {
 	const [triggering, setTriggering] = useState<string | null>(null)
 	const [expanded, setExpanded] = useState(false)
 	const wasRunningRef = useRef(false)
+	const [historyTask, setHistoryTask] = useState<SchedulerTaskInfo | null>(null)
+	const historyName = historyTask?.name
+	const fetchHistory = useCallback(
+		(q: Parameters<typeof getSchedulerTaskRuns>[1]) => getSchedulerTaskRuns(historyName ?? '', q),
+		[historyName],
+	)
 
 	const fetchTasks = useCallback(async () => {
 		const res = await getSchedulerTasks()
@@ -57,7 +65,7 @@ export default function SchedulerTasksCard() {
 		if (wasRunningRef.current && !hasRunning) {
 			for (const task of tasks) {
 				if (!task.lastRun || task.lastRun.status === 'running') continue
-				if (task.lastRun.status === 'success') {
+				if (task.lastRun.status === 'success' || task.lastRun.status === 'skipped') {
 					toast.success(
 						`${task.label}执行成功${task.lastRun.message ? `：${task.lastRun.message}` : ''}`,
 					)
@@ -152,22 +160,33 @@ export default function SchedulerTasksCard() {
 											)}
 										</p>
 									</div>
-									{task.manual && (
+									<div className="flex shrink-0 items-center gap-1.5">
 										<Button
 											size="sm"
-											variant="outline"
-											onClick={() => handleRun(task)}
-											disabled={busy}
-											className="shrink-0 gap-1.5"
+											variant="ghost"
+											onClick={() => setHistoryTask(task)}
+											className="gap-1.5 text-muted-foreground"
 										>
-											{busy ? (
-												<Loader2 className="h-3.5 w-3.5 animate-spin" />
-											) : (
-												<Play className="h-3.5 w-3.5" />
-											)}
-											{running ? '执行中...' : '立即执行'}
+											<History className="h-3.5 w-3.5" />
+											历史记录
 										</Button>
-									)}
+										{task.manual && (
+											<Button
+												size="sm"
+												variant="outline"
+												onClick={() => handleRun(task)}
+												disabled={busy}
+												className="shrink-0 gap-1.5"
+											>
+												{busy ? (
+													<Loader2 className="h-3.5 w-3.5 animate-spin" />
+												) : (
+													<Play className="h-3.5 w-3.5" />
+												)}
+												{running ? '执行中...' : '立即执行'}
+											</Button>
+										)}
+									</div>
 								</div>
 							)
 						})}
@@ -194,6 +213,13 @@ export default function SchedulerTasksCard() {
 					)}
 				</>
 			)}
+			<RunHistoryDialog
+				open={!!historyTask}
+				onOpenChange={(open) => !open && setHistoryTask(null)}
+				title={`${historyTask?.label ?? ''} · 运行历史`}
+				description={historyTask?.description}
+				fetcher={fetchHistory}
+			/>
 		</div>
 	)
 }

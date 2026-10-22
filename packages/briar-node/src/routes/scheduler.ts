@@ -1,6 +1,7 @@
 import { HTTP_STATUS, PERMISSIONS } from '@briar/shared'
 import { Hono } from 'hono'
 import { schedulerRunDal } from '../dal/schedulerRunDal'
+import { buildStats, parseHistoryQuery } from '../lib/runHistory'
 import { schedulerTasks } from '../lib/schedulerConfig'
 import { requirePermission } from '../middleware/permissionMiddleware'
 import { schedulerRunService } from '../services/schedulerRunService'
@@ -23,6 +24,31 @@ schedulerRoutes.get('/tasks', requirePermission(PERMISSIONS.ADMIN_DEPLOY_MANAGE)
 
 	return c.json({ success: true, data: { items }, code: HTTP_STATUS.OK })
 })
+
+/** GET /tasks/:name/runs — 某任务运行历史（分页 + 状态筛选 + 近期成功率） */
+schedulerRoutes.get(
+	'/tasks/:name/runs',
+	requirePermission(PERMISSIONS.ADMIN_DEPLOY_MANAGE),
+	async (c) => {
+		const name = c.req.param('name')
+		if (!schedulerTasks.some((t) => t.name === name)) {
+			return c.json(
+				{ success: false, message: '任务不存在', code: HTTP_STATUS.NOT_FOUND },
+				HTTP_STATUS.NOT_FOUND,
+			)
+		}
+		const opts = parseHistoryQuery((k) => c.req.query(k))
+		const [page, recent] = await Promise.all([
+			schedulerRunDal.listByTask(name, opts),
+			schedulerRunDal.recentStatuses(name),
+		])
+		return c.json({
+			success: true,
+			data: { ...page, stats: buildStats(recent) },
+			code: HTTP_STATUS.OK,
+		})
+	},
+)
 
 /** POST /tasks/:name/run — 手动触发（异步执行，结果写 scheduler_runs） */
 schedulerRoutes.post(

@@ -63,7 +63,7 @@ const { schedulerRunService } = await tsImport(
 try {
 	await schedulerRunService.runWithLog('scan-blocked-files', 'scheduled', async () => {
 		const cleaned = await fileModerationService.scanAndCleanBlockedImages()
-		return `扫描完成，清理 ${cleaned} 张被封禁图片`
+		return { message: `扫描完成，清理 ${cleaned} 张被封禁图片`, detail: { cleaned } }
 	})
 	await fileModerationService.close()
 	process.exit(0)

@@ -43,7 +43,13 @@ export const schedulerTasks: SchedulerTask[] = [
 		run: async () => {
 			const result = await certificateService.renewCertificate(resolveDomain(), true, 'manual')
 			if (!result.success) throw new Error(result.error || '续期失败')
-			return result.skipped ? '证书尚未到期，已跳过' : '证书续期成功'
+			return result.skipped
+				? {
+						status: 'skipped',
+						message: '证书尚未到期，已跳过',
+						detail: { domain: resolveDomain() },
+					}
+				: { message: '证书续期成功', detail: { domain: resolveDomain() } }
 		},
 	},
 	{
@@ -56,7 +62,7 @@ export const schedulerTasks: SchedulerTask[] = [
 		path: fileURLToPath(new URL('../jobs/scan-blocked-files.mjs', import.meta.url)),
 		run: async () => {
 			const cleaned = await fileModerationService.scanAndCleanBlockedImages()
-			return `扫描完成，清理 ${cleaned} 张被封禁图片`
+			return { message: `扫描完成，清理 ${cleaned} 张被封禁图片`, detail: { cleaned } }
 		},
 	},
 	{
@@ -69,7 +75,10 @@ export const schedulerTasks: SchedulerTask[] = [
 		path: fileURLToPath(new URL('../jobs/cleanup-request-logs.mjs', import.meta.url)),
 		run: async () => {
 			const deleted = await logDal.cleanup(90)
-			return `已清理 90 天前的请求日志 ${deleted} 条`
+			return {
+				message: `已清理 90 天前的请求日志 ${deleted} 条`,
+				detail: { deleted, retentionDays: 90 },
+			}
 		},
 	},
 	{
@@ -82,7 +91,7 @@ export const schedulerTasks: SchedulerTask[] = [
 		path: fileURLToPath(new URL('../jobs/cleanup-media-cache.mjs', import.meta.url)),
 		run: async () => {
 			const deleted = await mediaCacheService.cleanupExpiredMedia()
-			return `已清理过期的媒体缓存 ${deleted} 条（含 COS 对象）`
+			return { message: `已清理过期的媒体缓存 ${deleted} 条（含 COS 对象）`, detail: { deleted } }
 		},
 	},
 ]

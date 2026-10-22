@@ -33,7 +33,7 @@ const { schedulerRunService } = await tsImport(
 try {
 	await schedulerRunService.runWithLog('cleanup-media-cache', 'scheduled', async () => {
 		const deleted = await mediaCacheService.cleanupExpiredMedia()
-		return `已清理过期的媒体缓存 ${deleted} 条（含 COS 对象）`
+		return { message: `已清理过期的媒体缓存 ${deleted} 条（含 COS 对象）`, detail: { deleted } }
 	})
 	process.exit(0)
 } catch (error) {

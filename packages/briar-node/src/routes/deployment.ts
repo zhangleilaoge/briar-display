@@ -1,5 +1,7 @@
 import { HTTP_STATUS, PERMISSIONS } from '@briar/shared'
 import { Hono } from 'hono'
+import { deployRunDal } from '../dal/deployRunDal'
+import { RUN_STATS_WINDOW, buildStats, parseHistoryQuery } from '../lib/runHistory'
 import { requirePermission } from '../middleware/permissionMiddleware'
 import { deploymentService } from '../services/deploymentService'
 
@@ -16,6 +18,30 @@ deploymentRoutes.get('/history', requirePermission(PERMISSIONS.ADMIN_DEPLOY_MANA
 		code: HTTP_STATUS.OK,
 	})
 })
+
+/**
+ * 已落库的部署历史（通用 RunRecord 格式，分页 + 状态筛选）
+ * 读取前先同步一次最新 runs 入库（失败忽略，直接读库）
+ */
+deploymentRoutes.get(
+	'/history/runs',
+	requirePermission(PERMISSIONS.ADMIN_DEPLOY_MANAGE),
+	async (c) => {
+		const opts = parseHistoryQuery((k) => c.req.query(k))
+		if (opts.offset === 0) {
+			await deploymentService.listDeployRuns(50).catch(() => [])
+		}
+		const [page, recent] = await Promise.all([
+			deployRunDal.listPaged(opts),
+			deployRunDal.recentStatuses(RUN_STATS_WINDOW),
+		])
+		return c.json({
+			success: true,
+			data: { ...page, stats: buildStats(recent) },
+			code: HTTP_STATUS.OK,
+		})
+	},
+)
 
 /**
  * 某次部署（GitHub Actions run）的完整日志

@@ -4,6 +4,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import later from '@breejs/later'
 import Bree from 'bree'
+import type { SchedulerRunResult } from '../services/schedulerRunService'
 
 type WorkerOptionsWithType = WorkerOptions & {
 	type?: 'module' | 'commonjs'
@@ -25,7 +26,7 @@ export type SchedulerTask = {
 	/** 人类可读的调度说明（如「每日 04:43」），避免前端解析 cron */
 	scheduleText?: string
 	/** 手动触发（主进程内执行，可返回结果信息）；缺省则不支持手动触发 */
-	run?: () => Promise<string | undefined>
+	run?: () => Promise<SchedulerRunResult>
 }
 
 const resolveRuntimeExtension = () => {

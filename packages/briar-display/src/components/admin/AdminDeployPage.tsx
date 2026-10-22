@@ -5,13 +5,16 @@ import {
 	type CertRenewalItem,
 	type CertStatus,
 	type DeployHistoryItem,
+	getCertRenewalHistory,
 	getCertRenewals,
 	getCertStatus,
 	getDeployHistory,
+	getDeployRunHistory,
 	triggerNginxDeploy,
 } from '@/api/deploy'
 import AdminLayout from '@/components/admin/AdminLayout'
 import DeployLogDialog from '@/components/admin/DeployLogDialog'
+import RunHistoryDialog from '@/components/admin/RunHistoryDialog'
 import SchedulerTasksCard from '@/components/admin/SchedulerTasksCard'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -25,6 +28,7 @@ import {
 	FileBadge,
 	FileTerminal,
 	Globe,
+	History,
 	Loader2,
 	RefreshCw,
 	Rocket,
@@ -145,6 +149,7 @@ function AdminDeployPageInner() {
 
 	const [certStatus, setCertStatus] = useState<CertStatus | null>(null)
 	const [renewals, setRenewals] = useState<CertRenewalItem[]>([])
+	const [historyDialog, setHistoryDialog] = useState<'cert' | 'deploy' | null>(null)
 	const [history, setHistory] = useState<DeployHistoryItem[]>([])
 	// 各区块独立 loading，互不阻塞（最慢的证书状态不拖其他区块）
 	const [statusLoading, setStatusLoading] = useState(true)
@@ -339,6 +344,15 @@ function AdminDeployPageInner() {
 				<div className="mb-3 flex items-center gap-2">
 					<RefreshCw className="h-4 w-4 text-muted-foreground" />
 					<h2 className="text-sm font-semibold">续期记录</h2>
+					<Button
+						size="sm"
+						variant="ghost"
+						className="ml-auto h-7 gap-1 text-xs text-muted-foreground"
+						onClick={() => setHistoryDialog('cert')}
+					>
+						<History className="h-3.5 w-3.5" />
+						历史记录
+					</Button>
 				</div>
 				{renewalsLoading ? (
 					<div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
@@ -440,6 +454,15 @@ function AdminDeployPageInner() {
 				<div className="mb-3 flex items-center gap-2">
 					<Rocket className="h-4 w-4 text-muted-foreground" />
 					<h2 className="text-sm font-semibold">部署记录</h2>
+					<Button
+						size="sm"
+						variant="ghost"
+						className="ml-auto h-7 gap-1 text-xs text-muted-foreground"
+						onClick={() => setHistoryDialog('deploy')}
+					>
+						<History className="h-3.5 w-3.5" />
+						历史记录
+					</Button>
 				</div>
 				{historyLoading ? (
 					<div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
@@ -529,6 +552,19 @@ function AdminDeployPageInner() {
 				)}
 			</div>
 			<DeployLogDialog runId={logRunId} open={logOpen} onOpenChange={setLogOpen} />
+			<RunHistoryDialog
+				open={historyDialog === 'cert'}
+				onOpenChange={(open) => !open && setHistoryDialog(null)}
+				title="证书续期 · 历史记录"
+				fetcher={getCertRenewalHistory}
+			/>
+			<RunHistoryDialog
+				open={historyDialog === 'deploy'}
+				onOpenChange={(open) => !open && setHistoryDialog(null)}
+				title="部署 · 历史记录"
+				description="CI 部署记录同步落库（deploy_runs），点击行展开 commit / ref / 触发者"
+				fetcher={getDeployRunHistory}
+			/>
 		</AdminLayout>
 	)
 }

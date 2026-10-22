@@ -1,6 +1,7 @@
 import { HTTP_STATUS, PERMISSIONS } from '@briar/shared'
 import { Hono } from 'hono'
 import { certRenewalDal } from '../dal/certRenewalDal'
+import { buildStats, parseHistoryQuery } from '../lib/runHistory'
 import { requirePermission } from '../middleware/permissionMiddleware'
 import { certificateService } from '../services/certificateService'
 
@@ -36,6 +37,27 @@ certRoutes.get('/renewals', requirePermission(PERMISSIONS.ADMIN_DEPLOY_MANAGE), 
 		code: HTTP_STATUS.OK,
 	})
 })
+
+/**
+ * 续期历史（通用 RunRecord 格式，分页 + 状态筛选 + 近期成功率）
+ * GET /renewals/history?limit=20&offset=0&status=failed
+ */
+certRoutes.get(
+	'/renewals/history',
+	requirePermission(PERMISSIONS.ADMIN_DEPLOY_MANAGE),
+	async (c) => {
+		const opts = parseHistoryQuery((k) => c.req.query(k))
+		const [page, recent] = await Promise.all([
+			certRenewalDal.listPaged(opts),
+			certRenewalDal.recentStatuses(),
+		])
+		return c.json({
+			success: true,
+			data: { ...page, stats: buildStats(recent) },
+			code: HTTP_STATUS.OK,
+		})
+	},
+)
 
 /**
  * 手动触发强制续期

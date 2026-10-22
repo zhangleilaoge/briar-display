@@ -1,4 +1,4 @@
-import type { ApiResponse, SchedulerTaskInfo } from '@briar/shared'
+import type { ApiResponse, RunHistoryPage, RunRecordStatus, SchedulerTaskInfo } from '@briar/shared'
 import { apiClient } from './request'
 
 // ==================== 证书状态 ====================
@@ -140,5 +140,41 @@ export const getSchedulerTasks = async () => {
 
 export const runSchedulerTask = async (name: string) => {
 	const response = await apiClient.post<ApiResponse>(`/scheduler/tasks/${name}/run`)
+	return response.data
+}
+
+// ==================== 通用运行历史 ====================
+
+export interface RunHistoryQuery {
+	limit: number
+	offset: number
+	status?: RunRecordStatus
+}
+
+const historyParams = ({ limit, offset, status }: RunHistoryQuery) => ({
+	limit,
+	offset,
+	...(status ? { status } : {}),
+})
+
+export const getSchedulerTaskRuns = async (name: string, q: RunHistoryQuery) => {
+	const response = await apiClient.get<ApiResponse<RunHistoryPage>>(
+		`/scheduler/tasks/${name}/runs`,
+		{ params: historyParams(q) },
+	)
+	return response.data
+}
+
+export const getCertRenewalHistory = async (q: RunHistoryQuery) => {
+	const response = await apiClient.get<ApiResponse<RunHistoryPage>>('/cert/renewals/history', {
+		params: historyParams(q),
+	})
+	return response.data
+}
+
+export const getDeployRunHistory = async (q: RunHistoryQuery) => {
+	const response = await apiClient.get<ApiResponse<RunHistoryPage>>('/deployment/history/runs', {
+		params: historyParams(q),
+	})
 	return response.data
 }
