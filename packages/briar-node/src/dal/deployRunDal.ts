@@ -11,6 +11,8 @@ interface DeployRunRow {
 	status: string
 	msg: string | null
 	deployed_at: Date | null
+	started_at: Date | null
+	finished_at: Date | null
 }
 
 /** GitHub 状态 → 通用状态 */
@@ -37,7 +39,8 @@ const STATUS_FILTER: Record<RunRecordStatus, string> = {
 		"status NOT IN ('success','failure','failed','cancelled','timed_out','startup_failure','action_required','skipped','neutral')",
 }
 
-const toDate = (at: string): Date | null => {
+const toDate = (at: string | undefined): Date | null => {
+	if (!at) return null
 	const d = new Date(at)
 	return Number.isNaN(d.getTime()) ? null : d
 }
@@ -48,11 +51,13 @@ export const deployRunDal = {
 		for (const item of items) {
 			if (!item.run) continue
 			await execute(
-				`INSERT INTO deploy_runs (run_id, commit_sha, ref, actor, status, msg, deployed_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
+				`INSERT INTO deploy_runs (run_id, commit_sha, ref, actor, status, msg, deployed_at, started_at, finished_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE status = VALUES(status), msg = COALESCE(VALUES(msg), msg),
            commit_sha = VALUES(commit_sha), ref = VALUES(ref), actor = VALUES(actor),
-           deployed_at = COALESCE(VALUES(deployed_at), deployed_at)`,
+           deployed_at = COALESCE(VALUES(deployed_at), deployed_at),
+           started_at = COALESCE(VALUES(started_at), started_at),
+           finished_at = COALESCE(VALUES(finished_at), finished_at)`,
 				[
 					String(item.run).slice(0, 32),
 					item.commit ?? '',
@@ -61,6 +66,8 @@ export const deployRunDal = {
 					item.status ?? '',
 					item.msg ?? null,
 					toDate(item.at),
+					toDate(item.startedAt),
+					toDate(item.finishedAt),
 				],
 			)
 		}
@@ -86,8 +93,8 @@ export const deployRunDal = {
 					trigger: 'push',
 					status: normalizeDeployStatus(row.status),
 					message: row.msg,
-					startedAt: row.deployed_at ?? new Date(0),
-					finishedAt: null,
+					startedAt: row.started_at ?? row.deployed_at ?? new Date(0),
+					finishedAt: row.started_at ? row.finished_at : null,
 					detail: {
 						runId: row.run_id,
 						commit: row.commit_sha,
@@ -99,6 +106,18 @@ export const deployRunDal = {
 			),
 			total: Number(countRows[0]?.total ?? 0),
 		}
+	},
+
+	/** 已结束但缺起止时间的记录（待回填耗时） */
+	async listMissingDuration(limit: number): Promise<string[]> {
+		const rows = await query<{ run_id: string }>(
+			`SELECT run_id FROM deploy_runs
+       WHERE (started_at IS NULL OR finished_at IS NULL)
+         AND status IN ('success','failure','failed','cancelled','timed_out','startup_failure','action_required','skipped','neutral','completed')
+       ORDER BY deployed_at DESC LIMIT ?`,
+			[limit],
+		)
+		return rows.map((r) => r.run_id)
 	},
 
 	async recentStatuses(limit: number): Promise<RunRecordStatus[]> {

@@ -463,3 +463,15 @@ SET @sql = IF(@idx_exists = 0, 'ALTER TABLE scheduler_runs ADD INDEX idx_started
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- deploy_runs 新增起止时间（耗时 = finished_at - started_at；旧记录同步时按 GitHub run 回填）
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'deploy_runs' AND COLUMN_NAME = 'started_at');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE deploy_runs ADD COLUMN started_at TIMESTAMP NULL DEFAULT NULL COMMENT ''运行开始时间'' AFTER deployed_at', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'deploy_runs' AND COLUMN_NAME = 'finished_at');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE deploy_runs ADD COLUMN finished_at TIMESTAMP NULL DEFAULT NULL COMMENT ''运行结束时间'' AFTER started_at', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
