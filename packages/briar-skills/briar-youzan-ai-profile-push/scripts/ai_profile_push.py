@@ -14,6 +14,8 @@
 用法：
   python3 ai_profile_push.py run      --env pre --rootKdtId 136579309 --guide 538008751 -n 5
   python3 ai_profile_push.py run      --env pre --rootKdtId 136579309 --guide 18989487289        # 手机号也行
+  python3 ai_profile_push.py run      --env pre --rootKdtId 136579309 --guide 538008751 \
+      --customers 24097816852,阿蓝     # 指定客户（userId 或昵称，逗号分隔），跳过自动选客户
   python3 ai_profile_push.py resolve  --env pre --rootKdtId 136579309 --guide 100482502          # dbId 解析
   python3 ai_profile_push.py pool     --env pre --rootKdtId 136579309 --guide 538008751
   python3 ai_profile_push.py pending  --env pre --rootKdtId 136579309 --guide 538008751
@@ -339,6 +341,55 @@ def list_crm_customers(env, kdt_id, guide_id):
     return customers
 
 
+def resolve_customers(env, root_kdt_id, kdt_id, guide_id, raw, pool=None):
+    """--customers 指定的客户标识（逗号分隔）→ pool 元素同构 dict 列表。
+    纯数字按 userId；其余按 nickName 在 pool（listCustomers）与 CRM 专属客户里精确匹配。
+    匹配不到/昵称多命中的逐个 WARN 跳过；全部落空则退出。CRM 查询惰性：pool 能命中就不调。"""
+    pool = pool if pool is not None else list_pool(env, root_kdt_id, guide_id)
+    crm = None
+
+    def crm_list():
+        nonlocal crm
+        if crm is None:
+            crm = list_crm_customers(env, kdt_id, guide_id)
+        return crm
+
+    picked = []
+    seen = set()
+    for token in [s.strip() for s in raw.split(',') if s.strip()]:
+        hit = None
+        if token.isdigit():
+            hit = next((c for c in pool if c['userId'] == token), None)
+            if hit is None:
+                hit = next((c for c in crm_list() if c['userId'] == token), None)
+            if hit is None:
+                hit = {
+                    'userId': token, 'nickName': None, 'operateType': None,
+                    'reGenState': None, 'reachTime': None, 'reachToday': False,
+                    'hasReachMessage': False,
+                }
+                print(f'WARN userId={token} 不在 pool/CRM 专属客户里，appendCustomer 会新挂入池（无 CRM 归属进不了今日队列，见 SKILL.md 步骤 1B）')
+        else:
+            matches = [c for c in pool if c.get('nickName') == token]
+            if not matches:
+                matches = [c for c in crm_list() if c.get('nickName') == token]
+            if len(matches) > 1:
+                print(f'WARN 昵称 "{token}" 命中 {len(matches)} 个客户（userId: {[c["userId"] for c in matches]}），跳过——请改用 userId 消歧')
+                continue
+            hit = matches[0] if matches else None
+        if hit is None:
+            print(f'WARN "{token}" 在 pool 与 CRM 专属客户里都查不到，跳过（用 pool 子命令核对昵称）')
+            continue
+        if hit['userId'] in seen:
+            print(f"WARN userId={hit['userId']} 重复指定，跳过一次")
+            continue
+        seen.add(hit['userId'])
+        picked.append(hit)
+    if not picked:
+        raise SystemExit('--customers 全部未匹配，收工（用 pool 子命令核对 userId/昵称）')
+    return picked
+
+
 def append_customer(env, root_kdt_id, guide_id, customer_id):
     return unwrap(dubbo_call(
         CUS_SERVICE, 'appendCustomer',
@@ -415,16 +466,24 @@ def cmd_run(a):
 
     pool = list_pool(a.env, a.rootKdtId, guide_id)
     exclude = {s.strip() for s in (a.exclude or '').split(',') if s.strip()}
-    picked = pick_from_pool(pool, occupied, guide_id, a.n, exclude)
-    if len(picked) < a.n:
-        print(f'pool 只选到 {len(picked)}/{a.n} 个（pool 共 {len(pool)} 个），从 CRM 专属客户补充…')
-        skip = occupied | {c['userId'] for c in picked} | {str(guide_id)} | exclude
-        for c in list_crm_customers(a.env, guide['kdtId'], guide_id):
-            if len(picked) >= a.n:
-                break
-            if c['userId'] not in skip:
-                picked.append(c)
-        print(f'CRM 补充后共 {len(picked)}/{a.n} 个候选')
+    if a.customers:
+        picked = resolve_customers(a.env, a.rootKdtId, guide['kdtId'], guide_id, a.customers, pool)
+        for c in picked:
+            if c['userId'] in occupied:
+                print(f"WARN userId={c['userId']} 已在今日队列里，appendCustomer 会触发重新生成（LLM 判定可能翻转）")
+            if c['userId'] == str(guide_id):
+                print(f'WARN userId={c["userId"]} 是导购自己的账号，不建议推')
+    else:
+        picked = pick_from_pool(pool, occupied, guide_id, a.n, exclude)
+        if len(picked) < a.n:
+            print(f'pool 只选到 {len(picked)}/{a.n} 个（pool 共 {len(pool)} 个），从 CRM 专属客户补充…')
+            skip = occupied | {c['userId'] for c in picked} | {str(guide_id)} | exclude
+            for c in list_crm_customers(a.env, guide['kdtId'], guide_id):
+                if len(picked) >= a.n:
+                    break
+                if c['userId'] not in skip:
+                    picked.append(c)
+            print(f'CRM 补充后共 {len(picked)}/{a.n} 个候选')
     if not picked:
         raise SystemExit('没有可用客户，收工（pool 空且 CRM 无专属客户）')
     for c in picked:
@@ -514,6 +573,7 @@ def main():
         sp.add_argument('--rounds', type=int, default=2, help='未就绪客户自动重生成的轮数（默认 2）')
         sp.add_argument('--exclude', help='逗号分隔的客户 userId，选客户时跳过（用于排除多轮排明日 10:00 的钉子户）')
         sp.add_argument('--customerId', type=int)
+        sp.add_argument('--customers', help='逗号分隔的客户标识：userId 或昵称（昵称按 pool/CRM 专属客户精确匹配）；指定后跳过自动选客户，-n 失效')
         sp.set_defaults(fn=fn)
     args = p.parse_args()
     args.fn(args)

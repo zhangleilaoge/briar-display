@@ -6,11 +6,19 @@ tags: youzan-internal, dubbo, scrm, guide, ai-profile, testing
 
 # briar-youzan-ai-profile-push — 指定导购推一客一策
 
-> 只用于 QA/预发测试店铺与测试导购。写接口（导入、生成、触发通知、重置触达）**不得**对生产调用；
-> `zan-dubbo-invoke` 在预发/生产只允许只读方法，写操作在 QA 跑，或由用户本人在 Dubbo 控制台/Ticket 平台手动执行。
-> 用户在场时，也可用 kimi-webbridge 在用户已登录的 `ticket.qima-inc.com` 页面上下文直接
-> `POST /api/v1/dubbo/invoke`（body 同 DubboMan：`{app,env,service,method,args,sc,timeout,retries}`），与手动点 Send 等价。
-> zan-dubbo-invoke 登录态失效时，只读查询同样可走这个通道（只读方法不受 Ticket 白名单限制）。
+## 环境要求
+
+> 红线：只用于 QA/预发测试店铺与测试导购。写接口（导入、生成、触发通知、重置触达）**不得**对生产调用。
+
+| 用途 | 依赖 |
+|---|---|
+| 跑脚本 / 只读 Dubbo 查询 | `python3`（脚本纯标准库）+ `zan-dubbo-invoke` 的 `dubbo_query.py`（复用其 funeng 登录态与 Tether 网关；`ZAN_DUBBO_INVOKE_SKILL_DIR` 默认 `~/.kimi-code/user-skills/zan-dubbo-invoke`，通常不用设）。`zan-dubbo-invoke` 在 pre/prod 只允许只读方法，写操作在 QA 跑 |
+| 写操作（导入/生成/触发/重置） | QA 走 Tether 网关无限制；pre 由脚本复用 funeng 登录态直调 Ticket API；或由用户本人在 Dubbo 控制台 / Ticket 平台手动执行 |
+| 登录态失效兜底 | 用户在场时用 kimi-webbridge 在用户已登录的 `ticket.qima-inc.com` 页面上下文直接 `POST /api/v1/dubbo/invoke`（body 同 DubboMan：`{app,env,service,method,args,sc,timeout,retries}`），与手动点 Send 等价；zan-dubbo-invoke 登录态失效时只读查询同样可走这个通道（只读方法不受 Ticket 白名单限制） |
+| 天网日志验证 | `briar-youzan-skynet` 的 Python 范式（`SkynetLogQuerier._request` + 秒级窗口 + 客户端过滤）；skynet-query CLI 对带连字符的应用名会报「未知错误」，别用 |
+| 模拟导购登录 H5 | `briar-youzan-get-session-id` |
+
+凭据只走各技能自身的登录态或环境变量，**不要**把 cookie / sessionId / token 写进任何文件或命令历史。
 
 ## 快速通道（例行造数）
 
@@ -21,6 +29,12 @@ python3 ai_profile_push.py run --env pre --rootKdtId <rootKdtId> --guide <导购
 ```
 
 `--guide` 接受任意导购标识：**userId / 手机号 / 导购表主键 dbId**，自动识别（手机号走 uic 批量接口；其余先按 userId 查，查不到再按 dbId 扫 `listPaged`），识别不准时 `--guideKind userId|mobile|dbId` 显式指定。脚本自动校验导购 status/guideType/belongToQw 并解析出 kdtId。
+
+推**指定客户**时加 `--customers`（userId 或昵称，逗号分隔），指定后跳过自动选客户、`-n` 失效；昵称按 pool/CRM 专属客户精确匹配，多命中会 WARN 并要求改用 userId 消歧：
+
+```bash
+python3 ai_profile_push.py run --env pre --rootKdtId <rootKdtId> --guide <导购标识> --customers 24097816852,阿蓝
+```
 
 其他子命令：`resolve`（只解析导购身份）、`pool`（池内状态：operateType / reGenState / reachTime，自动翻页）、`pending`（今日待触达队列）、`generate`（单客户 `mockGenerate` 兜底，不需 --guide）、`reset`（删触达记录，重复测试）。写操作仅 qa/pre，禁止 prod。脚本口径与下文一致，run 报 WARN/HINT 时回到对应步骤手动排查。
 
@@ -42,15 +56,13 @@ flowchart LR
 
 关键点：一客一策客户按 **`adminId` = 导购有赞 userId（guideId）** 归属；guide-promotion 只读「今天」的推荐（`operate_time` 为当天、`operateType=1`，前 100 条），并排除近 3 天已触达（`guide_ai_profile_reach_record` 去重窗口 = [当天零点, +3 天零点），触达记录可删后重新下发）。所以「推给某导购」= 让该导购名下今天有带话术的客户 + 触发下发。
 
-## 前置
+## 前置参数
 
 1. 确认环境（QA / 预发）、总部 `rootKdtId`、导购 `guideId`（有赞 userId，须为有效**付费导购**、有企微绑定才会发企微卡）、若干客户 `userId`（归属该总部）。导购在 H5 页面 Console 读 `_global` 可拿：`buyer_id` = guideId、`kdtId` / `rootKdtId`、`nodeEnv=pre` 表示预发。
    - **别人给的「导购ID」可能是导购表主键 dbId（≠ userId）**，所有导购读接口都按 userId 查，dbId 直查全空。手里只有手机号/昵称时，先调 uic 换 userId：
      `com.youzan.uic.api.userBatch.service.UserBatchService#getMobileUserInfoListByMobileList`（app=`uic`），args `[{"mobileList":["<手机号>"],"appName":"guide"}]`，返回 `userId` / `nickName` / `mobile`；再 `getShoppingGuide` 校验导购身份。注意 `UserInfoService#getMobileInfo` 单查接口实测按文档参数返回空，别用，用批量接口。
 2. 先只读核查导购有效性，再决定写操作：
    `com.youzan.guide.api.service.shoppingguide.ShoppingGuideReadApiService#getShoppingGuide`（app=`guide`），args `[{"rootKdtId":<rootKdtId>,"guideId":<guideId>}]`（guideId = 导购有赞 userId），确认 `status=1`、`guideType=1`（付费导购）、`belongToQw=1`（企微绑定）。
-3. 依赖技能：`zan-dubbo-invoke`（Dubbo 调用、Ticket/CAS 登录态）、`zan-log-query` / `briar-youzan-skynet`（天网验证）、`briar-youzan-get-session-id`（需要模拟导购登录 H5 时）。
-4. 凭据只走各技能自身的登录态或环境变量，**不要**把 cookie / sessionId / token 写进任何文件或命令历史。
 
 ## 步骤
 
@@ -132,25 +144,22 @@ com.youzan.guide.promotion.api.service.test.TestService#deleteGuideAiProfileReac
 
 - H5 DevTools Network：`getSalesCopilotWelcomeMessage.json` 返回 `messageStatus: completed`，`messageBody` 里有 `compoundDataType` 为 `sales_copilot_daily_action_*` 的卡（一客一策为 `AI_CUSTOMER_PROFILE` 类型），记下 `welcomeMessageId`，与卡片展示内容对齐。
 - `queryDailyTaskOverview.json?date=yyyy-MM-dd`：`pendingCount` / `tasks[]` 出现对应客户（首页「今日任务 还剩N项」取该字段）。
-- 天网（`briar-youzan-skynet` 范式：单词搜索 + 秒级窗口 + 客户端过滤）：guide-b-h5 搜 `triggerGuideDailyActionPlan` / `getSalesCopilotWelcomeMessage` 的 actionEnd；guide-promotion 搜 `triggerGuideNotice`。skynet-query CLI 报「未知错误」时改用 Python API（`SkynetLogQuerier._request` + 秒级时间窗）直查。
+- 天网（`briar-youzan-skynet` 范式：单词搜索 + 秒级窗口 + 客户端过滤）：guide-b-h5 搜 `triggerGuideDailyActionPlan` / `getSalesCopilotWelcomeMessage` 的 actionEnd；guide-promotion 搜 `triggerGuideNotice`。
 
 ## 排查
 
 | 现象 | 处理 |
 |---|---|
+| zan-dubbo-invoke 登录态失效（funeng OAuth 自动重建失败 / `CAS OAuth 授权失败`） | 用户在场最快恢复：kimi-webbridge 在用户已登录的 `ticket.qima-inc.com` 页面 Console 读 `document.cookie` 取 `KDTSESSIONID`，合并进 `$HOME/.config/zan-tools/cas-token-funeng.json` 的 `cookies` 对象并把 `expiresAt` 改成未来时间戳（下次调用命中「使用缓存登录态」直接恢复，也避开 IDE 终端 Keychain 弹窗）；或让用户在 Chrome 打开 `funeng.qima-inc.com` 登录后重跑（脚本自动走 Chrome cookie → CAS OAuth 重建）；以上都不可行时在用户终端跑 `node funeng_login.js login`（zan-dubbo-invoke scripts 目录下） |
 | 预发「之前的接口不灵了」 | 先确认接口是否改名/迁服务：在本地 `scrm-ai-brain`、`guide-promotion` 仓库 `git pull` 后 `rg` 上面的类名与方法名；Garden 网关路由头可能变化，以 scrm-profile-front 页面实际请求为准（DevTools 复制请求，去掉 cookie 后对照） |
 | `listTodayPendingCustomers` 为 0 | 刚生成完读侧有 30s~1min 传播延迟，先等 1 分钟再查；再对池内状态：adminId 不是该导购 / 生成未完成（`getImportTask` 或 `CusServiceV2#listCustomers` 看状态，「是否今天」看 `reachTime`，V2 的 `operateTime` 恒 null）/ 近 3 天已触达（步骤 4 重置）/ `reachTime` 不在今天 |
 | 企微卡不来 | 同一分钟幂等；导购非付费导购或无企微绑定；导购 Topic 消费实例版本不支持 `ignoreShopWhitelist` |
 | H5 卡片一直是旧推荐 | 当天欢迎语已生成会复用；`triggerGuideDailyActionPlan` 后重新轮询，或次日再测；前端曾有「会话较早位置消息时间更晚拦截新欢迎语」问题（guide-b-h5 已修） |
 | 「还剩N项」不变 | 任务完成由后端异步落库，看紧随其后的 `queryDailyTaskOverview` 返回的 `pendingCount` 与任务 `status`，不变则找后端 |
-
-## 踩坑
-
-- **浏览器调试**：kimi-webbridge 的浏览器通道不是 Chrome 9222 远程调试端口，别去探 9222 / 重启 Chrome（会丢当前页面）。
+| 想探 kimi-webbridge 的浏览器调试端口 | webbridge 通道不是 Chrome 9222 远程调试端口，别探 9222、别重启 Chrome（会丢当前页面） |
 
 ## 来源
 
 - guide-promotion `design/ai-profile-daily-notice.md`、`design/ai-profile-pending-customer-api.md`、`AiCustomerProfileClient`、`TestService#deleteGuideAiProfileReachRecord`、`AiProfilePendingCustomerQueryComponent`
 - scrm-ai-brain-api：`CusOperatorWorkbenchPlatformService`、`CusOperatorSceneConfigPlatformService`、`CusServiceV2`
 - guide-b-h5：`app/controllers/center/GuideAigcController.ts`、`AiAssistantController.ts`
-- 文档《一客一策 · 全链路梳理》（应用分工）
