@@ -8,22 +8,23 @@ import { num } from './sources'
  * 分时
  * - 腾讯 web.ifzq.gtimg.cn/appstock/app/minute/query：A股指数 / A股板块（pt 开头的板块代码可直接查，无需映射）/ 港股主要指数，
  *   data 为 "HHMM 价格 累计量 …"，qt[code][4] 为昨收；港股恒指/科指/国指实时
+ * - 新浪 HK_StockService.getHKMinline：港股个股当日分时（hkTrendSources.ts），不回退腾讯延迟走势
  * - 腾讯 appstock/app/UsMinute/query：美股指数（qt[0]=real，实时）/ 美股 ETF（qt[0]=delay，延迟），时间为美东
  * - Naver m.stock.naver.com/front-api/chart/pricesByPeriod（scriptChartType=day）：日本指数（兜底）/ 日本个股，
  *   当地时间，含 lastClosePrice、累计量；东证行情 15 分钟延迟
  * - Naver api.stock.naver.com/chart/domestic/index/{KOSPI|KOSDAQ|KPI200}/minute：韩国指数实时（每分钟量，不含昨收）
- * - 东财 push2his trends2：覆盖最全（A股板块 90.BK / 恒生行业 124.HSCI* / 美股 105~107），
- *   但同 IP 连续十几次就会被 Empty reply 封一段时间，用于恒生行业、日经225和其他源的兜底
+ * - 东财 push2his trends2：覆盖最全（A股板块 90.BK / 港股个股 116.* / 恒生行业 124.HSCI* / 美股 105~107），
+ *   但同 IP 连续十几次就会被 Empty reply 封一段时间，用于港股个股、恒生行业、日经225和其他源的兜底
  * - 韩国业种 / 主题：Naver 无分时接口（试过 chart/domestic/upjong|industry|theme 均 400 / 空）
  * 五日
  * - 腾讯 appstock/app/day/query（A股指数 / pt 板块 / 港股指数）、dayus/query（美股），每天带 prec（昨收）
  * - Naver 韩国指数 minute?startDateTime=&endDateTime= 可取多日；日本（Naver 外国 minute 恒为空）没有多日分时
- * - 东财 trends2 ndays=5（恒生行业）
+ * - 东财 trends2 ndays=5（港股个股 / 恒生行业）
  * K 线（日/周/月，前复权）
  * - 腾讯 appstock/app/newfqkline/get?param=CODE,day|week|month,,,N,qfq：A股指数 / pt 板块 / 港股指数 / 美股
  *   （美股代码要带交易所后缀：us.INX、usXLK.AM，后缀取 qt 第 3 段；旧 fqkline 对 pt 板块只回 1 根）
  * - Naver chart/domestic/index/{code}/{day|week|month}、chart/foreign/{index|item}/{code}/{…}（带起止时间）：日韩
- * - 东财 push2his kline/get klt=101/102/103&fqt=1（恒生行业；腾讯 hkHSCI* 无数据）
+ * - 东财 push2his kline/get klt=101/102/103&fqt=1（港股个股 / 恒生行业；腾讯 hkHSCI* 无数据）
  */
 
 export interface RawTrend {
@@ -466,7 +467,7 @@ export async function fetchNaverCandles(
 	return { name: null, candles, source: 'Naver 证券K线' }
 }
 
-// ───────────────────────── 东财（兜底 / 恒生行业） ─────────────────────────
+// ───────────────────────── 东财（港股个股 / 恒生行业 / 其他兜底） ─────────────────────────
 
 /**
  * 东财 push2his 全局限流（整个进程共享，分时和 K 线一起算）：实测同 IP 秒级连发十几次就会被 Empty reply 封，
