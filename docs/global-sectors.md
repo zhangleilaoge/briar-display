@@ -6,7 +6,7 @@
 - API：`GET /api/markets/overview`、`GET /api/markets/:market/sectors?kind=industry|concept&level=1|2`（level 仅 A股行业：申万一级/二级）、`GET /api/markets/:market/index-trends`（指数卡片分时小图）、`GET /api/markets/:market/chart?target=index|sector&code=…&period=intraday|5day|day|week|month`（走势面板）
 - 恐贪 API：`GET /api/markets/fear-greed?items=`（自选批量）、`GET /api/markets/fear-greed/board`（指数 + 申万行业）
 - 个股 API：`GET /api/markets/:market/constituents?code=&kind=`（板块成分股）、`GET /api/markets/:market/stock?code=`（个股报价）、`GET /api/markets/:market/chart?target=stock&code=…`（个股走势）、`GET /api/markets/search?q=`（跨市场搜索）、`GET /api/markets/quotes?items=cn:sh600519,us:AAPL`（批量报价，自选列表用）、`GET|POST /api/markets/watchlist`、`DELETE /api/markets/watchlist/:market/:code`
-- 代码：后端 `packages/briar-node/src/services/market/`（http / cache / session / catalog / sources / officialSources / curated（题材板块聚合）/ marketService / trendSources / jpxTrendSources / trendFormat / trendService / stockSources / stockService / watchlist）+ `routes/markets.ts` + `dal/marketWatchlistDal.ts`；共享类型 `briar-shared/src/markets.ts`；前端 `components/markets/`（详情弹窗 `MarketDetailDialog` + 导航栈 `dialogStack`、走势 `MarketChartPanel`(`ChartPanelBody`) + `TrendChart`、成分股 `SectorConstituents`、个股 `StockDetailView`、自选 `WatchlistCard` / `watchlistStore`）
+- 代码：后端 `packages/briar-node/src/services/market/`（http / cache / session / catalog / sources / officialSources / curated（题材板块聚合）/ marketService / trendSources / jpxTrendSources / trendFormat / trendService / stockSources / hkStockSources / stockService / watchlist）+ `routes/markets.ts` + `dal/marketWatchlistDal.ts`；共享类型 `briar-shared/src/markets.ts`；前端 `components/markets/`（详情弹窗 `MarketDetailDialog` + 导航栈 `dialogStack`、走势 `MarketChartPanel`(`ChartPanelBody`) + `TrendChart`、成分股 `SectorConstituents`、个股 `StockDetailView`、自选 `WatchlistCard` / `watchlistStore`）
 - 前端不直连任何第三方，全部经 briar-node 代理
 
 ## 数据源与降级（2026-10 更新）
@@ -14,7 +14,7 @@
 | 市场 | 板块 | 列表 | 排序维度 | 实时性 | 指数 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | A股 | 腾讯 `proxy.finance.qq.com/cgi/cgi-bin/rank/pt/getRank?board_type=hy\|hy2\|gn`（申万一级 31 / 二级 124 / 概念 ~800），失败兜底东财 push2 clist（`fs=m:90+t:2\|t:3`） | 动态 | 涨跌幅 / 成交额 / 主力净流入 / 换手率 | 实时 | 东财 ulist（上证/深成/创业板/科创50），兜底腾讯 qt |
-| 港股 | 行业：东财 ulist 恒生综合行业指数 `124.HSCI*`（12 个）；概念：`CONCEPT_SECTORS.hk` 人工维护题材名单（16 个），腾讯报价聚合 | 固定代理 / 人工维护 | 涨跌幅 / 成交额 | 行业指数实时；概念 15 分钟延迟 | 优先恒生指数公司官网 `www.hsi.com.hk/api/wsit-hsi-ddoc-ea-public-website-proxy/v1/product-data/pub/series/metadata/v2`，分别取 `seriesCode=hsi/hstech/hscei`；失败回退东财 ulist，再失败回退腾讯 qt；仅腾讯兜底标 15 分钟延迟 |
+| 港股 | 行业：东财 ulist 恒生综合行业指数 `124.HSCI*`（12 个）；概念：`CONCEPT_SECTORS.hk` 人工维护题材名单（16 个），新浪 rt_hk 报价聚合 | 固定代理 / 人工维护 | 涨跌幅 / 成交额 | 行业指数与概念不固定延迟；降级腾讯时标 15 分钟 | 优先恒生指数公司官网 `www.hsi.com.hk/api/wsit-hsi-ddoc-ea-public-website-proxy/v1/product-data/pub/series/metadata/v2`，分别取 `seriesCode=hsi/hstech/hscei`；失败回退东财 ulist，再失败回退腾讯 qt；仅腾讯兜底标 15 分钟延迟 |
 | 美股 | 行业：腾讯 qt `usXLK…`（11 个 SPDR 行业 ETF），兜底东财 ulist `105/106/107.*`；概念：`CONCEPT_SECTORS.us` 人工维护题材名单（23 个），腾讯报价聚合 | 固定代理 / 人工维护 | 涨跌幅 / 成交额（USD） | 腾讯 ETF 报价**延迟 15 分钟**（分时接口 qt 标 `delay`）；东财兜底实时 | 东财 ulist（SPX/纳指综合/道指） |
 | 日本 | JPX 官方快照 `IndustryTypeStockIndex` 的真实 TOPIX-17 行业指数 | 固定代理 | 仅涨跌幅（指数无 ETF 成交额） | JPX 官网标注每分钟更新，不固定延迟 15 分钟 | 日经 225 优先新浪 `hq.sinajs.cn/list=znb_NKY`，兜底东财 ulist、Naver；TOPIX 优先 JPX 官方快照，Naver 仅兜底且标 15 分钟延迟 |
 | 韩国 | Naver `m.stock.naver.com/api/stocks/industry\|theme?page=&pageSize=100`（业种 79 / 主题 ~264） | 动态 | 仅涨跌幅（源无成交额） | 实时 | Naver polling `domestic/index/KOSPI,KOSDAQ,KPI200` |
@@ -23,7 +23,7 @@
 
 **日本行业指数**：外部代码保持 `1617–1633`，但不再代表 NEXT FUNDS ETF；`catalog.ts` 的 `JP_TOPIX17_INDICES` 将它们映射为 JPX `qcode=271–287` 的 TOPIX-17 指数。行业与 TOPIX 报价共用 `indices:jpx` 缓存（至少 60s）。JPX 快照没有行业成交额，排序维度只有涨跌幅；行业报价失败不能回退为不同标的的 ETF。
 
-**港股 / 美股概念 tab（curated，2026-10 起）**：免费源没有港美股的题材板块接口，换成 `catalog.ts` 的 `CONCEPT_SECTORS` 人工维护名单（美股 23 个：存储、光模块/CPO、AI 算力、半导体设备、机器人、创新药、中概互联网、核能/铀、加密货币概念、量子计算等；港股 16 个：中概互联网、创新药、新消费、内房、银行、博彩等）。行情全部来自腾讯 qt 批量报价后聚合：涨跌幅 = 有报价成分股的**等权平均**（保留两位）、成交额 = 求和、涨跌家数与领涨股直接统计；名单即成分股，点开即个股详情。成员跨板块重叠的报价只请求一次（单市场一个缓存条目 `curated:quotes:{market}`）。名单是静态数据，新热点需手工收录（改 catalog 后随部署生效）；某个成员停市/摘牌时该板块聚合自动按有报价的部分计算，成分股列表里该成员字段留空。
+**港股 / 美股概念 tab（curated，2026-10 起）**：免费源没有港美股的题材板块接口，换成 `catalog.ts` 的 `CONCEPT_SECTORS` 人工维护名单（美股 23 个：存储、光模块/CPO、AI 算力、半导体设备、机器人、创新药、中概互联网、核能/铀、加密货币概念、量子计算等；港股 16 个：中概互联网、创新药、新消费、内房、银行、博彩等）。行情按成分股批量报价后聚合（港股优先新浪 rt_hk，美股腾讯 qt）：涨跌幅 = 有报价成分股的**等权平均**（保留两位）、成交额 = 求和、涨跌家数与领涨股直接统计；名单即成分股，点开即个股详情。成员跨板块重叠的报价只请求一次（单市场一个缓存条目 `curated:quotes:{market}`）。名单是静态数据，新热点需手工收录（改 catalog 后随部署生效）；某个成员停市/摘牌时该板块聚合自动按有报价的部分计算，成分股列表里该成员字段留空。
 
 请求细节：
 
@@ -31,6 +31,7 @@
 - 腾讯 getRank：UTF-8 JSON，无需 Referer，`count` ≤ 200，成交额/主力净流入单位万元
 - 腾讯 qt.gtimg.cn：**GBK**，`~` 分隔（[3] 现价 [30] 时间 [32] 涨跌幅 [37] 成交额）；港股指数在官网、东财都失败后才用腾讯兜底，届时标 15 分钟延迟
 - 恒生指数公司官网：UTF-8 JSON，三个大盘指数分别按 `seriesCode=hsi/hstech/hscei` 请求；官网失败才回退东财
+- 新浪港股：`hq.sinajs.cn/list=rt_hk00700,rt_hk01810` 为 **GBK**，必须带 `Referer: https://finance.sina.com.cn/`；[6] 现价、[11] 成交额（港元）、[12] 成交量（股）、[17]/[18] 行情时间。腾讯 qt 并行补充名称、换手率、总市值等参考字段，不覆盖新浪的价格和行情时间；新浪失败或缺少某代码时，该股票才回退腾讯并保留 15 分钟延迟标识
 - 新浪日经：`hq.sinajs.cn/list=znb_NKY` 为 **GBK**，带 `Referer: https://finance.sina.com.cn/`；不是已停更的 `int_nikkei`
 - JPX 报价：`www.jpx.co.jp/market/indices/e_indices_stock_price3.txt` + `.time.txt`，带指数页 Referer，官网标注每分钟更新；TOPIX 和行业共用一份快照
 - Naver：UTF-8 JSON，带 `Referer: https://m.stock.naver.com/`；`pageSize` 上限 100，越界页返回 404（已按「本页不满 / 凑够 totalCount」停止翻页）
@@ -90,7 +91,7 @@
 | A股（东财兜底时的 `BK*` 板块） | 东财 clist `fs=b:BKxxxx`，每页 100 | 涨幅前 400 | 另有主力净流入（`f62`）、市盈率（动态） | 实时；**每页占一次东财全局限流（6 次/分钟）**，缓存 ≥ 30s |
 | 韩国业种 / 主题 | Naver `m.stock.naver.com/api/stocks/{industry\|theme}/{no}?pageSize=100` | 前 400 | 现价 / 涨跌幅 / 成交额（KRW）/ 总市值 | 实时 |
 | 美股行业（SPDR ETF 板块） | 纳斯达克筛选器 `api.nasdaq.com/api/screener/stocks?sector=GICS行业名`（`limit=100` 翻页，剔除权证/优先股等杂项）+ 腾讯 qt 批量补报价 | 前 400（如金融 1648 只，注明截断） | 现价 / 涨跌幅 / 成交额 / 换手率 / 总市值 / 市盈率；中文名取腾讯 | 15 分钟 |
-| 港股 / 美股概念（curated） | 板块名单即成分股（`CONCEPT_SECTORS`），腾讯 qt 报价 | 全名单（每板块 3–10 只） | 同上 | 15 分钟 |
+| 港股 / 美股概念（curated） | 板块名单即成分股（`CONCEPT_SECTORS`）；港股新浪 rt_hk、美股腾讯 qt 报价 | 全名单（每板块 3–10 只） | 同上 | 港股不固定延迟，降级腾讯标 15 分钟；美股 15 分钟 |
 | 港股恒生综合行业 | — 不支持：恒指公司成分股只向授权机构提供，无免费公开源 | | | |
 | 美股 ETF（无行业成分映射时） | — 不支持：ETF 持仓没有免费实时源 | | | |
 | 日本 TOPIX-17 行业指数 | — 不支持：TOPIX-17 指数成分暂无公开源 | | | |
@@ -104,7 +105,7 @@
 | 市场 | 代码格式 | 报价 | 分时 | 五日 | 日/周/月K | 延迟 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | A股 | `sh600519` / `sz000001` / `bj8xxxxx` | 腾讯 qt（PE 动态、PB、市值） | 腾讯 `minute/query` | 腾讯 `day/query` | 腾讯 `newfqkline`（前复权） | 实时 |
-| 港股 | `00700` | 腾讯 qt `hk00700` | 腾讯 `minute/query` | 腾讯 `day/query` | 腾讯 `newfqkline` | 15 分钟 |
+| 港股 | `00700` | 新浪 rt_hk `rt_hk00700`，腾讯 qt 只补估值和降级 | 腾讯 `minute/query` | 腾讯 `day/query` | 腾讯 `newfqkline` | 报价不固定延迟，降级腾讯标 15 分钟；分时 / 五日仍延迟 15 分钟 |
 | 美股 | `AAPL`（大写） | 腾讯 qt `usAAPL` | 腾讯 `UsMinute/query` | 腾讯 `dayus/query` | 腾讯 `newfqkline`（代码带交易所后缀，取自 qt） | 15 分钟 |
 | 日本 | `7203` | Naver `api.stock.naver.com/stock/{code}.T/basic`（英文名、PER/PBR/市值） | Naver `pricesByPeriod` | — 无 | Naver `chart/foreign/item/{code}.T/…` | 15 分钟 |
 | 韩国 | `005930` | Naver polling `domestic/stock` + integration（PER/PBR，缓存 10 分钟） | Naver `chart/domestic/item/{code}/minute`（裁掉 NXT 08:00–20:00 盘外段，只留 KRX 正规时段） | 同接口取多日 | Naver `chart/domestic/item/{code}/{day,week,month}` | 实时 |
@@ -116,7 +117,7 @@
 - **存储**：登录用户存服务端表 `market_watchlist`（`user_id + market + code` 唯一，随用户删除级联），多设备同步；未登录存 `localStorage`（`briar_market_watchlist`），登录后首次打开把本机自选合并进账号再清掉本地。与「媒体历史」同一模式。`/briar/markets` 本身免登录，所以不能强制登录。
 - `GET /watchlist` 在公开前缀下（GET 不过 authMiddleware），路由里自行用 Bearer / `briar_token` cookie 校验，未登录 401；`POST` / `DELETE` 走 authMiddleware，已在 `apiPermissions.ts` 声明（登录即可）
 - **搜索**：搜全部个股（不限自选），代码 / 名称 / 拼音首字母。前端输入防抖 300ms，新输入会 abort 旧请求；后端按规范化后的查询词缓存 10 分钟（`search:{q}`，单飞）。来源：腾讯 smartbox `smartbox.gtimg.cn/s3/?t=all&q=`（A股个股+ETF、港股、美股，支持 `gzmt` 这类拼音首字母）+ Naver 自动补全 `ac.stock.naver.com/ac?target=stock`（韩国、日本；纯中文查询不打 Naver）。结果代码完全匹配的排最前，去重后最多 30 条。
-- 缓存 key：`constituents:{market}:{kind}:{code}`、`stock:quote:{market}:{code}`、`stock:quotes:{tencent|kr|jp}:{ids}`、`stock:valuation:kr:{code}`、`chart:{market}:stock:{code}:{period}`、`search:{q}`；报价 / 成分股 TTL 同板块（交易中 20s / 午休盘前 60s / 收盘 5min），东财方案 ≥ 30s
+- 缓存 key：`constituents:{market}:{kind}:{code}`、`stock:quote:{market}:{code}`、`stock:quotes:{hk|tencent|kr|jp}:{ids}`、`stock:valuation:kr:{code}`、`chart:{market}:stock:{code}:{period}`、`search:{q}`；报价 / 成分股 TTL 同板块（交易中 20s / 午休盘前 60s / 收盘 5min），东财方案 ≥ 30s
 
 ## 恐贪指数（0 恐惧 – 100 贪婪）
 
@@ -181,7 +182,7 @@
 - 东财 clist 有封 IP 风险（只做 A股兜底）
 - 节假日只靠行情日期推断；美股指数（东财）收盘后无法确认是否有延迟，按实时标注
 - 成分股：港股恒生行业、日本 TOPIX-17 行业指数仍不支持（见上）；港美股概念板块名单是人工维护的静态数据（有滞后，新热点需改 catalog）；美股行业按 GICS 行业口径，与 SPDR ETF 实际持仓略有差异；A股腾讯源没有个股净流入；大板块只展示 400 只
-- 个股：日本没有五日分时；港股 / 美股 / 日股报价延迟 15 分钟；美股只有常规时段（无盘前盘后）
+- 个股：日本没有五日分时；港股报价优先新浪 rt_hk（降级腾讯仍标 15 分钟），港股分时 / 五日仍是腾讯 15 分钟延迟源；美股 / 日股报价延迟 15 分钟；美股只有常规时段（无盘前盘后）
 - 搜索：日韩个股依赖 Naver 自动补全（中文名搜不到日韩股，需用代码 / 英文 / 韩文）；只收股票（A股另含 ETF），不含基金、债券、期权、期货
 - 恐贪指数：个股 / 指数没有资金流项；A股行业依赖腾讯板块（东财兜底时不算）；固定阈值不随标的波动率自适应；美股日 K 只有常规时段
 - 每次轮询都经过 logger 写入 `request_logs`（公开接口，访问量大时注意表增长）

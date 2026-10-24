@@ -314,7 +314,7 @@ export default function WatchlistCard({ onOpen }: { onOpen: (s: StockRef) => voi
 					<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
 						{lastTime > 0 && <span>最新行情 {formatShanghaiTime(lastTime)}</span>}
 						<span>
-							交易时段约 20 秒刷新 · 港股 / 美股 / 日股延迟 15 分钟 · 恐贪指数按日 K
+							交易时段约 20 秒刷新 · 延迟按实际行情源标注 · 恐贪指数按日 K
 							计算，悬停或点击徽章看分项
 						</span>
 						{data?.stale && <StaleBadge error={data.error} />}

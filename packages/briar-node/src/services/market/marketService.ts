@@ -498,13 +498,8 @@ function loadSectors(market: MarketId, kind: SectorKind, level: string): Promise
 	// 港股 / 美股概念 tab：人工维护题材名单，按成分股聚合
 	if ((market === 'hk' || market === 'us') && kind === 'concept') {
 		return (async () => {
-			const { items, quoteTime } = await loadCuratedSectors(market)
-			return {
-				items,
-				source: '腾讯行情 qt（题材成分股聚合）',
-				delayMinutes: 15,
-				quoteTime,
-			}
+			const { items, quoteTime, source, delayMinutes } = await loadCuratedSectors(market)
+			return { items, source, delayMinutes, quoteTime }
 		})()
 	}
 	switch (market) {
