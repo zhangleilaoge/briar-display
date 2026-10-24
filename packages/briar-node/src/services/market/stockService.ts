@@ -16,6 +16,7 @@ import {
 import { cachedLoad } from './cache'
 import { HK_INDUSTRY_INDICES, JP_TOPIX17_INDICES, US_SECTOR_ETFS, US_SECTOR_GICS } from './catalog'
 import { loadCuratedConstituents } from './curated'
+import { fetchHkStockQuotes } from './hkStockSources'
 import { MarketInputError, SECTOR_CONFIG } from './marketService'
 import { CACHE_TTL_MS, POLL_MS, getSessionInfo, getSessionStatus } from './session'
 import {
@@ -117,8 +118,8 @@ function planConstituents(market: MarketId, code: string, kind: SectorKind): Con
 			if (kind === 'concept') {
 				return {
 					load: () => loadCuratedConstituents('hk', code),
-					source: '腾讯行情 qt（题材成分股）',
-					delayMinutes: 15,
+					source: '',
+					delayMinutes: 0,
 					netInflowBasis: null,
 					peBasis: '市盈率',
 				}
@@ -208,6 +209,8 @@ export async function getConstituents(
 	)
 	return {
 		...base,
+		source: result.value.source ?? base.source,
+		delayMinutes: result.value.delayMinutes ?? base.delayMinutes,
 		available: true,
 		items: sorted,
 		total,
@@ -248,6 +251,9 @@ async function loadStockQuote(market: MarketId, code: string): Promise<StockQuot
 		])
 		quote = rows.find((r) => r.code === code)
 		if (quote) quote = { ...quote, ...valuation }
+	} else if (market === 'hk') {
+		const rows = await fetchHkStockQuotes([code])
+		quote = rows[0]
 	} else {
 		const rows = await fetchTencentStockQuotes([{ market, code }])
 		quote = rows.find((r) => r.market === market && r.code === code)
@@ -273,7 +279,7 @@ export async function getStockQuote(market: MarketId, code: string): Promise<Sto
 	}
 }
 
-/** 自选列表批量报价：A股/港股/美股一次腾讯 qt，韩国 / 日本各一次 Naver polling */
+/** 自选列表批量报价：港股新浪 + 腾讯补充，A股/美股腾讯，韩国 / 日本各一次 Naver polling */
 export async function getStockQuotes(
 	refs: Pick<StockRef, 'market' | 'code'>[],
 ): Promise<StockQuotesResponse> {
@@ -283,11 +289,13 @@ export async function getStockQuotes(
 		).values(),
 	].slice(0, WATCHLIST_LIMIT)
 	const groups: { key: string; markets: MarketId[]; load: () => Promise<StockQuote[]> }[] = []
-	const tencent = unique.filter((r) => r.market === 'cn' || r.market === 'hk' || r.market === 'us')
+	const hk = unique.filter((r) => r.market === 'hk').map((r) => r.code)
+	if (hk.length) groups.push({ key: 'hk', markets: ['hk'], load: () => fetchHkStockQuotes(hk) })
+	const tencent = unique.filter((r) => r.market === 'cn' || r.market === 'us')
 	if (tencent.length)
 		groups.push({
 			key: 'tencent',
-			markets: ['cn', 'hk', 'us'],
+			markets: ['cn', 'us'],
 			load: () => fetchTencentStockQuotes(tencent),
 		})
 	for (const m of ['kr', 'jp'] as const) {

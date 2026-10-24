@@ -41,7 +41,7 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
    bun run preview --host 127.0.0.1 --port 43988
    ```
 
-   端口被占用就换高端口，不杀不明确的进程；不要仅为静态预览运行根目录 `dev`，以免操作 3888 上的现有进程并启动不必要的服务。
+   配置了 CDN 时，本地验收构建必须加 `BUILD_DEV=true`（如 `BUILD_DEV=true bun run --filter @briar/display build`），否则 HTML 指向未上传的 CDN JS，会出现输入框可改但页面未水合的假象；验收后恢复标准生产构建。需要真实 API 时，可在 3888 空闲时用 `PORT=3888 NODE_ENV=development BRIAR_ENABLE_SCHEDULER=0 bun run --filter @briar/node start`；端口被占用就换高端口，并按 `src/api/request.ts` 用 `PUBLIC_API_BASE_URL` 指向独立 API，不杀不明确的进程。不要仅为静态预览运行根目录 `dev`，以免启动不必要的服务。
 3. **浏览器只开一个后台标签页**：优先使用内置 `mcp__desktop_browser__run`，依次 `navigate` → `text.snapshot` 验证上述断言，不显示面板，不默认逐页截图或点击。只有视觉改动才需要 `visual.snapshot`，只有交互改动才操作控件。
 4. **区分外壳与数据验收**：路由改动检查目标页面存在或旧路由已失效；页面改动至少断言核心标题、表单或表格，不能只看浏览器标题。数据改动必须连接可用 API 并检查关键值，停留在「加载中」不算通过；纯静态预览没有 API 时只能声称外壳已验证。不需要 API 时不要启动后端、数据库或调度器。
 5. **失败不盲目重复**：先看实际错误，修复后重跑失败项和最终必要检查，不反复刷新、点击或全量构建。遇到 `BROWSER_USER_TAKEOVER`，本轮停止浏览器操作并说明未完成的视觉验收。结束后关闭自建标签页、停止预览进程；交付说明列出实际执行的检查、页面断言及未验证项，不用「一切正常」代替证据。

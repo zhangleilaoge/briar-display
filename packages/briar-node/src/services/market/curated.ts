@@ -1,12 +1,13 @@
 import type { ConstituentItem, SectorItem, StockQuote } from '@briar/shared'
 import { cachedLoad } from './cache'
 import { CONCEPT_SECTORS, type CuratedMember, type CuratedSectorDef } from './catalog'
+import { fetchHkStockQuotes } from './hkStockSources'
 import { CACHE_TTL_MS, getSessionStatus } from './session'
 import { type RawConstituents, fetchTencentStockQuotes } from './stockSources'
 
 /**
  * 人工维护题材板块（港股 / 美股概念 tab）的行情聚合：
- * 名单在 catalog.ts，行情全部来自腾讯 qt 批量报价（港股 / 美股均延迟 15 分钟）。
+ * 名单在 catalog.ts，港股优先新浪 rt_hk，美股使用腾讯 qt（延迟 15 分钟）。
  * 板块涨跌幅 = 有报价成分股的等权平均；成交额 = 求和；涨跌家数 / 领涨股直接统计。
  * 全部成员一次请求拿全（单市场一个缓存条目，各板块共享，避免重叠成员重复请求）。
  */
@@ -98,10 +99,13 @@ async function loadCuratedQuotes(market: CuratedMarket): Promise<Map<string, Sto
 	const result = await cachedLoad(`curated:quotes:${market}`, ttl, async () => {
 		const quotes = new Map<string, StockQuote>()
 		for (let i = 0; i < members.length; i += 100) {
+			const batch = members.slice(i, i + 100)
 			try {
-				for (const q of await fetchTencentStockQuotes(members.slice(i, i + 100))) {
-					quotes.set(`${q.market}:${q.code}`, q)
-				}
+				const rows =
+					market === 'hk'
+						? await fetchHkStockQuotes(batch.map((m) => m.code))
+						: await fetchTencentStockQuotes(batch)
+				for (const q of rows) quotes.set(`${q.market}:${q.code}`, q)
 			} catch (err) {
 				console.warn(`[markets] 题材成分股报价（${market}）批次失败:`, err)
 			}
@@ -112,10 +116,19 @@ async function loadCuratedQuotes(market: CuratedMarket): Promise<Map<string, Sto
 	return result.value
 }
 
-/** 概念 tab 板块列表 payload（marketService 包装 source / 延迟） */
+function curatedQuoteMetadata(quotes: Map<string, StockQuote>, suffix: string) {
+	const rows = [...quotes.values()]
+	return {
+		source: `${[...new Set(rows.map((q) => q.source))].join(' / ')}（${suffix}）`,
+		delayMinutes: Math.max(0, ...rows.map((q) => q.delayMinutes)),
+	}
+}
+
 export async function loadCuratedSectors(market: CuratedMarket): Promise<{
 	items: SectorItem[]
 	quoteTime: number | null
+	source: string
+	delayMinutes: number
 }> {
 	const quotes = await loadCuratedQuotes(market)
 	const quoteTime = Math.max(
@@ -125,6 +138,7 @@ export async function loadCuratedSectors(market: CuratedMarket): Promise<{
 	return {
 		items: buildCuratedSectorItems(CONCEPT_SECTORS[market], quotes),
 		quoteTime: quoteTime || null,
+		...curatedQuoteMetadata(quotes, '题材成分股聚合'),
 	}
 }
 
@@ -136,5 +150,9 @@ export async function loadCuratedConstituents(
 	const def = CONCEPT_SECTORS[market].find((d) => d.code === code)
 	if (!def) throw new Error(`未知概念板块 ${code}`)
 	const quotes = await loadCuratedQuotes(market)
-	return { items: buildCuratedConstituents(def, quotes), total: def.members.length }
+	return {
+		items: buildCuratedConstituents(def, quotes),
+		total: def.members.length,
+		...curatedQuoteMetadata(quotes, '题材成分股'),
+	}
 }

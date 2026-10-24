@@ -14,10 +14,11 @@ import { takeEastmoneyTrendSlot } from './trendSources'
  * - Naver m.stock.naver.com/api/stocks/{industry|theme}/{no}：韩国业种 / 主题成分股（实时，pageSize ≤ 100）
  * - 纳斯达克 api.nasdaq.com/api/screener/stocks?sector=GICS行业：美股行业成分股名单（limit=100 翻页），
  *   剔除权证/优先股等杂项后用腾讯 qt 批量补报价（中文名 / 成交额 / 换手率 / PE / 市值）
- * - 港股/美股概念板块：人工维护题材名单（catalog.ts CONCEPT_SECTORS），腾讯 qt 批量报价后聚合
+ * - 港股/美股概念板块：人工维护题材名单（catalog.ts CONCEPT_SECTORS），港股新浪 rt_hk / 美股腾讯 qt 批量报价后聚合
  *   （涨跌幅等权平均、成交额求和、涨跌家数、领涨股）；恒生综合行业指数、日本 TOPIX-17 行业指数仍无免费成分股接口
  * 个股报价
- * - 腾讯 qt.gtimg.cn：A股（实时）、港股（延迟 15 分钟）、美股（延迟报价，按 15 分钟计）
+ * - 港股优先新浪 hq.sinajs.cn/list=rt_hk*，腾讯 qt 只补估值和降级（hkStockSources.ts）
+ * - 腾讯 qt.gtimg.cn：A股（实时）、港股（降级，延迟 15 分钟）、美股（延迟报价，按 15 分钟计）
  * - Naver polling domestic/stock（韩国实时）+ m.stock.naver.com/api/stock/{code}/integration（PER/PBR）
  * - Naver api.stock.naver.com/stock/{code}.T/basic（日本，延迟 15 分钟，含英文名 / PER / PBR）
  * 搜索
@@ -83,6 +84,8 @@ export interface RawConstituents {
 	items: ConstituentItem[]
 	total: number
 	truncatedNote?: string
+	source?: string
+	delayMinutes?: number
 }
 
 /**
