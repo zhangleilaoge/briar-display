@@ -1,7 +1,7 @@
 import type { MarketId } from '@briar/shared'
 
 /**
- * 全球板块的静态配置：大盘指数代码、固定代理列表（无动态板块源的市场才用）、韩国行业名翻译。
+ * 全球板块的静态配置：大盘指数代码、固定代理 / 指数列表（无动态板块源的市场才用）、韩国行业名翻译。
  * 能动态拉取板块清单的市场（A股/韩国）不在这里列板块。
  */
 
@@ -10,8 +10,14 @@ export interface IndexDef {
 	em?: string
 	/** 腾讯 qt 代码（东财失败时兜底），如 sh000001 */
 	tencent?: string
-	/** Naver 实时轮询代码 */
+	/** Naver 轮询代码（韩国实时，日本兜底延迟） */
 	naver?: { kind: 'domestic' | 'world'; code: string }
+	/** 恒生指数公司官网系列及指数代码 */
+	hsi?: { series: string; code: string }
+	/** 新浪行情代码 */
+	sina?: string
+	/** JPX 主要指数键名及 qcode */
+	jpx?: { key: string; code: string }
 	name: string
 }
 
@@ -24,9 +30,24 @@ export const MARKET_INDICES: Record<MarketId, IndexDef[]> = {
 		{ em: '1.000688', tencent: 'sh000688', name: '科创50' },
 	],
 	hk: [
-		{ em: '100.HSI', tencent: 'hkHSI', name: '恒生指数' },
-		{ em: '124.HSTECH', tencent: 'hkHSTECH', name: '恒生科技' },
-		{ em: '100.HSCEI', tencent: 'hkHSCEI', name: '国企指数' },
+		{
+			em: '100.HSI',
+			tencent: 'hkHSI',
+			hsi: { series: 'hsi', code: '00001.00' },
+			name: '恒生指数',
+		},
+		{
+			em: '124.HSTECH',
+			tencent: 'hkHSTECH',
+			hsi: { series: 'hstech', code: '02083.00' },
+			name: '恒生科技',
+		},
+		{
+			em: '100.HSCEI',
+			tencent: 'hkHSCEI',
+			hsi: { series: 'hscei', code: '00014.00' },
+			name: '国企指数',
+		},
 	],
 	us: [
 		{ em: '100.SPX', tencent: 'usINX', name: '标普500' },
@@ -34,8 +55,17 @@ export const MARKET_INDICES: Record<MarketId, IndexDef[]> = {
 		{ em: '100.DJIA', tencent: 'usDJI', name: '道琼斯' },
 	],
 	jp: [
-		{ em: '100.N225', naver: { kind: 'world', code: '.N225' }, name: '日经225' },
-		{ naver: { kind: 'world', code: '.TOPX' }, name: 'TOPIX' },
+		{
+			em: '100.N225',
+			sina: 'znb_NKY',
+			naver: { kind: 'world', code: '.N225' },
+			name: '日经225',
+		},
+		{
+			jpx: { key: 'Topix', code: '151' },
+			naver: { kind: 'world', code: '.TOPX' },
+			name: 'TOPIX',
+		},
 	],
 	kr: [
 		{ naver: { kind: 'domestic', code: 'KOSPI' }, em: '100.KS11', name: 'KOSPI' },
@@ -551,25 +581,30 @@ export const CONCEPT_SECTORS: Record<'hk' | 'us', CuratedSectorDef[]> = {
 	us: US_CONCEPT_SECTORS,
 }
 
-/** 日本：野村 NEXT FUNDS TOPIX-17 行业 ETF（1617–1633.T，东证 17 行业代理） */
-export const JP_TOPIX17_ETFS: ProxyDef[] = [
-	{ code: '1617', name: '食品' },
-	{ code: '1618', name: '能源资源' },
-	{ code: '1619', name: '建筑・材料' },
-	{ code: '1620', name: '原材料・化学' },
-	{ code: '1621', name: '医药品' },
-	{ code: '1622', name: '汽车・运输机械' },
-	{ code: '1623', name: '钢铁・有色' },
-	{ code: '1624', name: '机械' },
-	{ code: '1625', name: '电机・精密' },
-	{ code: '1626', name: '信息通信・服务' },
-	{ code: '1627', name: '电力・燃气' },
-	{ code: '1628', name: '运输・物流' },
-	{ code: '1629', name: '商社・批发' },
-	{ code: '1630', name: '零售' },
-	{ code: '1631', name: '银行' },
-	{ code: '1632', name: '金融（除银行）' },
-	{ code: '1633', name: '房地产' },
+export interface JpxIndexDef extends ProxyDef {
+	jpxKey: string
+	jpxCode: string
+}
+
+/** 日本：TOPIX-17 行业指数；保留原外部代码，JPX qcode 为 271–287 */
+export const JP_TOPIX17_INDICES: JpxIndexDef[] = [
+	{ code: '1617', name: '食品', jpxKey: 'Topix17Food', jpxCode: '271' },
+	{ code: '1618', name: '能源资源', jpxKey: 'Topix17Energy', jpxCode: '272' },
+	{ code: '1619', name: '建筑・材料', jpxKey: 'Topix17BuildingMaterial', jpxCode: '273' },
+	{ code: '1620', name: '原材料・化学', jpxKey: 'Topix17MaterialChemistry', jpxCode: '274' },
+	{ code: '1621', name: '医药品', jpxKey: 'Topix17nostrum', jpxCode: '275' },
+	{ code: '1622', name: '汽车・运输机械', jpxKey: 'Topix17CarTransport', jpxCode: '276' },
+	{ code: '1623', name: '钢铁・有色', jpxKey: 'Topix17SteelNonferrous', jpxCode: '277' },
+	{ code: '1624', name: '机械', jpxKey: 'Topix17Machine', jpxCode: '278' },
+	{ code: '1625', name: '电机・精密', jpxKey: 'Topix17ElectricalPrecision', jpxCode: '279' },
+	{ code: '1626', name: '信息通信・服务', jpxKey: 'Topix17InformationService', jpxCode: '280' },
+	{ code: '1627', name: '电力・燃气', jpxKey: 'Topix17ElectricPowerGas', jpxCode: '281' },
+	{ code: '1628', name: '运输・物流', jpxKey: 'Topix17TransportationLogistics', jpxCode: '282' },
+	{ code: '1629', name: '商社・批发', jpxKey: 'Topix17TradingWholesale', jpxCode: '283' },
+	{ code: '1630', name: '零售', jpxKey: 'Topix17Retail', jpxCode: '284' },
+	{ code: '1631', name: '银行', jpxKey: 'Topix17Bank', jpxCode: '285' },
+	{ code: '1632', name: '金融（除银行）', jpxKey: 'Topix17Finance', jpxCode: '286' },
+	{ code: '1633', name: '房地产', jpxKey: 'Topix17RealEstate', jpxCode: '287' },
 ]
 
 /** 韩国 Naver 业种（WICS 分类）中文名；清单是动态拉的，没收录的新业种原样显示韩文 */

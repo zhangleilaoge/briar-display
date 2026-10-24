@@ -8,7 +8,6 @@ import type {
 	MarketSessionStatus,
 	MinuteDay,
 	MinutePoint,
-	TrendSeries,
 } from '@briar/shared'
 import { CHART_PERIODS, isStockCode } from '@briar/shared'
 import { cachedLoad } from './cache'
@@ -16,11 +15,12 @@ import {
 	CONCEPT_SECTORS,
 	HK_INDUSTRY_INDICES,
 	type IndexDef,
-	JP_TOPIX17_ETFS,
+	JP_TOPIX17_INDICES,
 	MARKET_INDICES,
 	US_SECTOR_ETFS,
 } from './catalog'
 import { CURATED_NO_TREND } from './curated'
+import { fetchJpxCandles, fetchJpxIntraday } from './jpxTrendSources'
 import { MarketInputError, getMarketOverview } from './marketService'
 import {
 	CACHE_TTL_MS,
@@ -28,10 +28,10 @@ import {
 	getSessionInfo,
 	getSessionStatus,
 	localParts,
-	zonedTimeToTs,
 } from './session'
 import { fetchEastmoneyUlist } from './sources'
 import { getStockQuote } from './stockService'
+import { sessionRanges, toMinuteDay, toSeries } from './trendFormat'
 import {
 	type KlinePeriod,
 	type RawCandles,
@@ -51,7 +51,9 @@ import {
 	resolveTencentUsKlineCode,
 } from './trendSources'
 
-/** 东证行情在 Naver 上延迟 15 分钟；腾讯美股 ETF / 个股报价也是延迟行情；腾讯港股个股按 15 分钟延迟计 */
+export { sessionRanges, toMinuteDay, toSeries } from './trendFormat'
+
+/** Naver 的东证行情延迟 15 分钟；腾讯美股 ETF / 个股及港股个股也按延迟行情处理 */
 const JP_DELAY_MINUTES = 15
 const US_ETF_DELAY_MINUTES = 15
 const HK_STOCK_DELAY_MINUTES = 15
@@ -67,51 +69,12 @@ export const KLINE_TTL_MS: Record<MarketSessionStatus, number> = {
 	closed: 1_800_000,
 }
 
-/** 东财兜底源缓存至少 30s */
+/** 东财源缓存至少 30s */
 const EASTMONEY_MIN_TTL_MS = 30_000
 
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err))
 
-/** 某交易日（当地日期）的连续竞价时段 → 时间戳区间，前端据此画横轴（午休断开压缩） */
-export function sessionRanges(market: MarketId, dateKey: string): [number, number][] {
-	const { timeZone, sessions } = MARKET_SESSIONS[market]
-	const [y, mo, d] = dateKey.split('-').map(Number)
-	const at = (minutes: number) =>
-		zonedTimeToTs(timeZone, y, mo, d, Math.floor(minutes / 60), minutes % 60)
-	return sessions.map(([start, end]) => [at(start), at(end)])
-}
-
-/** 卡片小图用的精简序列（只要价格） */
-export function toSeries(market: MarketId, code: string, name: string, raw: RawTrend): TrendSeries {
-	const { timeZone } = MARKET_SESSIONS[market]
-	const last = raw.points[raw.points.length - 1]
-	const tradeDate = last ? localParts(last[0], timeZone).dateKey : null
-	return {
-		code,
-		name,
-		prevClose: raw.prevClose,
-		points: raw.points.map(([ts, price]) => [ts, price]),
-		sessions: sessionRanges(market, tradeDate ?? localParts(Date.now(), timeZone).dateKey),
-		tradeDate,
-		delayMinutes: raw.delayMinutes,
-		source: raw.source,
-	}
-}
-
-/** 单日分时 → MinuteDay（无数据时按当地今天给时段，前端画空图） */
-export function toMinuteDay(market: MarketId, raw: RawTrend): MinuteDay {
-	const { timeZone } = MARKET_SESSIONS[market]
-	const last = raw.points[raw.points.length - 1]
-	const date = localParts(last ? last[0] : Date.now(), timeZone).dateKey
-	return {
-		date,
-		prevClose: raw.prevClose,
-		sessions: sessionRanges(market, date),
-		points: raw.points,
-	}
-}
-
-/** 主源失败才用兜底源（东财易封 IP，只做兜底） */
+/** 主源失败才用兜底源 */
 async function withFallback<T>(primary: () => Promise<T>, fallback?: () => Promise<T>): Promise<T> {
 	try {
 		return await primary()
@@ -147,15 +110,17 @@ async function loadIndexTrend(
 		case 'us':
 			if (!def.tencent) throw new Error(`${def.name}: 无分时代码`)
 			return withFallback(() => fetchTencentUsMinute(def.tencent as string), em)
-		case 'jp':
-			if (!def.naver) {
-				if (!em) throw new Error(`${def.name}: 无分时代码`)
-				return em()
-			}
-			return withFallback(
-				() => fetchNaverWorldTrend(def.naver?.code as string, 'index', timeZone, JP_DELAY_MINUTES),
-				em,
-			)
+		case 'jp': {
+			const jpx = def.jpx?.code
+			const naver = def.naver
+				? () => fetchNaverWorldTrend(def.naver?.code as string, 'index', timeZone, JP_DELAY_MINUTES)
+				: undefined
+			if (jpx) return withFallback(() => fetchJpxIntraday(jpx, timeZone), naver)
+			if (def.sina && em) return withFallback(em, naver)
+			if (naver) return withFallback(naver, em)
+			if (!em) throw new Error(`${def.name}: 无分时代码`)
+			return em()
+		}
 		case 'kr': {
 			if (!def.naver) throw new Error(`${def.name}: 无分时代码`)
 			const raw = await fetchNaverDomesticIndexMinute(def.naver.code)
@@ -224,13 +189,13 @@ interface ChartPlan {
 	candles?: (period: KlinePeriod) => Promise<RawCandles>
 	/** 主源是东财（易封 IP）：缓存至少 30s */
 	eastmoney?: boolean
-	/** K 线延迟（与当日行情一致） */
+	/** K 线默认延迟；兜底源可通过 RawCandles.delayMinutes 覆盖 */
 	delayMinutes: number
 	/** 各周期不可用原因 */
 	reasons: Partial<Record<ChartPeriod, string>>
 }
 
-const NO_JP_5DAY = '日本市场暂无多日分时数据源（Naver 只提供当日分时）'
+const NO_JP_5DAY = '日本市场暂未提供多日分时'
 const NO_KR_SECTOR = '该板块暂无走势数据（Naver 不提供韩国业种/主题的分时和K线）'
 
 /** 腾讯美股：卡片代码 usINX / ETF usXLK → K 线要用 us.INX / usXLK.AM */
@@ -270,16 +235,37 @@ function planIndexChart(market: MarketId, code: string): ChartPlan {
 				delayMinutes: 0,
 				reasons: {},
 			}
-		case 'jp':
+		case 'jp': {
+			const jpx = def.jpx?.code
+			const em = def.em
+			const naverCandles = naver
+				? async (period: KlinePeriod): Promise<RawCandles> => ({
+						...(await fetchNaverCandles(`foreign/index/${naver}`, period, timeZone)),
+						delayMinutes: JP_DELAY_MINUTES,
+					})
+				: undefined
+			const candles = jpx
+				? (period: KlinePeriod) =>
+						withFallback(
+							() => fetchJpxCandles(jpx, period),
+							naverCandles ? () => naverCandles(period) : undefined,
+						)
+				: em
+					? (period: KlinePeriod) =>
+							withFallback(
+								() => fetchEastmoneyKline(em, period, KLINE_COUNT[period]),
+								naverCandles ? () => naverCandles(period) : undefined,
+							)
+					: naverCandles
 			return {
 				name: def.name,
 				intraday,
-				candles: naver
-					? (period) => fetchNaverCandles(`foreign/index/${naver}`, period, timeZone)
-					: undefined,
-				delayMinutes: JP_DELAY_MINUTES,
+				candles,
+				eastmoney: !jpx && !!em,
+				delayMinutes: jpx || em ? 0 : JP_DELAY_MINUTES,
 				reasons: { '5day': NO_JP_5DAY },
 			}
+		}
 		case 'kr':
 			return {
 				name: def.name,
@@ -382,13 +368,13 @@ function planSectorChart(market: MarketId, code: string): ChartPlan {
 			break
 		}
 		case 'jp': {
-			const def = JP_TOPIX17_ETFS.find((d) => d.code === code)
+			const def = JP_TOPIX17_INDICES.find((d) => d.code === code)
 			if (def) {
 				return {
 					name: def.name,
-					intraday: () => fetchNaverWorldTrend(`${code}.T`, 'item', timeZone, JP_DELAY_MINUTES),
-					candles: (period) => fetchNaverCandles(`foreign/item/${code}.T`, period, timeZone),
-					delayMinutes: JP_DELAY_MINUTES,
+					intraday: () => fetchJpxIntraday(def.jpxCode, timeZone),
+					candles: (period) => fetchJpxCandles(def.jpxCode, period),
+					delayMinutes: 0,
 					reasons: { '5day': NO_JP_5DAY },
 				}
 			}
@@ -536,7 +522,7 @@ async function loadPeriod(market: MarketId, plan: ChartPlan, period: ChartPeriod
 			prevClose: null,
 			days: [],
 			candles: raw.candles,
-			delayMinutes: plan.delayMinutes,
+			delayMinutes: raw.delayMinutes ?? plan.delayMinutes,
 			source: raw.source,
 		} satisfies ChartPayload
 	}

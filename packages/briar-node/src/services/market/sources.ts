@@ -9,8 +9,8 @@ import { zonedTimeToTs } from './session'
  *   count ≤ 200 分页，UTF-8 JSON，无需 Referer；含涨跌幅/成交额(万)/换手率/主力净流入(万)/领涨股
  * - 东财 push2 clist（m:90+t:2 行业 / t:3 概念）：pz ≤ 100 分页；同 IP 短时间请求多了会直接 Empty reply 封一段时间，
  *   所以只做 A股板块兜底；ulist.np（指定 secid 批量）不受影响，用于指数和恒生行业指数
- * - 腾讯 qt.gtimg.cn：GBK 文本，~ 分隔；美股 ETF 实时，港股指数约 15 分钟延迟
- * - Naver m.stock.naver.com / polling.finance.naver.com：韩国业种/主题（实时），日本 ETF / TOPIX（15 分钟延迟）
+ * - 腾讯 qt.gtimg.cn：GBK 文本，~ 分隔；美股 ETF 延迟 15 分钟，港股指数仅兜底使用并标 15 分钟延迟
+ * - Naver m.stock.naver.com / polling.finance.naver.com：韩国业种/主题（实时），日本指数 / 个股（15 分钟延迟，TOPIX 仅兜底）
  */
 
 const EM_HEADERS = { Referer: 'https://quote.eastmoney.com/' }

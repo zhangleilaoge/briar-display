@@ -141,7 +141,7 @@ marketRoutes.get('/:market/chart', async (c) => {
 
 /**
  * GET /:market/constituents?code=板块代码&kind=industry|concept — 板块成分股
- * 没有成分股数据源的板块（恒生行业指数、美日行业 ETF）返回 available=false 和原因
+ * 没有成分股数据源的板块（恒生行业指数、美国行业 ETF、日本 TOPIX-17 行业指数）返回 available=false 和原因
  */
 marketRoutes.get('/:market/constituents', async (c) => {
 	const market = c.req.param('market')

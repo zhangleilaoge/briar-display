@@ -20,7 +20,7 @@ const MARKET_HINTS: Record<string, string> = {
 	cn: '申万一/二级行业 · 概念板块',
 	hk: '恒生综合行业指数',
 	us: 'SPDR 行业 ETF · 主题 ETF',
-	jp: 'TOPIX-17 行业 ETF（延迟 15 分钟）',
+	jp: 'TOPIX-17 行业指数（JPX 每分钟更新）',
 	kr: 'WICS 业种 · 主题',
 }
 
