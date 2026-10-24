@@ -29,6 +29,23 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 
 **UI 组件**：优先使用 shadcn/ui 组件（`@/components/ui/`），不要用原生 HTML 元素（`<select>`、`<input>`、`<dialog>` 等）。下拉框、搜索框、选择器等交互组件必须使用 shadcn 组件（如 Select、Command+Popover 组合的 Combobox），确保支持键盘导航（↑↓ 切换、Enter 确认、Esc 关闭）。面包屑使用 `Breadcrumb` 组件，页面切换导航使用 `Tabs` 组件。错误提示、成功反馈等消息禁止使用 `alert()`/`confirm()`，统一使用 `sonner` 的 `toast()`（已全局挂载 Toaster）。
 
+## 前端页面自验（快速路径）
+
+验收只证明本次改动可用，不做全站巡检，也不重复实现阶段已完成的调查。先给每个受影响页面定 1–3 个可观察断言（路由、核心内容、关键数据或交互）；纯文档修改不需要浏览器验收。
+
+1. **全量检查只在最终状态跑一轮**：前端改动运行 `bun run typecheck`、`bun run lint`，在 `packages/briar-display` 运行 `bun test`，交付前在根目录 `bun run build`；涉及 shared/node 时再按上文完整构建并运行后端测试。修改过程中只跑相关检查，失败后先修复，不要每改一处就重复全套。
+2. **只启动一个最终产物预览**，用后台任务运行：
+
+   ```bash
+   cd packages/briar-display
+   bun run preview --host 127.0.0.1 --port 43988
+   ```
+
+   端口被占用就换高端口，不杀不明确的进程；不要仅为静态预览运行根目录 `dev`，以免操作 3888 上的现有进程并启动不必要的服务。
+3. **浏览器只开一个后台标签页**：优先使用内置 `mcp__desktop_browser__run`，依次 `navigate` → `text.snapshot` 验证上述断言，不显示面板，不默认逐页截图或点击。只有视觉改动才需要 `visual.snapshot`，只有交互改动才操作控件。
+4. **区分外壳与数据验收**：路由改动检查目标页面存在或旧路由已失效；页面改动至少断言核心标题、表单或表格，不能只看浏览器标题。数据改动必须连接可用 API 并检查关键值，停留在「加载中」不算通过；纯静态预览没有 API 时只能声称外壳已验证。不需要 API 时不要启动后端、数据库或调度器。
+5. **失败不盲目重复**：先看实际错误，修复后重跑失败项和最终必要检查，不反复刷新、点击或全量构建。遇到 `BROWSER_USER_TAKEOVER`，本轮停止浏览器操作并说明未完成的视觉验收。结束后关闭自建标签页、停止预览进程；交付说明列出实际执行的检查、页面断言及未验证项，不用「一切正常」代替证据。
+
 ## 重要文件路径
 
 | 文件 | 作用 |
