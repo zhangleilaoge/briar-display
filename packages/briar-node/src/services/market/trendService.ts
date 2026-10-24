@@ -20,6 +20,7 @@ import {
 	US_SECTOR_ETFS,
 } from './catalog'
 import { CURATED_NO_TREND } from './curated'
+import { fetchSinaHkStockMinute } from './hkTrendSources'
 import { fetchJpxCandles, fetchJpxIntraday } from './jpxTrendSources'
 import { MarketInputError, getMarketOverview } from './marketService'
 import {
@@ -53,10 +54,9 @@ import {
 
 export { sessionRanges, toMinuteDay, toSeries } from './trendFormat'
 
-/** Naver 的东证行情延迟 15 分钟；腾讯美股 ETF / 个股及港股个股也按延迟行情处理 */
+/** Naver 的东证行情与腾讯美股 ETF / 个股按延迟行情处理 */
 const JP_DELAY_MINUTES = 15
 const US_ETF_DELAY_MINUTES = 15
-const HK_STOCK_DELAY_MINUTES = 15
 
 /** K 线根数：日K 约一年，周K 约四年，月K 十年（MA20 需要多 19 根） */
 const KLINE_COUNT: Record<KlinePeriod, number> = { day: 320, week: 220, month: 140 }
@@ -187,7 +187,7 @@ interface ChartPlan {
 	intraday?: () => Promise<RawTrend>
 	fiveDay?: () => Promise<RawMultiDay>
 	candles?: (period: KlinePeriod) => Promise<RawCandles>
-	/** 主源是东财（易封 IP）：缓存至少 30s */
+	/** 使用东财的周期（含兜底，易封 IP）：缓存至少 30s */
 	eastmoney?: boolean
 	/** K 线默认延迟；兜底源可通过 RawCandles.delayMinutes 覆盖 */
 	delayMinutes: number
@@ -405,7 +405,7 @@ export function clipToSessions(market: MarketId, points: MinutePoint[]): MinuteP
 	})
 }
 
-/** 个股：A股 / 港股 / 美股走腾讯，日韩走 Naver（与指数同源） */
+/** 个股：A股 / 美股走腾讯，港股走新浪 / 东财，日韩走 Naver */
 function planStockChart(market: MarketId, code: string): ChartPlan {
 	if (!isStockCode(market, code)) throw new MarketInputError('股票代码格式不正确')
 	const { timeZone } = MARKET_SESSIONS[market]
@@ -420,15 +420,18 @@ function planStockChart(market: MarketId, code: string): ChartPlan {
 				reasons: {},
 			}
 		case 'hk': {
-			const t = `hk${code}`
-			const delayed = <T extends { delayMinutes: number }>(p: Promise<T>) =>
-				p.then((raw) => ({ ...raw, delayMinutes: HK_STOCK_DELAY_MINUTES }))
+			const secid = `116.${code}`
 			return {
 				name: code,
-				intraday: () => delayed(fetchTencentMinute(t, timeZone)),
-				fiveDay: () => delayed(fetchTencentFiveDay(t, timeZone)),
-				candles: (period) => fetchTencentKline(t, period, KLINE_COUNT[period]),
-				delayMinutes: HK_STOCK_DELAY_MINUTES,
+				intraday: () =>
+					withFallback(
+						() => fetchSinaHkStockMinute(code),
+						() => fetchEastmoneyTrends(secid),
+					),
+				fiveDay: () => fetchEastmoneyFiveDay(secid, timeZone),
+				candles: (period) => fetchEastmoneyKline(secid, period, KLINE_COUNT[period]),
+				eastmoney: true,
+				delayMinutes: 0,
 				reasons: {},
 			}
 		}
