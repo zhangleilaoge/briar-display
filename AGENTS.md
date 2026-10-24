@@ -31,20 +31,18 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 
 ## 前端页面自验（快速路径）
 
-验收只证明本次改动可用，不做全站巡检，也不重复实现阶段已完成的调查。先给每个受影响页面定 1–3 个可观察断言（路由、核心内容、关键数据或交互）；纯文档修改不需要浏览器验收。
+目标是用最少步骤取得本次改动的可信证据，不做全站巡检，不重复实现阶段已完成的调查。纯文档修改只需要检查 diff，不需要浏览器或全量构建。
 
-1. **全量检查只在最终状态跑一轮**：前端改动运行 `bun run typecheck`、`bun run lint`，在 `packages/briar-display` 运行 `bun test`，交付前在根目录 `bun run build`；涉及 shared/node 时再按上文完整构建并运行后端测试。修改过程中只跑相关检查，失败后先修复，不要每改一处就重复全套。
-2. **只启动一个最终产物预览**，用后台任务运行：
-
-   ```bash
-   cd packages/briar-display
-   bun run preview --host 127.0.0.1 --port 43988
-   ```
-
-   配置了 CDN 时，本地验收构建必须加 `BUILD_DEV=true`（如 `BUILD_DEV=true bun run --filter @briar/display build`），否则 HTML 指向未上传的 CDN JS，会出现输入框可改但页面未水合的假象；验收后恢复标准生产构建。需要真实 API 时，可在 3888 空闲时用 `PORT=3888 NODE_ENV=development BRIAR_ENABLE_SCHEDULER=0 bun run --filter @briar/node start`；端口被占用就换高端口，并按 `src/api/request.ts` 用 `PUBLIC_API_BASE_URL` 指向独立 API，不杀不明确的进程。不要仅为静态预览运行根目录 `dev`，以免启动不必要的服务。
-3. **浏览器只开一个后台标签页**：优先使用内置 `mcp__desktop_browser__run`，依次 `navigate` → `text.snapshot` 验证上述断言，不显示面板，不默认逐页截图或点击。只有视觉改动才需要 `visual.snapshot`，只有交互改动才操作控件。
-4. **区分外壳与数据验收**：路由改动检查目标页面存在或旧路由已失效；页面改动至少断言核心标题、表单或表格，不能只看浏览器标题。数据改动必须连接可用 API 并检查关键值，停留在「加载中」不算通过；纯静态预览没有 API 时只能声称外壳已验证。不需要 API 时不要启动后端、数据库或调度器。
-5. **失败不盲目重复**：先看实际错误，修复后重跑失败项和最终必要检查，不反复刷新、点击或全量构建。遇到 `BROWSER_USER_TAKEOVER`，本轮停止浏览器操作并说明未完成的视觉验收。结束后关闭自建标签页、停止预览进程；交付说明列出实际执行的检查、页面断言及未验证项，不用「一切正常」代替证据。
+1. **动手前先列验收矩阵**：把用户说的「全部 / 所有」展开成用户可见的功能项，写清每项的入口、预期结果和 1–3 个可观察断言（路由、核心内容、关键数据或交互）。例如「港股全部去掉固定 15 分钟延迟」至少要核对报价、自选、分时、五日、日 / 周 / 月 K，以及失败降级是否重新引入延迟源；不能打开一次页面就宣称全部完成。实现和交付都按矩阵核销，只覆盖本次需求，不顺手扩大范围。
+2. **全量检查只在最终状态跑一轮**：修改过程中只跑相关测试或检查。代码定稿后，前端改动运行 `bun run typecheck`、`bun run lint`，在 `packages/briar-display` 运行 `bun test`，交付前在根目录 `bun run build`；涉及 shared/node 时按上文完整构建并运行后端测试。失败后先定位和修复，只重跑失败项及受影响的最终检查，不为同一状态重复全套。
+3. **浏览器之前先配对构建和 API，只启动一套最终产物环境**：
+   - 先构建 shared，再用 `BUILD_DEV=true bun run --filter @briar/display build` 构建本地验收产物。它会关闭 CDN `assetsPrefix`，避免页面加载尚未上传的 JS；**不会改变 API 地址**。
+   - 只验外壳：在 `packages/briar-display` 后台运行 `bun run preview --host 127.0.0.1 --port 43988`，不启动后端、数据库或调度器；没有可用 API 时只能声称外壳已验证。
+   - 需要真实 API：3888 空闲时启动 `PORT=3888 NODE_ENV=development BRIAR_ENABLE_SCHEDULER=0 bun run --filter @briar/node start`，访问同源的 `http://127.0.0.1:3888/briar/...`。只在确认已有服务属于当前仓库且使用当前构建时才复用。
+   - 端口被占用：不杀不明确的进程，改用高端口；跨端口预览必须在构建时设置 `PUBLIC_API_BASE_URL=http://127.0.0.1:<API端口>/api`。本地页面默认请求 3888（见 `src/api/request.ts`），`PUBLIC_API_BASE_URL` 在构建时内嵌，改地址后必须重新构建，不能只重启 preview。验收后恢复标准生产构建。
+4. **浏览器只验矩阵中的目标**：优先使用内置 `mcp__desktop_browser__run`，只开一个自建后台标签页，依次 `navigate` → `text.snapshot` 核对断言，不显示面板，不默认逐页截图或点击。只有视觉改动才需要 `visual.snapshot`，只有交互改动才操作控件。路由存在、标题正确或不再「加载中」都不等于数据正确；数据改动必须核对关键值及来源，休市时明确写「只验证最新收盘数据，未做盘中实测」。
+5. **失败先分类，不盲目重复**：不水合或点击无效时，先看浏览器 console、脚本请求的 URL / 状态和 API 请求。脚本指向旧 CDN、API 指向未启动端口是环境配置问题，修正后重建，不改产品代码；接口错误看状态码和 trace；页面断言不符才继续查产品实现。相同失败重试仍没有新证据时，停止刷新和点击，改查日志或明确报告阻塞。遇到 `BROWSER_USER_TAKEOVER`，本轮停止浏览器操作并说明未完成的视觉验收。
+6. **交付证据和边界一起写**：列出实际执行的检查、页面断言和未验证项，不用「一切正常」代替证据。本地通过不等于线上生效；push 后区分 commit、CI 和部署状态。结束后只关闭自己创建的标签页、停止自己启动的预览或服务。
 
 ## 重要文件路径
 

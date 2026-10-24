@@ -75,18 +75,28 @@ MySQL session 时区是 +08:00，`NOW()`/`CURRENT_TIMESTAMP` 落库都是北京�
 - 写排查脚本时，`WHERE created_at BETWEEN ...` 直接填**北京时间**字面值；把脚本打印的 `...Z` 时间 +8 小时才是真实北京时间
 - 前端展示不受影响：服务端进程 TZ 同为 +8，`new Date(row.created_at)` 拿到的是正确绝对时间（媒体缓存「抖音 10 分钟失效」判断依赖这一点）
 
-## 10. 本地 preview 前必须清空 `BRIAR_TX_BUCKET_DOMAIN`，否则静态资源指向旧 CDN
+## 10. 本地 preview 要分别配对 CDN 资源和 API 地址，否则会出现假水合故障
 
-`astro.config` 的 `assetsPrefix` 读取根 `.env` 的 `BRIAR_TX_BUCKET_DOMAIN`：本地 `bun run --filter @briar/display build` 会把 JS/CSS chunk 的 URL 写成 CDN 域名，而 CDN 上只有上一次 CI 上传的旧产物——新页面/新 chunk 在 CDN 404，表现为 `astro preview` 打开页面白屏或水合失败（点击无反应）。
+`astro.config.mjs` 的 `assetsPrefix` 读取根 `.env` 的 `BRIAR_TX_BUCKET_DOMAIN`：普通本地构建会把 JS/CSS chunk 的 URL 写成 CDN 域名，而 CDN 上只有上一次 CI 上传的旧产物——新页面 / 新 chunk 在 CDN 404，表现为白屏、输入框能改但组件未水合或点击无反应。
 
-本地验证流程：
+统一用 `BUILD_DEV=true` 关闭本地构建的 CDN 前缀，不必修改 `.env`：
 
 ```bash
-BRIAR_TX_BUCKET_DOMAIN= bun run --filter @briar/display build
-bun run --filter @briar/display preview
+bun run --filter @briar/shared build
+BUILD_DEV=true bun run --filter @briar/display build
+bun run --filter @briar/display preview --host 127.0.0.1 --port 43988
 ```
 
-CI/部署不受影响（流水线本来就先上传 CDN 再部署）。
+**`BUILD_DEV=true` 只处理静态资源，不处理 API 地址。** `src/api/request.ts` 会让本地页面默认请求 3888；从 43988 打开 preview 时，如果自建 API 不在 3888，就换高端口并在构建时显式指定，例如：
+
+```bash
+PORT=43888 NODE_ENV=development BRIAR_ENABLE_SCHEDULER=0 bun run --filter @briar/node start
+BUILD_DEV=true PUBLIC_API_BASE_URL=http://127.0.0.1:43888/api bun run --filter @briar/display build
+```
+
+`PUBLIC_API_BASE_URL` 在构建时内嵌，改端口后必须重新构建前端，只重启 preview 无效。3888 空闲且使用当前产物时，优先通过同源 `http://127.0.0.1:3888/briar/...` 验收真实 API，少一套跨端口配置。不要为了验收杀不明确的占用进程。
+
+遇到不水合先看 console 和实际脚本 / API 请求：脚本仍指向 CDN，是资源构建问题；API 请求 3888 但服务在高端口，是 API 配置问题。两者都不是产品交互 bug，不要靠刷新、重复点击或改产品代码掩盖。验收后恢复标准生产构建；CI / 部署不受影响（流水线先上传 CDN 再部署）。
 
 ## 11. 抖音 detail 接口报错 `Uifid Not Found` 不是缺 uifid 参数，而是整个签名栈过期
 
