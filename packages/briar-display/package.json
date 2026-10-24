@@ -66,13 +66,15 @@
 		"xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
 	},
 	"devDependencies": {
+		"@astrojs/check": "^0.9.12",
 		"@astrojs/node": "9",
 		"@astrojs/tailwind": "^5.1.0",
 		"@types/pako": "^2.0.4",
 		"autoprefixer": "^10.4.20",
+		"bun-types": "^1.4.2",
 		"chokidar-cli": "^3.0.0",
 		"postcss": "^8.4.47",
 		"tailwindcss": "^3.4.14",
-		"bun-types": "^1.4.2"
+		"typescript": "^5.9.3"
 	}
 }

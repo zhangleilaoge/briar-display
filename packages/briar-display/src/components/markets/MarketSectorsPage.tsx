@@ -232,7 +232,9 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 										? '板块列表从数据源实时拉取'
 										: sectors.listMode === 'curated'
 											? '人工维护题材名单，行情按成分股聚合'
-											: '固定代理列表'}{' '}
+											: market === 'jp'
+												? '固定指数列表'
+												: '固定代理列表'}{' '}
 									· 共 {sectors.items.length} 个
 								</span>
 							</div>

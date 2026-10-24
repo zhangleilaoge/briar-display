@@ -14,7 +14,7 @@ import {
 	isStockCode,
 } from '@briar/shared'
 import { cachedLoad } from './cache'
-import { HK_INDUSTRY_INDICES, JP_TOPIX17_ETFS, US_SECTOR_ETFS, US_SECTOR_GICS } from './catalog'
+import { HK_INDUSTRY_INDICES, JP_TOPIX17_INDICES, US_SECTOR_ETFS, US_SECTOR_GICS } from './catalog'
 import { loadCuratedConstituents } from './curated'
 import { MarketInputError, SECTOR_CONFIG } from './marketService'
 import { CACHE_TTL_MS, POLL_MS, getSessionInfo, getSessionStatus } from './session'
@@ -59,6 +59,7 @@ const NO_HK_CONSTITUENTS =
 	'恒生综合行业指数的成分股没有免费公开的数据源（恒指公司只向授权机构提供），暂不支持查看成分股'
 const NO_ETF_CONSTITUENTS =
 	'该板块以行业 / 主题 ETF 代理，ETF 持仓没有免费的实时数据源，暂不支持查看成分股'
+const NO_JP_CONSTITUENTS = 'TOPIX-17 行业指数的成分股暂无可用公开数据源，暂不支持查看成分股'
 
 interface ConstituentPlan {
 	load?: () => Promise<RawConstituents>
@@ -146,7 +147,7 @@ function planConstituents(market: MarketId, code: string, kind: SectorKind): Con
 			if (US_SECTOR_ETFS.some((d) => d.code === code)) return none(NO_ETF_CONSTITUENTS)
 			break
 		case 'jp':
-			if (JP_TOPIX17_ETFS.some((d) => d.code === code)) return none(NO_ETF_CONSTITUENTS)
+			if (JP_TOPIX17_INDICES.some((d) => d.code === code)) return none(NO_JP_CONSTITUENTS)
 			break
 	}
 	throw new MarketInputError('未知的板块代码')

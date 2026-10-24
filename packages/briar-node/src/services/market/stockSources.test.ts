@@ -154,7 +154,7 @@ describe('成分股解析', () => {
 })
 
 describe('板块成分股：无数据源的板块给原因，未知代码 400', () => {
-	test('港股恒生行业 / 日本 ETF → available=false', async () => {
+	test('港股恒生行业 / 日本 TOPIX-17 行业指数 → available=false', async () => {
 		for (const [m, code] of [
 			['hk', 'HSCIIT'],
 			['jp', '1617'],

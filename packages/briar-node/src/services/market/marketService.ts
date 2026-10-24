@@ -16,13 +16,14 @@ import {
 import { type CachedResult, cachedLoad } from './cache'
 import {
 	HK_INDUSTRY_INDICES,
-	JP_TOPIX17_ETFS,
+	JP_TOPIX17_INDICES,
 	KR_INDUSTRY_ZH,
 	MARKET_INDICES,
 	type ProxyDef,
 	US_SECTOR_ETFS,
 } from './catalog'
 import { loadCuratedSectors } from './curated'
+import { fetchHsiQuotes, fetchJpxQuotes, fetchSinaNikkei } from './officialSources'
 import { CACHE_TTL_MS, getSessionInfo, getSessionStatus } from './session'
 import {
 	type QuoteRow,
@@ -117,14 +118,42 @@ const settle = async <T>(p: Promise<CachedResult<T>>): Promise<Settled<T>> =>
 		(err) => ({ ok: false as const, error: errorMessage(err) }),
 	)
 
+async function loadHsiIndexBundle(): Promise<IndexBundle> {
+	const rows = await fetchHsiQuotes(MARKET_INDICES.hk)
+	return {
+		rows: Object.fromEntries(rows.map((row) => [row.key, row])),
+		source: '恒生指数公司官网',
+	}
+}
+
+async function loadSinaIndexBundle(): Promise<IndexBundle> {
+	const row = await fetchSinaNikkei()
+	return { rows: { [row.key]: row }, source: '新浪行情 znb_NKY' }
+}
+
+async function loadJpxIndexBundle(): Promise<IndexBundle> {
+	const rows = await fetchJpxQuotes()
+	return {
+		rows: Object.fromEntries(rows.map((row) => [row.key, row])),
+		source: 'JPX 官方指数（每分钟更新）',
+	}
+}
+
+export function getJpxIndexBundle() {
+	return cachedLoad('indices:jpx', Math.max(60_000, ttlFor(['jp'])), loadJpxIndexBundle)
+}
+
 async function getIndexBundles() {
-	const [em, naver, krFlows] = await Promise.all([
+	const [em, naver, hsi, sina, jpx, krFlows] = await Promise.all([
 		settle(cachedLoad('indices:em', ttlFor(['cn', 'hk', 'us', 'jp', 'kr']), loadEmIndexBundle)),
 		settle(cachedLoad('indices:naver', ttlFor(['jp', 'kr']), loadNaverIndexBundle)),
+		settle(cachedLoad('indices:hsi', ttlFor(['hk']), loadHsiIndexBundle)),
+		settle(cachedLoad('indices:sina', ttlFor(['jp']), loadSinaIndexBundle)),
+		settle(getJpxIndexBundle()),
 		// 资金流只是附加信息：至少缓存 60s，失败就不显示
 		settle(cachedLoad('indices:kr-flows', Math.max(60_000, ttlFor(['kr'])), loadKrFlows)),
 	])
-	return { em, naver, krFlows }
+	return { em, naver, hsi, sina, jpx, krFlows }
 }
 
 function buildOverviewItem(
@@ -150,11 +179,36 @@ function buildOverviewItem(
 		const emRow = def.em && bundles.em.ok ? bundles.em.result.value.rows[def.em] : undefined
 		const naverRow =
 			def.naver && bundles.naver.ok ? bundles.naver.result.value.rows[def.naver.code] : undefined
-		// 韩国优先 Naver（交易所直连实时）；其余优先东财（实时），Naver 只补东财没有的（如 TOPIX）
-		const preferNaver = def.naver?.kind === 'domestic'
-		const row = preferNaver ? (naverRow ?? emRow) : (emRow ?? naverRow)
-		if (!row) continue
-		use(row === emRow ? bundles.em : bundles.naver)
+		const official: [QuoteRow | undefined, Settled<IndexBundle>] | undefined = def.hsi
+			? [
+					bundles.hsi.ok ? bundles.hsi.result.value.rows[`hsi:${def.hsi.series}`] : undefined,
+					bundles.hsi,
+				]
+			: def.sina
+				? [
+						bundles.sina.ok ? bundles.sina.result.value.rows[`sina:${def.sina}`] : undefined,
+						bundles.sina,
+					]
+				: def.jpx
+					? [
+							bundles.jpx.ok ? bundles.jpx.result.value.rows[`jpx:${def.jpx.code}`] : undefined,
+							bundles.jpx,
+						]
+					: undefined
+		// 韩国优先 Naver；其余优先官方低延迟源，再走东财和 Naver 的旧链路
+		const candidates: Array<[QuoteRow | undefined, Settled<IndexBundle>]> =
+			def.naver?.kind === 'domestic'
+				? [
+						[naverRow, bundles.naver],
+						[emRow, bundles.em],
+					]
+				: [...(official ? [official] : []), [emRow, bundles.em], [naverRow, bundles.naver]]
+		const selected = candidates.find(
+			(candidate): candidate is [QuoteRow, Settled<IndexBundle>] => candidate[0] != null,
+		)
+		if (!selected) continue
+		const [row, bundle] = selected
+		use(bundle)
 		const quote = toIndexQuote(row, def.name)
 		// A股指数：东财 f62 主力净流入；韩国：Naver 投资者动向（外资 / 机构净买入）
 		if (market === 'cn' && row === emRow && row.netInflow != null) {
@@ -210,6 +264,8 @@ interface SectorPayload {
 	quoteTime: number | null
 	/** 净流入口径；没有资金流数据的源不填 */
 	netInflowBasis?: string
+	stale?: boolean
+	error?: string
 }
 
 interface MarketSectorConfig {
@@ -264,7 +320,7 @@ export const SECTOR_CONFIG: Record<MarketId, MarketSectorConfig> = {
 		kinds: [{ kind: 'industry', label: '行业' }],
 		currency: 'JPY',
 		listMode: { industry: 'fixed-proxy' },
-		proxyNote: { industry: '以 TOPIX-17 行业 ETF 代理（NEXT FUNDS 1617–1633）' },
+		proxyNote: { industry: 'TOPIX-17 行业指数（JPX 每分钟更新）' },
 	},
 	kr: {
 		kinds: [
@@ -283,7 +339,10 @@ const maxQuoteTime = (rows: QuoteRow[]) => {
 }
 
 /** 固定代理列表 → 板块条目（按配置顺序对齐，名称用简称，原名放 rawName） */
-function proxyItems(defs: ProxyDef[], rowFor: (d: ProxyDef) => QuoteRow | undefined): SectorItem[] {
+function proxyItems<T extends ProxyDef>(
+	defs: T[],
+	rowFor: (d: T) => QuoteRow | undefined,
+): SectorItem[] {
 	return defs.flatMap((d) => {
 		const row = rowFor(d)
 		if (!row) return []
@@ -406,16 +465,19 @@ async function loadUsSectors(): Promise<SectorPayload> {
 }
 
 async function loadJpSectors(): Promise<SectorPayload> {
-	const rows = await fetchNaverPolling(
-		'worldstock/stock',
-		JP_TOPIX17_ETFS.map((d) => `${d.code}.T`),
-	)
-	const byCode = Object.fromEntries(rows.map((r) => [r.code, r]))
+	const result = await getJpxIndexBundle()
+	const rows = JP_TOPIX17_INDICES.flatMap((def) => {
+		const row = result.value.rows[`jpx:${def.jpxCode}`]
+		return row ? [row] : []
+	})
+	if (rows.length !== JP_TOPIX17_INDICES.length) throw new Error('JPX 行业指数不完整')
 	return {
-		items: proxyItems(JP_TOPIX17_ETFS, (d) => byCode[`${d.code}.T`]),
-		source: 'Naver 证券（东证 ETF）',
-		delayMinutes: Math.max(0, ...rows.map((r) => r.delayMinutes)),
+		items: proxyItems(JP_TOPIX17_INDICES, (def) => result.value.rows[`jpx:${def.jpxCode}`]),
+		source: result.value.source,
+		delayMinutes: Math.max(0, ...rows.map((row) => row.delayMinutes)),
 		quoteTime: maxQuoteTime(rows),
+		stale: result.stale,
+		...(result.error ? { error: result.error } : {}),
 	}
 }
 
@@ -505,7 +567,9 @@ export async function getSectors(
 		session: getSessionInfo(market, Date.now(), quoteTime),
 		quoteTime,
 		fetchedAt: result.fetchedAt,
-		stale: result.stale,
-		...(result.error ? { error: result.error.slice(0, 300) } : {}),
+		stale: result.stale || payload.stale === true,
+		...(result.error || payload.error
+			? { error: String(result.error || payload.error).slice(0, 300) }
+			: {}),
 	}
 }
