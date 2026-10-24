@@ -76,7 +76,7 @@ bun run --filter @briar/shared build && bun run --filter @briar/display build &&
 | [docs/terminal.md](docs/terminal.md) | SSH 控制台（WS 桥接、设备授权、审计） |
 | [docs/blog.md](docs/blog.md) | 个人博客（content collection、超管编辑预览） |
 | [docs/deploy.md](docs/deploy.md) | 部署细节（触发范围、手动兜底、PM2 自启、GitHub Secrets） |
-| [docs/pitfalls.md](docs/pitfalls.md) | 已知陷阱（新陷阱追加到末尾并递增编号） |
+| [docs/pitfalls.md](docs/pitfalls.md) | 已知陷阱（只保留当前有效、可操作的非重复经验） |
 
 ## 路由架构
 
