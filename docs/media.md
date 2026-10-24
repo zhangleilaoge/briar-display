@@ -32,7 +32,7 @@ xhslink 短链手动跟 302（老路径 discovery/item 会二次跳信息流丢�
 - **请求头保持极简**（仅 UA+Cookie，Accept/Accept-Language 等额外头反而提高拦截率）
 - 图片用 `imageList[].fileId` 裸 key + `?imageView2/2/format/jpg`（sns-na-i1.xhscdn.com，免签名**无水印**原图；url/urlDefault 场景图带平台水印仅兜底）、实况 stream.h264 HD 档、视频 video.media.stream.h264 HD 档
 - 硬门槛 xsec_token（短链跳转自带，过期/缺失被拦）
-- 风控指纹细节见 [pitfalls.md](pitfalls.md) #8
+- 风控指纹细节见 [pitfalls.md](pitfalls.md) #5
 
 ### 抖音（`services/douyinMediaService.ts`）
 

@@ -1,81 +1,44 @@
 # 已知陷阱
 
-新陷阱追加到末尾并递增编号。
+只记录当前实现仍存在、容易误踩且其他文档未完整覆盖的问题；普通用法、失效场景和单纯事故经过不留。新陷阱追加到末尾，删除后重排编号并更新引用。
 
-## 1. 前端 API baseURL 不要加 `/briar`
-
-生产环境请求 `https://xiaobuzi.cn/api/*`（Nginx 代理），`request.ts` 自动计算 baseURL，无需手动拼。
-
-## 2. 环境变量在项目根目录
-
-后端加载 `.env` 的路径是 `../../../../.env`（项目根目录），不是 `packages/briar-node/` 下。
-
-## 3. 权限检查必须区分三态
-
-**错误**：loading 期间 `hasPermission` 返回 false，闪现"无权限"。
-
-**正确**：使用 `useRequirePermission` hook：
-
-```tsx
-const { loading, authorized, denied } = useRequirePermission('admin:xxx')
-if (loading) return <Spinner />
-if (denied) return <NoPermission />
-return <Content />
-```
-
-## 4. ssh2 / cpu-features 的原生绑定会让进程 core dump
+## 1. ssh2 / cpu-features 的原生绑定会让进程 core dump
 
 ssh2 的两个可选原生依赖（`sshcrypto.node`、`cpufeatures.node`）在 `bun install` 时编译，但**加载即崩溃**（bun 报 `unsupported uv function: uv_version_string`，node 直接 segfault），表现为部署后 briar-node 崩溃循环、502。
 
-修复：`scripts/remove-ssh2-native.mjs` 删除这两个 build 目录（ssh2 有纯 JS 降级，性能差异可忽略）。已挂三处：根 `package.json` postinstall、`Makefile init`、`scripts/deploy.sh`（bun install 之后）。**注意 bun 不会可靠执行根 package.json 的 postinstall**，所以 deploy.sh 里必须显式调用。
+修复：`scripts/remove-ssh2-native.mjs` 删除这两个 build 目录（ssh2 有纯 JS 降级）。已挂三处：根 `package.json` postinstall、`Makefile init`、`scripts/deploy.sh`（bun install 之后）。**bun 不会可靠执行根 package.json 的 postinstall**，所以 deploy.sh 里必须显式调用。
 
-## 5. 页面组件用 `useRequirePermission` 必须自己包 `PermissionProvider`
+## 2. 页面权限门控必须同时处理 Provider 层级和三态
 
-`usePermissions` 在 provider 外会返回兜底 context（`loading:false` + `isAdmin:false` + 空权限），`useRequirePermission` 不会 loading、直接 denied——表现为管理员也提示「你没有权限访问此页面」。
+`usePermissions` 在 Provider 外会返回兜底 context（`loading:false` + `isAdmin:false` + 空权限），导致 `useRequirePermission` 直接 denied，管理员也提示无权限。`AdminLayout` 内部的 Provider 只包其返回内容，覆盖不到页面此前的权限判断。
 
-注意 `AdminLayout` 内部的 `PermissionProvider` 帮不上忙：页面的权限判断发生在 `AdminLayout` 返回之前。正确姿势是页面组件自己包（对照 `AdminUsersPage`）：
+正确结构参照 `AdminUsersPage`：页面外层包 `PermissionProvider`，Inner 再调用 hook；渲染时分别处理 `loading` 和 `denied`，不要把加载中的空权限当作无权限。
 
-```tsx
-export default function AdminXxxPage() {
-	return (
-		<PermissionProvider>
-			<AdminXxxPageInner />
-		</PermissionProvider>
-	)
-}
-```
+## 3. 主仓库提交别误带回退的 briar-assets 子模块引用
 
-## 6. 主仓库提交别把 briar-assets 子模块引用回退
+续期任务会更新证书及主仓库 gitlink；本地子模块停在旧 ref 时，`git add -A` / `git commit -a` 可能误提交旧引用，导致证书回退或分支冲突。部署脚本只能快进落后的线性 gitlink，不能替代提交前检查。
 
-续期任务会把新证书提交到 briar-assets 并更新主仓库的子模块引用；但如果本地 briar-assets 检出停在旧 ref，`git add -A` / `git commit -a` 会把旧引用一起提交。下次部署 `git submodule update` 会把服务器子模块检出回旧 ref → **证书文件被删除** → 次日凌晨任务判定"证书不存在"重复申请（LE 同域名每周限 5 张），且 rebase 时与远端"both added"冲突，带冲突标记的证书会被 deploy-nginx.sh 拷进 `/etc/nginx` 导致 `nginx -t` 失败——此后任何 nginx reload/重启都会起不来。
+提交前检查 `git status`，确认 briar-assets 的变更确实是预期的新 ref；需要同步时先 `git submodule update`，不要盲带子模块变更。
 
-预防：推送主仓库前 `git submodule update` 保持本地子模块与远端一致；提交前检查 `git status` 里 briar-assets 的变更是否是预期的新 ref。
+## 4. COS 带 Query 的签名 URL 必须二次编码 q-url-param-list
 
-## 7. cos-nodejs-sdk-v5 的 `getObjectUrl` 同步返回值带 Query 时签名无效
+cos-nodejs-sdk-v5 的同步签名路径漏了 `q-url-param-list` 二次编码，数据万象参数（如 `imageMogr2/...`）因此可能报 403 `SignatureDoesNotMatch`。
 
-静态密钥下 `getObjectUrl({ Sign: true, Query: {...} })` 同步返回字符串，但 SDK 只在异步回调路径里对 `q-url-param-list` 做二次编码（`replaceUrlParamList`），同步路径漏了——带数据万象参数（如 `imageMogr2/...`）的签名 URL 直接 403 `SignatureDoesNotMatch`，不带 Query 的则正常。
+当前 `cosService.getSignedUrl` 使用 `COS.getAuthorization` 自行组 URL，并显式修正这段编码；修改该路径不能删掉 workaround。对签名 URL 发 `Range: bytes=0-0` 请求，返回 206 才算验证通过。
 
-修复：拿到同步返回的 URL 后手动套用同款二次编码（见 `cosService.getSignedUrl`）。验证方式：对签名 URL 发 `Range: bytes=0-0` 请求，206 为有效。
+## 5. 小红书风控会综合 TLS/HTTP 指纹与 IP，不能用裸 fetch 硬刷
 
-## 8. 小红书笔记页风控按 TLS/HTTP 指纹 + IP 打分，Node fetch 裸奔必拦
+笔记页被拦时会跳到 `/404/sec_...` 安全页，或桌面端返回空 `noteDetailMap`。同 IP 高频请求及不同 TLS 指纹都会影响结果，不能把空数据当作笔记不存在。
 
-`GET www.xiaohongshu.com/explore/{id}`（移动端 h5 笔记页同理）被拦时 302 到 `/404/sec_xxx?source=xhs_sec_server` 安全页（HTML 约 24KB，无笔记数据），或桌面壳返回空 `noteDetailMap`（`undertake_note_error=该内容暂时无法查看`）。
+应对保持与 `xhsMediaService` 一致：只带 UA 和 Cookie 的极简请求头、每次重试换 fresh `a1`、有限次数递增等待后再走桌面兜底。额外堆浏览器请求头或无限重试反而更容易触发风控。
 
-实测规律（2026-09）：
+## 6. MySQL session 与 Node 进程时区必须一起确认
 
-- **同 IP 同 URL**：macOS curl（SecureTransport）全过，Node undici/bun fetch（BoringSSL/OpenSSL）裸请求全拦——TLS 指纹直接参与打分
-- Node fetch **只带 `User-Agent` + fresh `a1` Cookie**（a1 可本地纯算生成，见 `xhsMediaService.generateA1`）概率放行；加 `Accept`/`Accept-Language` 等"更像浏览器"的头反而提高拦截率
-- 单 IP 高频请求会短期全黑（所有变体都拦），停 1 分钟左右恢复
-- 应对：极简头 + 每次重试换 fresh a1 + 递增间隔（2s 起），3 次不过基本就是 IP 黑了，别死磕
+`request_logs.created_at` 是 `TIMESTAMP`，不是“固定存北京时间”。MySQL 会按 session 时区转换时间，mysql2 又按 Node 进程时区解析；当前配置没有统一设置 session `time_zone`、mysql2 `timezone` 或 `dateStrings`。
 
-## 9. request_logs 的 created_at 存的是北京时间，查询脚本别拿 UTC 窗口去套
+`toISOString()` 输出 UTC 的 `Z` 是正常表示，不是时间少了 8 小时。写 SQL 时间窗、管理端日期筛选或缓存 TTL 时，先确认两端时区并显式转换，不要拿本机时间直接推断线上结果。
 
-MySQL session 时区是 +08:00，`NOW()`/`CURRENT_TIMESTAMP` 落库都是北京墙钟时间。但 mysql2 读 TIMESTAMP/DATETIME 时按**进程本地 TZ** 解释字符串：本地 Mac（Asia/Shanghai）跑脚本时 `toISOString()` 输出会比库存值少 8 小时（库存 22:07 → 打印 `14:07:00Z`）。
-
-- 写排查脚本时，`WHERE created_at BETWEEN ...` 直接填**北京时间**字面值；把脚本打印的 `...Z` 时间 +8 小时才是真实北京时间
-- 前端展示不受影响：服务端进程 TZ 同为 +8，`new Date(row.created_at)` 拿到的是正确绝对时间（媒体缓存「抖音 10 分钟失效」判断依赖这一点）
-
-## 10. 本地 preview 要分别配对 CDN 资源和 API 地址，否则会出现假水合故障
+## 7. 本地 preview 要分别配对 CDN 资源和 API 地址，否则会出现假水合故障
 
 `astro.config.mjs` 的 `assetsPrefix` 读取根 `.env` 的 `BRIAR_TX_BUCKET_DOMAIN`：普通本地构建会把 JS/CSS chunk 的 URL 写成 CDN 域名，而 CDN 上只有上一次 CI 上传的旧产物——新页面 / 新 chunk 在 CDN 404，表现为白屏、输入框能改但组件未水合或点击无反应。
 
@@ -98,8 +61,8 @@ BUILD_DEV=true PUBLIC_API_BASE_URL=http://127.0.0.1:43888/api bun run --filter @
 
 遇到不水合先看 console 和实际脚本 / API 请求：脚本仍指向 CDN，是资源构建问题；API 请求 3888 但服务在高端口，是 API 配置问题。两者都不是产品交互 bug，不要靠刷新、重复点击或改产品代码掩盖。验收后恢复标准生产构建；CI / 部署不受影响（流水线先上传 CDN 再部署）。
 
-## 11. 抖音 detail 接口报错 `Uifid Not Found` 不是缺 uifid 参数，而是整个签名栈过期
+## 8. 抖音 `Uifid Not Found` 不等于只缺 uifid 参数
 
-2026-10-09 前后抖音把 web 端签名 SDK 从 1.0.1.5（盐 "cus"）升到 bdms.js v1.0.1.19-fix.01，旧 a_bogus 被整体拒绝，报文一律 `403 Blocked by ArgusSecurityPlugin Uifid Not Found`——**这个报错字面指向 uifid，实际是签名版本不对**；同时 detail 接口转为签保护，光有新 a_bogus 还不够，还要 `x-secsdk-web-signature`（md5）+ 真实浏览器签发的 `UIFID_TEMP`/`UIFID` cookie（算法伪造不出来，只能配置 `BRIAR_DOUYIN_COOKIE`）。
+旧 a_bogus 签名栈失效时也可能报 `403 Blocked by ArgusSecurityPlugin Uifid Not Found`，不能只补参数。当前 detail 接口需要 a_bogus、`x-secsdk-web-signature` 和真实浏览器签发的 `UIFID_TEMP` / `UIFID` cookie（配置 `BRIAR_DOUYIN_COOKIE`）共同通过校验。
 
-排查此类问题的顺序：先拿同一条链接在本地 `parseDouyin` 复现（排除 IP 因素）→ 看 403 报文点名什么 → 与上游参考实现（Evil0ctal `dtk/signing/native/`）对表 → 改完用黄金回归测试固化。改签名算法时 `aBogus.test.ts` 的 golden 必须用 Python 参考实现重新生成，不能拿旧输出改期望值。
+修改签名时先对照当前上游参考实现。`aBogus.test.ts` 的 golden 必须用 Python 参考实现重新生成，不能拿旧输出改期望值。
