@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { toArrayBuffer } from '@/lib/binary'
 import { Download, FileLock2, FileText, Loader2, Upload, X } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -67,7 +68,7 @@ export default function ToolPdfUnlockPage() {
 				try {
 					const data = new Uint8Array(await item.file.arrayBuffer())
 					const out = await decryptPdf(data, password)
-					const blob = new Blob([out], { type: 'application/pdf' })
+					const blob = new Blob([toArrayBuffer(out)], { type: 'application/pdf' })
 					newResults.push({
 						id: item.id,
 						name: item.file.name,

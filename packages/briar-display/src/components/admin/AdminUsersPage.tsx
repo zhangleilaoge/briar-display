@@ -54,7 +54,7 @@ function AdminUsersPageInner() {
 	const [keyword, setKeyword] = useState('')
 	const [page, setPage] = useState(1)
 	const [total, setTotal] = useState(0)
-	const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+	const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
 	const [editingUserId, setEditingUserId] = useState<string | null>(null)
 	const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(new Set())
@@ -136,7 +136,7 @@ function AdminUsersPageInner() {
 
 	if (permLoading || loading) {
 		return (
-			<AdminLayout currentPath="/briar/admin/users" title="用户角色">
+			<AdminLayout currentPath="/briar/admin/users">
 				<div className="flex items-center justify-center py-20">
 					<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 				</div>
@@ -146,7 +146,7 @@ function AdminUsersPageInner() {
 
 	if (denied) {
 		return (
-			<AdminLayout currentPath="/briar/admin/users" title="用户角色">
+			<AdminLayout currentPath="/briar/admin/users">
 				<Card>
 					<CardContent className="flex items-center gap-2 pt-6">
 						<AlertCircle className="h-5 w-5 text-destructive" />
@@ -158,7 +158,7 @@ function AdminUsersPageInner() {
 	}
 
 	return (
-		<AdminLayout currentPath="/briar/admin/users" title="用户角色">
+		<AdminLayout currentPath="/briar/admin/users">
 			<Card>
 				<CardHeader className="flex-col items-start gap-3 space-y-0 pb-4 sm:flex-row sm:items-center sm:justify-between">
 					<CardTitle className="flex items-center gap-2 text-lg">

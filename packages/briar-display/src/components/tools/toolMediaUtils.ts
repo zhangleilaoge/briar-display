@@ -5,6 +5,7 @@ import pornhubIcon from '@/assets/platforms/pornhub.png'
 import wechatIcon from '@/assets/platforms/wechat.png'
 import xIcon from '@/assets/platforms/x.png'
 import xiaohongshuIcon from '@/assets/platforms/xiaohongshu.png'
+import { toArrayBuffer } from '@/lib/binary'
 import type { MediaParseResult } from '@briar/shared'
 
 export type MediaKind = 'cover' | 'video' | 'image' | 'live' | 'audio'
@@ -320,7 +321,9 @@ export const createZip = (entries: ZipEntry[]): Blob => {
 	end.setUint32(12, centralSize, true)
 	end.setUint32(16, offset, true)
 
-	return new Blob([...chunks, ...central, new Uint8Array(end.buffer)], { type: 'application/zip' })
+	return new Blob([...chunks, ...central, new Uint8Array(end.buffer)].map(toArrayBuffer), {
+		type: 'application/zip',
+	})
 }
 
 // ==================== 历史记录（访客走 localStorage，最近 10 条链接 + 标题） ====================

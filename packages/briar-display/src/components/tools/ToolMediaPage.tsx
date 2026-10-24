@@ -8,6 +8,7 @@ import {
 	parseMedia,
 	removeMediaHistory,
 } from '@/api/media'
+import { toArrayBuffer } from '@/lib/binary'
 import type { MediaParseResult } from '@briar/shared'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -189,7 +190,7 @@ export default function ToolMediaPage() {
 	const handleDownload = async (item: MediaItem) => {
 		if (progress[item.id] !== undefined || zipping) return
 		const data = await downloadItem(item)
-		if (data) saveBlob(new Blob([data]), item.filename)
+		if (data) saveBlob(new Blob([toArrayBuffer(data)]), item.filename)
 	}
 
 	const handleToggle = (id: string) => {

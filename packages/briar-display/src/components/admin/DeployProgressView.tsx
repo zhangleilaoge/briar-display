@@ -60,14 +60,14 @@ export default function DeployProgressView({ progress, liveLines }: DeployProgre
 			{progress.jobs.map((job) => (
 				<div key={job.name} className="space-y-1">
 					{job.steps.map((step) => {
-						const running = step.status !== 'completed' && step.startedAt
+						const startedAt = step.startedAt
 						const duration = step.completedAt
 							? fmtDuration(
 									new Date(step.completedAt).getTime() -
-										new Date(step.startedAt ?? step.completedAt).getTime(),
+										new Date(startedAt ?? step.completedAt).getTime(),
 								)
-							: running
-								? fmtDuration(now - new Date(step.startedAt).getTime())
+							: step.status !== 'completed' && startedAt
+								? fmtDuration(now - new Date(startedAt).getTime())
 								: null
 						return (
 							<div

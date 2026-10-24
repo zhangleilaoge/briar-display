@@ -18,6 +18,10 @@ import {
 	probeMediaError,
 } from './toolMediaUtils'
 
+const setNoReferrer = (video: HTMLVideoElement | null) => {
+	video?.setAttribute('referrerpolicy', 'no-referrer')
+}
+
 interface ToolMediaResultProps {
 	result: MediaParseResult
 	sections: MediaSections
@@ -258,7 +262,7 @@ export default function ToolMediaResult({
 											src={video.previewUrl ?? video.url}
 											controls
 											preload="metadata"
-											referrerPolicy="no-referrer"
+											ref={setNoReferrer}
 											onError={() => handleMediaError(video)}
 											className="max-h-[480px] w-full rounded-md bg-black"
 										/>
@@ -405,7 +409,7 @@ export default function ToolMediaResult({
 											src={live.previewUrl ?? live.url}
 											controls
 											preload="metadata"
-											referrerPolicy="no-referrer"
+											ref={setNoReferrer}
 											onError={() => handleMediaError(live)}
 											className="aspect-[3/4] w-full bg-black object-cover"
 										/>
