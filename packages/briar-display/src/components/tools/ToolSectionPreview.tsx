@@ -1,16 +1,52 @@
 import { useMemo } from 'react'
-import { type Plane, type Section, sectionToSvgPaths } from './toolSectionUtils'
+import { type SectionSvgProjection, sectionToSvgPaths } from './toolSectionSvg'
+import { type Plane, type Section, type Vec3, voxelKey } from './toolSectionUtils'
+
+const POINT_COLORS = ['#dc2626', '#ea580c', '#2563eb']
+
+export function SectionSvgShapes({ svg }: { svg: SectionSvgProjection }) {
+	return (
+		<>
+			{svg.paths.map((path) => (
+				<path
+					key={voxelKey(path.voxel)}
+					d={path.d}
+					fill={path.color === 'gray' ? '#1f2937' : '#f8fafc'}
+					data-section-fill={voxelKey(path.voxel)}
+				/>
+			))}
+			{svg.outlines.map((d, index) => (
+				<path
+					key={`${d}-${index}`}
+					d={d}
+					fill="none"
+					stroke="#1e293b"
+					strokeWidth={2}
+					strokeLinejoin="round"
+					data-section-outline
+				/>
+			))}
+		</>
+	)
+}
 
 export function SectionSvgPreview({
 	section,
 	plane,
+	points,
 	size = 140,
+	rotation = 0,
 }: {
 	section: Section
 	plane: Plane
+	points?: Vec3[]
 	size?: number
+	rotation?: number
 }) {
-	const svg = useMemo(() => sectionToSvgPaths(section, plane, size), [section, plane, size])
+	const svg = useMemo(
+		() => sectionToSvgPaths(section, plane, size, points, rotation),
+		[section, plane, size, points, rotation],
+	)
 	return (
 		<svg
 			width={svg.width}
@@ -18,15 +54,22 @@ export function SectionSvgPreview({
 			viewBox={`0 0 ${svg.width} ${svg.height}`}
 			className="max-w-full rounded-md border bg-white"
 			aria-label="当前截面的二维展开图"
+			data-rotation={rotation}
 		>
-			{svg.paths.map((path, index) => (
-				<path
-					key={`${path.d}-${index}`}
-					d={path.d}
-					fill={path.color === 'gray' ? '#9ca3af' : '#f8fafc'}
-					stroke="#1e293b"
-					strokeWidth={2}
-				/>
+			<SectionSvgShapes svg={svg} />
+			{svg.markers.map((marker, index) => (
+				<g key={marker.id} data-cut-point={marker.id}>
+					<circle cx={marker.x} cy={marker.y} r={5} fill={POINT_COLORS[index]} stroke="white" />
+					<text
+						x={marker.x + 8}
+						y={marker.y + 4}
+						fill={POINT_COLORS[index]}
+						fontSize={12}
+						fontWeight={700}
+					>
+						{marker.id}
+					</text>
+				</g>
 			))}
 		</svg>
 	)

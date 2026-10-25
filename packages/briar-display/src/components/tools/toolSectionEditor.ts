@@ -1,7 +1,7 @@
-import { MAX_VOXELS, type Solid, type Vec3, type Voxel, voxelKey } from './toolSectionUtils'
+import { type Solid, type Vec3, type Voxel, voxelKey } from './toolSectionUtils'
 
 export type CutPoints = [Vec3, Vec3, Vec3]
-export type VoxelEditError = 'invalid' | 'limit' | 'missing' | 'occupied'
+export type VoxelEditError = 'invalid' | 'missing' | 'occupied'
 export type VoxelEditResult = {
 	solid: Solid
 	error: VoxelEditError | null
@@ -52,7 +52,7 @@ export function defaultCutPoints(solid: Solid): CutPoints {
 }
 
 export function additionCells(solid: Solid, selectedCell: Vec3 | null | undefined): Vec3[] {
-	if (!selectedCell || solid.voxels.length >= MAX_VOXELS) return []
+	if (!selectedCell) return []
 	const selected = solid.voxels.find(
 		(voxel) =>
 			voxel.x === selectedCell[0] && voxel.y === selectedCell[1] && voxel.z === selectedCell[2],
@@ -69,7 +69,6 @@ export function additionCells(solid: Solid, selectedCell: Vec3 | null | undefine
 
 export function addVoxel(solid: Solid, cell: Vec3): VoxelEditResult {
 	if (!isCell(cell)) return { solid, error: 'invalid' }
-	if (solid.voxels.length >= MAX_VOXELS) return { solid, error: 'limit' }
 	if (isOccupied(solid, cell)) return { solid, error: 'occupied' }
 	return {
 		solid: {

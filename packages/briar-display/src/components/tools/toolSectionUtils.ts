@@ -1,6 +1,6 @@
 /**
  * 切面模拟器：整数格点单位正方体的截面计算与出题
- * 坐标均为整数；体素数 ≤ 27
+ * 坐标均为整数；自建数量不限，随机图在 3×3×3 内按面相邻生成
  */
 
 export type VoxelColor = 'white' | 'gray'
@@ -33,8 +33,6 @@ export type Section = {
 	/** 规范化签名：用于合法/干扰比对 */
 	signature: string
 }
-
-export const MAX_VOXELS = 27
 
 const EPS = 1e-9
 
@@ -69,9 +67,6 @@ export function voxelKey(v: Pick<Voxel, 'x' | 'y' | 'z'>): string {
 }
 
 export function assertIntegerSolid(solid: Solid): void {
-	if (solid.voxels.length > MAX_VOXELS) {
-		throw new Error(`体素数不能超过 ${MAX_VOXELS}`)
-	}
 	for (const v of solid.voxels) {
 		if (![v.x, v.y, v.z].every((n) => Number.isInteger(n))) {
 			throw new Error('坐标必须为整数')
@@ -392,7 +387,8 @@ export function solidStair3(): Solid {
 }
 
 export function randomSolid(rng: () => number = Math.random, count = 6): Solid {
-	const n = Math.max(1, Math.min(MAX_VOXELS, count))
+	const gridSize = 3
+	const n = Math.max(1, Math.min(gridSize ** 3, Math.floor(count)))
 	const cells = new Map<string, Voxel>()
 	cells.set('0,0,0', { x: 0, y: 0, z: 0, color: 'white' })
 	const dirs: Vec3[] = [
@@ -403,43 +399,34 @@ export function randomSolid(rng: () => number = Math.random, count = 6): Solid {
 		[0, 0, 1],
 		[0, 0, -1],
 	]
-	let guard = 0
-	while (cells.size < n && guard++ < n * 64) {
-		const list = [...cells.values()]
-		const base = list[Math.floor(rng() * list.length) % list.length]
-		// 打乱方向尝试，避免固定 rng 时永远撞同一邻格
-		const order = dirs.map((d, i) => ({ d, r: rng() + i * 1e-9 })).sort((a, b) => a.r - b.r)
-		let placed = false
-		for (const { d } of order) {
-			const next: Voxel = {
-				x: base.x + d[0],
-				y: base.y + d[1],
-				z: base.z + d[2],
-				color: rng() < 0.25 ? 'gray' : 'white',
-			}
-			const k = voxelKey(next)
-			if (!cells.has(k)) {
-				cells.set(k, next)
-				placed = true
-				break
+	while (cells.size < n) {
+		const candidates: Vec3[] = []
+		const candidateKeys = new Set<string>()
+		for (const base of cells.values()) {
+			for (const direction of dirs) {
+				const cell: Vec3 = [base.x + direction[0], base.y + direction[1], base.z + direction[2]]
+				const key = voxelKey({ x: cell[0], y: cell[1], z: cell[2] })
+				if (
+					cell.every((value) => value >= 0 && value < gridSize) &&
+					!cells.has(key) &&
+					!candidateKeys.has(key)
+				) {
+					candidateKeys.add(key)
+					candidates.push(cell)
+				}
 			}
 		}
-		if (!placed) {
-		}
+		if (candidates.length === 0) break
+		const index = Math.min(candidates.length - 1, Math.floor(rng() * candidates.length))
+		const next = candidates[index]
+		cells.set(voxelKey({ x: next[0], y: next[1], z: next[2] }), {
+			x: next[0],
+			y: next[1],
+			z: next[2],
+			color: rng() < 0.25 ? 'gray' : 'white',
+		})
 	}
-	// 平移到非负
-	const arr = [...cells.values()]
-	const minX = Math.min(...arr.map((v) => v.x))
-	const minY = Math.min(...arr.map((v) => v.y))
-	const minZ = Math.min(...arr.map((v) => v.z))
-	return {
-		voxels: arr.map((v) => ({
-			...v,
-			x: v.x - minX,
-			y: v.y - minY,
-			z: v.z - minZ,
-		})),
-	}
+	return { voxels: [...cells.values()] }
 }
 
 export function solidWithColors(base: Solid, grayKeys: string[]): Solid {
@@ -665,13 +652,13 @@ export function generateQ4(rng: () => number = Math.random): QuizQuestion {
 	}
 }
 
-/** Q3：过 ABC 三点 + 灰白着色四选一 */
+/** Q3：过 ABC 三点 + 黑白着色四选一 */
 export function generateQ3(rng: () => number = Math.random): QuizQuestion {
-	// 构造带灰色的小立体
+	// 构造带黑色的小立体
 	let solid = solidWithColors(solidLTetromino(), ['0,0,0', '1,0,0'])
 	if (rng() < 0.4) {
 		solid = randomSolid(rng, 8)
-		// 随机涂灰
+		// 随机涂黑
 		solid = {
 			voxels: solid.voxels.map((v) => ({
 				...v,
@@ -742,7 +729,7 @@ export function generateQ3(rng: () => number = Math.random): QuizQuestion {
 	const options = shuffle(optionsRaw, rng).map((o, i) => ({ ...o, id: OPTION_IDS[i] }))
 	return {
 		kind: 'Q3',
-		prompt: '左图立体由白色与灰色小正方体组成。过顶点 A、B、C 的平面剖开后，正确的截面是？',
+		prompt: '左图立体由白色与黑色小正方体组成。过顶点 A、B、C 的平面剖开后，正确的截面是？',
 		solid,
 		points,
 		lockOrbitUntilAnswer: true,
@@ -795,7 +782,6 @@ export function toggleVoxel(solid: Solid, x: number, y: number, z: number): Soli
 		if (next.voxels.length === 0) return solid
 		return next
 	}
-	if (solid.voxels.length >= MAX_VOXELS) return solid
 	return { voxels: [...solid.voxels, { x, y, z, color: 'white' }] }
 }
 
@@ -809,42 +795,4 @@ export function setVoxelColor(
 	return {
 		voxels: solid.voxels.map((v) => (v.x === x && v.y === y && v.z === z ? { ...v, color } : v)),
 	}
-}
-
-/** 截面多边形 → SVG path（本地 2D） */
-export function sectionToSvgPaths(
-	section: Section,
-	plane: Plane,
-	size = 120,
-): { paths: Array<{ d: string; color: VoxelColor }>; width: number; height: number } {
-	if (section.patches.length === 0) {
-		return { paths: [], width: size, height: size }
-	}
-	const all2: Array<[number, number]> = []
-	const polys = section.patches.map((p) => {
-		const pts = projectTo2D(p.points, plane.normal)
-		all2.push(...pts)
-		return { pts, color: p.color }
-	})
-	const xs = all2.map((p) => p[0])
-	const ys = all2.map((p) => p[1])
-	const minX = Math.min(...xs)
-	const maxX = Math.max(...xs)
-	const minY = Math.min(...ys)
-	const maxY = Math.max(...ys)
-	const span = Math.max(maxX - minX, maxY - minY, EPS)
-	const pad = size * 0.12
-	const scale = (size - pad * 2) / span
-	const to = (u: number, v: number): [number, number] => [
-		pad + (u - minX) * scale,
-		size - (pad + (v - minY) * scale),
-	]
-	const paths = polys.map(({ pts, color }) => {
-		const mapped = pts.map(([u, v]) => to(u, v))
-		const d = `${mapped
-			.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`)
-			.join(' ')} Z`
-		return { d, color }
-	})
-	return { paths, width: size, height: size }
 }

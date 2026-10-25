@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
-import type { Vec3, Voxel } from './toolSectionUtils'
+import { cutPointLabelOffset } from './toolSectionGeometry'
+import type { Solid, Vec3, Voxel } from './toolSectionUtils'
 
 const POINT_COLORS = ['#dc2626', '#ea580c', '#2563eb']
 
@@ -51,26 +52,36 @@ function LabelSprite({
 			renderOrder={11}
 			userData={meta ? interaction(meta) : undefined}
 		>
-			<spriteMaterial map={texture} transparent depthTest={false} />
+			<spriteMaterial map={texture} transparent depthTest depthWrite={false} />
 		</sprite>
 	)
 }
 
 export function PointMarker({
+	solid,
 	point,
 	index,
 	draggable,
 }: {
+	solid: Solid
 	point: Vec3
 	index: number
 	draggable: boolean
 }) {
 	const meta = { kind: 'point', index }
+	const labelPosition = useMemo(() => cutPointLabelOffset(solid, point), [solid, point])
 	return (
 		<group position={[...point]}>
-			<mesh renderOrder={10} userData={draggable ? interaction(meta) : undefined}>
+			<mesh renderOrder={12} userData={draggable ? interaction(meta) : undefined}>
 				<sphereGeometry args={[draggable ? 0.15 : 0.11, 20, 20]} />
-				<meshBasicMaterial color={POINT_COLORS[index]} depthTest={false} />
+				<meshBasicMaterial
+					color={POINT_COLORS[index]}
+					transparent
+					opacity={1}
+					depthTest
+					depthWrite
+					toneMapped={false}
+				/>
 			</mesh>
 			{draggable ? (
 				<mesh userData={interaction(meta)}>
@@ -80,7 +91,7 @@ export function PointMarker({
 			) : null}
 			<LabelSprite
 				label={'ABC'[index]}
-				position={[0.26, 0.26, 0.26]}
+				position={labelPosition}
 				scale={0.34}
 				meta={draggable ? meta : undefined}
 			/>
@@ -114,11 +125,17 @@ export function VoxelMesh({
 		>
 			<boxGeometry args={[1, 1, 1]} />
 			<meshStandardMaterial
-				color={voxel.color === 'gray' ? '#6b7280' : '#f8fafc'}
+				color={
+					selected
+						? '#3b82f6'
+						: hovered
+							? '#bae6fd'
+							: voxel.color === 'gray'
+								? '#1f2937'
+								: '#f8fafc'
+				}
 				emissive={hovered ? '#38bdf8' : selected ? '#2563eb' : '#000000'}
 				emissiveIntensity={hovered ? 0.38 : selected ? 0.16 : 0}
-				transparent
-				opacity={0.9}
 				metalness={0.05}
 				roughness={0.55}
 			/>

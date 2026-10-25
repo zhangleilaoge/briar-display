@@ -6,17 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Box, Boxes, RefreshCw, SquareStack } from 'lucide-react'
 import { useState } from 'react'
-import { SectionSvgPreview } from './ToolSectionPreview'
+import { SectionSvgPreview, SectionSvgShapes } from './ToolSectionPreview'
 import { ToolSectionSandbox } from './ToolSectionSandbox'
 import { ToolSectionScene } from './ToolSectionScene'
 import ToolsLayout from './ToolsLayout'
+import { sectionToSvgPaths } from './toolSectionSvg'
 import {
 	type Plane,
 	type QuizKind,
 	type QuizQuestion,
 	computeSection,
 	generateQuiz,
-	sectionToSvgPaths,
 } from './toolSectionUtils'
 
 function OptionShape({ option }: { option: QuizQuestion['options'][number] }) {
@@ -40,7 +40,7 @@ function OptionShape({ option }: { option: QuizQuestion['options'][number] }) {
 						y={size - padding - (cell.v - minV) * scale - scale * 0.85}
 						width={scale * 0.85}
 						height={scale * 0.85}
-						fill={cell.color === 'gray' ? '#6b7280' : '#f8fafc'}
+						fill={cell.color === 'gray' ? '#1f2937' : '#f8fafc'}
 						stroke="#334155"
 						strokeWidth={1.5}
 					/>
@@ -63,15 +63,7 @@ function OptionShape({ option }: { option: QuizQuestion['options'][number] }) {
 		const svg = sectionToSvgPaths(option.section, planeApprox, 100)
 		return (
 			<svg width={svg.width} height={svg.height} className="rounded border bg-white">
-				{svg.paths.map((path, index) => (
-					<path
-						key={`${path.d}-${index}`}
-						d={path.d}
-						fill={path.color === 'gray' ? '#9ca3af' : '#e2e8f0'}
-						stroke="#0f172a"
-						strokeWidth={2}
-					/>
-				))}
+				<SectionSvgShapes svg={svg} />
 			</svg>
 		)
 	}
@@ -227,7 +219,7 @@ export default function ToolSectionPage() {
 				<div className="flex items-center gap-2">
 					<SquareStack className="h-5 w-5 text-muted-foreground" />
 					<h1 className="text-lg font-semibold">切面模拟器</h1>
-					<Badge variant="secondary">整数格点 · 最多 27 块</Badge>
+					<Badge variant="secondary">整数格点 · 自由搭建</Badge>
 				</div>
 
 				<Tabs defaultValue="sandbox">
