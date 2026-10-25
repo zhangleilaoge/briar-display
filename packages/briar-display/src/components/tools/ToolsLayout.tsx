@@ -11,7 +11,16 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PermissionProvider } from '@/contexts/PermissionContext'
-import { Braces, Clapperboard, FileDiff, FileLock2, ImageIcon, Magnet, Spline } from 'lucide-react'
+import {
+	Braces,
+	Clapperboard,
+	FileDiff,
+	FileLock2,
+	ImageIcon,
+	Magnet,
+	Spline,
+	SquareStack,
+} from 'lucide-react'
 import { type ReactNode, useEffect } from 'react'
 
 interface NavItem {
@@ -55,6 +64,11 @@ const NAV_ITEMS: NavItem[] = [
 		label: 'PDF 解除限制',
 		href: '/briar/tools/pdf',
 		icon: <FileLock2 className="h-4 w-4" />,
+	},
+	{
+		label: '切面模拟器',
+		href: '/briar/tools/section',
+		icon: <SquareStack className="h-4 w-4" />,
 	},
 ]
 
