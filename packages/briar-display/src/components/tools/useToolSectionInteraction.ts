@@ -2,7 +2,7 @@ import { useThree } from '@react-three/fiber'
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { type CutPoints, cellFromCenter, isOccupied } from './toolSectionEditor'
-import { raycastSolidSurface } from './toolSectionGeometry'
+import { nearestExteriorPoint, raycastSolidSurface } from './toolSectionGeometry'
 import type { Solid, Vec3 } from './toolSectionUtils'
 
 export type DragPreview = { from: Vec3; cell: Vec3; valid: boolean }
@@ -21,7 +21,7 @@ type InteractionOptions = {
 	onSelectCell?: (cell: Vec3 | null) => void
 	onAddCell?: (cell: Vec3) => void
 	onMoveCell?: (from: Vec3, to: Vec3) => void
-	onRemoveCell?: (cell: Vec3) => void
+	onCellContextMenu?: (cell: Vec3, position: PointerPosition) => void
 }
 
 type DragBase = {
@@ -41,7 +41,7 @@ type DragState =
 	| (PlaneDrag & { kind: 'voxel'; from: Vec3; target: Vec3; valid: boolean })
 	| (DragBase & { kind: 'add'; cell: Vec3 })
 
-type PointerPosition = { clientX: number; clientY: number }
+export type PointerPosition = { clientX: number; clientY: number }
 
 const sameCell = (a: Vec3 | null | undefined, b: Vec3 | null | undefined) =>
 	a === b || (!!a && !!b && a.every((value, index) => value === b[index]))
@@ -79,7 +79,11 @@ export function useToolSectionInteraction(options: InteractionOptions) {
 			const group = latest.current.groupRef.current
 			if (!group) return []
 			const current = latest.current
-			const canEditVoxel = !!(current.onSelectCell || current.onMoveCell || current.onRemoveCell)
+			const canEditVoxel = !!(
+				current.onSelectCell ||
+				current.onMoveCell ||
+				current.onCellContextMenu
+			)
 			const objects: THREE.Object3D[] = []
 			group.updateWorldMatrix(true, true)
 			group.traverse((object) => {
@@ -96,7 +100,13 @@ export function useToolSectionInteraction(options: InteractionOptions) {
 		const pick = (event: PointerPosition) => {
 			const ray = pointerRay(event)
 			const hits = raycaster.intersectObjects(interactiveObjects(), false)
-			const point = hits.find((hit) => metaOf(hit.object)?.kind === 'point')
+			const point = hits.find((hit) => {
+				if (metaOf(hit.object)?.kind !== 'point') return false
+				return !hits.some((other) => {
+					const kind = metaOf(other.object)?.kind
+					return (kind === 'voxel' || kind === 'add') && other.distance < hit.distance - 1e-5
+				})
+			})
 			if (point) return { meta: metaOf(point.object)!, ray }
 			const addition = hits.find((hit) => {
 				if (metaOf(hit.object)?.kind !== 'add') return false
@@ -212,7 +222,9 @@ export function useToolSectionInteraction(options: InteractionOptions) {
 			const direction = localTarget.clone().sub(localOrigin)
 			if (direction.lengthSq() < 1e-12) return
 			const localRay = new THREE.Ray(localOrigin, direction.normalize())
-			const nextPoint = raycastSolidSurface(latest.current.solid, localRay, localTarget)
+			const nextPoint =
+				raycastSolidSurface(latest.current.solid, localRay, localTarget) ??
+				nearestExteriorPoint(latest.current.solid, localTarget.toArray() as Vec3)
 			if (!nextPoint || samePoint(nextPoint, drag.current[drag.index])) return
 			const next = [...drag.current] as CutPoints
 			next[drag.index] = nextPoint
@@ -289,10 +301,13 @@ export function useToolSectionInteraction(options: InteractionOptions) {
 
 		const onContextMenu = (event: MouseEvent) => {
 			consume(event)
-			if (!latest.current.onRemoveCell) return
+			if (!latest.current.onCellContextMenu) return
 			const picked = pick(event)
 			if (picked?.meta.kind !== 'voxel') return
-			latest.current.onRemoveCell(picked.meta.cell)
+			latest.current.onCellContextMenu(picked.meta.cell, {
+				clientX: event.clientX,
+				clientY: event.clientY,
+			})
 			setHoveredCell(null)
 		}
 

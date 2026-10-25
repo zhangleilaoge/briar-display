@@ -6,13 +6,7 @@ import {
 	moveVoxel,
 	removeVoxel,
 } from './toolSectionEditor'
-import {
-	MAX_VOXELS,
-	type Solid,
-	planeFromPoints,
-	solidLTetromino,
-	solidSingleCube,
-} from './toolSectionUtils'
+import { type Solid, planeFromPoints, solidLTetromino, solidSingleCube } from './toolSectionUtils'
 
 describe('toolSectionEditor', () => {
 	it('creates non-collinear default cut points for empty and non-empty solids', () => {
@@ -42,12 +36,19 @@ describe('toolSectionEditor', () => {
 		expect(additionCells(solidLTetromino(), [9, 9, 9])).toEqual([])
 	})
 
-	it('enforces the voxel cap', () => {
+	it('allows building beyond 27 voxels', () => {
 		const solid: Solid = {
-			voxels: Array.from({ length: MAX_VOXELS }, (_, x) => ({ x, y: 0, z: 0 })),
+			voxels: Array.from({ length: 27 }, (_, x) => ({ x, y: 0, z: 0 })),
 		}
-		expect(addVoxel(solid, [0, 1, 0]).error).toBe('limit')
-		expect(additionCells(solid, [0, 0, 0])).toEqual([])
+		const added = addVoxel(solid, [0, 1, 0])
+		expect(added.error).toBeNull()
+		expect(added.solid.voxels).toHaveLength(28)
+		expect(additionCells(added.solid, [0, 0, 0])).toEqual([
+			[-1, 0, 0],
+			[0, -1, 0],
+			[0, 0, 1],
+			[0, 0, -1],
+		])
 	})
 
 	it('moves on integer cells and rejects collisions', () => {

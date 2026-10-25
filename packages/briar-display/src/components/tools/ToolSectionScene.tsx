@@ -1,13 +1,13 @@
 'use client'
 
-import { OrbitControls } from '@react-three/drei'
+import { GizmoHelper, GizmoViewport, OrbitControls } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Suspense, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { AdditionArrows, PointMarker, StarterCell, VoxelMesh } from './ToolSectionObjects'
 import { type CutPoints, additionCells } from './toolSectionEditor'
-import { MAX_VOXELS, type Plane, type Solid, type Vec3, computeSection } from './toolSectionUtils'
-import { useToolSectionInteraction } from './useToolSectionInteraction'
+import { type Plane, type Solid, type Vec3, computeSection } from './toolSectionUtils'
+import { type PointerPosition, useToolSectionInteraction } from './useToolSectionInteraction'
 
 type SceneProps = {
 	solid: Solid
@@ -20,7 +20,7 @@ type SceneProps = {
 	onSelectCell?: (cell: Vec3 | null) => void
 	onAddCell?: (cell: Vec3) => void
 	onMoveCell?: (from: Vec3, to: Vec3) => void
-	onRemoveCell?: (cell: Vec3) => void
+	onCellContextMenu?: (cell: Vec3, position: PointerPosition) => void
 }
 
 const sameCell = (a: Vec3, b: Vec3) => a.every((value, index) => value === b[index])
@@ -35,7 +35,9 @@ function SectionFill({ plane, solid }: { plane: Plane; solid: Solid }) {
 			Math.abs(normal.x) < 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0)
 		const u = new THREE.Vector3().crossVectors(normal, temporary).normalize()
 		const v = new THREE.Vector3().crossVectors(normal, u).normalize()
-		const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal)
+		const quaternion = new THREE.Quaternion().setFromRotationMatrix(
+			new THREE.Matrix4().makeBasis(u, v, normal),
+		)
 		return section.patches.flatMap((patch, index) => {
 			if (patch.points.length < 3) return []
 			const origin = new THREE.Vector3(...patch.points[0])
@@ -57,7 +59,7 @@ function SectionFill({ plane, solid }: { plane: Plane; solid: Solid }) {
 					geometry: new THREE.ShapeGeometry(shape),
 					position: origin.toArray() as Vec3,
 					quaternion: quaternion.clone(),
-					color: patch.color === 'gray' ? '#4b5563' : '#fbbf24',
+					color: patch.color === 'gray' ? '#0f766e' : '#22d3ee',
 				},
 			]
 		})
@@ -76,34 +78,16 @@ function SectionFill({ plane, solid }: { plane: Plane; solid: Solid }) {
 			quaternion={mesh.quaternion}
 			renderOrder={3}
 		>
-			<meshStandardMaterial
+			<meshBasicMaterial
 				color={mesh.color}
 				side={THREE.DoubleSide}
 				transparent
-				opacity={0.82}
+				opacity={0.72}
+				depthTest={false}
 				depthWrite={false}
 			/>
 		</mesh>
 	))
-}
-
-function PlaneSurface({ plane }: { plane: Plane }) {
-	const quaternion = useMemo(() => {
-		const normal = new THREE.Vector3(...plane.normal).normalize()
-		return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal)
-	}, [plane])
-	return (
-		<mesh position={[...plane.point]} quaternion={quaternion} renderOrder={1}>
-			<planeGeometry args={[8, 8]} />
-			<meshBasicMaterial
-				color="#facc15"
-				side={THREE.DoubleSide}
-				transparent
-				opacity={0.09}
-				depthWrite={false}
-			/>
-		</mesh>
-	)
 }
 
 function SceneContent({
@@ -117,7 +101,7 @@ function SceneContent({
 	onSelectCell,
 	onAddCell,
 	onMoveCell,
-	onRemoveCell,
+	onCellContextMenu,
 }: SceneProps) {
 	const groupRef = useRef<THREE.Group>(null)
 	const center = useMemo<Vec3>(() => {
@@ -148,9 +132,9 @@ function SceneContent({
 		onSelectCell,
 		onAddCell,
 		onMoveCell,
-		onRemoveCell,
+		onCellContextMenu,
 	})
-	const editable = !!(onSelectCell || onMoveCell || onRemoveCell)
+	const editable = !!(onSelectCell || onMoveCell || onCellContextMenu)
 
 	return (
 		<>
@@ -167,7 +151,7 @@ function SceneContent({
 						/>
 					)
 				})}
-				{selectedCell && onAddCell && solid.voxels.length < MAX_VOXELS ? (
+				{selectedCell && onAddCell ? (
 					<AdditionArrows selectedCell={selectedCell} cells={availablePositions} />
 				) : null}
 				{solid.voxels.length === 0 && onAddCell ? <StarterCell /> : null}
@@ -192,12 +176,12 @@ function SceneContent({
 				{points?.map((point, index) => (
 					<PointMarker
 						key={index}
+						solid={solid}
 						point={point}
 						index={index}
 						draggable={!!onPointsChange && solid.voxels.length > 0}
 					/>
 				))}
-				{showSection && plane ? <PlaneSurface plane={plane} /> : null}
 				{showSection && plane ? <SectionFill plane={plane} solid={solid} /> : null}
 			</group>
 			<OrbitControls
@@ -212,6 +196,14 @@ function SceneContent({
 				args={[16, 16, '#cbd5e1', '#e2e8f0']}
 				position={[0, bottom - center[1] - 0.01, 0]}
 			/>
+			<GizmoHelper alignment="bottom-left" margin={[60, 60]}>
+				<GizmoViewport
+					axisColors={['#ef4444', '#22c55e', '#3b82f6']}
+					labelColor="#ffffff"
+					hideNegativeAxes
+					disabled={!orbitEnabled}
+				/>
+			</GizmoHelper>
 		</>
 	)
 }
