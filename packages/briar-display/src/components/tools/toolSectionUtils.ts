@@ -116,8 +116,6 @@ export function planeKey(plane: Plane): string {
 			? -1
 			: 1
 	const nn: Vec3 = [n[0] * sign, n[1] * sign, n[2] * sign]
-	const d = -vecDot(nn, plane.point) * sign * (sign === -1 ? -1 : 1)
-	// 重新：n̂·x = p，把常数项也规范化
 	const nd = -vecDot(nn, plane.point)
 	const r = (x: number) => Math.round(x * 1e6) / 1e6
 	return `${r(nn[0])},${r(nn[1])},${r(nn[2])},${r(nd)}`

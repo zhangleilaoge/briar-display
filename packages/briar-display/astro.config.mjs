@@ -5,6 +5,28 @@ import vue from '@astrojs/vue'
 import { loadEnv } from '@briar/shared/env'
 // @ts-check
 import { defineConfig } from 'astro/config'
+import * as THREE from 'three'
+
+const r3fIntrinsicElements = new Set([
+	'primitive',
+	'threeAudio',
+	'threeSource',
+	'threeLine',
+	'threePath',
+	...Object.entries(THREE)
+		.filter(([, value]) => typeof value === 'function')
+		.map(([name]) => name.charAt(0).toLowerCase() + name.slice(1)),
+])
+for (const name of ['audio', 'source', 'line', 'path']) r3fIntrinsicElements.delete(name)
+
+function isR3FElement(path) {
+	if (path.node.name.type !== 'JSXIdentifier') return false
+	const { name } = path.node.name
+	if (r3fIntrinsicElements.has(name)) return true
+	const binding = path.scope.getBinding(name)
+	const importDeclaration = binding?.path.findParent((parent) => parent.isImportDeclaration())
+	return importDeclaration?.node.source.value.startsWith('@react-three/') ?? false
+}
 
 loadEnv(import.meta.url)
 
@@ -29,6 +51,8 @@ export default defineConfig({
 									.replace(/.*[/\\]src[/\\]/, 'src/')
 									.replace(/\\/g, '/')
 								if (!file.startsWith('src/')) return
+								// R3F 会把 data-* 解释为三维对象的属性路径，不能注入 DOM 定位元数据。
+								if (isR3FElement(path)) return
 								// 避免 HMR 时重复添加
 								const hasDataFile = path.node.attributes.some(
 									(a) => a.type === 'JSXAttribute' && a.name?.name === 'data-file',

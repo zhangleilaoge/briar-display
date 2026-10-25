@@ -37,6 +37,7 @@ backups/
 
 # temp scripts
 cert-renew-fetch.js
+/.tmp/
 
 # construction plan comparison generated outputs
 construction_comparison_report/
