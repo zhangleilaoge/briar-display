@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { OrbitControls } from '@react-three/drei'
+import { Edges, OrbitControls } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Box, Boxes, Pencil, RefreshCw, RotateCcw, Shuffle, SquareStack } from 'lucide-react'
 import { Suspense, useMemo, useState } from 'react'
@@ -41,6 +41,7 @@ function VoxelMesh({
 	onClick?: () => void
 }) {
 	const color = voxel.color === 'gray' ? '#6b7280' : '#f8fafc'
+	// 勿在 mesh 内嵌套原生 <lineSegments>：R3F 会当成 DOM line 属性链（data-line）并抛错，Canvas 整片黑屏。
 	return (
 		<mesh
 			position={[voxel.x + 0.5, voxel.y + 0.5, voxel.z + 0.5]}
@@ -57,65 +58,72 @@ function VoxelMesh({
 				metalness={0.05}
 				roughness={0.55}
 			/>
-			{selected ? (
-				<lineSegments>
-					<edgesGeometry args={[new THREE.BoxGeometry(1.02, 1.02, 1.02)]} />
-					<lineBasicMaterial color="#2563eb" />
-				</lineSegments>
-			) : (
-				<lineSegments>
-					<edgesGeometry args={[new THREE.BoxGeometry(0.99, 0.99, 0.99)]} />
-					<lineBasicMaterial color="#334155" />
-				</lineSegments>
-			)}
+			<Edges
+				threshold={15}
+				color={selected ? '#2563eb' : '#334155'}
+				scale={selected ? 1.02 : 1.005}
+			/>
 		</mesh>
 	)
 }
 
 function SectionFill({ plane, solid }: { plane: Plane; solid: Solid }) {
-	const section = useMemo(() => computeSection(solid, plane), [solid, plane])
+	const meshes = useMemo(() => {
+		const section = computeSection(solid, plane)
+		const n = new THREE.Vector3(...plane.normal)
+		if (n.lengthSq() < 1e-12) return []
+		n.normalize()
+		const tmp = Math.abs(n.x) < 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0)
+		const u = new THREE.Vector3().crossVectors(n, tmp).normalize()
+		const v = new THREE.Vector3().crossVectors(n, u).normalize()
+		const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), n)
+
+		return section.patches.flatMap((patch, i) => {
+			if (patch.points.length < 3) return []
+			const origin = new THREE.Vector3(...patch.points[0])
+			const shape = new THREE.Shape()
+			const to2 = (p: Vec3) => {
+				const w = new THREE.Vector3(p[0], p[1], p[2]).sub(origin)
+				return new THREE.Vector2(w.dot(u), w.dot(v))
+			}
+			const p0 = to2(patch.points[0])
+			shape.moveTo(p0.x, p0.y)
+			for (let k = 1; k < patch.points.length; k++) {
+				const pk = to2(patch.points[k])
+				shape.lineTo(pk.x, pk.y)
+			}
+			shape.closePath()
+			return [
+				{
+					key: i,
+					geometry: new THREE.ShapeGeometry(shape),
+					position: origin.toArray() as [number, number, number],
+					quaternion: quat.clone(),
+					color: patch.color === 'gray' ? '#4b5563' : '#fbbf24',
+				},
+			]
+		})
+	}, [solid, plane])
+
 	return (
 		<>
-			{section.patches.map((patch, i) => {
-				if (patch.points.length < 3) return null
-				const shape = new THREE.Shape()
-				// 建局部正交基，把 3D 多边形投到 Shape，再放到平面上
-				const n = new THREE.Vector3(...plane.normal).normalize()
-				const tmp = Math.abs(n.x) < 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0)
-				const u = new THREE.Vector3().crossVectors(n, tmp).normalize()
-				const v = new THREE.Vector3().crossVectors(n, u).normalize()
-				const origin = new THREE.Vector3(...patch.points[0])
-				const to2 = (p: Vec3) => {
-					const w = new THREE.Vector3(p[0], p[1], p[2]).sub(origin)
-					return new THREE.Vector2(w.dot(u), w.dot(v))
-				}
-				const p0 = to2(patch.points[0])
-				shape.moveTo(p0.x, p0.y)
-				for (let k = 1; k < patch.points.length; k++) {
-					const pk = to2(patch.points[k])
-					shape.lineTo(pk.x, pk.y)
-				}
-				shape.closePath()
-				const geom = new THREE.ShapeGeometry(shape)
-				const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), n)
-				return (
-					<mesh
-						key={i}
-						geometry={geom}
-						position={origin.toArray()}
-						quaternion={quat}
-						renderOrder={2}
-					>
-						<meshStandardMaterial
-							color={patch.color === 'gray' ? '#4b5563' : '#fbbf24'}
-							side={THREE.DoubleSide}
-							transparent
-							opacity={0.85}
-							depthWrite={false}
-						/>
-					</mesh>
-				)
-			})}
+			{meshes.map((m) => (
+				<mesh
+					key={m.key}
+					geometry={m.geometry}
+					position={m.position}
+					quaternion={m.quaternion}
+					renderOrder={2}
+				>
+					<meshStandardMaterial
+						color={m.color}
+						side={THREE.DoubleSide}
+						transparent
+						opacity={0.85}
+						depthWrite={false}
+					/>
+				</mesh>
+			))}
 		</>
 	)
 }
@@ -165,10 +173,16 @@ function Scene({
 	}, [solid])
 
 	return (
-		<Canvas camera={{ position: [4.5, 3.5, 4.5], fov: 40 }} className="h-full w-full rounded-lg">
+		<Canvas
+			camera={{ position: [4.5, 3.5, 4.5], fov: 40, near: 0.1, far: 100 }}
+			className="h-full w-full rounded-lg"
+			gl={{ antialias: true, alpha: false }}
+			dpr={[1, 2]}
+		>
 			<color attach="background" args={['#eef3f8']} />
-			<ambientLight intensity={0.75} />
-			<directionalLight position={[5, 8, 3]} intensity={0.9} />
+			<ambientLight intensity={0.85} />
+			<directionalLight position={[5, 8, 3]} intensity={1.05} />
+			<directionalLight position={[-3, 2, -4]} intensity={0.35} />
 			<Suspense fallback={null}>
 				<group position={[-center[0], -center[1], -center[2]]}>
 					{solid.voxels.map((v) => (
@@ -179,11 +193,17 @@ function Scene({
 						/>
 					))}
 					{points?.map((p, i) => (
-						<PointMarker key={i} p={p} label={'ABC'[i]} />
+						<PointMarker key={`${p[0]},${p[1]},${p[2]},${i}`} p={p} label={'ABC'[i]} />
 					))}
 					{showSection && plane ? <SectionFill plane={plane} solid={solid} /> : null}
 				</group>
-				<OrbitControls enablePan={false} enabled={orbitEnabled} minDistance={3} maxDistance={14} />
+				<OrbitControls
+					makeDefault
+					enablePan={false}
+					enabled={orbitEnabled}
+					minDistance={3}
+					maxDistance={14}
+				/>
 				<gridHelper args={[8, 8, '#cbd5e1', '#e2e8f0']} position={[0, -center[1] - 0.01, 0]} />
 			</Suspense>
 		</Canvas>
