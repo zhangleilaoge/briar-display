@@ -21,10 +21,10 @@ import { num } from './sources'
  * - Naver 韩国指数 minute?startDateTime=&endDateTime= 可取多日；日本（Naver 外国 minute 恒为空）没有多日分时
  * - 东财 trends2 ndays=5（港股个股 / 恒生行业）
  * K 线（日/周/月，前复权）
- * - 腾讯 appstock/app/newfqkline/get?param=CODE,day|week|month,,,N,qfq：A股指数 / pt 板块 / 港股指数 / 美股
+ * - 腾讯 appstock/app/newfqkline/get?param=CODE,day|week|month,,,N,qfq：A股指数 / pt 板块 / 港股指数 / 港股个股（东财失败兜底）/ 美股
  *   （美股代码要带交易所后缀：us.INX、usXLK.AM，后缀取 qt 第 3 段；旧 fqkline 对 pt 板块只回 1 根）
  * - Naver chart/domestic/index/{code}/{day|week|month}、chart/foreign/{index|item}/{code}/{…}（带起止时间）：日韩
- * - 东财 push2his kline/get klt=101/102/103&fqt=1（港股个股 / 恒生行业；腾讯 hkHSCI* 无数据）
+ * - 东财 push2his kline/get klt=101/102/103&fqt=1（港股个股主源 / 恒生行业；腾讯 hkHSCI* 无数据）
  */
 
 export interface RawTrend {
