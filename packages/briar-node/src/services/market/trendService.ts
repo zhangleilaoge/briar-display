@@ -405,7 +405,7 @@ export function clipToSessions(market: MarketId, points: MinutePoint[]): MinuteP
 	})
 }
 
-/** 个股：A股 / 美股走腾讯，港股走新浪 / 东财，日韩走 Naver */
+/** 个股：A股 / 美股走腾讯，港股分时走新浪 / 东财、K线走东财 / 腾讯，日韩走 Naver */
 function planStockChart(market: MarketId, code: string): ChartPlan {
 	if (!isStockCode(market, code)) throw new MarketInputError('股票代码格式不正确')
 	const { timeZone } = MARKET_SESSIONS[market]
@@ -429,7 +429,14 @@ function planStockChart(market: MarketId, code: string): ChartPlan {
 						() => fetchEastmoneyTrends(secid),
 					),
 				fiveDay: () => fetchEastmoneyFiveDay(secid, timeZone),
-				candles: (period) => fetchEastmoneyKline(secid, period, KLINE_COUNT[period]),
+				candles: (period) =>
+					withFallback(
+						() => fetchEastmoneyKline(secid, period, KLINE_COUNT[period]),
+						async () => ({
+							...(await fetchTencentKline(`hk${code}`, period, KLINE_COUNT[period])),
+							delayMinutes: 15,
+						}),
+					),
 				eastmoney: true,
 				delayMinutes: 0,
 				reasons: {},

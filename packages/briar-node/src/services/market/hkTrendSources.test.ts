@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ChartPeriod } from '@briar/shared'
 import { __resetMarketCache } from './cache'
+import { getFearGreedBatch } from './fearGreedService'
 import { parseSinaHkStockQuotes } from './hkStockSources'
 import { parseSinaHkStockMinute } from './hkTrendSources'
 import { zonedTimeToTs } from './session'
@@ -63,6 +64,20 @@ const klineResponse = {
 	},
 }
 
+const tencentCandles = Array.from({ length: 320 }, (_, i) => {
+	const date = new Date(Date.UTC(2026, 9, 23) - (319 - i) * 86_400_000).toISOString().slice(0, 10)
+	const close = 20 + i / 100
+	return [date, close - 0.1, close, close + 0.2, close - 0.2, 1000 + i]
+})
+const tencentKlineResponse = (period: string) => ({
+	data: {
+		hk01810: {
+			[period]: tencentCandles,
+			qt: { hk01810: ['100', '小米集团-W'] },
+		},
+	},
+})
+
 describe('港股个股低延迟走势', () => {
 	const realFetch = globalThis.fetch
 	let calls: string[]
@@ -84,8 +99,15 @@ describe('港股个股低延迟走势', () => {
 					? new Response('unavailable', { status: 503 })
 					: Response.json(minuteResponse)
 			}
+			if (url.includes('web.ifzq.gtimg.cn/appstock/app/newfqkline/get')) {
+				const period = new URL(url).searchParams.get('param')?.split(',')[1] || 'day'
+				return Response.json(tencentKlineResponse(period))
+			}
 			if (url.includes('push2his.eastmoney.com')) {
-				if (eastmoneyDown) return new Response('unavailable', { status: 503 })
+				if (eastmoneyDown) {
+					if (url.includes('kline/get')) throw new Error('fetch failed (UND_ERR_SOCKET)')
+					return new Response('unavailable', { status: 503 })
+				}
 				if (url.includes('trends2/get')) {
 					return Response.json(trendsResponse(new URL(url).searchParams.get('ndays')))
 				}
@@ -139,6 +161,31 @@ describe('港股个股低延迟走势', () => {
 		}
 		expect(calls.filter((url) => url.includes('push2his.eastmoney.com'))).toHaveLength(4)
 		expect(calls.some((url) => url.includes('web.ifzq.gtimg.cn'))).toBe(false)
+	})
+
+	test('东财K线socket失败时回退腾讯，01810恐贪指数仍有完整分项', async () => {
+		eastmoneyDown = true
+		for (const period of ['day', 'week', 'month'] as ChartPeriod[]) {
+			const chart = await getChart('hk', 'stock', '01810', period)
+			expect(chart).toMatchObject({
+				available: true,
+				delayMinutes: 15,
+				source: '腾讯K线',
+			})
+			expect(chart.candles).toHaveLength(320)
+		}
+		const { items } = await getFearGreedBatch([{ market: 'hk', code: '01810' }])
+		expect(items[0]).toMatchObject({
+			market: 'hk',
+			code: '01810',
+			name: '小米集团-W',
+			score: expect.any(Number),
+			asOf: '2026-10-23',
+			candles: 320,
+		})
+		expect(items[0].components).toHaveLength(7)
+		expect(items[0].components.every((c) => c.score != null)).toBe(true)
+		expect(calls.filter((url) => url.includes('newfqkline/get'))).toHaveLength(3)
 	})
 
 	test('新浪分时失败可降级东财，两个低延迟源都失败也不回退腾讯', async () => {
