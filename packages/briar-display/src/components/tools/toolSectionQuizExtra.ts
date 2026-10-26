@@ -13,14 +13,12 @@ import {
 	areSolidsCongruent,
 	boundingSize,
 	cuboid,
-	gridSignature,
+	gridShapeKey,
 	isSupportedSolid,
 	layerCounts,
-	mirrorGrid,
 	mirrorSolid,
 	orthographicView,
 	randomSolidPreset,
-	rotateGrid,
 	rotateSolid,
 	solidKey,
 	subtractSolid,
@@ -55,20 +53,17 @@ export function generateQ2(rng: () => number = Math.random): QuizQuestion {
 	const directions: ViewDirection[] = ['front', 'side', 'top']
 	const direction = directions[Math.floor(rng() * directions.length)]
 	const correct = orthographicView(solid, direction)
-	const correctKey = gridSignature(correct)
+	const correctKey = gridShapeKey(correct)
 	const wrong = new Map<string, GridDiagram>()
 	const add = (grid: GridDiagram) => {
-		const key = gridSignature(grid)
+		const key = gridShapeKey(grid)
 		if (key !== correctKey) wrong.set(key, grid)
 	}
 	for (const other of directions) {
 		if (other !== direction) add(orthographicView(solid, other))
 	}
-	let rotated = rotateGrid(correct)
-	for (let index = 0; index < 3; index++) {
-		add(rotated)
-		add(mirrorGrid(rotated))
-		rotated = rotateGrid(rotated)
+	for (const preset of shuffle(QUIZ_SOLID_PRESETS, rng)) {
+		add(orthographicView(preset.solid, direction))
 	}
 	for (let attempt = 0; attempt < 40 && wrong.size < 3; attempt++) {
 		const row = Math.floor(rng() * correct.rows)

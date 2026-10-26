@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'bun:test'
 import { generateQ2, generateQ5, generateQ6, generateQ8, generateQ9 } from './toolSectionQuizExtra'
-import { areSolidsCongruent, gridSignature, orthographicView } from './toolSectionSolids'
+import {
+	areSolidsCongruent,
+	gridShapeKey,
+	gridSignature,
+	orthographicView,
+} from './toolSectionSolids'
 
 function seededRng(seed: number) {
 	let state = seed
@@ -11,8 +16,8 @@ function seededRng(seed: number) {
 }
 
 describe('toolSectionQuizExtra', () => {
-	it('uses the requested orthographic direction and distinct distractors', () => {
-		for (let seed = 1; seed <= 60; seed++) {
+	it('uses the requested orthographic direction and excludes rotation or mirror duplicates', () => {
+		for (let seed = 1; seed <= 100; seed++) {
 			const question = generateQ2(seededRng(seed))
 			const correct = question.options.find((option) => option.isCorrect)!
 			if (correct.visual.kind !== 'grid') throw new Error('三视图答案必须是网格')
@@ -21,7 +26,7 @@ describe('toolSectionQuizExtra', () => {
 			)
 			for (const option of question.options) {
 				if (option.isCorrect || option.visual.kind !== 'grid') continue
-				expect(gridSignature(option.visual.grid)).not.toBe(gridSignature(correct.visual.grid))
+				expect(gridShapeKey(option.visual.grid)).not.toBe(gridShapeKey(correct.visual.grid))
 			}
 		}
 	})

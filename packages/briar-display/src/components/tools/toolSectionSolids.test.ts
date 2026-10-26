@@ -3,9 +3,12 @@ import {
 	QUIZ_SOLID_PRESETS,
 	ROTATION_MATRICES,
 	areSolidsCongruent,
+	gridShapeKey,
 	gridSignature,
+	mirrorGrid,
 	mirrorSolid,
 	orthographicView,
+	rotateGrid,
 	rotateSolid,
 } from './toolSectionSolids'
 
@@ -49,5 +52,22 @@ describe('toolSectionSolids', () => {
 		expect(gridSignature(front)).not.toContain('0,1')
 		expect(orthographicView(L_SOLID, 'side').cells).toHaveLength(2)
 		expect(orthographicView(L_SOLID, 'top').cells).toHaveLength(2)
+	})
+
+	it('treats rotated and mirrored T silhouettes as the same option shape', () => {
+		const tShape = {
+			rows: 3,
+			cols: 2,
+			cells: [
+				{ row: 0, col: 1 },
+				{ row: 1, col: 0 },
+				{ row: 1, col: 1 },
+				{ row: 2, col: 1 },
+			],
+		}
+		const rotated = rotateGrid(tShape)
+		expect(gridSignature(rotated)).not.toBe(gridSignature(tShape))
+		expect(gridShapeKey(rotated)).toBe(gridShapeKey(tShape))
+		expect(gridShapeKey(mirrorGrid(tShape))).toBe(gridShapeKey(tShape))
 	})
 })

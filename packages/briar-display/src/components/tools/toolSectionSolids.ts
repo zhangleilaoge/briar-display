@@ -165,6 +165,16 @@ export function gridSignature(grid: GridDiagram): string {
 	return `${grid.rows}x${grid.cols}:${cells}`
 }
 
+export function gridShapeKey(grid: GridDiagram): string {
+	const signatures: string[] = []
+	let current = grid
+	for (let index = 0; index < 4; index++) {
+		signatures.push(gridSignature(current), gridSignature(mirrorGrid(current)))
+		current = rotateGrid(current)
+	}
+	return signatures.sort()[0]
+}
+
 export function orthographicView(solid: Solid, direction: ViewDirection): GridDiagram {
 	const size = boundingSize(solid)
 	const rows = direction === 'top' ? size[2] : size[1]
