@@ -11,10 +11,12 @@ import { ToolSectionSandbox } from './ToolSectionSandbox'
 import { ToolSectionScene } from './ToolSectionScene'
 import ToolsLayout from './ToolsLayout'
 import { type QuizKind, type QuizOption, type QuizQuestion, generateQuiz } from './toolSectionQuiz'
-import { cutPointsForPlane, planeKey } from './toolSectionUtils'
+import { type Vec3, cutPointsForPlane, planeKey } from './toolSectionUtils'
 
-function OptionShape({ option }: { option: QuizOption }) {
-	return <QuizOptionVisual visual={option.visual} size={128} />
+const INITIAL_QUIZ_VIEW: Vec3 = [5, 4, 5]
+
+function OptionShape({ option, viewDirection }: { option: QuizOption; viewDirection: Vec3 }) {
+	return <QuizOptionVisual visual={option.visual} size={128} viewDirection={viewDirection} />
 }
 
 const QUIZ_LABELS: Record<QuizKind, string> = {
@@ -36,6 +38,7 @@ function QuizPanel() {
 	const [revealed, setRevealed] = useState(false)
 	const [previewId, setPreviewId] = useState<string | null>(null)
 	const [assemblyRunId, setAssemblyRunId] = useState(0)
+	const [solidViewDirection, setSolidViewDirection] = useState<Vec3>(INITIAL_QUIZ_VIEW)
 
 	const reload = (nextKind: QuizKind = kind) => {
 		setKind(nextKind)
@@ -146,6 +149,7 @@ function QuizPanel() {
 									points={scenePoints}
 									showSection={!!scenePlane}
 									assembly={assembly}
+									onViewChange={setSolidViewDirection}
 								/>
 							</div>
 						)}
@@ -204,7 +208,7 @@ function QuizPanel() {
 												{option.label}
 											</span>
 										</div>
-										<OptionShape option={option} />
+										<OptionShape option={option} viewDirection={solidViewDirection} />
 									</button>
 								)
 							})}
@@ -235,7 +239,11 @@ function QuizPanel() {
 								className="flex items-start gap-3 rounded-md border bg-muted/30 p-3"
 								data-option-explanation={activeOption.id}
 							>
-								<QuizOptionVisual visual={activeOption.visual} size={120} />
+								<QuizOptionVisual
+									visual={activeOption.visual}
+									size={120}
+									viewDirection={solidViewDirection}
+								/>
 								<div className="text-xs text-muted-foreground">
 									<p className="font-medium text-foreground">
 										{activeOption.id} · {activeOption.label}

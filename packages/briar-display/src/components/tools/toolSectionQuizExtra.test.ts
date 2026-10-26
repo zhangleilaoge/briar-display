@@ -6,6 +6,7 @@ import {
 	gridSignature,
 	orthographicView,
 } from './toolSectionSolids'
+import { voxelKey } from './toolSectionUtils'
 
 function seededRng(seed: number) {
 	let state = seed
@@ -65,6 +66,14 @@ describe('toolSectionQuizExtra', () => {
 			if (correct.visual.kind !== 'solid') throw new Error('拼合答案必须是立体')
 			expect(question.targetSolid!.voxels.length - question.solid.voxels.length).toBe(
 				correct.visual.solid.voxels.length,
+			)
+			const baseCells = new Set(question.solid.voxels.map(voxelKey))
+			expect(correct.visual.solid.voxels.some((voxel) => baseCells.has(voxelKey(voxel)))).toBe(
+				false,
+			)
+			const combined = [...question.solid.voxels, ...correct.visual.solid.voxels]
+			expect(combined.map(voxelKey).sort()).toEqual(
+				question.targetSolid!.voxels.map(voxelKey).sort(),
 			)
 			for (const option of question.options) {
 				if (option.isCorrect || option.visual.kind !== 'solid') continue
