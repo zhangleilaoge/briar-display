@@ -6,7 +6,7 @@ import { Link2, Loader2, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import { WEB_MEDIA_PLATFORMS, platformIcon } from './toolMediaUtils'
 
-/** 网页已支持平台（纯图标示意）；全量含 mrds66 见 MEDIA_PLATFORMS */
+/** 网页已支持平台（纯图标示意）；全量含 mrds66/91porn 见 MEDIA_PLATFORMS */
 const SUPPORTED_PLATFORMS = WEB_MEDIA_PLATFORMS
 
 interface ToolMediaSearchBarProps {
