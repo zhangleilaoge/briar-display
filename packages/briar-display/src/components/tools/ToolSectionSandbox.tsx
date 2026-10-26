@@ -49,7 +49,7 @@ export function ToolSectionSandbox() {
 	const [selectedCell, setSelectedCell] = useState<Vec3 | null>(null)
 	const [rotation, setRotation] = useState(1)
 	const [reflection, setReflection] = useState({ x: false, y: false })
-	const [edgeSnap, setEdgeSnap] = useState(false)
+	const [edgeSnap, setEdgeSnap] = useState(true)
 	const [voxelMenu, setVoxelMenu] = useState<VoxelMenuPosition | null>(null)
 	const cutPoints = useMemo(
 		() =>
@@ -147,16 +147,24 @@ export function ToolSectionSandbox() {
 								<Badge variant="secondary">{solid.voxels.length} 块</Badge>
 							</div>
 							<div className="flex flex-wrap gap-2">
-								<Button
-									size="sm"
-									variant={edgeSnap ? 'default' : 'outline'}
-									className="gap-1"
-									aria-pressed={edgeSnap}
-									onClick={() => setEdgeSnap((current) => !current)}
-								>
-									<Magnet className="h-3.5 w-3.5" />
-									线吸附
-								</Button>
+								<div className="mr-1 flex items-center gap-2">
+									<Magnet className="h-3.5 w-3.5 text-muted-foreground" />
+									<span className="text-xs">线吸附</span>
+									<Button
+										type="button"
+										size="sm"
+										variant="outline"
+										role="switch"
+										aria-checked={edgeSnap}
+										aria-label="线吸附"
+										className={`h-6 w-11 rounded-full p-0.5 ${edgeSnap ? 'bg-primary hover:bg-primary/90' : 'bg-muted hover:bg-muted'}`}
+										onClick={() => setEdgeSnap((current) => !current)}
+									>
+										<span
+											className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${edgeSnap ? 'translate-x-5' : 'translate-x-0'}`}
+										/>
+									</Button>
+								</div>
 								<Button
 									size="sm"
 									variant="outline"
