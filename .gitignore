@@ -10,6 +10,10 @@ packages/briar-node/jobs/
 # dependencies
 node_modules/
 
+# Python bytecode
+__pycache__/
+*.py[cod]
+
 # logs
 npm-debug.log*
 yarn-debug.log*

@@ -310,6 +310,34 @@ def query_logs(
     return result
 
 
+DEFAULT_SOURCE_TYPES = ("H5", "WEAPP")
+
+
+def parse_source_types(raw: str) -> tuple[str, ...]:
+    values = tuple(
+        dict.fromkeys(part.strip().upper() for part in raw.split(",") if part.strip())
+    )
+    if not values or any(value not in DEFAULT_SOURCE_TYPES for value in values):
+        raise ValueError("source-types 仅支持 H5、WEAPP，多个值用英文逗号分隔")
+    return values
+
+
+def extract_source_type(item: dict) -> str | None:
+    pattern = r'"sourceType"\s*:\s*"([A-Za-z0-9_-]+)"'
+    message = (item.get("message") or "").replace('\\"', '"')
+    match = re.search(pattern, message)
+    if not match:
+        match = re.search(pattern, json.dumps(item, ensure_ascii=False))
+    return match.group(1) if match else None
+
+
+def filter_logs_by_source_types(
+    logs: list[dict], source_types: tuple[str, ...]
+) -> list[dict]:
+    allowed = set(source_types)
+    return [item for item in logs if extract_source_type(item) in allowed]
+
+
 def extract_candidates(logs: list[dict]) -> list[dict]:
     buyer_pattern = re.compile(r'"buyerId"\s*:\s*(\d+)')
     session_pattern = re.compile(r"uic:session:([A-Za-z0-9]+)")
@@ -331,6 +359,7 @@ def extract_candidates(logs: list[dict]) -> list[dict]:
                 "sessionId": session_match.group(1),
                 "logTime": item.get("time"),
                 "traceId": item.get("traceId"),
+                "sourceType": extract_source_type(item),
             }
         )
     return candidates
@@ -363,6 +392,7 @@ def extract_sessions_for_user(logs: list[dict], user_id: str) -> list[dict]:
                 "sessionId": session_id,
                 "time": item.get("time"),
                 "kdtId": int(kdt_match.group(1)) if kdt_match else None,
+                "sourceType": extract_source_type(item),
             }
         )
     return sessions
@@ -492,6 +522,7 @@ def query_shop(
     *,
     kdt_id: str,
     expected: int,
+    source_types: tuple[str, ...],
     log_skill_dir: Path,
     dubbo_skill_dir: Path,
     dubbo_python: str,
@@ -521,8 +552,9 @@ def query_shop(
         shop_meta = (root_response.get("data") or {}).get("shopMetaInfo") or {}
         root_kdt_id = int(shop_meta.get("rootKdtId") or kdt_id)
 
-    log_result = query_logs(log_skill_dir, f'{kdt_id} "sourceType":"H5"', start, end)
-    candidates = extract_candidates(log_result.get("logs", []))
+    log_result = query_logs(log_skill_dir, kdt_id, start, end)
+    source_logs = filter_logs_by_source_types(log_result.get("logs", []), source_types)
+    candidates = extract_candidates(source_logs)
     progress(
         f"候选提取完成 kdtId={kdt_id} unique={len(candidates)} "
         f"expectedValid={expected}"
@@ -573,6 +605,7 @@ def query_shop(
                 "sessionId": candidate["sessionId"],
                 "time": candidate["logTime"],
                 "kdtId": int(kdt_id),
+                "sourceType": candidate["sourceType"],
             }
         )
         progress(f"有效导购已找到 {len(valid_guides)}/{expected} kdtId={kdt_id}")
@@ -601,12 +634,16 @@ def execute_user_fast_path(args: argparse.Namespace) -> tuple[Path, Path, dict]:
 
     end = datetime.now(SHANGHAI)
     start = end - timedelta(hours=args.window_hours)
-    keyword = f'{args.user_id} "sourceType":"H5"'
-    if args.kdt_id:
-        keyword = f'{args.user_id} {args.kdt_id} "sourceType":"H5"'
     progress(f"直达查询开始 userId={mask(args.user_id)}")
-    log_result = query_logs(log_skill_dir, keyword, start, end)
-    sessions = extract_sessions_for_user(log_result.get("logs", []), args.user_id)
+    log_result = query_logs(log_skill_dir, args.user_id, start, end)
+    source_logs = filter_logs_by_source_types(
+        log_result.get("logs", []), args.source_types
+    )
+    sessions = extract_sessions_for_user(source_logs, args.user_id)
+    if args.kdt_id:
+        sessions = [
+            session for session in sessions if session["kdtId"] == int(args.kdt_id)
+        ]
     progress(f"直达查询完成 userId={mask(args.user_id)} matched={len(sessions)}")
 
     stamp = datetime.now(SHANGHAI).strftime("%Y%m%d-%H%M%S")
@@ -618,6 +655,7 @@ def execute_user_fast_path(args: argparse.Namespace) -> tuple[Path, Path, dict]:
         "kdtId": int(args.kdt_id) if args.kdt_id else None,
         "userId": args.user_id,
         "pageKey": None,
+        "sourceTypes": list(args.source_types),
         "windowHours": args.window_hours,
         "timeRange": {
             "start": start.isoformat(timespec="seconds"),
@@ -705,6 +743,7 @@ def execute(args: argparse.Namespace) -> tuple[Path, Path, dict]:
         summary = query_shop(
             kdt_id=kdt_id,
             expected=remaining,
+            source_types=args.source_types,
             log_skill_dir=log_skill_dir,
             dubbo_skill_dir=dubbo_skill_dir,
             dubbo_python=dubbo_python,
@@ -728,6 +767,7 @@ def execute(args: argparse.Namespace) -> tuple[Path, Path, dict]:
     output = {
         "kdtId": int(args.kdt_id) if args.kdt_id else None,
         "pageKey": args.page_key,
+        "sourceTypes": list(args.source_types),
         "windowHours": args.window_hours,
         "timeRange": {
             "start": start.isoformat(timespec="seconds"),
@@ -762,6 +802,12 @@ def main() -> int:
     parser.add_argument("--page-key")
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--window-hours", type=int, default=24)
+    parser.add_argument(
+        "--source-types",
+        type=parse_source_types,
+        default=DEFAULT_SOURCE_TYPES,
+        help="接受的登录来源，逗号分隔，仅支持 H5、WEAPP；默认两者都查",
+    )
     parser.add_argument("--expected-valid-count", type=int, default=2)
     parser.add_argument("--max-shops", type=int, default=3)
     parser.add_argument("--zan-log-skill-dir")
@@ -787,6 +833,7 @@ def main() -> int:
                 "records": str(record_path),
                 "shopsTried": output["shopsTried"],
                 "expectedValidCount": output["expectedValidCount"],
+                "sourceTypes": output["sourceTypes"],
                 "targetReached": output["targetReached"],
                 "validGuideCount": output["validGuideCount"],
                 "failedGuideRequests": output["failedGuideRequests"],
