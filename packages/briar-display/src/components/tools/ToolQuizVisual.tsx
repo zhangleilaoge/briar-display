@@ -1,85 +1,36 @@
 import { useMemo } from 'react'
 import { SectionSvgPreview } from './ToolSectionPreview'
 import type { QuizVisual } from './toolSectionQuizTypes'
+import {
+	DEFAULT_SOLID_VIEW,
+	type SolidPreviewFace,
+	solidPreviewFaces,
+} from './toolSectionSolidPreview'
 import type { GridDiagram } from './toolSectionSolids'
 import type { Solid, Vec3, VoxelColor } from './toolSectionUtils'
-import { voxelKey } from './toolSectionUtils'
-
-type Point2 = [number, number]
-type Face = { points: Vec3[]; depth: number; color: VoxelColor; role: 'x' | 'y' | 'z' }
 
 const FACE_COLORS = ['#0f172a', '#475569', '#0f766e', '#0369a1', '#b45309', '#be123c']
 
-function project(point: Vec3): Point2 {
-	return [(point[0] - point[2]) * 0.8660254, (point[0] + point[2]) * 0.5 - point[1]]
-}
-
-function solidFaces(solid: Solid): Face[] {
-	const occupied = new Set(solid.voxels.map((voxel) => voxelKey(voxel)))
-	const faces: Face[] = []
-	for (const voxel of solid.voxels) {
-		const { x, y, z } = voxel
-		const color = voxel.color ?? 'white'
-		const candidates: Array<Omit<Face, 'depth'>> = [
-			{
-				role: 'x',
-				color,
-				points: [
-					[x + 1, y, z],
-					[x + 1, y + 1, z],
-					[x + 1, y + 1, z + 1],
-					[x + 1, y, z + 1],
-				],
-			},
-			{
-				role: 'z',
-				color,
-				points: [
-					[x, y, z + 1],
-					[x, y + 1, z + 1],
-					[x + 1, y + 1, z + 1],
-					[x + 1, y, z + 1],
-				],
-			},
-			{
-				role: 'y',
-				color,
-				points: [
-					[x, y + 1, z],
-					[x, y + 1, z + 1],
-					[x + 1, y + 1, z + 1],
-					[x + 1, y + 1, z],
-				],
-			},
-		]
-		for (const face of candidates) {
-			const neighbor = {
-				x: x + (face.role === 'x' ? 1 : 0),
-				y: y + (face.role === 'y' ? 1 : 0),
-				z: z + (face.role === 'z' ? 1 : 0),
-			}
-			if (occupied.has(voxelKey(neighbor))) continue
-			const depth =
-				face.points.reduce((sum, point) => sum + point[0] + point[1] + point[2], 0) /
-				face.points.length
-			faces.push({ ...face, depth })
-		}
-	}
-	return faces.sort((a, b) => a.depth - b.depth)
-}
-
-function fillFor(color: VoxelColor, role: Face['role']): string {
+function fillFor(color: VoxelColor, role: SolidPreviewFace['role']): string {
 	if (color === 'gray') {
 		return role === 'y' ? '#475569' : role === 'x' ? '#1f2937' : '#334155'
 	}
 	return role === 'y' ? '#f8fafc' : role === 'x' ? '#cbd5e1' : '#e2e8f0'
 }
 
-export function SolidSvgPreview({ solid, size = 128 }: { solid: Solid; size?: number }) {
+export function SolidSvgPreview({
+	solid,
+	size = 128,
+	viewDirection,
+}: {
+	solid: Solid
+	size?: number
+	viewDirection?: Vec3
+}) {
+	const direction = viewDirection ?? DEFAULT_SOLID_VIEW
 	const svg = useMemo(() => {
-		const faces = solidFaces(solid)
-		const projected = faces.map((face) => ({ ...face, points2: face.points.map(project) }))
-		const all = projected.flatMap((face) => face.points2)
+		const projected = solidPreviewFaces(solid, direction)
+		const all = projected.flatMap((face) => face.points)
 		const xs = all.map((point) => point[0])
 		const ys = all.map((point) => point[1])
 		const minX = Math.min(...xs)
@@ -92,7 +43,7 @@ export function SolidSvgPreview({ solid, size = 128 }: { solid: Solid; size?: nu
 		const offsetY = (size - (maxY - minY) * scale) / 2
 		return projected.map((face) => ({
 			...face,
-			d: face.points2
+			d: face.points
 				.map(([x, y], index) => {
 					const px = offsetX + (x - minX) * scale
 					const py = offsetY + (y - minY) * scale
@@ -100,12 +51,18 @@ export function SolidSvgPreview({ solid, size = 128 }: { solid: Solid; size?: nu
 				})
 				.join(' '),
 		}))
-	}, [solid, size])
+	}, [solid, size, direction])
 	return (
-		<svg width={size} height={size} className="rounded border bg-white" data-option-visual="solid">
+		<svg
+			width={size}
+			height={size}
+			className="rounded border bg-white"
+			data-option-visual="solid"
+			data-view-direction={direction.map((value) => value.toFixed(4)).join(',')}
+		>
 			{svg.map((face, index) => (
 				<path
-					key={`${face.role}-${index}`}
+					key={`${face.normal.join(',')}-${index}`}
 					d={`${face.d} Z`}
 					fill={fillFor(face.color, face.role)}
 					stroke="#334155"
@@ -233,14 +190,22 @@ function FacesSvgPreview({ labels, size }: { labels: [string, string]; size: num
 	)
 }
 
-export function QuizOptionVisual({ visual, size = 128 }: { visual: QuizVisual; size?: number }) {
+export function QuizOptionVisual({
+	visual,
+	size = 128,
+	viewDirection,
+}: {
+	visual: QuizVisual
+	size?: number
+	viewDirection?: Vec3
+}) {
 	switch (visual.kind) {
 		case 'section':
 			return <SectionSvgPreview section={visual.section} plane={visual.diagramPlane} size={size} />
 		case 'grid':
 			return <GridSvgPreview grid={visual.grid} size={size} />
 		case 'solid':
-			return <SolidSvgPreview solid={visual.solid} size={size} />
+			return <SolidSvgPreview solid={visual.solid} size={size} viewDirection={viewDirection} />
 		case 'value':
 			return <ValueSvgPreview value={visual.value} caption={visual.caption} size={size} />
 		case 'faces':

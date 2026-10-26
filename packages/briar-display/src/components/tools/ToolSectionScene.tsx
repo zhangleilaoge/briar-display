@@ -1,8 +1,8 @@
 'use client'
 
 import { GizmoHelper, GizmoViewport, OrbitControls } from '@react-three/drei'
-import { Canvas, useFrame } from '@react-three/fiber'
-import { Suspense, useEffect, useMemo, useRef } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { AdditionArrows, PointMarker, StarterCell, VoxelMesh } from './ToolSectionObjects'
 import { ASSEMBLY_DURATION, assemblyPieceOffset } from './toolSectionAssembly'
@@ -19,6 +19,7 @@ type SceneProps = {
 	showSection?: boolean
 	orbitEnabled?: boolean
 	assembly?: { base: Solid; piece: Solid; runId: number }
+	onViewChange?: (direction: Vec3) => void
 	onPointsChange?: (points: CutPoints) => void
 	selectedCell?: Vec3 | null
 	onSelectCell?: (cell: Vec3 | null) => void
@@ -162,6 +163,7 @@ function SceneContent({
 	showSection = false,
 	orbitEnabled = true,
 	assembly,
+	onViewChange,
 	onPointsChange,
 	selectedCell,
 	onSelectCell,
@@ -170,6 +172,14 @@ function SceneContent({
 	onCellContextMenu,
 }: SceneProps) {
 	const groupRef = useRef<THREE.Group>(null)
+	const camera = useThree((state) => state.camera)
+	const syncViewDirection = useCallback(() => {
+		const direction = camera.position.clone().normalize()
+		onViewChange?.([direction.x, direction.y, direction.z])
+	}, [camera, onViewChange])
+	useEffect(() => {
+		syncViewDirection()
+	}, [syncViewDirection])
 	const displaySolid = useMemo<Solid>(
 		() => (assembly ? { voxels: [...assembly.base.voxels, ...assembly.piece.voxels] } : solid),
 		[assembly, solid],
@@ -271,6 +281,7 @@ function SceneContent({
 			</group>
 			<OrbitControls
 				makeDefault
+				onChange={syncViewDirection}
 				enableDamping={false}
 				enablePan={false}
 				enabled={orbitEnabled}
