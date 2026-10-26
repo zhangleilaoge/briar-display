@@ -1,6 +1,6 @@
 ---
 name: briar-youzan-get-session-id
-description: 按时间窗口 + （userId / 定制页面 key / kdtId）查询有效导购登录 sessionId。已知导购 userId 时走直达模式：单次 uic-session 天网查询秒级返回 sessionId，零 Dubbo 调用。不知道 userId 时通过 columbus 白名单解析定制页面商家，从 uic-session 天网日志提取 C 端 H5 登录候选并按 userId 去重，再用 zan-dubbo-invoke 以不超过 3 QPS 调用生产只读 Dubbo 接口校验导购身份，返回手机号、userId、sessionId 和登录时间。当用户提到有效导购登录信息、导购 SessionKey、导购 sessionId、模拟导购登录、定制页面商家导购、按页面 key 找店铺导购，或需要复现“模拟导购登录：获取SessionKey”流程时，应使用本技能。
+description: 按时间窗口 + （userId / 定制页面 key / kdtId）查询有效导购登录 sessionId。已知导购 userId 时走直达模式：单次 uic-session 天网查询秒级返回 sessionId，零 Dubbo 调用。不知道 userId 时通过 columbus 白名单解析定制页面商家，从 uic-session 天网日志提取 C 端 H5 / 小程序登录候选并按 userId 去重，再用 zan-dubbo-invoke 以不超过 3 QPS 调用生产只读 Dubbo 接口校验导购身份，返回手机号、userId、sessionId、登录时间和来源。当用户提到有效导购登录信息、导购 SessionKey、导购 sessionId、模拟导购登录、定制页面商家导购、按页面 key 找店铺导购，或需要复现“模拟导购登录：获取SessionKey”流程时，应使用本技能。
 tags: python, dubbo, youzan-internal, retail, session
 ---
 
@@ -20,8 +20,8 @@ bash scripts/pre-execute.sh briar-youzan-get-session-id
 
 - 本技能仅限开发人员在已获授权的排查场景中临时使用，不得操作用户数据，不得频繁调用。
 - 本技能只负责查询日志和校验导购身份，不自动写入 `KDTSESSIONID`，不执行模拟登录，也不修改用户或店铺数据。
-- 只使用 C 端 H5 登录记录。小程序、App 或 B 端登录记录不能用于该场景，应直接排除。
-- 天网查询只替换目标 `kdtId` 和时间范围，保留 `"sourceType":"H5"` 条件；总部和分店 ID 均可作为查询目标。
+- 只使用 C 端 H5 或小程序（`WEAPP`）登录记录，App 或 B 端登录记录应直接排除。
+- 天网查询仅使用目标 `userId` 或 `kdtId` 单词搜索，再按 `--source-types` 在本地过滤来源，避免组合关键词漏查；总部和分店 ID 均可作为查询目标。
 - `sessionId` 等同于可用于登录的敏感凭据，只能按最小必要原则展示和保存；执行进度不得打印完整值，详细结果文件权限必须为 `0600`。
 - 如果用户在本技能之外人工使用 `sessionId` 模拟登录，应尽量减少页面浏览和点击，避免产生埋点并影响用户行为分析统计。
 
@@ -36,7 +36,10 @@ bash scripts/pre-execute.sh briar-youzan-get-session-id
      - `--kdt-id <KDT_ID>`：直接指定店铺。拒绝空值、非数字、零或负数。
      - `--page-key <定制页面key>`：如 `guide-customer-detail-page`。脚本通过 columbus 白名单解析出所有绑定该 key 的店铺，按顺序逐店查询，找到预期数量的有效记录或尝试满 `--max-shops`（默认 3）家后停止。
 
-可选参数：`--expected-valid-count`（预期有效记录数，默认 2，正整数，仅店铺扫描模式）。
+可选参数：
+
+- `--expected-valid-count`：预期有效记录数，默认 2，正整数，仅店铺扫描模式。
+- `--source-types`：接受的登录来源，默认 `H5,WEAPP`；可设为 `H5` 或 `WEAPP` 只保留一种来源。
 
 ## 执行流程
 
@@ -55,7 +58,7 @@ uv run --system-certs --python 3.12 --with requests --with browser_cookie3 \
   --user-id <USER_ID> \
   --window-hours 48 \
   --output-dir <安全输出目录>
-# 可加 --kdt-id <KDT_ID> 只保留该店铺的登录记录
+# 可加 --kdt-id <KDT_ID> 只保留该店铺；--source-types WEAPP 只保留小程序
 
 # 按 kdtId 查询
 uv run --system-certs --python 3.12 --with requests --with browser_cookie3 \
@@ -82,7 +85,7 @@ uv run --system-certs --python 3.12 --with requests --with browser_cookie3 \
 脚本固定执行以下规则：
 
 - 天网应用：`uic-session`；环境和业务线：`prod` / `main`
-- 关键字：店铺模式为 `<kdtId> "sourceType":"H5"`，直达模式为 `<userId> [kdtId] "sourceType":"H5"`；候选按 `userId` 去重，不设上限
+- 关键字：店铺模式仅使用 `<kdtId>`，直达模式仅使用 `<userId>`；按 `--source-types` 本地过滤来源，直达模式的 `kdtId` 也在本地过滤；候选按 `userId` 去重，不设上限
 - 直达模式不做 Dubbo 导购校验（调用方已明确目标），结果不含手机号；`kdtId` 依赖日志行内字段，可能为空
 - 白名单：`https://columbus.prod.qima-inc.com/columbus/getWhiteList`，使用本机 Chrome CAS 会话拉取，只提取 `<pageKey>_<kdtId>` 条目，不落盘原始响应
 - 店铺元数据和导购 RPC：通过 `zan-dubbo-invoke` 在 `prod` 串行执行，相邻请求启动时间至少间隔 350 毫秒
@@ -104,7 +107,7 @@ Dubbo 鉴权由 `zan-dubbo-invoke` 管理（Funeng/Ticket 登录态，可从 Chr
 
 ## 结果判定
 
-- 当任一店铺 `logQuery.truncated=true` 时，结果覆盖不完整。必须说明结果只基于天网最新返回的候选，不能视为全窗口完整扫描。
+- 当直达结果 `truncated=true` 或任一店铺 `logQuery.truncated=true` 时，结果覆盖不完整。必须说明结果只基于天网最新返回的候选，不能视为全窗口完整扫描。
 - Dubbo 调用成功但没有返回导购对象时，应判定为“不是有效导购”，而不是请求失败。
 - 当 `targetReached=false` 时，应说明“已校验全部可用候选（或已尝试满 max-shops 家店铺），但未找到预期数量”。如果天网结果已截断，不得声称截断范围之外不存在更多有效记录。
 - 不得根据返回内容推导额外业务结论。
@@ -115,9 +118,9 @@ Dubbo 鉴权由 `zan-dubbo-invoke` 管理（Funeng/Ticket 登录态，可从 Chr
 
 当用户明确要求展示有效登录记录时，最终使用以下格式：
 
-| 手机号 | User ID | Session ID | 时间 | kdtId |
-|---|---:|---|---|---:|
-| `<mobile>` | `<userId>` | `<sessionId>` | `<logTime>` | `<kdtId>` |
+| 手机号 | User ID | Session ID | 时间 | kdtId | 来源 |
+|---|---:|---|---|---:|---|
+| `<mobile>` | `<userId>` | `<sessionId>` | `<logTime>` | `<kdtId>` | `<sourceType>` |
 
 提供详细结果文件和脱敏请求记录文件的路径；存在截断时必须说明。没有有效记录时，只汇报数量，不暴露无效候选数据。
 
