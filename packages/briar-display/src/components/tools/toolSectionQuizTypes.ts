@@ -26,7 +26,6 @@ export type QuizQuestion = {
 	prompt: string
 	solid: Solid
 	points?: [Vec3, Vec3, Vec3]
-	lockOrbitUntilAnswer: boolean
 	options: QuizOption[]
 	correctSection?: Section
 	correctPlane?: Plane

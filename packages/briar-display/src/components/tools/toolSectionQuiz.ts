@@ -179,7 +179,6 @@ export function generateQ7(rng: () => number = Math.random): QuizQuestion {
 		kind: 'Q7',
 		prompt: '将一个正方体用平面任意剖开，下面哪一种不可能是它的截面？',
 		solid,
-		lockOrbitUntilAnswer: true,
 		options,
 		correctSection: impossible.section,
 	}
@@ -218,7 +217,6 @@ export function generateQ1(rng: () => number = Math.random): QuizQuestion {
 		kind: 'Q1',
 		prompt: `左图由 ${solid.voxels.length} 个相同正方体组成。将其从任一平面剖开，下面哪一项不可能是该立体的截面？`,
 		solid,
-		lockOrbitUntilAnswer: true,
 		options,
 		correctSection: impossibleChoice.section,
 	}
@@ -253,7 +251,6 @@ export function generateQ4(rng: () => number = Math.random): QuizQuestion {
 		kind: 'Q4',
 		prompt: '观察左图立体，若沿图示方向剖开，正确的截面轮廓是？',
 		solid,
-		lockOrbitUntilAnswer: true,
 		options,
 		correctSection: chosen.section,
 		correctPlane: chosen.plane,
@@ -304,7 +301,6 @@ export function generateQ3(rng: () => number = Math.random): QuizQuestion {
 		prompt: '左图立体由白色与黑色小正方体组成。过顶点 A、B、C 的平面剖开后，正确的截面是？',
 		solid,
 		points,
-		lockOrbitUntilAnswer: true,
 		options,
 		correctSection: chosen.section,
 		correctPlane: chosen.plane,

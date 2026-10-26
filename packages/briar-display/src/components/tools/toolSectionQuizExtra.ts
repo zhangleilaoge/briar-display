@@ -90,7 +90,6 @@ export function generateQ2(rng: () => number = Math.random): QuizQuestion {
 		kind: 'Q2',
 		prompt: `观察左图立体，它的${VIEW_LABELS[direction]}是哪一项？`,
 		solid,
-		lockOrbitUntilAnswer: true,
 		options,
 		viewDirection: direction,
 	}
@@ -130,7 +129,6 @@ export function generateQ5(rng: () => number = Math.random): QuizQuestion {
 		kind: 'Q5',
 		prompt: '左图由相同的小正方体堆成，被遮挡处均有支撑。这个立体一共有多少块？',
 		solid,
-		lockOrbitUntilAnswer: true,
 		options,
 		layerCounts: counts,
 	}
@@ -280,7 +278,6 @@ export function generateQ6(rng: () => number = Math.random): QuizQuestion {
 		kind: 'Q6',
 		prompt: '左侧是一个正方体展开图。折叠后，哪一组字母所在的面互为相对面？',
 		solid: solidSingleCube(),
-		lockOrbitUntilAnswer: false,
 		options,
 		questionGrid,
 		oppositePairs: pairs,
@@ -383,7 +380,6 @@ export function generateQ8(rng: () => number = Math.random): QuizQuestion {
 		kind: 'Q8',
 		prompt: `左图还缺一个零件才能组成 ${size[0] + 1}×${size[1]}×${size[2]} 的长方体，应选择哪一项？`,
 		solid: partial,
-		lockOrbitUntilAnswer: true,
 		options,
 		targetSolid: target,
 	}
@@ -413,7 +409,6 @@ export function generateQ9(rng: () => number = Math.random): QuizQuestion {
 		kind: 'Q9',
 		prompt: '左图立体经过空间旋转后（不镜像、不增删方块），哪一项可能是同一个立体？',
 		solid: original,
-		lockOrbitUntilAnswer: true,
 		options,
 	}
 }
