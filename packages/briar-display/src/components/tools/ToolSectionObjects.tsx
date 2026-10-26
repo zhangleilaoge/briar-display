@@ -104,11 +104,13 @@ export function VoxelMesh({
 	selected,
 	hovered,
 	editable,
+	accent = false,
 }: {
 	voxel: Voxel
 	selected: boolean
 	hovered: boolean
 	editable: boolean
+	accent?: boolean
 }) {
 	const edgeGeometry = useMemo(() => {
 		const box = new THREE.BoxGeometry(1, 1, 1)
@@ -130,20 +132,24 @@ export function VoxelMesh({
 						? '#3b82f6'
 						: hovered
 							? '#bae6fd'
-							: voxel.color === 'gray'
-								? '#1f2937'
-								: '#f8fafc'
+							: accent
+								? '#f59e0b'
+								: voxel.color === 'gray'
+									? '#1f2937'
+									: '#f8fafc'
 				}
-				emissive={hovered ? '#38bdf8' : selected ? '#2563eb' : '#000000'}
-				emissiveIntensity={hovered ? 0.38 : selected ? 0.16 : 0}
+				emissive={accent ? '#d97706' : hovered ? '#38bdf8' : selected ? '#2563eb' : '#000000'}
+				emissiveIntensity={accent ? 0.24 : hovered ? 0.38 : selected ? 0.16 : 0}
 				transparent
-				opacity={0.55}
+				opacity={accent ? 0.86 : 0.55}
 				depthWrite
 				metalness={0.05}
 				roughness={0.55}
 			/>
 			<lineSegments geometry={edgeGeometry} scale={selected ? 1.003 : 1.001}>
-				<lineBasicMaterial color={selected || hovered ? '#0284c7' : '#334155'} />
+				<lineBasicMaterial
+					color={accent ? '#b45309' : selected || hovered ? '#0284c7' : '#334155'}
+				/>
 			</lineSegments>
 		</mesh>
 	)
