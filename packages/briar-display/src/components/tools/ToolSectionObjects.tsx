@@ -136,6 +136,9 @@ export function VoxelMesh({
 				}
 				emissive={hovered ? '#38bdf8' : selected ? '#2563eb' : '#000000'}
 				emissiveIntensity={hovered ? 0.38 : selected ? 0.16 : 0}
+				transparent
+				opacity={0.55}
+				depthWrite
 				metalness={0.05}
 				roughness={0.55}
 			/>

@@ -6,6 +6,7 @@ import { Suspense, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { AdditionArrows, PointMarker, StarterCell, VoxelMesh } from './ToolSectionObjects'
 import { type CutPoints, additionCells } from './toolSectionEditor'
+import { exposedSectionBoundaries } from './toolSectionGeometry'
 import { type Plane, type Solid, type Vec3, computeSection } from './toolSectionUtils'
 import { type PointerPosition, useToolSectionInteraction } from './useToolSectionInteraction'
 
@@ -13,6 +14,7 @@ type SceneProps = {
 	solid: Solid
 	plane: Plane | null
 	points?: Vec3[]
+	edgeSnap?: boolean
 	showSection?: boolean
 	orbitEnabled?: boolean
 	onPointsChange?: (points: CutPoints) => void
@@ -53,6 +55,28 @@ function SectionFill({ plane, solid }: { plane: Plane; solid: Solid }) {
 				shape.lineTo(next.x, next.y)
 			}
 			shape.closePath()
+			const boundaryPoints = exposedSectionBoundaries(solid, patch).flatMap(
+				({ points, normal: outward }) => {
+					const offset = new THREE.Vector3(...outward).multiplyScalar(0.003)
+					return points.map((point) => new THREE.Vector3(...point).add(offset))
+				},
+			)
+			const outline = boundaryPoints.length
+				? new THREE.LineSegments(
+						new THREE.BufferGeometry().setFromPoints(boundaryPoints),
+						new THREE.LineDashedMaterial({
+							color: patch.color === 'gray' ? '#5eead4' : '#0f766e',
+							dashSize: 0.12,
+							gapSize: 0.06,
+							transparent: true,
+							opacity: 0.95,
+							depthTest: true,
+							depthWrite: false,
+							toneMapped: false,
+						}),
+					)
+				: null
+			outline?.computeLineDistances()
 			return [
 				{
 					key: index,
@@ -60,33 +84,40 @@ function SectionFill({ plane, solid }: { plane: Plane; solid: Solid }) {
 					position: origin.toArray() as Vec3,
 					quaternion: quaternion.clone(),
 					color: patch.color === 'gray' ? '#0f766e' : '#22d3ee',
+					outline,
 				},
 			]
 		})
 	}, [solid, plane])
 	useEffect(
 		() => () => {
-			for (const mesh of meshes) mesh.geometry.dispose()
+			for (const mesh of meshes) {
+				mesh.geometry.dispose()
+				mesh.outline?.geometry.dispose()
+				mesh.outline?.material.dispose()
+			}
 		},
 		[meshes],
 	)
 	return meshes.map((mesh) => (
-		<mesh
-			key={mesh.key}
-			geometry={mesh.geometry}
-			position={mesh.position}
-			quaternion={mesh.quaternion}
-			renderOrder={3}
-		>
-			<meshBasicMaterial
-				color={mesh.color}
-				side={THREE.DoubleSide}
-				transparent
-				opacity={0.72}
-				depthTest={false}
-				depthWrite={false}
-			/>
-		</mesh>
+		<group key={mesh.key}>
+			<mesh
+				geometry={mesh.geometry}
+				position={mesh.position}
+				quaternion={mesh.quaternion}
+				renderOrder={3}
+			>
+				<meshBasicMaterial
+					color={mesh.color}
+					side={THREE.DoubleSide}
+					transparent
+					opacity={0.72}
+					depthTest={false}
+					depthWrite={false}
+				/>
+			</mesh>
+			{mesh.outline ? <primitive object={mesh.outline} renderOrder={4} /> : null}
+		</group>
 	))
 }
 
@@ -94,6 +125,7 @@ function SceneContent({
 	solid,
 	plane,
 	points,
+	edgeSnap = false,
 	showSection = false,
 	orbitEnabled = true,
 	onPointsChange,
@@ -127,6 +159,7 @@ function SceneContent({
 		groupRef,
 		solid,
 		points,
+		edgeSnap,
 		orbitEnabled,
 		onPointsChange,
 		onSelectCell,
