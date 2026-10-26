@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { RotateCcw, RotateCw, Shuffle, Trash2 } from 'lucide-react'
+import { Magnet, RotateCcw, RotateCw, Shuffle, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { SectionSvgPreview } from './ToolSectionPreview'
@@ -40,10 +40,12 @@ export function ToolSectionSandbox() {
 	const [points, setPoints] = useState<CutPoints>(() => defaultCutPoints(solidLTetromino()))
 	const [selectedCell, setSelectedCell] = useState<Vec3 | null>(null)
 	const [rotation, setRotation] = useState(1)
+	const [edgeSnap, setEdgeSnap] = useState(false)
 	const [voxelMenu, setVoxelMenu] = useState<VoxelMenuPosition | null>(null)
 	const cutPoints = useMemo(
-		() => (solid.voxels.length ? snapCutPointsToSolid(solid, points) : defaultCutPoints(solid)),
-		[solid, points],
+		() =>
+			solid.voxels.length ? snapCutPointsToSolid(solid, points, edgeSnap) : defaultCutPoints(solid),
+		[solid, points, edgeSnap],
 	)
 	const plane = useMemo(
 		() => planeFromPoints(cutPoints[0], cutPoints[1], cutPoints[2]),
@@ -138,6 +140,16 @@ export function ToolSectionSandbox() {
 							<div className="flex flex-wrap gap-2">
 								<Button
 									size="sm"
+									variant={edgeSnap ? 'default' : 'outline'}
+									className="gap-1"
+									aria-pressed={edgeSnap}
+									onClick={() => setEdgeSnap((current) => !current)}
+								>
+									<Magnet className="h-3.5 w-3.5" />
+									线吸附
+								</Button>
+								<Button
+									size="sm"
 									variant="outline"
 									className="gap-1"
 									onClick={() =>
@@ -163,6 +175,7 @@ export function ToolSectionSandbox() {
 						<p className="text-xs leading-relaxed text-muted-foreground">
 							拖动空白旋转；拖动 A/B/C
 							或标签调整切面；单击方块选中，点击箭头添加，左键拖动移动，右键打开菜单。
+							开启「线吸附」后，切点只沿方块外露的棱移动。
 						</p>
 					</CardHeader>
 					<CardContent className="space-y-3 pt-0">
@@ -171,6 +184,7 @@ export function ToolSectionSandbox() {
 								solid={solid}
 								plane={plane}
 								points={solid.voxels.length ? cutPoints : undefined}
+								edgeSnap={edgeSnap}
 								showSection={!!plane && solid.voxels.length > 0}
 								onPointsChange={setPoints}
 								selectedCell={selectedCell}
@@ -241,6 +255,32 @@ export function ToolSectionSandbox() {
 								/>
 							) : null}
 						</div>
+						{solid.voxels.length > 0 ? (
+							<div className="space-y-1.5 rounded-md bg-muted/40 p-3">
+								<p className="mb-2 text-xs text-muted-foreground">切点坐标（x, y, z）</p>
+								{cutPoints.map((point, index) => (
+									<div
+										key={'ABC'[index]}
+										className="flex items-center justify-between gap-3 text-xs"
+										data-cut-point-coordinates={'ABC'[index]}
+									>
+										<span
+											className="font-semibold"
+											style={{ color: ['#dc2626', '#ea580c', '#2563eb'][index] }}
+										>
+											{'ABC'[index]}
+										</span>
+										<span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
+											(
+											{point
+												.map((value) => (Math.abs(value) < 0.0005 ? '0.000' : value.toFixed(3)))
+												.join(', ')}
+											)
+										</span>
+									</div>
+								))}
+							</div>
+						) : null}
 						<div className="grid grid-cols-2 gap-2 text-sm">
 							<div className="rounded-md bg-muted/40 p-3">
 								<p className="text-xs text-muted-foreground">截面块数</p>

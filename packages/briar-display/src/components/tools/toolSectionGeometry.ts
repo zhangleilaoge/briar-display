@@ -1,6 +1,13 @@
 import * as THREE from 'three'
 import type { CutPoints } from './toolSectionEditor'
-import { type Solid, type Vec3, type Voxel, voxelKey } from './toolSectionUtils'
+import {
+	CUBE_EDGES,
+	type SectionPatch,
+	type Solid,
+	type Vec3,
+	type Voxel,
+	voxelKey,
+} from './toolSectionUtils'
 
 const SURFACE_EPSILON = 1e-6
 const FACE_DIRECTIONS = [0, 1, 2].flatMap((axis) => [
@@ -84,11 +91,54 @@ export function nearestExteriorPoint(solid: Solid, point: Vec3): Vec3 | null {
 	return nearest?.point ?? null
 }
 
-export function snapCutPointsToSolid(solid: Solid, points: CutPoints): CutPoints {
+export function nearestExteriorEdgePoint(solid: Solid, point: Vec3): Vec3 | null {
+	const occupied = occupiedCells(solid)
+	const target = new THREE.Vector3(...point)
+	const candidate = new THREE.Vector3()
+	const seen = new Set<string>()
+	let nearest: { point: Vec3; distance: number } | null = null
+	for (const voxel of solid.voxels) {
+		for (const [start, end] of CUBE_EDGES) {
+			const edgeAxis = start.findIndex((value, axis) => value !== end[axis])
+			const exterior = [0, 1, 2].some((axis) => {
+				if (axis === edgeAxis) return false
+				const offset = start[axis] === 0 ? -1 : 1
+				return !occupied.has(neighborKey(voxel, axis, offset))
+			})
+			if (!exterior) continue
+			const a: Vec3 = [voxel.x + start[0], voxel.y + start[1], voxel.z + start[2]]
+			const b: Vec3 = [voxel.x + end[0], voxel.y + end[1], voxel.z + end[2]]
+			const key = [a, b]
+				.map((vertex) => vertex.join(','))
+				.sort()
+				.join('|')
+			if (seen.has(key)) continue
+			seen.add(key)
+			new THREE.Line3(new THREE.Vector3(...a), new THREE.Vector3(...b)).closestPointToPoint(
+				target,
+				true,
+				candidate,
+			)
+			const distance = candidate.distanceToSquared(target)
+			if (!nearest || distance < nearest.distance) {
+				nearest = { point: candidate.toArray() as Vec3, distance }
+			}
+		}
+	}
+	return nearest?.point ?? null
+}
+
+export function snapCutPointsToSolid(
+	solid: Solid,
+	points: CutPoints,
+	edgesOnly = false,
+): CutPoints {
 	if (solid.voxels.length === 0) return points
 	let changed = false
 	const next = points.map((point) => {
-		const snapped = nearestExteriorPoint(solid, point)
+		const snapped = edgesOnly
+			? nearestExteriorEdgePoint(solid, point)
+			: nearestExteriorPoint(solid, point)
 		if (!snapped || snapped.every((value, index) => Math.abs(value - point[index]) < 1e-9)) {
 			return point
 		}
@@ -141,4 +191,37 @@ export function raycastSolidSurface(
 		}
 	}
 	return nearest ? (nearest.point.toArray() as Vec3) : null
+}
+
+export function exposedSectionBoundaries(
+	solid: Solid,
+	patch: SectionPatch,
+): Array<{ points: [Vec3, Vec3]; normal: Vec3 }> {
+	if (patch.points.length < 3) return []
+	const occupied = occupiedCells(solid)
+	return patch.points.flatMap((start, index) => {
+		const end = patch.points[(index + 1) % patch.points.length]
+		const outward: [number, number, number] = [0, 0, 0]
+		let exposed = false
+		for (const { axis, offset } of FACE_DIRECTIONS) {
+			if (occupied.has(neighborKey(patch.voxel, axis, offset))) continue
+			const coordinate =
+				patch.voxel[axis === 0 ? 'x' : axis === 1 ? 'y' : 'z'] + (offset > 0 ? 1 : 0)
+			if (
+				Math.abs(start[axis] - coordinate) > SURFACE_EPSILON ||
+				Math.abs(end[axis] - coordinate) > SURFACE_EPSILON
+			) {
+				continue
+			}
+			exposed = true
+			outward[axis] += offset
+		}
+		if (!exposed) return []
+		return [
+			{
+				points: [start, end],
+				normal: new THREE.Vector3(...outward).normalize().toArray() as Vec3,
+			},
+		]
+	})
 }

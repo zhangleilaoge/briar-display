@@ -2,7 +2,11 @@ import { useThree } from '@react-three/fiber'
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { type CutPoints, cellFromCenter, isOccupied } from './toolSectionEditor'
-import { nearestExteriorPoint, raycastSolidSurface } from './toolSectionGeometry'
+import {
+	nearestExteriorEdgePoint,
+	nearestExteriorPoint,
+	raycastSolidSurface,
+} from './toolSectionGeometry'
 import type { Solid, Vec3 } from './toolSectionUtils'
 
 export type DragPreview = { from: Vec3; cell: Vec3; valid: boolean }
@@ -16,6 +20,7 @@ type InteractionOptions = {
 	groupRef: RefObject<THREE.Group | null>
 	solid: Solid
 	points?: Vec3[]
+	edgeSnap?: boolean
 	orbitEnabled: boolean
 	onPointsChange?: (points: CutPoints) => void
 	onSelectCell?: (cell: Vec3 | null) => void
@@ -218,13 +223,18 @@ export function useToolSectionInteraction(options: InteractionOptions) {
 			if (!target) return
 			target.add(drag.offset)
 			const localTarget = group.worldToLocal(target.clone())
-			const localOrigin = group.worldToLocal(ray.origin.clone())
-			const direction = localTarget.clone().sub(localOrigin)
-			if (direction.lengthSq() < 1e-12) return
-			const localRay = new THREE.Ray(localOrigin, direction.normalize())
-			const nextPoint =
-				raycastSolidSurface(latest.current.solid, localRay, localTarget) ??
-				nearestExteriorPoint(latest.current.solid, localTarget.toArray() as Vec3)
+			let nextPoint: Vec3 | null = null
+			if (latest.current.edgeSnap) {
+				nextPoint = nearestExteriorEdgePoint(latest.current.solid, localTarget.toArray() as Vec3)
+			} else {
+				const localOrigin = group.worldToLocal(ray.origin.clone())
+				const direction = localTarget.clone().sub(localOrigin)
+				if (direction.lengthSq() < 1e-12) return
+				const localRay = new THREE.Ray(localOrigin, direction.normalize())
+				nextPoint =
+					raycastSolidSurface(latest.current.solid, localRay, localTarget) ??
+					nearestExteriorPoint(latest.current.solid, localTarget.toArray() as Vec3)
+			}
 			if (!nextPoint || samePoint(nextPoint, drag.current[drag.index])) return
 			const next = [...drag.current] as CutPoints
 			next[drag.index] = nextPoint

@@ -3,14 +3,50 @@ import * as THREE from 'three'
 import { type CutPoints, addVoxel, removeVoxel } from './toolSectionEditor'
 import {
 	cutPointLabelOffset,
+	exposedSectionBoundaries,
 	isExteriorSurfacePoint,
+	nearestExteriorEdgePoint,
 	nearestExteriorPoint,
 	raycastSolidSurface,
 	snapCutPointsToSolid,
 } from './toolSectionGeometry'
-import { solidLTetromino, solidSingleCube } from './toolSectionUtils'
+import {
+	computeSection,
+	planeFromPoints,
+	solidLTetromino,
+	solidSingleCube,
+} from './toolSectionUtils'
 
 describe('toolSectionGeometry', () => {
+	it('keeps dashed section boundaries on exposed faces with outward normals', () => {
+		const plane = planeFromPoints([0, 0, 0.5], [1, 0, 0.5], [0, 1, 0.5])!
+		const cube = solidSingleCube()
+		const cubeSection = computeSection(cube, plane)
+		const cubeBoundaries = exposedSectionBoundaries(cube, cubeSection.patches[0])
+		expect(cubeBoundaries).toHaveLength(4)
+		expect(
+			cubeBoundaries.every(({ points }) =>
+				points.every((point) => isExteriorSurfacePoint(cube, point)),
+			),
+		).toBe(true)
+		expect(
+			cubeBoundaries.find(({ points }) => points.every((point) => point[0] === 0))?.normal,
+		).toEqual([-1, 0, 0])
+
+		const solid = {
+			voxels: [
+				{ x: 0, y: 0, z: 0 },
+				{ x: 1, y: 0, z: 0 },
+			],
+		}
+		const section = computeSection(solid, plane)
+		const boundaries = section.patches.flatMap((patch) => exposedSectionBoundaries(solid, patch))
+		expect(boundaries).toHaveLength(6)
+		expect(
+			boundaries.some(({ points }) => points.every((point) => Math.abs(point[0] - 1) < 1e-6)),
+		).toBe(false)
+	})
+
 	it('distinguishes exterior faces from solid interiors and shared faces', () => {
 		expect(isExteriorSurfacePoint(solidSingleCube(), [0.5, 0.5, 0])).toBe(true)
 		expect(isExteriorSurfacePoint(solidSingleCube(), [0.5, 0.5, 0.5])).toBe(false)
@@ -78,6 +114,41 @@ describe('toolSectionGeometry', () => {
 		const removed = removeVoxel(solidLTetromino(), [0, 0, 0])
 		const afterRemoval = nearestExteriorPoint(removed, [0.5, 0.5, 0.5])!
 		expect(isExteriorSurfacePoint(removed, afterRemoval)).toBe(true)
+	})
+
+	it('snaps face points to finite exterior edges instead of vertices only', () => {
+		expect(nearestExteriorEdgePoint(solidSingleCube(), [0.2, 0.4, 0])).toEqual([0, 0.4, 0])
+		expect(nearestExteriorEdgePoint(solidSingleCube(), [2, 0.25, 0])).toEqual([1, 0.25, 0])
+		expect(nearestExteriorEdgePoint({ voxels: [] }, [0, 0, 0])).toBeNull()
+		const points: CutPoints = [
+			[0.2, 0.4, 0],
+			[1, 0, 1],
+			[0, 1, 0],
+		]
+		const snapped = snapCutPointsToSolid(solidSingleCube(), points, true)
+		expect(snapped[0]).toEqual([0, 0.4, 0])
+		for (const point of snapped) {
+			expect(isExteriorSurfacePoint(solidSingleCube(), point)).toBe(true)
+			expect(point.filter((value) => Number.isInteger(value)).length).toBeGreaterThanOrEqual(2)
+		}
+	})
+
+	it('excludes internal edges and reattaches after exterior voxels change', () => {
+		const solid = {
+			voxels: [
+				{ x: 0, y: 0, z: 0 },
+				{ x: 1, y: 0, z: 0 },
+				{ x: 0, y: 1, z: 0 },
+				{ x: 1, y: 1, z: 0 },
+			],
+		}
+		const internal = [1, 1, 0.5] as const
+		expect(isExteriorSurfacePoint(solid, internal)).toBe(false)
+		expect(nearestExteriorEdgePoint(solid, internal)).toEqual([1, 1, 0])
+		const removed = removeVoxel(solid, [1, 1, 0])
+		expect(nearestExteriorEdgePoint(removed, internal)).toEqual(internal)
+		const restored = addVoxel(removed, [1, 1, 0]).solid
+		expect(nearestExteriorEdgePoint(restored, internal)).toEqual([1, 1, 0])
 	})
 
 	it('preserves attached point state and handles empty models', () => {

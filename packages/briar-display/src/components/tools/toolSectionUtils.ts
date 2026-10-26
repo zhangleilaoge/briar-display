@@ -116,7 +116,7 @@ export function planeKey(plane: Plane): string {
 	return `${r(nn[0])},${r(nn[1])},${r(nn[2])},${r(nd)}`
 }
 
-const CUBE_EDGES: Array<[Vec3, Vec3]> = [
+export const CUBE_EDGES: Array<[Vec3, Vec3]> = [
 	[
 		[0, 0, 0],
 		[1, 0, 0],
