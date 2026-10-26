@@ -61,7 +61,6 @@ function QuizPanel() {
 		}
 		return cutPointsForPlane(question.solid, activeOption.plane) ?? undefined
 	}, [activeOption, question])
-	const orbitEnabled = !question.lockOrbitUntilAnswer || revealed
 	const scenePlane = revealed
 		? (activeOption?.plane ?? null)
 		: kind === 'Q4'
@@ -121,9 +120,7 @@ function QuizPanel() {
 						<p className="mb-2 text-xs text-amber-700">
 							{question.questionGrid
 								? '先观察展开图的公共边，再判断折叠后的相对面。'
-								: orbitEnabled
-									? '旋转已解锁。hover、聚焦或点击选项可切换解析，拖动左侧立体可从不同角度查看。'
-									: '答题前旋转已锁定，提交后可转动并查看选项解析。'}
+								: '可拖动左侧立体旋转查看；提交后悬停、聚焦或点击选项可切换解析。'}
 						</p>
 						{question.questionGrid ? (
 							<div
@@ -136,7 +133,7 @@ function QuizPanel() {
 							<div
 								className="h-[360px] overflow-hidden rounded-lg border"
 								data-quiz-scene
-								data-orbit-enabled={orbitEnabled}
+								data-orbit-enabled="true"
 								data-active-option={activeOption?.id}
 								data-has-plane={!!scenePlane}
 								data-point-count={scenePoints?.length ?? 0}
@@ -148,7 +145,6 @@ function QuizPanel() {
 									plane={scenePlane}
 									points={scenePoints}
 									showSection={!!scenePlane}
-									orbitEnabled={orbitEnabled}
 									assembly={assembly}
 								/>
 							</div>
