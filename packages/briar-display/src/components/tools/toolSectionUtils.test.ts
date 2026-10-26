@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'bun:test'
+import { generateQuiz } from './toolSectionQuiz'
 import { sectionToSvgPaths } from './toolSectionSvg'
 import {
 	type Solid,
 	computeSection,
 	enumeratePlanes,
-	generateQuiz,
 	legalShapeClasses,
 	planeFromPoints,
 	randomSolid,

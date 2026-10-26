@@ -36,16 +36,20 @@ export function SectionSvgPreview({
 	points,
 	size = 140,
 	rotation = 0,
+	reflectX = false,
+	reflectY = false,
 }: {
 	section: Section
 	plane: Plane
 	points?: Vec3[]
 	size?: number
 	rotation?: number
+	reflectX?: boolean
+	reflectY?: boolean
 }) {
 	const svg = useMemo(
-		() => sectionToSvgPaths(section, plane, size, points, rotation),
-		[section, plane, size, points, rotation],
+		() => sectionToSvgPaths(section, plane, size, points, rotation, { x: reflectX, y: reflectY }),
+		[section, plane, size, points, rotation, reflectX, reflectY],
 	)
 	return (
 		<svg
@@ -55,6 +59,8 @@ export function SectionSvgPreview({
 			className="max-w-full rounded-md border bg-white"
 			aria-label="当前截面的二维展开图"
 			data-rotation={rotation}
+			data-reflect-x={reflectX}
+			data-reflect-y={reflectY}
 		>
 			<SectionSvgShapes svg={svg} />
 			{svg.markers.map((marker, index) => (

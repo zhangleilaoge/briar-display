@@ -289,9 +289,17 @@ function patchFingerprint(points: Vec3[], normal: Vec3): string {
 export function computeSection(solid: Solid, plane: Plane): Section {
 	assertIntegerSolid(solid)
 	const patches: SectionPatch[] = []
+	const seen = new Set<string>()
 	for (const v of solid.voxels) {
 		const p = cutVoxel(v, plane)
-		if (p) patches.push(p)
+		if (!p) continue
+		const key = p.points
+			.map((point) => point.map((value) => value.toFixed(6)).join(','))
+			.sort()
+			.join('|')
+		if (seen.has(key)) continue
+		seen.add(key)
+		patches.push(p)
 	}
 	const loops: SectionLoop[] = patches.map((p) => ({ points: p.points }))
 	const edgeCount = patches.length === 0 ? 0 : Math.max(...patches.map((p) => p.points.length))
@@ -439,338 +447,28 @@ export function solidWithColors(base: Solid, grayKeys: string[]): Solid {
 	}
 }
 
-// ——— 出题 ———
-
-export type QuizKind = 'Q1' | 'Q3' | 'Q4' | 'Q7'
-
-export type QuizOption = {
-	id: string
-	label: string
-	/** 用于渲染的截面或外形描述 */
-	section?: Section
-	shapeClass?: string
-	/** 彩色格点示意（Q3） */
-	colorGrid?: Array<{ u: number; v: number; color: VoxelColor }>
-	isCorrect: boolean
-}
-
-export type QuizQuestion = {
-	kind: QuizKind
-	prompt: string
-	solid: Solid
-	/** 题干指定的三点（Q3） */
-	points?: [Vec3, Vec3, Vec3]
-	/** 作答前锁定旋转 */
-	lockOrbitUntilAnswer: boolean
-	options: QuizOption[]
-	/** 答对后展示的正确截面 */
-	correctSection?: Section
-	correctPlane?: Plane
-}
-
-function shuffle<T>(arr: T[], rng: () => number): T[] {
-	const a = [...arr]
-	for (let i = a.length - 1; i > 0; i--) {
-		const j = Math.floor(rng() * (i + 1))
-		;[a[i], a[j]] = [a[j], a[i]]
-	}
-	return a
-}
-
-const OPTION_IDS = ['A', 'B', 'C', 'D']
-
-/** Q7：单立方经典禁形 —— 正五边形等不可能 */
-export function generateQ7(rng: () => number = Math.random): QuizQuestion {
-	const solid = solidSingleCube()
-	const legal = legalShapeClasses(solid, 200)
-	const planes = enumeratePlanes(solid, 200)
-	const legalSecs = planes.map((p) => computeSection(solid, p))
-	// 合法选项：三角形 / 四边形 / 五边形（立方体截面最多六边形，五边形合法）/ 六边形
-	const byEdges = new Map<number, Section>()
-	for (const s of legalSecs) {
-		const e = s.patches[0]?.points.length ?? 0
-		if (e >= 3 && e <= 6 && !byEdges.has(e)) byEdges.set(e, s)
-	}
-	const correctEdges = 7 // 七边形不可能
-	const distractors = [3, 4, 5, 6].filter((e) => byEdges.has(e))
-	const pick = shuffle(distractors, rng).slice(0, 3)
-	while (pick.length < 3) {
-		const fallback = [3, 4, 5, 6].find((e) => !pick.includes(e) && byEdges.has(e))
-		if (fallback == null) break
-		pick.push(fallback)
-	}
-	const labels: Record<number, string> = {
-		3: '三角形',
-		4: '平行四边形 / 矩形',
-		5: '五边形',
-		6: '六边形',
-	}
-	const optionsRaw: QuizOption[] = [
-		...pick.map((e) => ({
-			id: '',
-			label: labels[e] ?? `${e} 边形`,
-			section: byEdges.get(e),
-			shapeClass: byEdges.has(e)
-				? shapeClassSignature(byEdges.get(e)!)
-				: `parts=1|edges=${e}|conv=C`,
-			isCorrect: false,
-		})),
-		{
-			id: '',
-			label: '正七边形',
-			shapeClass: 'parts=1|edges=7|conv=C',
-			isCorrect: true,
-		},
-	]
-	// 不足 4 个时用文字干扰项补齐
-	const padLabels = ['圆形', '八边形', '五角星']
-	let pi = 0
-	while (optionsRaw.length < 4 && pi < padLabels.length) {
-		optionsRaw.push({
-			id: '',
-			label: padLabels[pi++],
-			shapeClass: `parts=1|edges=pad${pi}|conv=C`,
-			isCorrect: false,
-		})
-	}
-	const options = shuffle(optionsRaw, rng).map((o, i) => ({ ...o, id: OPTION_IDS[i] }))
-	void legal
-	void correctEdges
-	return {
-		kind: 'Q7',
-		prompt: '将一个正方体用平面任意剖开，下面哪一种不可能是它的截面？',
-		solid,
-		lockOrbitUntilAnswer: true,
-		options,
-	}
-}
-
-/** Q1：任意剖开 · 不可能截面（复合体） */
-export function generateQ1(rng: () => number = Math.random): QuizQuestion {
-	const solid = rng() < 0.5 ? solidLTetromino() : solidStair3()
-	const planes = enumeratePlanes(solid, 500)
-	const legalClasses = new Set<string>()
-	const examples = new Map<string, Section>()
-	for (const plane of planes) {
-		const sec = computeSection(solid, plane)
-		const cls = shapeClassSignature(sec)
-		legalClasses.add(cls)
-		if (!examples.has(cls)) examples.set(cls, sec)
-	}
-	const legalList = [...examples.entries()]
-	const pickLegal = shuffle(legalList, rng).slice(0, 3)
-	// 干扰：经典「房子」五边形（凸五边且边长比接近屋顶）——若碰巧合法则换边数更大的不可能
-	let impossibleLabel = '凸五边形（屋顶形）'
-	let impossibleClass = 'parts=1|edges=5|conv=C|roof'
-	const hasConvexPent =
-		[...legalClasses].some((c) => c.includes('edges=5') && c.includes('conv=C')) &&
-		[...examples.values()].some((s) => s.patches.length === 1 && s.patches[0].points.length === 5)
-	// 对 L 四连体，单一凸五边形常常不可能；用「两个分离三角形」等更稳的不可能
-	if (hasConvexPent || pickLegal.length < 3) {
-		impossibleLabel = '两个分离的三角形'
-		impossibleClass = 'parts=2|edges=3,3|conv=CC|sep'
-		// 若该 solid 真能切出两个分离三角，再换成九边形
-		if (legalClasses.has('parts=2|edges=3,3|conv=CC')) {
-			impossibleLabel = '九边形'
-			impossibleClass = 'parts=1|edges=9|conv=C'
+/** 优先使用立体顶点；平面不经过三个顶点时改用截交点。 */
+export function cutPointsForPlane(solid: Solid, plane: Plane): [Vec3, Vec3, Vec3] | null {
+	const vertices = solidVertices(solid).filter((point) => Math.abs(planeSide(plane, point)) < 1e-6)
+	const sectionPoints = computeSection(solid, plane).patches.flatMap((patch) => patch.points)
+	const candidates = vertices.length >= 3 ? vertices : sectionPoints
+	let best: [Vec3, Vec3, Vec3] | null = null
+	let bestArea = 1e-9
+	for (let i = 0; i < candidates.length; i++) {
+		for (let j = i + 1; j < candidates.length; j++) {
+			for (let k = j + 1; k < candidates.length; k++) {
+				const a = candidates[i]
+				const b = candidates[j]
+				const c = candidates[k]
+				const area = vecLen(vecCross(vecSub(b, a), vecSub(c, a)))
+				if (area > bestArea) {
+					bestArea = area
+					best = [a, b, c]
+				}
+			}
 		}
 	}
-	const optionsRaw: QuizOption[] = [
-		...pickLegal.map(([cls, sec]) => ({
-			id: '',
-			label: describeShape(sec),
-			section: sec,
-			shapeClass: cls,
-			isCorrect: false,
-		})),
-		{
-			id: '',
-			label: impossibleLabel,
-			shapeClass: impossibleClass,
-			isCorrect: true,
-		},
-	]
-	const options = shuffle(optionsRaw, rng).map((o, i) => ({ ...o, id: OPTION_IDS[i] }))
-	return {
-		kind: 'Q1',
-		prompt: `左图由 ${solid.voxels.length} 个相同正方体组成。将其从任一平面剖开，下面哪一项不可能是该立体的截面？`,
-		solid,
-		lockOrbitUntilAnswer: true,
-		options,
-	}
-}
-
-function describeShape(sec: Section): string {
-	if (sec.patches.length === 0) return '空'
-	if (sec.patches.length === 1) {
-		const n = sec.patches[0].points.length
-		const poly = projectTo2D(sec.patches[0].points, estimateNormal(sec.patches[0].points))
-		return `${isConvex2D(poly) ? '凸' : '凹'}${n}边形`
-	}
-	const parts = sec.patches.map((p) => `${p.points.length}边`).join('+')
-	return `${sec.patches.length} 块（${parts}）`
-}
-
-/** Q4：可见切面选轮廓 */
-export function generateQ4(rng: () => number = Math.random): QuizQuestion {
-	const solid = solidLTetromino()
-	const planes = enumeratePlanes(solid, 400)
-	const withSec = planes
-		.map((plane) => ({ plane, section: computeSection(solid, plane) }))
-		.filter((x) => x.section.patches.length >= 1)
-	const chosen = withSec[Math.floor(rng() * withSec.length)]
-	const correctCls = shapeClassSignature(chosen.section)
-	const others = shuffle(
-		withSec.filter((x) => shapeClassSignature(x.section) !== correctCls),
-		rng,
-	).slice(0, 3)
-	const optionsRaw: QuizOption[] = [
-		{
-			id: '',
-			label: describeShape(chosen.section),
-			section: chosen.section,
-			shapeClass: correctCls,
-			isCorrect: true,
-		},
-		...others.map((o) => ({
-			id: '',
-			label: describeShape(o.section),
-			section: o.section,
-			shapeClass: shapeClassSignature(o.section),
-			isCorrect: false,
-		})),
-	]
-	const options = shuffle(optionsRaw, rng).map((o, i) => ({ ...o, id: OPTION_IDS[i] }))
-	return {
-		kind: 'Q4',
-		prompt: '观察左图立体，若沿图示方向剖开，正确的截面轮廓是？',
-		solid,
-		lockOrbitUntilAnswer: true,
-		options,
-		correctSection: chosen.section,
-		correctPlane: chosen.plane,
-	}
-}
-
-/** Q3：过 ABC 三点 + 黑白着色四选一 */
-export function generateQ3(rng: () => number = Math.random): QuizQuestion {
-	// 构造带黑色的小立体
-	let solid = solidWithColors(solidLTetromino(), ['0,0,0', '1,0,0'])
-	if (rng() < 0.4) {
-		solid = randomSolid(rng, 8)
-		// 随机涂黑
-		solid = {
-			voxels: solid.voxels.map((v) => ({
-				...v,
-				color: rng() < 0.3 ? 'gray' : 'white',
-			})),
-		}
-	}
-	const verts = solidVertices(solid)
-	const planes = enumeratePlanes(solid, 300)
-	const candidates = planes
-		.map((plane) => ({ plane, section: computeSection(solid, plane) }))
-		.filter((x) => x.section.patches.some((p) => p.color === 'gray'))
-	const pool =
-		candidates.length > 0
-			? candidates
-			: planes.map((plane) => ({ plane, section: computeSection(solid, plane) }))
-	const chosen = pool[Math.floor(rng() * pool.length)]
-	// 找近似落在平面上的三个格点作为 ABC
-	const onPlane = verts
-		.map((p) => ({ p, d: Math.abs(planeSide(chosen.plane, p)) }))
-		.filter((x) => x.d < 1e-6)
-		.map((x) => x.p)
-	let points: [Vec3, Vec3, Vec3]
-	if (onPlane.length >= 3) {
-		points = [onPlane[0], onPlane[1], onPlane[2]]
-	} else {
-		points = [verts[0], verts[1], verts[2]]
-	}
-	const correctGrid = sectionToColorGrid(chosen.section, chosen.plane)
-	const wrongGrids: QuizOption[] = []
-	for (const other of shuffle(pool, rng)) {
-		if (other.section.signature === chosen.section.signature) continue
-		const g = sectionToColorGrid(other.section, other.plane)
-		if (JSON.stringify(g) === JSON.stringify(correctGrid)) continue
-		wrongGrids.push({
-			id: '',
-			label: '着色截面',
-			section: other.section,
-			colorGrid: g,
-			isCorrect: false,
-		})
-		if (wrongGrids.length >= 3) break
-	}
-	while (wrongGrids.length < 3) {
-		// 扰动：交换颜色
-		const perturbed = correctGrid.map((c, i) =>
-			i === wrongGrids.length
-				? { ...c, color: c.color === 'gray' ? 'white' : ('gray' as VoxelColor) }
-				: c,
-		)
-		wrongGrids.push({
-			id: '',
-			label: '着色截面',
-			colorGrid: perturbed,
-			isCorrect: false,
-		})
-	}
-	const optionsRaw: QuizOption[] = [
-		{
-			id: '',
-			label: '着色截面',
-			section: chosen.section,
-			colorGrid: correctGrid,
-			isCorrect: true,
-		},
-		...wrongGrids,
-	]
-	const options = shuffle(optionsRaw, rng).map((o, i) => ({ ...o, id: OPTION_IDS[i] }))
-	return {
-		kind: 'Q3',
-		prompt: '左图立体由白色与黑色小正方体组成。过顶点 A、B、C 的平面剖开后，正确的截面是？',
-		solid,
-		points,
-		lockOrbitUntilAnswer: true,
-		options,
-		correctSection: chosen.section,
-		correctPlane: chosen.plane,
-	}
-}
-
-function sectionToColorGrid(
-	section: Section,
-	plane: Plane,
-): Array<{ u: number; v: number; color: VoxelColor }> {
-	const cells: Array<{ u: number; v: number; color: VoxelColor }> = []
-	for (const patch of section.patches) {
-		const c = patch.points.reduce(
-			(acc, p) => [acc[0] + p[0], acc[1] + p[1], acc[2] + p[2]] as Vec3,
-			[0, 0, 0] as Vec3,
-		)
-		const centroid: Vec3 = [
-			c[0] / patch.points.length,
-			c[1] / patch.points.length,
-			c[2] / patch.points.length,
-		]
-		const [u, v] = projectTo2D([centroid], plane.normal)[0]
-		cells.push({ u: round2(u), v: round2(v), color: patch.color })
-	}
-	return cells.sort((a, b) => a.v - b.v || a.u - b.u)
-}
-
-export function generateQuiz(kind: QuizKind, rng: () => number = Math.random): QuizQuestion {
-	switch (kind) {
-		case 'Q1':
-			return generateQ1(rng)
-		case 'Q3':
-			return generateQ3(rng)
-		case 'Q4':
-			return generateQ4(rng)
-		case 'Q7':
-			return generateQ7(rng)
-	}
+	return best
 }
 
 export function toggleVoxel(solid: Solid, x: number, y: number, z: number): Solid {

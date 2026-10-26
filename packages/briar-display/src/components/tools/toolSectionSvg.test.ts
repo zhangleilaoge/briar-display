@@ -33,6 +33,35 @@ describe('toolSectionSvg', () => {
 		)
 	})
 
+	it('reflects the shape and markers across the X and Y axes', () => {
+		const section = computeSection(solidSingleCube(), plane)
+		const reflectedX = sectionToSvgPaths(section, plane, 240, points, 0, { x: true })
+		const expectedX = [
+			[28.8, 211.2],
+			[28.8, 28.8],
+			[120, 211.2],
+		]
+		reflectedX.markers.forEach((marker, index) => {
+			expect(marker.x).toBeCloseTo(expectedX[index][0])
+			expect(marker.y).toBeCloseTo(expectedX[index][1])
+		})
+		const reflectedY = sectionToSvgPaths(section, plane, 240, points, 0, { y: true })
+		const expectedY = [
+			[120, 28.8],
+			[120, 211.2],
+			[28.8, 28.8],
+		]
+		reflectedY.markers.forEach((marker, index) => {
+			expect(marker.x).toBeCloseTo(expectedY[index][0])
+			expect(marker.y).toBeCloseTo(expectedY[index][1])
+		})
+		expect(reflectedX.outlines).toHaveLength(1)
+		expect(reflectedY.outlines).toHaveLength(1)
+		expect(sectionToSvgPaths(section, plane, 240, points, 0, { x: true, y: true })).toEqual(
+			sectionToSvgPaths(section, plane, 240, points, 2),
+		)
+	})
+
 	it('draws only the exterior outline of a connected L-shaped section', () => {
 		const section = computeSection(
 			{
@@ -53,6 +82,23 @@ describe('toolSectionSvg', () => {
 		expect(coordinates.every((value) => value >= 0 && value <= 240)).toBe(true)
 		expect(svg.paths.find((path) => path.voxel.x === 0)?.color).toBe('gray')
 		expect(sectionToSvgPaths(section, plane, 240, undefined, 1).outlines).toHaveLength(1)
+	})
+
+	it('deduplicates the shared face when a plane lies between adjacent voxels', () => {
+		const sharedFace = planeFromPoints([0, 0, 1], [1, 0, 1], [0, 1, 1])!
+		const section = computeSection(
+			{
+				voxels: [
+					{ x: 0, y: 0, z: 0 },
+					{ x: 0, y: 0, z: 1 },
+				],
+			},
+			sharedFace,
+		)
+		const svg = sectionToSvgPaths(section, sharedFace, 240)
+		expect(section.patches).toHaveLength(1)
+		expect(svg.paths).toHaveLength(1)
+		expect(svg.outlines).toHaveLength(1)
 	})
 
 	it('keeps separate outlines for disconnected parts', () => {
