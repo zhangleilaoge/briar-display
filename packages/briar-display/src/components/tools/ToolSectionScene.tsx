@@ -1,13 +1,14 @@
 'use client'
 
 import { GizmoHelper, GizmoViewport, OrbitControls } from '@react-three/drei'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useFrame } from '@react-three/fiber'
 import { Suspense, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { AdditionArrows, PointMarker, StarterCell, VoxelMesh } from './ToolSectionObjects'
+import { ASSEMBLY_DURATION, assemblyPieceOffset } from './toolSectionAssembly'
 import { type CutPoints, additionCells } from './toolSectionEditor'
 import { exposedSectionBoundaries } from './toolSectionGeometry'
-import { type Plane, type Solid, type Vec3, computeSection } from './toolSectionUtils'
+import { type Plane, type Solid, type Vec3, type Voxel, computeSection } from './toolSectionUtils'
 import { type PointerPosition, useToolSectionInteraction } from './useToolSectionInteraction'
 
 type SceneProps = {
@@ -17,6 +18,7 @@ type SceneProps = {
 	edgeSnap?: boolean
 	showSection?: boolean
 	orbitEnabled?: boolean
+	assembly?: { base: Solid; piece: Solid; runId: number }
 	onPointsChange?: (points: CutPoints) => void
 	selectedCell?: Vec3 | null
 	onSelectCell?: (cell: Vec3 | null) => void
@@ -26,6 +28,37 @@ type SceneProps = {
 }
 
 const sameCell = (a: Vec3, b: Vec3) => a.every((value, index) => value === b[index])
+
+function AssemblyVoxels({
+	piece,
+	runId,
+	renderVoxel,
+}: {
+	piece: Solid
+	runId: number
+	renderVoxel: (voxel: Voxel, accent?: boolean) => ReturnType<typeof VoxelMesh>
+}) {
+	const group = useRef<THREE.Group>(null)
+	const animation = useRef<{ runId: number; startedAt: number } | null>(null)
+	useFrame(({ clock }) => {
+		if (!group.current) return
+		if (runId === 0) {
+			animation.current = null
+			group.current.position.set(0, 0, 0)
+			return
+		}
+		if (animation.current?.runId !== runId) {
+			animation.current = { runId, startedAt: clock.elapsedTime }
+		}
+		const progress = ((clock.elapsedTime - animation.current.startedAt) * 1000) / ASSEMBLY_DURATION
+		group.current.position.set(...assemblyPieceOffset(progress))
+	})
+	return (
+		<group ref={group} position={assemblyPieceOffset(runId === 0 ? 1 : 0)}>
+			{piece.voxels.map((voxel) => renderVoxel(voxel, true))}
+		</group>
+	)
+}
 
 function SectionFill({ plane, solid }: { plane: Plane; solid: Solid }) {
 	const meshes = useMemo(() => {
@@ -128,6 +161,7 @@ function SceneContent({
 	edgeSnap = false,
 	showSection = false,
 	orbitEnabled = true,
+	assembly,
 	onPointsChange,
 	selectedCell,
 	onSelectCell,
@@ -136,28 +170,33 @@ function SceneContent({
 	onCellContextMenu,
 }: SceneProps) {
 	const groupRef = useRef<THREE.Group>(null)
+	const displaySolid = useMemo<Solid>(
+		() => (assembly ? { voxels: [...assembly.base.voxels, ...assembly.piece.voxels] } : solid),
+		[assembly, solid],
+	)
 	const center = useMemo<Vec3>(() => {
-		if (solid.voxels.length === 0) return [0.5, 0.5, 0.5]
-		const xs = solid.voxels.map((voxel) => voxel.x + 0.5)
-		const ys = solid.voxels.map((voxel) => voxel.y + 0.5)
-		const zs = solid.voxels.map((voxel) => voxel.z + 0.5)
+		if (displaySolid.voxels.length === 0) return [0.5, 0.5, 0.5]
+		const xs = displaySolid.voxels.map((voxel) => voxel.x + 0.5)
+		const ys = displaySolid.voxels.map((voxel) => voxel.y + 0.5)
+		const zs = displaySolid.voxels.map((voxel) => voxel.z + 0.5)
 		return [
 			(Math.min(...xs) + Math.max(...xs)) / 2,
 			(Math.min(...ys) + Math.max(...ys)) / 2,
 			(Math.min(...zs) + Math.max(...zs)) / 2,
 		]
-	}, [solid])
+	}, [displaySolid])
 	const bottom = useMemo(
-		() => (solid.voxels.length ? Math.min(...solid.voxels.map((voxel) => voxel.y)) : 0),
-		[solid],
+		() =>
+			displaySolid.voxels.length ? Math.min(...displaySolid.voxels.map((voxel) => voxel.y)) : 0,
+		[displaySolid],
 	)
 	const availablePositions = useMemo(
-		() => (onAddCell ? additionCells(solid, selectedCell) : []),
-		[onAddCell, selectedCell, solid],
+		() => (onAddCell ? additionCells(displaySolid, selectedCell) : []),
+		[onAddCell, selectedCell, displaySolid],
 	)
 	const { hoveredCell, dragPreview } = useToolSectionInteraction({
 		groupRef,
-		solid,
+		solid: displaySolid,
 		points,
 		edgeSnap,
 		orbitEnabled,
@@ -168,26 +207,39 @@ function SceneContent({
 		onCellContextMenu,
 	})
 	const editable = !!(onSelectCell || onMoveCell || onCellContextMenu)
+	const renderVoxel = (voxel: Voxel, accent = false) => {
+		const cell: Vec3 = [voxel.x, voxel.y, voxel.z]
+		return (
+			<VoxelMesh
+				key={cell.join(',')}
+				voxel={voxel}
+				editable={editable}
+				selected={selectedCell ? sameCell(cell, selectedCell) : false}
+				hovered={hoveredCell ? sameCell(cell, hoveredCell) : false}
+				accent={accent}
+			/>
+		)
+	}
 
 	return (
 		<>
 			<group ref={groupRef} position={[-center[0], -center[1], -center[2]]}>
-				{solid.voxels.map((voxel) => {
-					const cell: Vec3 = [voxel.x, voxel.y, voxel.z]
-					return (
-						<VoxelMesh
-							key={cell.join(',')}
-							voxel={voxel}
-							editable={editable}
-							selected={selectedCell ? sameCell(cell, selectedCell) : false}
-							hovered={hoveredCell ? sameCell(cell, hoveredCell) : false}
+				{assembly ? (
+					<>
+						{assembly.base.voxels.map((voxel) => renderVoxel(voxel))}
+						<AssemblyVoxels
+							piece={assembly.piece}
+							runId={assembly.runId}
+							renderVoxel={renderVoxel}
 						/>
-					)
-				})}
+					</>
+				) : (
+					displaySolid.voxels.map((voxel) => renderVoxel(voxel))
+				)}
 				{selectedCell && onAddCell ? (
 					<AdditionArrows selectedCell={selectedCell} cells={availablePositions} />
 				) : null}
-				{solid.voxels.length === 0 && onAddCell ? <StarterCell /> : null}
+				{displaySolid.voxels.length === 0 && onAddCell ? <StarterCell /> : null}
 				{dragPreview ? (
 					<mesh
 						position={[
@@ -209,13 +261,13 @@ function SceneContent({
 				{points?.map((point, index) => (
 					<PointMarker
 						key={index}
-						solid={solid}
+						solid={displaySolid}
 						point={point}
 						index={index}
-						draggable={!!onPointsChange && solid.voxels.length > 0}
+						draggable={!!onPointsChange && displaySolid.voxels.length > 0}
 					/>
 				))}
-				{showSection && plane ? <SectionFill plane={plane} solid={solid} /> : null}
+				{showSection && plane ? <SectionFill plane={plane} solid={displaySolid} /> : null}
 			</group>
 			<OrbitControls
 				makeDefault

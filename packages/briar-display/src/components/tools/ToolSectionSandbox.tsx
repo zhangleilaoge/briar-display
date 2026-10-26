@@ -3,6 +3,8 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
 	ArrowLeftRight,
 	ArrowUpDown,
@@ -149,21 +151,15 @@ export function ToolSectionSandbox() {
 							<div className="flex flex-wrap gap-2">
 								<div className="mr-1 flex items-center gap-2">
 									<Magnet className="h-3.5 w-3.5 text-muted-foreground" />
-									<span className="text-xs">线吸附</span>
-									<Button
-										type="button"
-										size="sm"
-										variant="outline"
-										role="switch"
-										aria-checked={edgeSnap}
+									<Label htmlFor="section-edge-snap" className="cursor-pointer text-xs font-normal">
+										线吸附
+									</Label>
+									<Switch
+										id="section-edge-snap"
+										checked={edgeSnap}
+										onCheckedChange={setEdgeSnap}
 										aria-label="线吸附"
-										className={`h-6 w-11 rounded-full p-0.5 ${edgeSnap ? 'bg-primary hover:bg-primary/90' : 'bg-muted hover:bg-muted'}`}
-										onClick={() => setEdgeSnap((current) => !current)}
-									>
-										<span
-											className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${edgeSnap ? 'translate-x-5' : 'translate-x-0'}`}
-										/>
-									</Button>
+									/>
 								</div>
 								<Button
 									size="sm"

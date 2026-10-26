@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Box, Boxes, RefreshCw, SquareStack } from 'lucide-react'
+import { Box, Boxes, Play, RefreshCw, SquareStack } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { GridSvgPreview, QuizOptionVisual } from './ToolQuizVisual'
 import { ToolSectionSandbox } from './ToolSectionSandbox'
@@ -35,6 +35,7 @@ function QuizPanel() {
 	const [selected, setSelected] = useState<string | null>(null)
 	const [revealed, setRevealed] = useState(false)
 	const [previewId, setPreviewId] = useState<string | null>(null)
+	const [assemblyRunId, setAssemblyRunId] = useState(0)
 
 	const reload = (nextKind: QuizKind = kind) => {
 		setKind(nextKind)
@@ -42,6 +43,7 @@ function QuizPanel() {
 		setSelected(null)
 		setRevealed(false)
 		setPreviewId(null)
+		setAssemblyRunId(0)
 	}
 
 	const correctOption = question.options.find((option) => option.isCorrect)!
@@ -68,6 +70,21 @@ function QuizPanel() {
 	const scenePoints = revealed ? activePoints : question.points
 	const sceneSolid =
 		activeOption?.visual.kind === 'solid' ? activeOption.visual.solid : question.solid
+	const assemblyPiece =
+		kind === 'Q8' && revealed && activeOption?.isCorrect && activeOption.visual.kind === 'solid'
+			? activeOption.visual.solid
+			: null
+	const assembly = assemblyPiece
+		? {
+				base: question.solid,
+				piece: assemblyPiece,
+				runId: assemblyRunId,
+			}
+		: undefined
+
+	const startAssembly = () => {
+		setAssemblyRunId((current) => current + 1)
+	}
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -123,6 +140,8 @@ function QuizPanel() {
 								data-active-option={activeOption?.id}
 								data-has-plane={!!scenePlane}
 								data-point-count={scenePoints?.length ?? 0}
+								data-assembly={assembly ? 'combined' : undefined}
+								data-assembly-run={assembly ? assemblyRunId : undefined}
 							>
 								<ToolSectionScene
 									solid={sceneSolid}
@@ -130,9 +149,21 @@ function QuizPanel() {
 									points={scenePoints}
 									showSection={!!scenePlane}
 									orbitEnabled={orbitEnabled}
+									assembly={assembly}
 								/>
 							</div>
 						)}
+						{assembly ? (
+							<div className="mt-3 flex flex-wrap items-center gap-2" data-assembly-controls>
+								<Button size="sm" variant="outline" className="gap-1" onClick={startAssembly}>
+									<Play className="h-3.5 w-3.5" />
+									{assemblyRunId > 0 ? '重新演示' : '演示拼合'}
+								</Button>
+								<span className="text-xs text-muted-foreground">
+									灰色为原图，橙色为嵌合零件；动画开始前和进行中都可旋转。
+								</span>
+							</div>
+						) : null}
 						{activeOption ? (
 							<p className="mt-2 text-xs text-muted-foreground" data-spatial-explanation>
 								{activeOption.plane
@@ -188,6 +219,7 @@ function QuizPanel() {
 								onClick={() => {
 									setRevealed(true)
 									setPreviewId(null)
+									setAssemblyRunId(0)
 								}}
 							>
 								提交答案
