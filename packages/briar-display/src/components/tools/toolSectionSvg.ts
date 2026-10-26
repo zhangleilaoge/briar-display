@@ -48,6 +48,15 @@ function rotate([u, v]: Point2, quarterTurns: number): Point2 {
 	}
 }
 
+function transformPoint(
+	point: Point2,
+	quarterTurns: number,
+	reflection: { x?: boolean; y?: boolean },
+): Point2 {
+	const [u, v] = rotate(point, quarterTurns)
+	return [reflection.y ? -u : u, reflection.x ? -v : v]
+}
+
 function sectionOutlines(
 	polys: Array<{ points: Point2[]; keys: string[] }>,
 	toPath: (points: Point2[]) => string,
@@ -122,13 +131,14 @@ function sectionOutlines(
 	return outlines
 }
 
-/** 截面多边形与切点共用等比二维投影；正数表示逆时针旋转 90° 的次数。 */
+/** 截面多边形与切点共用等比二维投影，依次应用旋转和轴对称。 */
 export function sectionToSvgPaths(
 	section: Section,
 	plane: Plane,
 	size = 120,
 	points?: Vec3[],
 	quarterTurns = 0,
+	reflection: { x?: boolean; y?: boolean } = {},
 ): SectionSvgProjection {
 	if (section.patches.length === 0 && !points?.length) {
 		return { paths: [], outlines: [], markers: [], width: size, height: size }
@@ -136,13 +146,13 @@ export function sectionToSvgPaths(
 	const all2: Point2[] = []
 	const polys = section.patches.map((patch) => {
 		const projected = patch.points.map((point) =>
-			rotate(projectTo2D(point, plane.normal), quarterTurns),
+			transformPoint(projectTo2D(point, plane.normal), quarterTurns, reflection),
 		)
 		all2.push(...projected)
 		return { points: projected, color: patch.color, voxel: patch.voxel }
 	})
 	const projectedMarkers = (points ?? []).map((point, index) => {
-		const projected = rotate(projectTo2D(point, plane.normal), quarterTurns)
+		const projected = transformPoint(projectTo2D(point, plane.normal), quarterTurns, reflection)
 		all2.push(projected)
 		return { id: 'ABC'[index], point: projected }
 	})

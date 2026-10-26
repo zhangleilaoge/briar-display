@@ -3,7 +3,15 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Magnet, RotateCcw, RotateCw, Shuffle, Trash2 } from 'lucide-react'
+import {
+	ArrowLeftRight,
+	ArrowUpDown,
+	Magnet,
+	RotateCcw,
+	RotateCw,
+	Shuffle,
+	Trash2,
+} from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { SectionSvgPreview } from './ToolSectionPreview'
@@ -40,6 +48,7 @@ export function ToolSectionSandbox() {
 	const [points, setPoints] = useState<CutPoints>(() => defaultCutPoints(solidLTetromino()))
 	const [selectedCell, setSelectedCell] = useState<Vec3 | null>(null)
 	const [rotation, setRotation] = useState(1)
+	const [reflection, setReflection] = useState({ x: false, y: false })
 	const [edgeSnap, setEdgeSnap] = useState(false)
 	const [voxelMenu, setVoxelMenu] = useState<VoxelMenuPosition | null>(null)
 	const cutPoints = useMemo(
@@ -212,7 +221,7 @@ export function ToolSectionSandbox() {
 					<CardHeader className="pb-2">
 						<CardTitle className="text-base">当前截面</CardTitle>
 						<p className="text-xs text-muted-foreground">与三维青色交汇截面同步</p>
-						<div className="flex gap-2 pt-2">
+						<div className="grid grid-cols-2 gap-2 pt-2">
 							<Button
 								size="sm"
 								variant="outline"
@@ -233,6 +242,26 @@ export function ToolSectionSandbox() {
 								<RotateCw className="h-3.5 w-3.5" />
 								顺时针 90°
 							</Button>
+							<Button
+								size="sm"
+								variant={reflection.x ? 'default' : 'outline'}
+								className="h-8 flex-1 gap-1 px-2 text-xs"
+								aria-label="以 X 轴为对称轴上下翻转"
+								aria-pressed={reflection.x}
+								onClick={() => setReflection((current) => ({ ...current, x: !current.x }))}
+							>
+								<ArrowUpDown className="h-3.5 w-3.5" />X 对称
+							</Button>
+							<Button
+								size="sm"
+								variant={reflection.y ? 'default' : 'outline'}
+								className="h-8 flex-1 gap-1 px-2 text-xs"
+								aria-label="以 Y 轴为对称轴左右翻转"
+								aria-pressed={reflection.y}
+								onClick={() => setReflection((current) => ({ ...current, y: !current.y }))}
+							>
+								<ArrowLeftRight className="h-3.5 w-3.5" />Y 对称
+							</Button>
 						</div>
 					</CardHeader>
 					<CardContent className="space-y-4">
@@ -252,6 +281,8 @@ export function ToolSectionSandbox() {
 									points={cutPoints}
 									size={240}
 									rotation={rotation}
+									reflectX={reflection.x}
+									reflectY={reflection.y}
 								/>
 							) : null}
 						</div>
