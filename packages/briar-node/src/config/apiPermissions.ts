@@ -19,6 +19,7 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	'POST /api/auth/register': null,
 	'POST /api/auth/send-reset-code': null,
 	'POST /api/auth/reset-password': null,
+	'POST /api/auth/google/id-token': null, // Google GIS 登录（免登录，ID Token 本地验签）
 
 	// ==================== Admin ====================
 	'POST /api/admin/roles': PERMISSIONS.ADMIN_ROLE_MANAGE,
