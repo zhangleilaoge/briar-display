@@ -18,7 +18,7 @@
 | `briar-youzan-repo` | 从 GitLab 搜索并克隆仓库到本地 |
 | `briar-youzan-skynet` | Skynet（天网）日志排查方法：补足 skynet-query 的查询范式与事件丢失排查方法论 |
 | `briar-youzan-get-session-id` | 按时间窗口 + （定制页面 key 或 kdtId）查询有效导购登录 sessionId（天网日志 + Dubbo 校验） |
-| `briar-youzan-ai-profile-push` | 给指定导购推一客一策：导入/生成画像话术 → 触发每日行动计划或单导购企微卡片 → H5/天网验证 |
+| `briar-youzan-ai-profile-push` | 给指定导购推一客一策：导入/生成画像话术 → 触发每日行动计划或单导购企微卡片 → H5/天网验证；支持按真实排期立即直发企微测试卡（preview/send/status、幂等回查） |
 | `briar-youzan-sales-leads-push` | 给指定导购推销售线索：选专属客户调 guide-promotion 测试入口造线索 → 线索列表 + 今日任务 LEADS_FOLLOW 分组验证 → 可清理 |
 | `briar-mail` | 发邮件（支持附件）：直连收件方 MX 投递，无需邮箱凭证 |
 | `briar-subtitle` | 视频字幕提取：烧录字幕抽帧直读或 whisper 语音转录（带时间轴） |

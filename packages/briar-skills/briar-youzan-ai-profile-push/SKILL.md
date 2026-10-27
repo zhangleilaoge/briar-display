@@ -1,6 +1,6 @@
 ---
 name: briar-youzan-ai-profile-push
-description: 给指定导购（rootKdtId + guideId）推一客一策：把客户挂到导购名下生成画像/话术，再触发导购今日行动计划（H5 工作台 AI 助理卡）或单导购企微通知卡片，已触达可重置后重复测试，并在 H5/天网上验证。触发词：指定导购推一客一策、给 guide 造一客一策数据、一客一策测试数据、预发一客一策接口不灵、首页 AI 助理卡没有一客一策、triggerGuideNotice。
+description: 给指定导购（rootKdtId + guideId）推一客一策：生成画像/话术，触发今日行动计划或单导购企微通知卡；支持按真实排期立即直发企微测试卡（preview/send/status、幂等回查），已触达可重置，并在 H5/天网上验证。触发词：指定导购推一客一策、给 guide 造一客一策数据、一客一策测试数据、预发一客一策接口不灵、首页 AI 助理卡没有一客一策、triggerGuideNotice、今日立即下发企微卡。
 tags: youzan-internal, dubbo, scrm, guide, ai-profile, testing
 ---
 
@@ -49,12 +49,12 @@ flowchart LR
   C --> D[(MySQL / HBase<br/>与 scrm-datacenter 共用)]
   D -->|CusServiceV2.listCustomers<br/>adminId=guideId, todayOnly| E[guide-promotion]
   E -->|triggerGuideDailyActionPlan /<br/>getSalesCopilotWelcomeMessage| F[guide-b-h5 BFF → H5 工作台 AI 助理卡]
-  E -->|AiProfileDailyNoticeTestApiService.triggerGuideNotice| G[wecom-helper 企微卡片「重点客户跟进」]
+  E -->|AiProfileDailyNoticeTestApiService.triggerGuideNotice| G[wecom-helper-core 企微卡片「重点客户跟进」]
   E -->|queryDailyTasks| H[H5 今日任务总览 / 还剩N项]
   E -->|TestService.deleteGuideAiProfileReachRecord<br/>重置已触达（重复测试）| I[(guide_ai_profile_reach_record)]
 ```
 
-关键点：一客一策客户按 **`adminId` = 导购有赞 userId（guideId）** 归属；guide-promotion 只读「今天」的推荐（`operate_time` 为当天、`operateType=1`，前 100 条），并排除近 3 天已触达（`guide_ai_profile_reach_record` 去重窗口 = [当天零点, +3 天零点），触达记录可删后重新下发）。所以「推给某导购」= 让该导购名下今天有带话术的客户 + 触发下发。
+关键点：一客一策客户按 **`adminId` = 导购有赞 userId（guideId）** 归属。`listTodayPendingCustomers` 默认查询北京时间今天，也可用 `dateDay` 指定真实排期；取该日期前 100 条推荐，再按有效话术、归属和触达记录筛选。`triggerGuideNotice` 不接受业务日期，仍取调用当天，不能靠它发次日排期；立即发指定真实排期的测试卡见下节。
 
 ## 前置参数
 
@@ -63,6 +63,53 @@ flowchart LR
      `com.youzan.uic.api.userBatch.service.UserBatchService#getMobileUserInfoListByMobileList`（app=`uic`），args `[{"mobileList":["<手机号>"],"appName":"guide"}]`，返回 `userId` / `nickName` / `mobile`；再 `getShoppingGuide` 校验导购身份。注意 `UserInfoService#getMobileInfo` 单查接口实测按文档参数返回空，别用，用批量接口。
 2. 先只读核查导购有效性，再决定写操作：
    `com.youzan.guide.api.service.shoppingguide.ShoppingGuideReadApiService#getShoppingGuide`（app=`guide`），args `[{"rootKdtId":<rootKdtId>,"guideId":<guideId>}]`（guideId = 导购有赞 userId），确认 `status=1`、`guideType=1`（付费导购）、`belongToQw=1`（企微绑定）。
+
+## 按真实排期立即直发企微测试卡
+
+傍晚生成的推荐常落到次日 10:00，而 `triggerGuideNotice(rootKdtId, guideId)` 仍使用调用当天作为 `businessDate`，不能拿它发送次日推荐。不要修改排期、店铺 `outputLogic` 或通知业务日期；用 `scripts/ai_profile_wecom_now.py` 复用指定排期的真实话术，直调 `wecom-helper-core` 的 `AppMsgOpenService.pushButtonTemplateMessage`，立即发同款「重点客户跟进 / 立即跟进」测试卡。
+
+**边界**：这是指定客户的单卡直发，不经过每日通知的消费、通知明细、触达记录及计费链路，也不验证这些链路；没有生产排期或产品行为的改动。`dateDay` 是真实排期，不是发送日期，「立即跟进」链接也携带这个日期。只有 QA / 预发测试店铺可用，`send` 前须取得用户对该环境与导购的发送许可。
+
+前置条件：客户已在指定排期的 `listTodayPendingCustomers` 中，`hasWecomRelation=true`、CRM 归属有效且话术非空；导购须是有效付费导购并已绑定企微。客户池里若有导购账号，不能拿来凑客户数；不足 N 个就如实报告，不伪造候选。`hasWecomRelation=false` 时不发，不改写为 true、不擅自添加好友或改客户关系。脚本还会按导购实际 `qwKdtId + staffId` 查询 externalUserId，并用 `CustomerRelOpenService.searchAfterSimple` 加 `churnStatus=0 + isDeleted=0` 再核对有效好友，不能只凭映射存在就发送。
+
+pending 按总部当前企微能力店查关系，直发按导购绑定企微店查关系；两者不一致时会出现 pending=false 而导购绑定店确有好友。用只读 `CorpCoreKVService.wscWecomCommercializeInfo({"wscKdtId": <rootKdtId>})` 对照导购 `qwKdtId`，不一致先停下核查店铺配置，不绕过校验。若同一店铺的对照查询仍不一致，注意 `searchAfterSimple` 走非实时 ES，先排查数据状态，不反复重新生成。
+
+### 预览 → 单次发送 → 回查
+
+以下命令在本 skill 目录执行；手机号导购显式传 `--guideKind mobile`，其他标识可省略。
+
+```bash
+# 1. 只读预览：核对客户、真实排期、话术、企微店铺、跳转链接和 bizId
+python3 scripts/ai_profile_wecom_now.py preview \
+  --env pre --rootKdtId <rootKdtId> --guide <导购手机号> --guideKind mobile \
+  --customerId <客户userId> --dateDay <真实排期yyyy-MM-dd>
+
+# 2. 用户确认后只发这一位客户；两个环境参数必须一致
+python3 scripts/ai_profile_wecom_now.py send \
+  --env pre --confirm-env pre --rootKdtId <rootKdtId> \
+  --guide <导购手机号> --guideKind mobile \
+  --customerId <客户userId> --dateDay <真实排期yyyy-MM-dd>
+
+# 3. 只读回查：按当前真实内容重新定位任务
+python3 scripts/ai_profile_wecom_now.py status \
+  --env pre --rootKdtId <rootKdtId> --guide <导购手机号> --guideKind mobile \
+  --customerId <客户userId> --dateDay <真实排期yyyy-MM-dd>
+
+# 好友关系或话术已变化时，用预览/发送输出的数字 bizId 独立回查，不重建卡片
+python3 scripts/ai_profile_wecom_now.py status \
+  --env pre --rootKdtId <rootKdtId> --guide <导购手机号> --guideKind mobile \
+  --bizId <数字bizId>
+```
+
+多位客户不能批量盲发：逐个 `preview`，逐位确认后再各自 `send --confirm-env`；不要把导购自己的账号混入。独立 `--bizId` 只能用于 `status`，不能绕过 preview 的客户、排期和好友校验。
+
+### 幂等、异常和验收
+
+- 任务键由环境、总部、导购、客户、真实排期和话术内容计算。`bizId` 是 Long 范围内的纯数字字符串，另保留可读的 `taskId=ai_profile_wecom_now_<env>_<hash>`。这是为了兼容查询模型：存储的 `bizId` 是 String，而 `PushStateQueryResultDTO.bizId` 是 Long，非数字字符串会在 MapStruct 转换时抛 `NumberFormatException`，并非企微发送失败。
+- 发送前已有同内容任务：成功状态直接抑制重复；失败或待发送状态也停止并人工核查，不自动换 key 重发。多个相同状态同样停止。
+- `SEND_ONCE` 表示即将尝试一次发送。出现它以后，无论调用超时、返回异常还是受理后回查失败，都不能直接重跑 send。`PUSH_ACCEPTED` 只表示推送请求已受理，不等于企微已送达；先用完整 `taskId` 查日志，再用 `status` / `--bizId` 回查。
+- 成功以 `pushState=1 && wecomErrorCode=0` 为准；预发也可核对 `wecom-helper-core` 天网中该任务的 `ButtonInteractionPushClient` 返回 `errCode=0, errMsg=ok`。最终还需用户在手机「有赞智能导购」确认卡片展示及「立即跟进」跳转。
+- 查预发天网时请求头用 `x-yz-env=pre`，限定实际预发 hostname，并客户端校验 `event.tags._env == "PRE"`；按发送前后秒级窗口查询完整 `taskId` / `bizId`。只搜 hash 片段可能漏日志，搜不到不能据此判定未发送。只摘录时间、logger、traceId、`errCode/errMsg` 等必要字段，不记录日志里的 token 等凭据。
 
 ## 步骤
 

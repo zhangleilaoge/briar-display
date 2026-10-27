@@ -152,6 +152,10 @@ def norm_guide(raw):
         'status': raw.get('status'),
         'guideType': raw.get('guideType'),
         'belongToQw': raw.get('belongToQw'),
+        'rootKdtId': raw.get('rootKdtId'),
+        'qwKdtId': raw.get('qwKdtId'),
+        'departmentId': raw.get('departmentId'),
+        'staffId': raw.get('staffId'),
     }
 
 
