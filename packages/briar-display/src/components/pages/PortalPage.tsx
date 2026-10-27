@@ -1,7 +1,6 @@
 'use client'
 
 import UserMenu from '@/components/common/UserMenu'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ChatBubble } from '@/components/ui/chat-bubble'
 import {
@@ -177,18 +176,6 @@ function PortalPageInner() {
 								我想找：{query.trim()}
 							</ChatBubble>
 						)}
-						<div className="flex flex-wrap gap-2">
-							{['工具', '文件', '博客', '板块'].map((k) => (
-								<Button
-									key={k}
-									size="sm"
-									variant="secondary"
-									onClick={() => setQuery(query === k ? '' : k)}
-								>
-									{k}
-								</Button>
-							))}
-						</div>
 					</div>
 
 					{/* 入口卡片 */}
