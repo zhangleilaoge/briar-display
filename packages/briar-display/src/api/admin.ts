@@ -115,11 +115,41 @@ export const setUserRoles = async (userId: string, roleIds: string[]) => {
 	return response.data
 }
 
-/** 合并用户（仅超级管理员）：把 sourceUserId 的身份、角色、数据迁到 targetUserId 后删除 sourceUserId */
+export interface MergePreviewModule {
+	name: string
+	label: string
+	count: number
+	conflicts: string[]
+	notes: string[]
+}
+
+export interface MergePreview {
+	source: { id: string; name: string; email: string }
+	target: { id: string; name: string; email: string }
+	modules: MergePreviewModule[]
+}
+
+export interface MergeResult {
+	sourceId: string
+	targetId: string
+	modules: { name: string; label: string; moved: number; notes: string[] }[]
+}
+
+/** 合并预览：各模块将迁移的数量与冲突（不修改数据） */
+export const getMergePreview = async (sourceUserId: string, targetUserId: string) => {
+	const response = await apiClient.get<ApiResponse<MergePreview>>(
+		`/admin/users/${sourceUserId}/merge-preview`,
+		{ params: { targetUserId } },
+	)
+	return response.data
+}
+
+/** 合并用户（仅超级管理员）：把 sourceUserId 的数据迁到 targetUserId 后删除 sourceUserId */
 export const mergeUser = async (sourceUserId: string, targetUserId: string) => {
-	const response = await apiClient.post<
-		ApiResponse<{ sourceId: string; targetId: string; moved: Record<string, number> }>
-	>(`/admin/users/${sourceUserId}/merge`, { targetUserId })
+	const response = await apiClient.post<ApiResponse<MergeResult>>(
+		`/admin/users/${sourceUserId}/merge`,
+		{ targetUserId },
+	)
 	return response.data
 }
 

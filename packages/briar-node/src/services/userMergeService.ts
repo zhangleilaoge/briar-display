@@ -1,15 +1,18 @@
-import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise'
+import type { PoolConnection, RowDataPacket } from 'mysql2/promise'
 import { transaction } from '../lib/db'
 import { permissionService } from './permissionService'
+import { USER_MERGE_HANDLERS } from './userMerge/registry'
+import type { MergeContext, MergeUserRow, ModulePreview, UserMergeHandler } from './userMerge/types'
 
 /**
- * 合并用户：把 source 的登录身份、角色、自有数据与引用全部迁到 target，然后删除 source。
- * 整个过程在一个事务里，任一步失败整体回滚。
+ * 合并用户：source（B）→ target（A）。
+ * 只负责编排：在一个事务里依次调用 userMerge/registry.ts 注册的每个 handler，最后删除 source；
+ * 模块细节（去重、重名、存储路径等）全部在各 handler 里。任一步失败整体回滚。
  */
 
 export type MergeValidationError = 'MERGE_SAME_USER' | 'MERGE_SELF_SOURCE' | 'MERGE_MISSING_TARGET'
 
-/** 纯校验：不能自己合并到自己；不能把当前登录的管理员自己合并掉（会把自己删掉） */
+/** 纯校验：不能合并到自己；不能把当前登录的管理员自己合并掉 */
 export const validateMerge = (input: {
 	sourceId: string
 	targetId: string
@@ -21,83 +24,113 @@ export const validateMerge = (input: {
 	return null
 }
 
-/** 迁移步骤：[表名, SQL]；参数统一为 (target, source)。表不存在（如未启用的模块）则跳过 */
-const MOVE_STEPS: [string, string][] = [
-	['user_identities', 'UPDATE user_identities SET user_id = ? WHERE user_id = ?'],
-	[
-		'user_roles',
-		'INSERT IGNORE INTO user_roles (user_id, role_id) SELECT ?, role_id FROM user_roles WHERE user_id = ?',
-	],
-	['folders', 'UPDATE folders SET user_id = ? WHERE user_id = ?'],
-	['files', 'UPDATE files SET user_id = ? WHERE user_id = ?'],
-	['messages', 'UPDATE messages SET user_id = ? WHERE user_id = ?'],
-	['wiki', 'UPDATE wiki SET author_id = ? WHERE author_id = ?'],
-	// 自选股 (user_id, market, code) 唯一：目标已有的跳过，剩余随 source 删除级联清掉
-	['market_watchlist', 'UPDATE IGNORE market_watchlist SET user_id = ? WHERE user_id = ?'],
-	['sql_audit_logs', 'UPDATE sql_audit_logs SET user_id = ? WHERE user_id = ?'],
-	['terminal_audit_logs', 'UPDATE terminal_audit_logs SET user_id = ? WHERE user_id = ?'],
-	['request_logs', 'UPDATE request_logs SET user_id = ? WHERE user_id = ?'],
-]
+const toUserRow = (r: RowDataPacket): MergeUserRow => ({
+	id: r.id,
+	name: r.name,
+	email: r.email,
+	avatar: r.avatar ?? null,
+	passwordHash: r.password_hash,
+	hasPassword: r.has_password === null || r.has_password === undefined ? true : !!r.has_password,
+	securityPasswordHash: r.security_password_hash ?? null,
+})
 
-/** 媒体缓存按 person='u:{userId}' 归属，(person, url) 唯一：冲突的跳过并删除 source 残留 */
-const PERSON_TABLES = ['media_parse_cache', 'media_cache'] as const
+const buildContext = async (
+	conn: PoolConnection,
+	sourceId: string,
+	targetId: string,
+	lock: boolean,
+	afterCommit: MergeContext['afterCommit'],
+): Promise<MergeContext> => {
+	const [users] = await conn.execute<RowDataPacket[]>(
+		`SELECT id, name, email, avatar, password_hash, has_password, security_password_hash
+		 FROM users WHERE id IN (?, ?)${lock ? ' FOR UPDATE' : ''}`,
+		[sourceId, targetId],
+	)
+	const source = users.find((u) => u.id === sourceId)
+	const target = users.find((u) => u.id === targetId)
+	if (!source) throw new Error('MERGE_SOURCE_NOT_FOUND')
+	if (!target) throw new Error('MERGE_TARGET_NOT_FOUND')
+	const [tableRows] = await conn.execute<RowDataPacket[]>(
+		'SELECT TABLE_NAME AS name FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()',
+	)
+	return {
+		conn,
+		source: toUserRow(source),
+		target: toUserRow(target),
+		tables: new Set(tableRows.map((r) => String(r.name))),
+		afterCommit,
+	}
+}
 
-const exec = async (conn: PoolConnection, sql: string, params: string[]) => {
-	const [res] = await conn.execute<ResultSetHeader>(sql, params)
-	return res.affectedRows
+export interface MergePreviewModule extends ModulePreview {
+	name: string
+	label: string
+}
+
+export interface MergePreview {
+	source: { id: string; name: string; email: string }
+	target: { id: string; name: string; email: string }
+	modules: MergePreviewModule[]
 }
 
 export interface MergeResult {
 	sourceId: string
 	targetId: string
-	moved: Record<string, number>
+	modules: { name: string; label: string; moved: number; notes: string[] }[]
 }
 
+class PreviewRollback extends Error {}
+
 export const userMergeService = {
+	handlers: USER_MERGE_HANDLERS as UserMergeHandler[],
+
+	/** 预览：各模块将迁移的数量与冲突，不做任何修改（事务内只读，最后回滚） */
+	async previewMerge(sourceId: string, targetId: string): Promise<MergePreview> {
+		let preview: MergePreview | null = null
+		try {
+			await transaction(async (conn) => {
+				const ctx = await buildContext(conn, sourceId, targetId, false, () => undefined)
+				const modules: MergePreviewModule[] = []
+				for (const h of userMergeService.handlers) {
+					modules.push({ name: h.name, label: h.label, ...(await h.preview(ctx)) })
+				}
+				preview = {
+					source: { id: ctx.source.id, name: ctx.source.name, email: ctx.source.email },
+					target: { id: ctx.target.id, name: ctx.target.name, email: ctx.target.email },
+					modules,
+				}
+				throw new PreviewRollback()
+			})
+		} catch (err) {
+			if (!(err instanceof PreviewRollback)) throw err
+		}
+		return preview as unknown as MergePreview
+	},
+
 	async mergeUsers(sourceId: string, targetId: string): Promise<MergeResult> {
+		const afterCommitTasks: (() => Promise<void>)[] = []
 		const result = await transaction(async (conn) => {
-			const [rows] = await conn.execute<RowDataPacket[]>(
-				'SELECT id, avatar FROM users WHERE id IN (?, ?) FOR UPDATE',
-				[sourceId, targetId],
+			const ctx = await buildContext(conn, sourceId, targetId, true, (task) => {
+				afterCommitTasks.push(task)
+			})
+			const modules: MergeResult['modules'] = []
+			for (const h of userMergeService.handlers) {
+				modules.push({ name: h.name, label: h.label, ...(await h.merge(ctx)) })
+			}
+			const [del] = await conn.execute<import('mysql2/promise').ResultSetHeader>(
+				'DELETE FROM users WHERE id = ?',
+				[sourceId],
 			)
-			const source = rows.find((r) => r.id === sourceId)
-			const target = rows.find((r) => r.id === targetId)
-			if (!source) throw new Error('MERGE_SOURCE_NOT_FOUND')
-			if (!target) throw new Error('MERGE_TARGET_NOT_FOUND')
-
-			const [tableRows] = await conn.execute<RowDataPacket[]>(
-				'SELECT TABLE_NAME AS name FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()',
-			)
-			const existing = new Set(tableRows.map((r) => String(r.name)))
-
-			const moved: Record<string, number> = {}
-			for (const [name, sql] of MOVE_STEPS) {
-				if (!existing.has(name)) continue
-				moved[name] = await exec(conn, sql, [targetId, sourceId])
-			}
-			for (const table of PERSON_TABLES) {
-				if (!existing.has(table)) continue
-				moved[table] = await exec(conn, `UPDATE IGNORE ${table} SET person = ? WHERE person = ?`, [
-					`u:${targetId}`,
-					`u:${sourceId}`,
-				])
-				await exec(conn, `DELETE FROM ${table} WHERE person = ?`, [`u:${sourceId}`])
-			}
-
-			// 目标没有头像时沿用 source 的头像
-			if (!target.avatar && source.avatar) {
-				await exec(conn, 'UPDATE users SET avatar = ? WHERE id = ?', [source.avatar, targetId])
-			}
-
-			// 删除 source：user_roles 残留、冲突跳过的自选股等随外键级联删除
-			const deleted = await exec(conn, 'DELETE FROM users WHERE id = ?', [sourceId])
-			if (deleted !== 1) throw new Error('MERGE_SOURCE_NOT_FOUND')
-
-			return { sourceId, targetId, moved }
+			if (del.affectedRows !== 1) throw new Error('MERGE_SOURCE_NOT_FOUND')
+			return { sourceId, targetId, modules }
 		})
 
 		permissionService.invalidateCache(sourceId)
 		permissionService.invalidateCache(targetId)
+		// 事务已提交：执行外部副作用（对象存储搬迁），后台进行，失败只记日志、不影响已完成的合并
+		for (const task of afterCommitTasks) {
+			void task().catch((err) => console.error('[userMerge] afterCommit 任务失败:', err))
+		}
 		return result
 	},
 }

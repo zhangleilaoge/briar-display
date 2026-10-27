@@ -170,6 +170,25 @@ export const cosService = {
 		})
 	},
 
+	/** 私有 bucket 内复制对象（合并用户时搬迁 files/{userId}/ 前缀） */
+	async copyObject(srcKey: string, dstKey: string): Promise<void> {
+		const encodedSrc = srcKey.split('/').map(encodeURIComponent).join('/')
+		return new Promise((resolve, reject) => {
+			cos.putObjectCopy(
+				{
+					Bucket: bucket!,
+					Region: region!,
+					Key: dstKey,
+					CopySource: `${bucket}.cos.${region}.myqcloud.com/${encodedSrc}`,
+				},
+				(err) => {
+					if (err) return reject(err)
+					resolve()
+				},
+			)
+		})
+	},
+
 	/** 视频封面图的 COS key 约定：{原 key 去扩展名}.cover.jpg（与前端上传约定一致） */
 	getCoverKey(key: string): string {
 		return `${key.replace(/\.[a-z0-9]+$/i, '')}.cover.jpg`

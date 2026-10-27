@@ -252,52 +252,82 @@ adminRoutes.put(
 	},
 )
 
+const MERGE_MESSAGES: Record<string, string> = {
+	MERGE_MISSING_TARGET: '请选择要合并到的目标用户',
+	MERGE_SAME_USER: '不能合并到自己',
+	MERGE_SELF_SOURCE: '不能把当前登录的账号合并掉',
+	MERGE_SOURCE_NOT_FOUND: '源用户不存在',
+	MERGE_TARGET_NOT_FOUND: '目标用户不存在',
+}
+
+/** 合并相关接口的公共校验：仅超级管理员 + 参数合法；返回错误响应或 null */
+const checkMergeRequest = async (c: any, sourceId: string, targetId: string) => {
+	const currentUser = c.get('user') as { id: string } | undefined
+	if (!currentUser || !(await permissionService.isAdmin(currentUser.id))) {
+		return c.json(
+			{ success: false, message: '仅超级管理员可合并用户' } satisfies ApiResponse,
+			HTTP_STATUS.FORBIDDEN,
+		)
+	}
+	const invalid = validateMerge({ sourceId, targetId, currentUserId: currentUser.id })
+	if (invalid) {
+		return c.json(
+			{ success: false, message: MERGE_MESSAGES[invalid] } satisfies ApiResponse,
+			HTTP_STATUS.BAD_REQUEST,
+		)
+	}
+	return null
+}
+
+const mergeNotFound = (c: any, err: unknown) => {
+	const code = err instanceof Error ? err.message : ''
+	if (code === 'MERGE_SOURCE_NOT_FOUND' || code === 'MERGE_TARGET_NOT_FOUND') {
+		return c.json(
+			{ success: false, message: MERGE_MESSAGES[code] } satisfies ApiResponse,
+			HTTP_STATUS.NOT_FOUND,
+		)
+	}
+	throw err
+}
+
+/** 合并预览（仅超级管理员）：各模块将迁移的数量与冲突，不修改数据 */
+adminRoutes.get(
+	'/users/:userId/merge-preview',
+	requirePermission(PERMISSIONS.ADMIN_USER_MANAGE),
+	async (c) => {
+		const sourceId = c.req.param('userId')
+		const targetId = c.req.query('targetUserId') ?? ''
+		const denied = await checkMergeRequest(c, sourceId, targetId)
+		if (denied) return denied
+		try {
+			const data = await userMergeService.previewMerge(sourceId, targetId)
+			return c.json<ApiResponse>({ success: true, data })
+		} catch (err) {
+			return mergeNotFound(c, err)
+		}
+	},
+)
+
 /**
- * 合并用户（仅超级管理员）：把 :userId 的登录身份、角色、数据与引用迁到 targetUserId，然后删除 :userId。
- * 事务执行，失败整体回滚。
+ * 合并用户（仅超级管理员）：按 services/userMerge/registry.ts 注册的各模块 handler，
+ * 把 :userId 的数据迁到 targetUserId，然后删除 :userId。单事务执行，失败整体回滚。
  */
 adminRoutes.post(
 	'/users/:userId/merge',
 	requirePermission(PERMISSIONS.ADMIN_USER_MANAGE),
 	async (c) => {
 		const sourceId = c.req.param('userId')
-		const currentUser = (c as any).get('user') as { id: string } | undefined
-		if (!currentUser || !(await permissionService.isAdmin(currentUser.id))) {
-			return c.json<ApiResponse>(
-				{ success: false, message: '仅超级管理员可合并用户' },
-				HTTP_STATUS.FORBIDDEN,
-			)
-		}
 		const body = await c.req
 			.json<{ targetUserId?: string }>()
 			.catch(() => ({}) as { targetUserId?: string })
 		const targetId = typeof body.targetUserId === 'string' ? body.targetUserId : ''
-		const invalid = validateMerge({ sourceId, targetId, currentUserId: currentUser.id })
-		const messages: Record<string, string> = {
-			MERGE_MISSING_TARGET: '请选择要合并到的目标用户',
-			MERGE_SAME_USER: '不能合并到自己',
-			MERGE_SELF_SOURCE: '不能把当前登录的账号合并掉',
-			MERGE_SOURCE_NOT_FOUND: '源用户不存在',
-			MERGE_TARGET_NOT_FOUND: '目标用户不存在',
-		}
-		if (invalid) {
-			return c.json<ApiResponse>(
-				{ success: false, message: messages[invalid] },
-				HTTP_STATUS.BAD_REQUEST,
-			)
-		}
+		const denied = await checkMergeRequest(c, sourceId, targetId)
+		if (denied) return denied
 		try {
 			const result = await userMergeService.mergeUsers(sourceId, targetId)
 			return c.json<ApiResponse>({ success: true, data: result, message: '用户已合并' })
 		} catch (err) {
-			const code = err instanceof Error ? err.message : ''
-			if (code in messages) {
-				return c.json<ApiResponse>(
-					{ success: false, message: messages[code] },
-					HTTP_STATUS.NOT_FOUND,
-				)
-			}
-			throw err
+			return mergeNotFound(c, err)
 		}
 	},
 )
