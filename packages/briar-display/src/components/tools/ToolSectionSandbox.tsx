@@ -5,15 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import {
-	ArrowLeftRight,
-	ArrowUpDown,
-	Magnet,
-	RotateCcw,
-	RotateCw,
-	Shuffle,
-	Trash2,
-} from 'lucide-react'
+import { ArrowLeftRight, ArrowUpDown, Magnet, RotateCcw, RotateCw, Shuffle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { SectionSvgPreview } from './ToolSectionPreview'
@@ -115,10 +107,6 @@ export function ToolSectionSandbox() {
 		setVoxelMenu({ cell, ...position })
 	}
 
-	const deleteSelected = () => {
-		if (selectedCell) handleRemove(selectedCell)
-	}
-
 	useEffect(() => {
 		if (!selectedCell || voxelMenu) return
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -207,17 +195,6 @@ export function ToolSectionSandbox() {
 								onCellContextMenu={handleVoxelMenu}
 							/>
 						</div>
-						{selectedCell ? (
-							<div className="flex flex-wrap items-center justify-between gap-2">
-								<p className="text-xs text-muted-foreground">
-									已选中 1 块，可拖动移动、点击箭头添加或右键打开菜单。
-								</p>
-								<Button size="sm" variant="destructive" className="gap-1" onClick={deleteSelected}>
-									<Trash2 className="h-3.5 w-3.5" />
-									删除选中
-								</Button>
-							</div>
-						) : null}
 					</CardContent>
 				</Card>
 
