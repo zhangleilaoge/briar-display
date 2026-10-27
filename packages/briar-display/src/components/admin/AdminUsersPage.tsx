@@ -14,13 +14,14 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table'
-import { PermissionProvider } from '@/contexts/PermissionContext'
+import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import type { Role } from '@briar/shared'
 import { AlertCircle, Check, Loader2, Search, Shield, User, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import AdminLayout from './AdminLayout'
 import AdminPagination from './AdminPagination'
+import MergeUserDialog from './MergeUserDialog'
 
 interface UserWithRoles {
 	userId: string
@@ -55,6 +56,10 @@ function AdminUsersPageInner() {
 	const [page, setPage] = useState(1)
 	const [total, setTotal] = useState(0)
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+	const { isAdmin } = usePermissions()
+	const [mergeSource, setMergeSource] = useState<UserWithRoles | null>(null)
+	const [notice, setNotice] = useState<string | null>(null)
 
 	const [editingUserId, setEditingUserId] = useState<string | null>(null)
 	const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(new Set())
@@ -191,6 +196,21 @@ function AdminUsersPageInner() {
 						</div>
 					)}
 
+					{notice && (
+						<div className="mb-4 flex items-center gap-2 rounded-md border border-green-600/30 bg-green-600/5 px-3 py-2 text-sm text-green-700 dark:text-green-400">
+							<Check className="h-4 w-4 shrink-0" />
+							<span className="flex-1">{notice}</span>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-6 w-6"
+								onClick={() => setNotice(null)}
+							>
+								<X className="h-4 w-4" />
+							</Button>
+						</div>
+					)}
+
 					{loading ? (
 						<div className="flex items-center justify-center py-20">
 							<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -271,9 +291,21 @@ function AdminUsersPageInner() {
 														</Button>
 													</div>
 												) : (
-													<Button size="sm" variant="outline" onClick={() => startEditing(user)}>
-														编辑角色
-													</Button>
+													<div className="flex gap-1">
+														<Button size="sm" variant="outline" onClick={() => startEditing(user)}>
+															编辑角色
+														</Button>
+														{isAdmin && (
+															<Button
+																size="sm"
+																variant="ghost"
+																onClick={() => setMergeSource(user)}
+																data-testid="merge-user-button"
+															>
+																合并到…
+															</Button>
+														)}
+													</div>
 												)}
 											</TableCell>
 										</TableRow>
@@ -297,6 +329,14 @@ function AdminUsersPageInner() {
 					)}
 				</CardContent>
 			</Card>
+			<MergeUserDialog
+				source={mergeSource}
+				onOpenChange={(open) => !open && setMergeSource(null)}
+				onMerged={(summary) => {
+					setNotice(summary)
+					void fetchUsers(keyword, page)
+				}}
+			/>
 		</AdminLayout>
 	)
 }

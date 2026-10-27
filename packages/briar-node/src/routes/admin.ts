@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 import { logDal } from '../dal/logDal'
 import { requirePermission } from '../middleware/permissionMiddleware'
 import { permissionService } from '../services/permissionService'
+import { userMergeService, validateMerge } from '../services/userMergeService'
 
 const adminRoutes = new Hono()
 
@@ -244,6 +245,56 @@ adminRoutes.put(
 				return c.json<ApiResponse>(
 					{ success: false, message: err.message },
 					HTTP_STATUS.BAD_REQUEST,
+				)
+			}
+			throw err
+		}
+	},
+)
+
+/**
+ * 合并用户（仅超级管理员）：把 :userId 的登录身份、角色、数据与引用迁到 targetUserId，然后删除 :userId。
+ * 事务执行，失败整体回滚。
+ */
+adminRoutes.post(
+	'/users/:userId/merge',
+	requirePermission(PERMISSIONS.ADMIN_USER_MANAGE),
+	async (c) => {
+		const sourceId = c.req.param('userId')
+		const currentUser = (c as any).get('user') as { id: string } | undefined
+		if (!currentUser || !(await permissionService.isAdmin(currentUser.id))) {
+			return c.json<ApiResponse>(
+				{ success: false, message: '仅超级管理员可合并用户' },
+				HTTP_STATUS.FORBIDDEN,
+			)
+		}
+		const body = await c.req
+			.json<{ targetUserId?: string }>()
+			.catch(() => ({}) as { targetUserId?: string })
+		const targetId = typeof body.targetUserId === 'string' ? body.targetUserId : ''
+		const invalid = validateMerge({ sourceId, targetId, currentUserId: currentUser.id })
+		const messages: Record<string, string> = {
+			MERGE_MISSING_TARGET: '请选择要合并到的目标用户',
+			MERGE_SAME_USER: '不能合并到自己',
+			MERGE_SELF_SOURCE: '不能把当前登录的账号合并掉',
+			MERGE_SOURCE_NOT_FOUND: '源用户不存在',
+			MERGE_TARGET_NOT_FOUND: '目标用户不存在',
+		}
+		if (invalid) {
+			return c.json<ApiResponse>(
+				{ success: false, message: messages[invalid] },
+				HTTP_STATUS.BAD_REQUEST,
+			)
+		}
+		try {
+			const result = await userMergeService.mergeUsers(sourceId, targetId)
+			return c.json<ApiResponse>({ success: true, data: result, message: '用户已合并' })
+		} catch (err) {
+			const code = err instanceof Error ? err.message : ''
+			if (code in messages) {
+				return c.json<ApiResponse>(
+					{ success: false, message: messages[code] },
+					HTTP_STATUS.NOT_FOUND,
 				)
 			}
 			throw err

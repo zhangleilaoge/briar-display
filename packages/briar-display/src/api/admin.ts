@@ -115,6 +115,14 @@ export const setUserRoles = async (userId: string, roleIds: string[]) => {
 	return response.data
 }
 
+/** 合并用户（仅超级管理员）：把 sourceUserId 的身份、角色、数据迁到 targetUserId 后删除 sourceUserId */
+export const mergeUser = async (sourceUserId: string, targetUserId: string) => {
+	const response = await apiClient.post<
+		ApiResponse<{ sourceId: string; targetId: string; moved: Record<string, number> }>
+	>(`/admin/users/${sourceUserId}/merge`, { targetUserId })
+	return response.data
+}
+
 // ==================== 当前用户权限 ====================
 
 export const getMyPermissions = async () => {

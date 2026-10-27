@@ -30,6 +30,7 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	'PUT /api/admin/permissions/:id': PERMISSIONS.ADMIN_PERMISSION_MANAGE,
 	'DELETE /api/admin/permissions/:id': PERMISSIONS.ADMIN_PERMISSION_MANAGE,
 	'PUT /api/admin/users/:userId/roles': PERMISSIONS.ADMIN_USER_ROLE_ASSIGN,
+	'POST /api/admin/users/:userId/merge': PERMISSIONS.ADMIN_USER_MANAGE, // 另在路由内校验超级管理员
 
 	// ==================== SQL Console ====================
 	'POST /api/admin/sql/execute': PERMISSIONS.ADMIN_SQL_EXECUTE,
