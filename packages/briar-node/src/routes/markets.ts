@@ -1,5 +1,6 @@
 import type {
 	ApiResponse,
+	Csi300EtfScaleResponse,
 	FearGreedBatchResponse,
 	FearGreedBoardResponse,
 	MarketChartResponse,
@@ -18,6 +19,7 @@ import { type Context, Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { marketWatchlistDal } from '../dal/marketWatchlistDal'
 import { authService } from '../services/authService'
+import { getCsi300EtfScale } from '../services/market/csi300EtfService'
 import { getFearGreedBatch, getFearGreedBoard } from '../services/market/fearGreedService'
 import { MarketInputError, getOverview, getSectors } from '../services/market/marketService'
 import {
@@ -50,6 +52,17 @@ const upstreamError = (c: Context, message: string) =>
 marketRoutes.get('/overview', async (c) => {
 	const data = await getOverview()
 	return c.json<ApiResponse<MarketOverviewResponse>>({ success: true, data })
+})
+
+/** GET /csi300-etf-scale — 四只头部沪深300ETF官方历史快照，视频口径与实际规模双序列 */
+marketRoutes.get('/csi300-etf-scale', async (c) => {
+	try {
+		const data = await getCsi300EtfScale()
+		return c.json<ApiResponse<Csi300EtfScaleResponse>>({ success: true, data })
+	} catch (error) {
+		console.error('[markets] csi300 etf scale failed:', error)
+		return upstreamError(c, 'ETF规模占比暂时不可用，请稍后再试')
+	}
 })
 
 /** GET /:market/sectors?kind=industry|concept&level=1|2 — 某市场的板块实时表现 */

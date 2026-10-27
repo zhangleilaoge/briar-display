@@ -1,7 +1,7 @@
 ---
 name: briar-media-download
-description: 通用媒体下载/解析路由。平台 key 与网页「媒体解析」对齐（xiaohongshu/douyin/wechat/x/bilibili/pornhub + mrds66）。网页已支持的优先推荐用户用工具箱自助；mrds66 等仅本地站点用本机 ffmpeg。触发词：媒体解析、下视频、无水印、mrds66、小红书/抖音/B站/Pornhub 下载。
-tags: macos, media, download, ffmpeg, xiaohongshu, douyin, bilibili, pornhub, mrds66
+description: 通用媒体下载/解析路由。平台 key 与网页「媒体解析」对齐（xiaohongshu/douyin/wechat/x/bilibili/pornhub + mrds66/91porn）。网页已支持的优先推荐用户用工具箱自助；mrds66/91porn 等仅本地站点用本机脚本（勿用 yt-dlp 下 91porn）。触发词：媒体解析、下视频、无水印、mrds66、91porn、小红书/抖音/B站/Pornhub 下载。
+tags: macos, media, download, ffmpeg, xiaohongshu, douyin, bilibili, pornhub, mrds66, 91porn
 ---
 
 # briar-media-download — 通用媒体下载
@@ -14,10 +14,10 @@ tags: macos, media, download, ffmpeg, xiaohongshu, douyin, bilibili, pornhub, mr
 
 | 常量 | 文件 | 取值 |
 |------|------|------|
-| `MEDIA_PLATFORMS` | `packages/briar-display/src/components/tools/toolMediaUtils.ts` | `xiaohongshu` `douyin` `wechat` `x` `bilibili` `pornhub` **`mrds66`** |
-| `WEB_MEDIA_PLATFORMS` | 同上 | 不含 `mrds66`（网页图标条 / 已实现解析） |
+| `MEDIA_PLATFORMS` | `packages/briar-display/src/components/tools/toolMediaUtils.ts` | `xiaohongshu` `douyin` `wechat` `x` `bilibili` `pornhub` **`mrds66`** **`91porn`** |
+| `WEB_MEDIA_PLATFORMS` | 同上 | 不含 `mrds66` / `91porn`（网页图标条 / 已实现解析） |
 
-后端识别：`packages/briar-node/src/routes/media.ts` → `detectPlatform()`（内部 `xhs` → 结果字段仍是 `xiaohongshu`）。`mrds66` **暂未**进 `/api/media`。
+后端识别：`packages/briar-node/src/routes/media.ts` → `detectPlatform()`（内部 `xhs` → 结果字段仍是 `xiaohongshu`）。`mrds66` / `91porn` **暂未**进 `/api/media`。
 
 文档：`docs/media.md`。
 
@@ -34,8 +34,9 @@ tags: macos, media, download, ffmpeg, xiaohongshu, douyin, bilibili, pornhub, mr
 │     → **优先推荐**用户打开网页工具箱「媒体解析」自助（免登录、有历史）
 │     → 仅当用户**明确坚持本机脚本**时，再参考 briar-node 对应 `*MediaService.ts` 写/跑本地逻辑
 │
-└─ platform = mrds66（或其它「仅本地」）
+└─ platform = mrds66 / 91porn（或其它「仅本地」）
       → 走本 skill 的本机脚本；写明「暂不支持网页 /api/media」
+      → 91porn **禁止 yt-dlp**（该站已被 yt-dlp 标为 Piracy 拒绝）
 ```
 
 线上入口：`https://xiaobuzi.cn/briar/` 工具箱 → 媒体解析（以实际部署为准）。
@@ -51,6 +52,7 @@ tags: macos, media, download, ffmpeg, xiaohongshu, douyin, bilibili, pornhub, mr
 | `bilibili` | ✅ | 可选；参考 `services/bilibiliMediaService.ts` |
 | `pornhub` | ✅（需出站代理） | 可选；参考 `services/pornhubMediaService.ts` |
 | **`mrds66`** | ❌ 暂不支持 | ✅ `scripts/mrds66/download.sh` |
+| **`91porn`** | ❌ 暂不支持 | ✅ `scripts/91porn/download.sh`（直链 mp4，非 HLS） |
 
 ### URL 粗识别
 
@@ -63,6 +65,7 @@ tags: macos, media, download, ffmpeg, xiaohongshu, douyin, bilibili, pornhub, mr
 | `bilibili.com` / `b23.tv` | `bilibili` |
 | `pornhub.com` | `pornhub` |
 | `mrds66.com` + `/archives/` | `mrds66` |
+| `91porn.com` + `view_video.php?viewkey=` | `91porn` |
 
 ## 合规
 
@@ -98,6 +101,33 @@ bash packages/briar-skills/briar-media-download/scripts/mrds66/download.sh \
 | `ffmpeg: command not found` | `brew install ffmpeg` |
 | 明显未成年标题 | 脚本 exit 3；Agent 拒绝 |
 
+
+## 91porn（仅本地，已验证 2026-10-26）
+
+流程：curl 页面（UA + `Referer: https://91porn.com/`）→ 取 `strencode2("%3c%73...")` hex-percent 串 → `urllib.parse.unquote` 得到 `<source src='…mp4?…'>` → 同 UA/Referer curl mp4。页面里可能还有 `ccm.91p52.com` 的 source，那是旁路/广告，**主片用 strencode2 解码结果**。
+
+**不要用 yt-dlp**（已拒绝该站 Piracy）。本机直连慢时可挂 `http://127.0.0.1:7892`。
+
+```bash
+export PATH="/opt/homebrew/bin:$PATH"
+bash packages/briar-skills/briar-media-download/scripts/91porn/download.sh \
+  'https://91porn.com/view_video.php?viewkey=21ad97bd1222bd713fcd' \
+  "$HOME/Downloads"
+```
+
+成功：stdout 含 `platform=91porn`、`path=`、`duration_sec=`；文件非空。实验室例：`viewkey=21ad97bd1222bd713fcd`（约 198s / ~17MB）。
+
+辅助脚本同目录：`extract_mp4.py` / `page_title.py` / `safe_name.py`。也可 `scripts/download-91porn.sh` 转发。
+
+### 失败对照（91porn）
+
+| 现象 | 处理 |
+|------|------|
+| no strencode2 mp4 | 确认是 `view_video.php?viewkey=` 播放页；站点改版则更新 `extract_mp4.py` |
+| curl 403 / 空文件 | 查 Referer/UA；再挂 `7892` |
+| 明显未成年标题 | 脚本 exit 3；Agent 拒绝 |
+| 误下到 ccm.91p52.com | 应以 strencode2 解码 URL 为准，忽略页面裸 `<source>` 广告路 |
+
 ## 网页已支持平台：本机脚本原则
 
 1. 先劝网页自助，说明更快、有历史与代理缓存。
@@ -108,5 +138,5 @@ bash packages/briar-skills/briar-media-download/scripts/mrds66/download.sh \
 ## 收尾
 
 - 交付：平台 key、路径（网页操作说明或本地文件路径）、时长/体积（若有）。
-- 未要求时不要改 `/api/media` 实现；枚举已在 `MEDIA_PLATFORMS` 含 `mrds66`。
+- 未要求时不要改 `/api/media` 实现；枚举已在 `MEDIA_PLATFORMS` 含 `mrds66` / `91porn`。
 - 技能落点：`packages/briar-skills/briar-media-download/`。
