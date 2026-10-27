@@ -1,0 +1,427 @@
+/* ============================================================
+   Reverie 主题（参考《重返未来：1999》美术）——全站设计 token
+   两套作用域：
+   - .theme-scrapbook（默认 / :root）：复古拟物剪贴簿——奶油纸、粉玫瑰、柔和投影、药丸按钮、花体+古典衬线
+   - .theme-arcane：奥术 HUD——冰蓝半透明玻璃、1px 藏青线、发光描边、大写间距无衬线、直角
+   基础组件（components/ui）只消费这里的变量，页面不直接写颜色。
+   这里是纯 CSS（无 @tailwind / @apply），在 globals.css 之后引入。
+   ============================================================ */
+
+:root,
+.theme-scrapbook {
+	/* —— shadcn 颜色 token（HSL 三元组） —— */
+	--background: 36 60% 98%; /* #FDFBF7 奶油纸 */
+	--foreground: 222 25% 23%; /* #2C3549 墨蓝 */
+	--card: 40 60% 98.6%;
+	--card-foreground: 222 25% 23%;
+	--popover: 40 60% 98.6%;
+	--popover-foreground: 222 25% 23%;
+	--primary: 222 25% 27%;
+	--primary-foreground: 36 60% 98%;
+	--secondary: 24 33% 94%; /* #F5EFEB 米 */
+	--secondary-foreground: 222 25% 23%;
+	--muted: 24 33% 94%;
+	--muted-foreground: 222 13% 46%;
+	--accent: 345 47% 92%; /* #F5E1E6 粉 */
+	--accent-foreground: 222 25% 23%;
+	--destructive: 356 58% 52%;
+	--destructive-foreground: 0 0% 100%;
+	--border: 350 24% 86%;
+	--input: 350 22% 83%;
+	--ring: 352 40% 72%; /* #EAC8CD 加深 */
+	--radius: 1rem;
+
+	--chart-1: 352 45% 66%;
+	--chart-2: 214 38% 62%;
+	--chart-3: 222 25% 30%;
+	--chart-4: 36 55% 66%;
+	--chart-5: 150 22% 55%;
+
+	/* —— 风格 token —— */
+	--rv-rose: #eac8cd;
+	--rv-pink: #f5e1e6;
+	--rv-cream: #fdfbf7;
+	--rv-beige: #f5efeb;
+	--rv-sky: #d6e0ef;
+	--rv-ink: #2c3549;
+	--rv-navy: #1c2b4b;
+	--rv-line: hsl(350 24% 80%);
+
+	--font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+		"Microsoft YaHei", "Liberation Sans", sans-serif;
+	--font-display: "Cormorant Garamond", "Songti SC", "STSong", "Noto Serif SC",
+		"Source Han Serif SC", "SimSun", Georgia, serif;
+	--font-script: "Pinyon Script", "Cormorant Garamond", cursive;
+	--font-label: "Josefin Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+	--font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	--font-heading: var(--font-display);
+	--font-control: var(--font-display);
+
+	--radius-surface: 1.125rem;
+	--radius-control: 9999px; /* 药丸 */
+	--radius-field: 0.75rem;
+	--control-tracking: 0.01em;
+	--control-transform: none;
+	--control-weight: 600;
+	--label-tracking: 0.08em;
+	--label-transform: none;
+
+	--shadow-surface: 0 1px 0 hsl(0 0% 100% / 0.9) inset, 0 2px 4px hsl(350 30% 40% / 0.06), 0 12px
+		32px -8px hsl(222 30% 30% / 0.16);
+	--shadow-raised: 0 2px 6px hsl(350 30% 40% / 0.08), 0 22px 48px -12px hsl(222 30% 25% / 0.25);
+	--shadow-control: inset 0 0 0 2px hsl(0 0% 100% / 0.75), 0 1px 2px hsl(222 30% 30% / 0.12), 0 6px
+		14px -6px hsl(350 40% 45% / 0.35);
+	--shadow-control-hover: inset 0 0 0 2px hsl(0 0% 100% / 0.9), 0 2px 4px hsl(222 30% 30% / 0.14), 0
+		10px 20px -8px hsl(350 40% 45% / 0.4);
+	--glow-focus: 0 0 0 3px hsl(352 40% 80% / 0.6);
+
+	--btn-primary-image: linear-gradient(180deg, #f9e9ee 0%, #eccbd2 100%);
+	--btn-primary-fg: 222 25% 23%;
+	--btn-secondary-image: linear-gradient(180deg, #f4f6fb 0%, #d9e1ef 100%);
+	--btn-outline-image: linear-gradient(180deg, #fffdf9 0%, #f3ece4 100%);
+
+	--tabs-list-bg: hsl(24 33% 93% / 0.85);
+	--tab-active-image: linear-gradient(180deg, #faeaef 0%, #edcdd4 100%);
+	--tab-active-fg: hsl(222 25% 20%);
+	--tab-active-shadow: inset 0 0 0 1.5px hsl(0 0% 100% / 0.8), 0 3px 8px -3px
+		hsl(350 40% 45% / 0.35);
+
+	--row-hover: hsl(345 47% 92% / 0.55);
+	--row-selected: hsl(345 47% 90%);
+	--row-selected-fg: hsl(222 25% 20%);
+	--table-head-bg: transparent;
+
+	--surface-blur: 0px;
+	/* 自绘纸纹噪点（feTurbulence），无外部图片 */
+	--paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .34 0 0 0 0 .3 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	--surface-texture: var(--paper-grain);
+	--surface-texture-size: 180px 180px;
+	--surface-texture-pos: 0 0;
+	--surface-texture-repeat: repeat;
+
+	--page-bg: var(--paper-grain),
+		radial-gradient(ellipse 70% 45% at 85% 8%, hsl(345 50% 92% / 0.8), transparent 70%),
+		radial-gradient(ellipse 60% 50% at 10% 95%, hsl(214 40% 88% / 0.7), transparent 70%),
+		linear-gradient(180deg, #d5dbec 0%, #e9e8f0 38%, #f6f1ec 100%);
+	--page-bg-size: 180px 180px, auto, auto, auto;
+
+	--sidebar-bg: linear-gradient(180deg, hsl(222 30% 86% / 0.55), hsl(222 30% 90% / 0.35));
+	--sidebar-tag-fill: #f3f4fa;
+	--sidebar-tag-stroke: #8d97b8;
+	--sidebar-icon: #6a7499;
+	--sidebar-active-fill: #f6dfe5;
+	--sidebar-active-icon: #b9545f;
+	--sidebar-string: #b2b9d3;
+}
+
+.theme-arcane {
+	--background: 211 45% 91%;
+	--foreground: 221 46% 20%; /* #1C2B4B */
+	--card: 210 60% 98%;
+	--card-foreground: 221 46% 20%;
+	--popover: 210 60% 98%;
+	--popover-foreground: 221 46% 20%;
+	--primary: 221 46% 20%;
+	--primary-foreground: 0 0% 100%;
+	--secondary: 210 42% 88%;
+	--secondary-foreground: 221 46% 20%;
+	--muted: 210 45% 92%;
+	--muted-foreground: 217 24% 40%;
+	--accent: 210 45% 85%; /* #C5D7E8 */
+	--accent-foreground: 221 46% 20%;
+	--destructive: 354 62% 48%;
+	--destructive-foreground: 0 0% 100%;
+	--border: 214 34% 72%;
+	--input: 216 34% 66%;
+	--ring: 209 50% 58%;
+	--radius: 0.25rem;
+
+	--chart-1: 221 46% 26%;
+	--chart-2: 209 47% 58%;
+	--chart-3: 200 60% 70%;
+	--chart-4: 345 40% 70%;
+	--chart-5: 220 15% 60%;
+
+	--rv-line: hsl(221 46% 20% / 0.55);
+
+	--font-heading: var(--font-display);
+	--font-control: var(--font-label);
+
+	--radius-surface: 2px;
+	--radius-control: 2px;
+	--radius-field: 2px;
+	--control-tracking: 0.14em;
+	--control-transform: uppercase;
+	--control-weight: 600;
+	--label-tracking: 0.22em;
+	--label-transform: uppercase;
+
+	/* 发光描边，不用投影 */
+	--shadow-surface: 0 0 0 1px hsl(0 0% 100% / 0.55) inset, 0 0 24px hsl(0 0% 100% / 0.45);
+	--shadow-raised: 0 0 0 1px hsl(0 0% 100% / 0.7) inset, 0 0 32px hsl(0 0% 100% / 0.6), 0 18px 40px
+		-20px hsl(221 46% 20% / 0.35);
+	--shadow-control: 0 0 0 1px hsl(0 0% 100% / 0.35) inset;
+	--shadow-control-hover: 0 0 0 1px hsl(0 0% 100% / 0.7) inset, 0 0 14px hsl(0 0% 100% / 0.9);
+	--glow-focus: 0 0 0 1px hsl(221 46% 20%), 0 0 12px hsl(0 0% 100% / 0.95);
+
+	--btn-primary-image: none;
+	--btn-primary-fg: 0 0% 100%;
+	--btn-secondary-image: linear-gradient(180deg, hsl(0 0% 100% / 0.55), hsl(210 60% 92% / 0.55));
+	--btn-outline-image: none;
+
+	--tabs-list-bg: transparent;
+	--tab-active-image: linear-gradient(hsl(221 46% 20%), hsl(221 46% 20%));
+	--tab-active-fg: #fff;
+	--tab-active-shadow: 0 0 12px hsl(0 0% 100% / 0.6);
+
+	--row-hover: hsl(210 50% 88% / 0.6);
+	--row-selected: hsl(221 46% 20%);
+	--row-selected-fg: #fff;
+	--table-head-bg: hsl(210 50% 96% / 0.6);
+
+	--surface-blur: 14px;
+	/* 四角 HUD 定位角标（纯渐变绘制） */
+	--hud-tick: linear-gradient(var(--rv-navy), var(--rv-navy));
+	--surface-texture: var(--hud-tick), var(--hud-tick), var(--hud-tick), var(--hud-tick),
+		var(--hud-tick), var(--hud-tick), var(--hud-tick), var(--hud-tick);
+	--surface-texture-size: 9px 1px, 1px 9px, 9px 1px, 1px 9px, 9px 1px, 1px 9px, 9px 1px, 1px 9px;
+	--surface-texture-pos: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
+	--surface-texture-repeat: no-repeat;
+
+	--page-bg: radial-gradient(ellipse 40% 22% at 18% 18%, hsl(0 0% 100% / 0.75), transparent 70%),
+		radial-gradient(ellipse 45% 25% at 80% 70%, hsl(0 0% 100% / 0.65), transparent 70%),
+		radial-gradient(ellipse 30% 18% at 55% 40%, hsl(0 0% 100% / 0.5), transparent 70%),
+		linear-gradient(180deg, #a9c3df 0%, #c5d7e8 38%, #e3ecf5 100%);
+	--page-bg-size: auto;
+
+	--sidebar-bg: linear-gradient(180deg, hsl(210 50% 96% / 0.45), hsl(210 50% 92% / 0.25));
+	--sidebar-tag-fill: #f1f5fb;
+	--sidebar-tag-stroke: #5d6f96;
+	--sidebar-icon: #42557f;
+	--sidebar-active-fill: #1c2b4b;
+	--sidebar-active-icon: #ffffff;
+	--sidebar-string: #8ea4c6;
+}
+
+body {
+	font-family: var(--font-body);
+}
+
+/* 页面底：主题外壳统一使用 */
+.rv-page {
+	background-color: hsl(var(--background));
+	background-image: var(--page-bg);
+	background-size: var(--page-bg-size);
+	background-attachment: fixed;
+	color: hsl(var(--foreground));
+}
+
+/* 表面纹理：纸纹（剪贴簿）/ 四角角标（HUD），只用 background-image，不覆盖背景色 */
+.rv-surface {
+	background-image: var(--surface-texture);
+	background-size: var(--surface-texture-size);
+	background-position: var(--surface-texture-pos);
+	background-repeat: var(--surface-texture-repeat);
+}
+
+.theme-arcane .rv-surface {
+	backdrop-filter: blur(var(--surface-blur)) saturate(1.2);
+	-webkit-backdrop-filter: blur(var(--surface-blur)) saturate(1.2);
+}
+
+/* 标题字：剪贴簿 = 古典衬线；HUD 同样衬线但更硬朗 */
+.rv-heading {
+	font-family: var(--font-heading);
+	font-weight: 600;
+	letter-spacing: 0.01em;
+}
+
+.rv-script {
+	font-family: var(--font-script);
+	font-weight: 400;
+	letter-spacing: 0;
+}
+
+.rv-label {
+	font-family: var(--font-label);
+	letter-spacing: var(--label-tracking);
+	text-transform: var(--label-transform);
+	font-size: 0.6875rem;
+	font-weight: 600;
+}
+
+/* 邮票齿边（剪贴簿输入条 / 票根）：上下锯齿用径向渐变 mask 绘制 */
+.rv-stamp-edge {
+	--stamp-r: 5px;
+	-webkit-mask: radial-gradient(
+			circle at 50% 0,
+			#0000 var(--stamp-r),
+			#000 calc(var(--stamp-r) + 0.5px)
+		)
+		50% 0 / calc(var(--stamp-r) * 3) 50.5% repeat-x,
+		radial-gradient(circle at 50% 100%, #0000 var(--stamp-r), #000 calc(var(--stamp-r) + 0.5px)) 50%
+		100% / calc(var(--stamp-r) * 3) 50.5% repeat-x;
+	mask: radial-gradient(circle at 50% 0, #0000 var(--stamp-r), #000 calc(var(--stamp-r) + 0.5px))
+		50% 0 / calc(var(--stamp-r) * 3) 50.5% repeat-x,
+		radial-gradient(circle at 50% 100%, #0000 var(--stamp-r), #000 calc(var(--stamp-r) + 0.5px)) 50%
+		100% / calc(var(--stamp-r) * 3) 50.5% repeat-x;
+}
+
+/* ---------- 兼容旧的 .glass 族（各页大量使用）：改为消费主题 token ---------- */
+.glass,
+.glass-soft {
+	border: 1px solid hsl(var(--border) / 0.7);
+	background-color: hsl(var(--card) / 0.86);
+	background-image: var(--surface-texture);
+	background-size: var(--surface-texture-size);
+	background-position: var(--surface-texture-pos);
+	background-repeat: var(--surface-texture-repeat);
+	box-shadow: var(--shadow-surface);
+	border-radius: var(--radius-surface);
+	backdrop-filter: blur(var(--surface-blur)) saturate(1.2);
+	-webkit-backdrop-filter: blur(var(--surface-blur)) saturate(1.2);
+}
+
+.glass-soft {
+	border-color: transparent;
+}
+
+.theme-arcane .glass,
+.theme-arcane .glass-soft {
+	background-color: hsl(var(--card) / 0.62);
+}
+
+.glass-interactive {
+	transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+.glass-interactive:hover {
+	transform: translateY(-3px) rotate(-0.25deg);
+	box-shadow: var(--shadow-raised);
+}
+
+.theme-arcane .glass-interactive:hover {
+	transform: none;
+	border-color: hsl(var(--foreground) / 0.8);
+}
+
+.glass-header {
+	border-bottom: 1px solid hsl(var(--border) / 0.8);
+	background-color: hsl(var(--background) / 0.72);
+	box-shadow: 0 1px 0 hsl(0 0% 100% / 0.7);
+	backdrop-filter: blur(12px) saturate(1.3);
+	-webkit-backdrop-filter: blur(12px) saturate(1.3);
+}
+
+.theme-arcane .glass-header {
+	border-bottom-color: hsl(var(--foreground) / 0.45);
+	background-color: hsl(210 60% 97% / 0.5);
+}
+
+/* 代码块保持普通 IDE 极简：白底细灰框等宽字，不受主题装饰影响 */
+.theme-scrapbook pre,
+.theme-arcane pre,
+.rv-code {
+	font-family: var(--font-mono);
+}
+
+/* 旋转动画（星盘） */
+@keyframes rv-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes rv-spin-rev {
+	to {
+		transform: rotate(-360deg);
+	}
+}
+
+@keyframes rv-fade-word {
+	0% {
+		opacity: 0;
+	}
+	15%,
+	85% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+.rv-fade-word {
+	animation: rv-fade-word 4s ease-in-out both;
+}
+
+.rv-spin-slow {
+	animation: rv-spin 90s linear infinite;
+	transform-origin: center;
+	transform-box: fill-box;
+}
+
+.rv-spin-rev {
+	animation: rv-spin-rev 60s linear infinite;
+	transform-origin: center;
+	transform-box: fill-box;
+}
+
+.rv-spin-fast {
+	animation: rv-spin 36s linear infinite;
+	transform-origin: center;
+	transform-box: fill-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.rv-spin-slow,
+	.rv-spin-rev,
+	.rv-spin-fast,
+	.rv-fade-word {
+		animation: none;
+	}
+}
+
+::selection {
+	background: hsl(var(--accent));
+	color: hsl(var(--accent-foreground));
+}
+
+.theme-arcane ::selection {
+	background: var(--rv-navy);
+	color: #fff;
+}
+
+/* ---------------- 全局左侧吊牌导航（ribbon-sidebar） ---------------- */
+.rv-ribbon-tag {
+	transform-origin: 50% 0;
+	transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.rv-ribbon-tag:hover,
+.rv-ribbon-tag:focus-visible {
+	transform: rotate(0deg) translateY(2px) !important;
+}
+
+.rv-ribbon-tag .rv-tag-shape {
+	fill: var(--sidebar-tag-fill);
+	stroke: var(--sidebar-tag-stroke);
+}
+
+.rv-ribbon-tag .rv-tag-icon {
+	color: var(--sidebar-icon);
+}
+
+.rv-ribbon-tag[aria-current="page"] .rv-tag-shape {
+	fill: var(--sidebar-active-fill);
+}
+
+.rv-ribbon-tag[aria-current="page"] .rv-tag-icon,
+.rv-ribbon-tag[aria-current="page"] .rv-tag-label {
+	color: var(--sidebar-active-icon);
+}
+
+/* 浮雕效果：内阴影 + 高光 */
+.rv-cameo {
+	filter: drop-shadow(0 1px 0 rgb(255 255 255 / 0.9)) drop-shadow(0 -0.5px 0 rgb(0 0 0 / 0.18));
+}

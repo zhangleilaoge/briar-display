@@ -3,43 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-	:root {
-		--background: 0 0% 100%;
-		--foreground: 0 0% 3.9%;
-
-		--card: 0 0% 100%;
-		--card-foreground: 0 0% 3.9%;
-
-		--popover: 0 0% 100%;
-		--popover-foreground: 0 0% 3.9%;
-
-		--primary: 0 0% 9%;
-		--primary-foreground: 0 0% 98%;
-
-		--secondary: 0 0% 96.1%;
-		--secondary-foreground: 0 0% 9%;
-
-		--muted: 0 0% 96.1%;
-		--muted-foreground: 0 0% 45.1%;
-
-		--accent: 0 0% 96.1%;
-		--accent-foreground: 0 0% 9%;
-
-		--destructive: 0 84.2% 60.2%;
-		--destructive-foreground: 0 0% 98%;
-
-		--border: 0 0% 89.8%;
-		--input: 0 0% 89.8%;
-		--ring: 0 0% 3.9%;
-
-		--radius: 0.5rem;
-
-		--chart-1: 12 76% 61%;
-		--chart-2: 173 58% 39%;
-		--chart-3: 197 37% 24%;
-		--chart-4: 43 74% 66%;
-		--chart-5: 27 87% 67%;
-	}
+	/* 亮色 :root token 由 theme.css（Reverie 主题）统一定义，此处不再重复 */
 
 	* {
 		@apply border-border;
@@ -47,7 +11,6 @@
 
 	body {
 		@apply bg-background text-foreground;
-		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Liberation Sans", sans-serif;
 	}
 
 	.dark {
@@ -76,61 +39,9 @@
 		--chart-4: 280 65% 60%;
 		--chart-5: 340 75% 55%;
 	}
-
-	/* ============================================================
-	   云系主题作用域（门户 / 工具箱共用）：
-	   中性灰 token 换成浅蓝调，与流动云背景风格统一；
-	   内容分层靠 macOS 风玻璃拟态（.glass 族），不靠扁平灰边
-	   ============================================================ */
-	.cloud-scope {
-		--muted: 210 45% 95%;
-		--muted-foreground: 215 22% 40%;
-		--accent: 210 45% 93%;
-		--border: 211 35% 85%;
-		--input: 211 35% 85%;
-		--ring: 210 65% 70%;
-	}
 }
 
-@layer utilities {
-	/* 玻璃卡片（参考 css.glass 经典配方）：低饱和白底 + 大半径柔影 + 柔和白边 + 轻度模糊，
-	   关键是不叠内高光/渐变/重描边——干净才像玻璃 */
-	.glass {
-		border: 1px solid hsl(0 0% 100% / 0.3);
-		background: hsl(0 0% 100% / 0.8);
-		box-shadow: 0 4px 30px hsl(210 55% 55% / 0.12);
-		backdrop-filter: blur(8px) saturate(1.4);
-		-webkit-backdrop-filter: blur(8px) saturate(1.4);
-	}
-
-	/* 可交互玻璃：悬浮上浮 + 投影加深 + 底色略提 */
-	.glass-interactive {
-		transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
-	}
-
-	.glass-interactive:hover {
-		transform: translateY(-4px);
-		background: hsl(0 0% 100% / 0.6);
-		box-shadow: 0 10px 40px hsl(210 55% 55% / 0.2);
-	}
-
-	/* 顶栏玻璃：同族配方，底边一道柔白 */
-	.glass-header {
-		border-bottom: 1px solid hsl(0 0% 100% / 0.3);
-		background: hsl(0 0% 100% / 0.8);
-		box-shadow: 0 4px 30px hsl(210 55% 55% / 0.08);
-		backdrop-filter: blur(10px) saturate(1.4);
-		-webkit-backdrop-filter: blur(10px) saturate(1.4);
-	}
-
-	/* 无描边玻璃底：给需要自定义边框（如虚线 dropzone）的容器 */
-	.glass-soft {
-		background: hsl(0 0% 100% / 0.8);
-		box-shadow: 0 4px 30px hsl(210 55% 55% / 0.1);
-		backdrop-filter: blur(6px) saturate(1.3);
-		-webkit-backdrop-filter: blur(6px) saturate(1.3);
-	}
-}
+/* 主题 token、.glass 族与装饰工具类见 theme.css（Reverie 主题），此处只保留基础层 */
 
 /* JSON 树状预览：复制图标容器高度归零，hover 显示时不撑高当前行（库内联 vertical-align: top 需覆盖） */
 .json-tree-container .copy-to-clipboard-container {
@@ -163,7 +74,7 @@
 html {
 	/* Firefox：细滚动条 + 半透明 thumb */
 	scrollbar-width: thin;
-	scrollbar-color: hsl(0 0% 50% / 0.35) transparent;
+	scrollbar-color: hsl(var(--foreground) / 0.22) transparent;
 }
 
 /* WebKit：细滚动条 + 透明轨道（macOS 覆盖式滚动条不受影响的系统下表现为轻量经典样式） */
@@ -177,10 +88,10 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-	background: hsl(0 0% 50% / 0.35);
+	background: hsl(var(--foreground) / 0.22);
 	border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: hsl(0 0% 50% / 0.55);
+	background: hsl(var(--foreground) / 0.4);
 }

@@ -10,6 +10,7 @@ import {
 	BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { HudTitle, ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
 import { Database, Radio, Rocket, Shield, TerminalSquare, Users } from 'lucide-react'
@@ -71,23 +72,19 @@ export default function AdminLayout({ children, currentPath, fullWidth }: AdminL
 
 	return (
 		<PermissionProvider>
-			<div className="flex min-h-screen">
-				{/* 深色侧栏 */}
-				<aside className="hidden w-[220px] shrink-0 flex-col bg-foreground p-4 md:flex">
+			<ThemeShell variant="arcane" className="flex">
+				{/* HUD 玻璃侧栏：1px 藏青线 + 选中项藏青反白 */}
+				<aside className="glass-soft sticky top-0 hidden h-screen w-[220px] shrink-0 flex-col border-r border-[color:var(--rv-line)] p-4 md:flex">
+					<HudTitle index="06" label="Clef" title="管理后台" className="mb-4 px-2" />
 					<div className="mb-3 px-2 text-[11px] uppercase tracking-wider">
 						<Breadcrumb>
-							<BreadcrumbList className="text-background/40">
+							<BreadcrumbList>
 								<BreadcrumbItem>
-									<BreadcrumbLink
-										href="/briar/"
-										className="text-background/40 hover:text-background/60"
-									>
-										xiaobuzi
-									</BreadcrumbLink>
+									<BreadcrumbLink href="/briar/">xiaobuzi</BreadcrumbLink>
 								</BreadcrumbItem>
-								<BreadcrumbSeparator className="text-background/20" />
+								<BreadcrumbSeparator />
 								<BreadcrumbItem>
-									<BreadcrumbPage className="text-background/60">管理后台</BreadcrumbPage>
+									<BreadcrumbPage>管理后台</BreadcrumbPage>
 								</BreadcrumbItem>
 							</BreadcrumbList>
 						</Breadcrumb>
@@ -99,10 +96,10 @@ export default function AdminLayout({ children, currentPath, fullWidth }: AdminL
 								<a key={item.href} href={item.href} className="block">
 									<div
 										className={cn(
-											'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
+											'flex items-center gap-2.5 rounded-control border px-2.5 py-2 font-control text-sm tracking-control transition-colors',
 											isActive
-												? 'bg-background/15 font-medium text-background'
-												: 'text-background/60 hover:bg-background/10 hover:text-background/90',
+												? 'border-transparent bg-[var(--row-selected)] font-medium text-[color:var(--row-selected-fg)] shadow-control'
+												: 'border-transparent text-muted-foreground hover:border-[color:var(--rv-line)] hover:bg-[var(--row-hover)] hover:text-foreground',
 										)}
 									>
 										{item.icon}
@@ -117,14 +114,14 @@ export default function AdminLayout({ children, currentPath, fullWidth }: AdminL
 				{/* 内容区 */}
 				<div className="flex min-w-0 flex-1 flex-col">
 					{/* 顶栏 */}
-					<header className="flex h-12 items-center justify-between gap-3 border-b bg-background px-4">
-						<span className="text-sm font-semibold md:hidden">管理后台</span>
+					<header className="glass-header sticky top-0 z-30 flex h-12 items-center justify-between gap-3 px-4">
+						<span className="font-heading text-sm font-semibold md:hidden">管理后台</span>
 						<div className="hidden md:block" />
 						<UserMenu />
 					</header>
 
 					{/* 窄屏：导航 tab 独占一行，横向滚动（同工具箱 ToolsLayout 模式） */}
-					<div className="overflow-x-auto border-b bg-background px-3 py-2 md:hidden">
+					<div className="glass-soft overflow-x-auto border-b px-3 py-2 md:hidden">
 						<Tabs
 							value={currentPath}
 							onValueChange={(v) => {
@@ -142,11 +139,11 @@ export default function AdminLayout({ children, currentPath, fullWidth }: AdminL
 						</Tabs>
 					</div>
 
-					<main className="flex-1 bg-muted/30 p-4 sm:p-6">
+					<main className="flex-1 p-4 sm:p-6">
 						<div className={fullWidth ? 'w-full' : 'mx-auto w-full max-w-[1200px]'}>{children}</div>
 					</main>
 				</div>
-			</div>
+			</ThemeShell>
 		</PermissionProvider>
 	)
 }

@@ -26,6 +26,7 @@ const totalWords = posts.reduce((acc, p) => acc + getReadingStats(p.body).words,
 	<div class="blog-shell">
 		<header class="blog-hero blog-rise">
 			<p class="blog-hero-eyebrow">PERSONAL BLOG</p>
+			<span class="blog-hero-script">Journal intime</span>
 			<h1 class="blog-hero-title">{BLOG_NAME}</h1>
 			<p class="blog-hero-slogan">{BLOG_SLOGAN}</p>
 			<p class="blog-hero-stats">共 {posts.length} 篇 · 累计 {totalWords.toLocaleString()} 字</p>

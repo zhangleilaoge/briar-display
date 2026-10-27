@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { BrandCollage, ThemeShell } from '@/components/ui/theme-shell'
 import { Eye, EyeOff } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 
@@ -51,30 +52,12 @@ export default function RegisterPage() {
 	}
 
 	return (
-		<div className="relative flex min-h-screen overflow-hidden">
-			{/* Mesh gradient background */}
-			<div className="pointer-events-none fixed inset-0 -z-20">
-				<div className="absolute inset-0 bg-background" />
-				<div className="absolute -right-[15%] -top-[15%] h-[55%] w-[55%] rounded-full bg-purple-600/20 blur-[120px]" />
-				<div className="absolute bottom-[10%] left-[20%] h-[40%] w-[40%] rounded-full bg-blue-500/15 blur-[100px]" />
-				<div className="absolute right-1/3 top-1/2 h-[30%] w-[30%] rounded-full bg-teal-500/10 blur-[80px]" />
-			</div>
-
-			{/* Dot grid overlay */}
-			<div
-				className="pointer-events-none fixed inset-0 -z-10"
-				style={{
-					backgroundImage:
-						'radial-gradient(circle, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)',
-					backgroundSize: '24px 24px',
-				}}
-			/>
-
+		<ThemeShell variant="scrapbook" sidebar={false} className="flex overflow-hidden">
 			{/* Two-column layout — reversed order */}
 			<div className="grid w-full lg:grid-cols-2">
 				{/* Left: Form side */}
 				<div className="flex items-center justify-center p-6 lg:p-12">
-					<Card className="w-full max-w-md bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-xl">
+					<Card className="w-full max-w-md shadow-raised">
 						<form onSubmit={handleSubmit}>
 							<CardHeader>
 								<CardTitle>创建账号</CardTitle>
@@ -177,19 +160,9 @@ export default function RegisterPage() {
 
 				{/* Right: Brand side */}
 				<div className="relative hidden flex-col items-center justify-center overflow-hidden p-12 lg:flex">
-					{/* Floating decorative circles */}
-					<div className="absolute -right-16 top-1/4 h-64 w-64 rounded-full bg-purple-500/20 blur-[80px]" />
-					<div className="absolute -left-8 bottom-1/3 h-48 w-48 rounded-full bg-blue-500/20 blur-[60px]" />
-					<div className="absolute right-1/3 top-1/2 h-32 w-32 rounded-full bg-teal-500/15 blur-[50px]" />
-
-					<div className="relative z-10 space-y-6 text-center">
-						<h1 className="bg-gradient-to-br from-purple-600 via-blue-600 to-teal-500 bg-clip-text text-6xl font-bold tracking-tight text-transparent">
-							xiaobuzi
-						</h1>
-						<p className="text-xl text-muted-foreground">开始使用</p>
-					</div>
+					<BrandCollage script="Bienvenue" subtitle="开始使用" className="relative z-10" />
 				</div>
 			</div>
-		</div>
+		</ThemeShell>
 	)
 }

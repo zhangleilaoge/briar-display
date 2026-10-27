@@ -9,6 +9,7 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { HudTitle, ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import type { ReactNode } from 'react'
 import StorageQuota from './StorageQuota'
@@ -20,20 +21,28 @@ interface FileManagerLayoutProps {
 export default function FileManagerLayout({ children }: FileManagerLayoutProps) {
 	return (
 		<PermissionProvider>
-			<div className="flex min-h-screen flex-col bg-background">
-				<header className="sticky top-0 z-50 border-b bg-background">
+			<ThemeShell variant="arcane" className="flex flex-col">
+				<header className="glass-header sticky top-0 z-30">
 					<div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between gap-2 px-4 sm:px-6">
-						<Breadcrumb>
-							<BreadcrumbList>
-								<BreadcrumbItem>
-									<BreadcrumbLink href="/briar/">xiaobuzi</BreadcrumbLink>
-								</BreadcrumbItem>
-								<BreadcrumbSeparator />
-								<BreadcrumbItem>
-									<BreadcrumbPage>文件</BreadcrumbPage>
-								</BreadcrumbItem>
-							</BreadcrumbList>
-						</Breadcrumb>
+						<div className="flex items-center gap-6">
+							<HudTitle
+								index="03"
+								label="Fichiers"
+								title="文件"
+								className="hidden shrink-0 lg:flex"
+							/>
+							<Breadcrumb className="shrink-0 whitespace-nowrap">
+								<BreadcrumbList>
+									<BreadcrumbItem>
+										<BreadcrumbLink href="/briar/">xiaobuzi</BreadcrumbLink>
+									</BreadcrumbItem>
+									<BreadcrumbSeparator />
+									<BreadcrumbItem>
+										<BreadcrumbPage>文件</BreadcrumbPage>
+									</BreadcrumbItem>
+								</BreadcrumbList>
+							</Breadcrumb>
+						</div>
 						<div className="flex items-center gap-3">
 							<StorageQuota />
 							<UserMenu />
@@ -44,7 +53,7 @@ export default function FileManagerLayout({ children }: FileManagerLayoutProps) 
 				<main className="flex-1 p-4 sm:p-6">
 					<div className="mx-auto max-w-[1200px]">{children}</div>
 				</main>
-			</div>
+			</ThemeShell>
 		</PermissionProvider>
 	)
 }

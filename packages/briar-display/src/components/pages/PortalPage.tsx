@@ -1,38 +1,92 @@
 'use client'
 
-import FrothyGalaxyShader from '@/components/common/FrothyGalaxyShader'
 import UserMenu from '@/components/common/UserMenu'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { ChatBubble } from '@/components/ui/chat-bubble'
+import {
+	CameoIcon,
+	FanIcon,
+	InkwellIcon,
+	KeyIcon,
+	Postmark,
+	StarIcon,
+	Strawberry,
+} from '@/components/ui/ornaments'
+import { StampInputBar } from '@/components/ui/stamp-input-bar'
+import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
-import { cn } from '@/lib/utils'
-import { Folder, Globe2, PenLine, Shield, Wrench } from 'lucide-react'
+import { type ComponentType, type SVGProps, useEffect, useMemo, useState } from 'react'
 
-interface EntryCardProps {
-	icon: React.ReactNode
+interface Entry {
+	icon: ComponentType<SVGProps<SVGSVGElement>>
 	title: string
+	caption: string
 	description: string
 	href: string
-	gradient: string
+	adminOnly?: boolean
 }
 
-function EntryCard({ icon, title, description, href, gradient }: EntryCardProps) {
+const ENTRIES: Entry[] = [
+	{
+		icon: InkwellIcon,
+		title: '工具箱',
+		caption: 'Outils',
+		description: '文件 Diff、图片压缩等实用工具',
+		href: '/briar/tools',
+	},
+	{
+		icon: CameoIcon,
+		title: '文件',
+		caption: 'Fichiers',
+		description: '文件、图片与视频的云端管理',
+		href: '/briar/files',
+	},
+	{
+		icon: FanIcon,
+		title: '博客',
+		caption: 'Journal',
+		description: '个人随笔与文章',
+		href: '/briar/blog/',
+	},
+	{
+		icon: KeyIcon,
+		title: '管理后台',
+		caption: 'Clef',
+		description: '角色权限与用户管理',
+		href: '/briar/admin',
+		adminOnly: true,
+	},
+	{
+		icon: StarIcon,
+		title: '全球板块',
+		caption: 'Étoiles',
+		description: '全球主要市场板块涨跌',
+		href: '/briar/markets',
+	},
+]
+
+function EntryCard({ entry, tilt }: { entry: Entry; tilt: number }) {
+	const Icon = entry.icon
 	return (
-		<a href={href} className="group block">
-			<Card className="glass glass-interactive rounded-2xl">
-				<CardContent className="flex items-start gap-4 p-5">
-					<div
-						className={cn(
-							'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md',
-							gradient,
-						)}
-					>
-						{icon}
+		<a
+			href={entry.href}
+			className="group block outline-none transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1"
+			style={{ rotate: `${tilt}deg` }}
+		>
+			<Card className="glass-interactive overflow-hidden group-focus-visible:shadow-focus">
+				<CardContent className="flex items-center gap-4 p-5">
+					<div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[color:var(--rv-rose)] bg-[var(--rv-pink)] shadow-[inset_0_2px_4px_rgb(255_255_255/0.9),inset_0_-2px_4px_rgb(185_84_95/0.18)]">
+						<Icon className="rv-cameo h-7 w-7 text-[color:var(--rv-ink)]" />
 					</div>
 					<div className="min-w-0">
-						<h3 className="text-base font-medium group-hover:text-primary transition-colors">
-							{title}
+						<span className="rv-script block text-lg leading-none text-[#b9545f]">
+							{entry.caption}
+						</span>
+						<h3 className="font-heading text-lg font-semibold transition-colors group-hover:text-[#b9545f]">
+							{entry.title}
 						</h3>
-						<p className="mt-0.5 truncate text-sm text-muted-foreground">{description}</p>
+						<p className="truncate text-sm text-muted-foreground">{entry.description}</p>
 					</div>
 				</CardContent>
 			</Card>
@@ -40,73 +94,116 @@ function EntryCard({ icon, title, description, href, gradient }: EntryCardProps)
 	)
 }
 
+/** 按本地时间问候；在 effect 中计算，避免 SSR/CSR 不一致 */
+function useGreeting() {
+	const [state, setState] = useState({ greet: 'Bonjour', date: '' })
+	useEffect(() => {
+		const now = new Date()
+		const h = now.getHours()
+		const greet = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir'
+		const date = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`
+		setState({ greet, date })
+	}, [])
+	return state
+}
+
 function PortalPageInner() {
 	const { isAdmin, loading } = usePermissions()
+	const { greet, date } = useGreeting()
+	const [query, setQuery] = useState('')
+
+	const visible = useMemo(() => {
+		const q = query.trim().toLowerCase()
+		return ENTRIES.filter((e) => !e.adminOnly || isAdmin).filter(
+			(e) => !q || `${e.title}${e.caption}${e.description}`.toLowerCase().includes(q),
+		)
+	}, [isAdmin, query])
+
+	const tilts = [-1.2, 0.8, 1, -0.8, -1]
 
 	return (
-		<div className="cloud-scope relative flex min-h-screen flex-col overflow-hidden">
-			{/* Frothy galaxy shader background */}
-			<div className="pointer-events-none fixed inset-0 -z-20">
-				<FrothyGalaxyShader />
-			</div>
-
+		<ThemeShell variant="scrapbook" className="flex flex-col overflow-hidden">
 			{/* Top bar */}
-			<header className="glass-header sticky top-0 z-50 flex h-14 items-center justify-between px-4 sm:px-6">
-				<span className="text-base font-semibold tracking-tight">xiaobuzi</span>
+			<header className="glass-header sticky top-0 z-30 flex h-14 items-center justify-between px-4 sm:px-6">
+				<span className="rv-script text-2xl leading-none text-foreground">xiaobuzi</span>
 				<div className="flex items-center gap-3">
-					{loading ? <div className="h-4 w-16 animate-pulse rounded bg-muted" /> : <UserMenu />}
+					{loading ? (
+						<div className="h-4 w-16 animate-pulse rounded-control bg-muted" />
+					) : (
+						<UserMenu />
+					)}
 				</div>
 			</header>
 
 			{/* Main */}
 			<main className="flex flex-1 items-center justify-center p-4 sm:p-6">
-				<div className="w-full max-w-2xl space-y-8">
-					{/* Bento grid */}
-					<div className="grid gap-4 sm:grid-cols-2">
-						<EntryCard
-							icon={<Wrench className="h-5 w-5" />}
-							title="工具箱"
-							description="文件 Diff、图片压缩等实用工具"
-							href="/briar/tools"
-							gradient="from-teal-500 to-emerald-500"
-						/>
-						<EntryCard
-							icon={<Folder className="h-5 w-5" />}
-							title="文件"
-							description="文件、图片与视频的云端管理"
-							href="/briar/files"
-							gradient="from-pink-500 to-rose-500"
-						/>
-						<EntryCard
-							icon={<PenLine className="h-5 w-5" />}
-							title="博客"
-							description="个人随笔与文章"
-							href="/briar/blog/"
-							gradient="from-orange-500 to-red-500"
-						/>
-						{isAdmin && (
-							<EntryCard
-								icon={<Shield className="h-5 w-5" />}
-								title="管理后台"
-								description="角色权限与用户管理"
-								href="/briar/admin"
-								gradient="from-amber-500 to-orange-500"
+				<div className="w-full max-w-3xl space-y-8">
+					{/* 拼贴问候卡 */}
+					<Card className="relative overflow-visible">
+						<CardContent className="relative flex flex-col gap-2 p-6 sm:p-8">
+							<span className="rv-label text-muted-foreground">
+								Carnet de voyage · {date || '\u00a0'}
+							</span>
+							<h1 className="font-display text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
+								<span className="rv-script mr-2 font-normal text-[#b9545f]">{greet},</span>
+								xiaobuzi
+							</h1>
+							<p className="font-display text-lg italic text-muted-foreground">
+								今天想去哪里看看？
+							</p>
+							<Postmark
+								className="absolute -top-6 right-4 h-24 w-24 rotate-12 sm:right-8"
+								date={date.slice(-2) || '27'}
 							/>
-						)}
-						<EntryCard
-							icon={<Globe2 className="h-5 w-5" />}
-							title="全球板块"
-							description="全球主要市场板块涨跌"
-							href="/briar/markets"
-							gradient="from-sky-500 to-indigo-500"
+							<Strawberry
+								aria-hidden
+								className="absolute -bottom-5 right-24 h-12 w-10 -rotate-12"
+							/>
+						</CardContent>
+					</Card>
+
+					{/* 邮票输入条：筛选下方入口 */}
+					<div className="space-y-3">
+						<StampInputBar
+							value={query}
+							onChange={(e) => setQuery(e.target.value)}
+							placeholder="Écrivez-moi…  输入关键词筛选入口"
+							aria-label="筛选入口"
 						/>
+						{query.trim() && (
+							<ChatBubble from="user" className="mr-6">
+								我想找：{query.trim()}
+							</ChatBubble>
+						)}
+						<div className="flex flex-wrap gap-2">
+							{['工具', '文件', '博客', '板块'].map((k) => (
+								<Button
+									key={k}
+									size="sm"
+									variant="secondary"
+									onClick={() => setQuery(query === k ? '' : k)}
+								>
+									{k}
+								</Button>
+							))}
+						</div>
+					</div>
+
+					{/* 入口卡片 */}
+					<div className="grid gap-5 sm:grid-cols-2">
+						{visible.map((entry, i) => (
+							<EntryCard key={entry.href} entry={entry} tilt={tilts[i % tilts.length]} />
+						))}
+						{visible.length === 0 && (
+							<ChatBubble from="bot">没有找到相关入口，换个词试试？</ChatBubble>
+						)}
 					</div>
 				</div>
 			</main>
 
 			{/* Footer */}
 			<footer className="pb-6 pt-8 text-center text-xs text-muted-foreground/80">
-				<p>Powered by zhangleilaoge</p>
+				<p className="font-display italic">Powered by zhangleilaoge</p>
 				<a
 					href="https://beian.miit.gov.cn/"
 					target="_blank"
@@ -116,7 +213,7 @@ function PortalPageInner() {
 					浙ICP备2024116093号-3
 				</a>
 			</footer>
-		</div>
+		</ThemeShell>
 	)
 }
 

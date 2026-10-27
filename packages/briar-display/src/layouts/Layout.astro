@@ -1,7 +1,16 @@
 ---
 import '../styles/globals.css'
+import '../styles/theme.css'
+import '../styles/fonts'
+import { type ReverieTheme, themeClass, themeForPath } from '../lib/theme'
 
-const { title = 'Briar' } = Astro.props
+interface Props {
+	title?: string
+	theme?: ReverieTheme
+}
+
+const { title = 'Briar', theme } = Astro.props
+const bodyTheme = themeClass(theme ?? themeForPath(Astro.url.pathname))
 ---
 
 <!doctype html>
@@ -13,7 +22,7 @@ const { title = 'Briar' } = Astro.props
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
   </head>
-  <body class="min-h-screen bg-background text-foreground antialiased">
+  <body class:list={['rv-page min-h-screen bg-background text-foreground antialiased', bodyTheme]}>
     <slot />
   </body>
 </html>
