@@ -3,6 +3,7 @@ import { logDal } from '../dal/logDal'
 import { certificateService } from '../services/certificateService'
 import { fileModerationService } from '../services/fileModerationService'
 import { maintenanceService } from '../services/maintenanceService'
+import { syncCsi300EtfScale } from '../services/market/csi300EtfService'
 import { mediaCacheService } from '../services/mediaCacheService'
 import type { SchedulerTask } from './scheduler'
 
@@ -93,5 +94,15 @@ export const schedulerTasks: SchedulerTask[] = [
 			const deleted = await mediaCacheService.cleanupExpiredMedia()
 			return { message: `已清理过期的媒体缓存 ${deleted} 条（含 COS 对象）`, detail: { deleted } }
 		},
+	},
+	{
+		name: 'sync-csi300-etf-scale',
+		label: '沪深300ETF占比快照',
+		description: '同步官方完整月份的四只头部沪深300ETF份额、单位/累计净值与指数流通市值',
+		scheduleText: '每日 21:43',
+		cron: resolveCron('BRIAR_CSI300_ETF_SCALE_CRON', '43 21 * * *'),
+		runOnStart: false,
+		path: fileURLToPath(new URL('../jobs/sync-csi300-etf-scale.mjs', import.meta.url)),
+		run: syncCsi300EtfScale,
 	},
 ]

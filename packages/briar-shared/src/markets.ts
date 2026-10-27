@@ -83,11 +83,11 @@ export interface MarketSessionInfo {
 
 /** 统一的缓存/降级元信息 */
 export interface MarketDataMeta {
-	/** 后端成功拉取上游的时间（毫秒） */
+	/** 后端成功取得该份数据的时间（毫秒；实时源为拉取时间，快照为装载时间） */
 	fetchedAt: number
-	/** true = 上游失败，返回的是最近一次缓存 */
+	/** true = 数据更新失败，返回最近一次缓存或历史快照 */
 	stale: boolean
-	/** stale 时的上游错误摘要 */
+	/** stale 时的错误摘要 */
 	error?: string
 }
 
@@ -105,6 +105,46 @@ export interface MarketOverviewItem extends MarketDataMeta {
 
 export interface MarketOverviewResponse {
 	markets: MarketOverviewItem[]
+}
+
+export interface Csi300EtfScalePoint {
+	/** 官方历史快照交易日 YYYY-MM-DD */
+	date: string
+	/** 四只样本 ETF 实际规模 / 沪深300流通市值 × 100 */
+	ratioPct: number
+	/** 视频口径：四只样本 ETF 份额 × 累计净值之和 / 沪深300流通市值 × 100 */
+	videoRatioPct: number
+	indexClose: number
+	/** 四只样本 ETF 合计资产规模（元） */
+	totalAssets: number
+	/** 视频口径的份额 × 累计净值计算值（元），不是实际资产规模 */
+	videoValue: number
+	/** 沪深300流通市值（元） */
+	floatMarketCap: number
+}
+
+export interface Csi300EtfFundItem {
+	code: string
+	name: string
+	/** 截止日份额（份） */
+	shares: number
+	/** 截止日单位净值 */
+	unitNav: number
+	/** 截止日累计净值 */
+	cumulativeNav: number
+	/** 份额 × 单位净值（元） */
+	assets: number
+	/** 份额 × 累计净值（元），不是实际资产规模 */
+	cumulativeValue: number
+}
+
+export interface Csi300EtfScaleResponse extends MarketDataMeta {
+	/** 所有曲线及基金明细的共同数据截止日 */
+	asOf: string
+	points: Csi300EtfScalePoint[]
+	funds: Csi300EtfFundItem[]
+	sources: string[]
+	pollMs: number
 }
 
 export interface SectorKindOption {

@@ -44,7 +44,7 @@ export interface MediaSections {
 	audio: MediaItem | null
 }
 
-/** 全平台 key（含仅本地的 mrds66）；与 skill briar-media-download / 网页媒体解析对齐 */
+/** 全平台 key（含仅本地的 mrds66 / 91porn）；与 skill briar-media-download / 网页媒体解析对齐 */
 export const MEDIA_PLATFORMS = [
 	'xiaohongshu',
 	'douyin',
@@ -53,10 +53,11 @@ export const MEDIA_PLATFORMS = [
 	'bilibili',
 	'pornhub',
 	'mrds66',
+	'91porn',
 ] as const
 export type MediaPlatform = (typeof MEDIA_PLATFORMS)[number]
 
-/** 网页 /api/media 已实现的平台（图标条用这个，不含 mrds66） */
+/** 网页 /api/media 已实现的平台（图标条用这个，不含 mrds66 / 91porn） */
 export const WEB_MEDIA_PLATFORMS = [
 	'xiaohongshu',
 	'douyin',
@@ -74,6 +75,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 	bilibili: 'B站',
 	pornhub: 'Pornhub',
 	mrds66: 'mrds66',
+	'91porn': '91porn',
 }
 
 export const platformLabel = (platform: string) => PLATFORM_LABELS[platform] || platform
@@ -98,6 +100,7 @@ export const platformFromUrl = (url: string) => {
 	if (url.includes('bilibili.com') || url.includes('b23.tv')) return 'bilibili'
 	if (url.includes('pornhub.com')) return 'pornhub'
 	if (url.includes('mrds66.com')) return 'mrds66'
+	if (url.includes('91porn.com')) return '91porn'
 	return 'xiaohongshu'
 }
 
