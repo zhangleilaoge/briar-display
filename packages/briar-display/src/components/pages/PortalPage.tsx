@@ -5,21 +5,23 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ChatBubble } from '@/components/ui/chat-bubble'
 import {
-	CameoIcon,
-	FanIcon,
-	InkwellIcon,
+	FilesIcon,
+	JournalIcon,
 	KeyIcon,
+	MarketsIcon,
+	type OrnamentIconProps,
 	Postmark,
-	StarIcon,
+	Ribbon,
 	Strawberry,
+	ToolsIcon,
 } from '@/components/ui/ornaments'
 import { StampInputBar } from '@/components/ui/stamp-input-bar'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
-import { type ComponentType, type SVGProps, useEffect, useMemo, useState } from 'react'
+import { type ComponentType, useEffect, useMemo, useState } from 'react'
 
 interface Entry {
-	icon: ComponentType<SVGProps<SVGSVGElement>>
+	icon: ComponentType<OrnamentIconProps>
 	title: string
 	caption: string
 	description: string
@@ -29,21 +31,21 @@ interface Entry {
 
 const ENTRIES: Entry[] = [
 	{
-		icon: InkwellIcon,
+		icon: ToolsIcon,
 		title: '工具箱',
 		caption: 'Outils',
 		description: '文件 Diff、图片压缩等实用工具',
 		href: '/briar/tools',
 	},
 	{
-		icon: CameoIcon,
+		icon: FilesIcon,
 		title: '文件',
 		caption: 'Fichiers',
 		description: '文件、图片与视频的云端管理',
 		href: '/briar/files',
 	},
 	{
-		icon: FanIcon,
+		icon: JournalIcon,
 		title: '博客',
 		caption: 'Journal',
 		description: '个人随笔与文章',
@@ -58,7 +60,7 @@ const ENTRIES: Entry[] = [
 		adminOnly: true,
 	},
 	{
-		icon: StarIcon,
+		icon: MarketsIcon,
 		title: '全球板块',
 		caption: 'Étoiles',
 		description: '全球主要市场板块涨跌',
@@ -77,7 +79,7 @@ function EntryCard({ entry, tilt }: { entry: Entry; tilt: number }) {
 			<Card className="glass-interactive overflow-hidden group-focus-visible:shadow-focus">
 				<CardContent className="flex items-center gap-4 p-5">
 					<div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[color:var(--rv-rose)] bg-[var(--rv-pink)] shadow-[inset_0_2px_4px_rgb(255_255_255/0.9),inset_0_-2px_4px_rgb(185_84_95/0.18)]">
-						<Icon className="rv-cameo h-7 w-7 text-[color:var(--rv-ink)]" />
+						<Icon className="h-7 w-7 text-[color:var(--rv-ink)]" />
 					</div>
 					<div className="min-w-0">
 						<span className="rv-script block text-lg leading-none text-[color:var(--rv-rose-deep)]">
@@ -157,10 +159,8 @@ function PortalPageInner() {
 								className="absolute -top-6 right-4 h-24 w-24 rotate-12 sm:right-8"
 								date={date.slice(-2) || '27'}
 							/>
-							<Strawberry
-								aria-hidden
-								className="absolute -bottom-5 right-24 h-12 w-10 -rotate-12"
-							/>
+							<Strawberry className="absolute -bottom-6 right-24 h-14 w-14 -rotate-12 sm:right-32" />
+							<Ribbon className="absolute -left-5 -top-6 h-14 w-14 -rotate-[18deg]" />
 						</CardContent>
 					</Card>
 

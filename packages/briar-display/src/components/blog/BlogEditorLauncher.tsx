@@ -159,7 +159,7 @@ function BlogEditorLauncherInner() {
 				type="button"
 				onClick={openEditor}
 				title="编辑预览（不会保存）"
-				className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--blog-accent)] text-white shadow-lg transition-transform duration-300 hover:scale-110"
+				className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-12 w-12 md:bottom-6 md:right-6 items-center justify-center rounded-full bg-[var(--blog-accent)] text-white shadow-lg transition-transform duration-300 hover:scale-110"
 			>
 				<PenLine className="h-5 w-5" />
 			</button>

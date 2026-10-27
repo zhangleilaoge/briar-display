@@ -3,7 +3,7 @@ import { type VariantProps, cva } from 'class-variance-authority'
 import type { HTMLAttributes } from 'react'
 
 const badgeVariants = cva(
-	'inline-flex items-center rounded-control border px-2.5 py-0.5 font-control text-[12px] font-medium tracking-control transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+	'inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-control border px-2.5 font-control text-[12px] font-medium leading-none tracking-control transition-colors focus-visible:outline-none focus-visible:shadow-focus [&_svg]:h-3 [&_svg]:w-3',
 	{
 		variants: {
 			variant: {

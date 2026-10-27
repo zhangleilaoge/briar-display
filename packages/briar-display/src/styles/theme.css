@@ -444,6 +444,21 @@ body {
 	fill: var(--sidebar-active-fill);
 }
 
+.rv-ribbon-tag .rv-tag-chip {
+	background: var(--sidebar-tag-fill);
+	border-color: var(--sidebar-tag-stroke);
+}
+
+.rv-ribbon-tag[aria-current="page"] .rv-tag-chip {
+	background: var(--sidebar-active-fill);
+}
+
+.rv-ribbon-tag:focus-visible .rv-tag-chip,
+.rv-ribbon-tag:focus-visible .rv-tag-shape {
+	outline: 2px solid hsl(var(--ring));
+	outline-offset: 2px;
+}
+
 .rv-ribbon-tag[aria-current="page"] .rv-tag-icon,
 .rv-ribbon-tag[aria-current="page"] .rv-tag-label {
 	color: var(--sidebar-active-icon);
@@ -452,6 +467,22 @@ body {
 /* 浮雕效果：内阴影 + 高光 */
 .rv-cameo {
 	filter: drop-shadow(0 1px 0 rgb(255 255 255 / 0.9)) drop-shadow(0 -0.5px 0 rgb(0 0 0 / 0.18));
+}
+
+/* 移动端底部吊牌栏：给页面底部留出空间，避免内容被遮挡 */
+@media (max-width: 767.98px) {
+	body:has(.rv-ribbon-mobile) {
+		padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+	}
+}
+
+/* 按钮内图标：未显式指定尺寸的统一为 16px，不被压缩 */
+.rv-btn svg {
+	flex-shrink: 0;
+}
+.rv-btn svg:not([class^="h-"]):not([class*=" h-"]):not([class*="size-"]) {
+	width: 1rem;
+	height: 1rem;
 }
 
 /* 原生复选框/单选/滑块跟随主题主色 */

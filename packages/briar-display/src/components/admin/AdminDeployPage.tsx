@@ -273,9 +273,9 @@ function AdminDeployPageInner() {
 		<AdminLayout currentPath={PAGE_PATH}>
 			{/* 证书状态 */}
 			<div className="mb-4 rounded-md border bg-card p-4">
-				<div className="mb-4 flex items-center gap-2">
-					<ShieldCheck className="h-4 w-4 text-muted-foreground" />
-					<h2 className="text-sm font-semibold">证书状态</h2>
+				<div className="mb-4 flex flex-wrap items-center gap-2">
+					<ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" />
+					<h2 className="shrink-0 text-sm font-semibold">证书状态</h2>
 					{certStatus && (
 						<span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
 							{certStatus.domain}

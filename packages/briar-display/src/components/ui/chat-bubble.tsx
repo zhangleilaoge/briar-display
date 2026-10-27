@@ -1,6 +1,6 @@
 /**
  * 剪贴簿风格对话气泡。
- * - user：粉色草莓气泡（右对齐，角上一颗自绘草莓）
+ * - user：粉色草莓气泡（右对齐，角上一枚草莓贴纸）
  * - bot：奶油色纸片气泡（左对齐）
  * 当前站点暂无聊天页，首页用它回显输入；后续聊天类页面可直接复用。
  */
@@ -29,9 +29,7 @@ export interface ChatBubbleProps
 export function ChatBubble({ className, from, children, ...props }: ChatBubbleProps) {
 	return (
 		<div className={cn(bubbleVariants({ from }), className)} {...props}>
-			{from === 'user' && (
-				<Strawberry aria-hidden className="absolute -right-3 -top-4 h-7 w-6 rotate-12" />
-			)}
+			{from === 'user' && <Strawberry className="absolute -right-3 -top-4 h-8 w-8 rotate-12" />}
 			{children}
 		</div>
 	)

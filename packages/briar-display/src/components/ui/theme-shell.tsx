@@ -46,8 +46,8 @@ function ArcaneDecor() {
 				className="absolute -bottom-40 -right-32 h-[560px] w-[560px] opacity-[0.22]"
 				showWord={false}
 			/>
-			<GreekColumn className="absolute bottom-0 right-6 hidden h-[62vh] w-auto opacity-30 xl:block" />
-			<GreekColumn className="absolute bottom-0 left-20 hidden h-[48vh] w-auto opacity-20 2xl:block" />
+			<GreekColumn className="absolute bottom-0 right-4 hidden h-[68vh] w-auto opacity-[0.16] xl:block" />
+			<GreekColumn className="absolute bottom-0 left-20 hidden h-[52vh] w-auto -scale-x-100 opacity-[0.1] 2xl:block" />
 			{/* HUD 角标线 */}
 			<div className="absolute left-[calc(4rem+12px)] right-3 top-3 hidden h-px bg-[var(--rv-line)] opacity-40 md:block" />
 		</div>
@@ -58,7 +58,7 @@ function ScrapbookDecor() {
 	return (
 		<div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
 			<Postmark className="absolute right-10 top-16 hidden h-28 w-28 rotate-12 opacity-30 lg:block" />
-			<PocketWatch className="absolute -bottom-6 -right-4 hidden h-40 w-32 -rotate-12 opacity-25 lg:block" />
+			<PocketWatch className="absolute -bottom-10 -right-6 hidden h-48 w-auto -rotate-12 opacity-[0.18] lg:block" />
 			<div className="absolute -left-24 top-1/3 h-72 w-72 rounded-full bg-[var(--rv-pink)] opacity-50 blur-3xl" />
 			<div className="absolute -right-24 top-10 h-72 w-72 rounded-full bg-[var(--rv-sky)] opacity-50 blur-3xl" />
 		</div>
@@ -133,7 +133,7 @@ export function BrandCollage({
 			</h1>
 			<p className="relative font-display text-xl italic text-muted-foreground">{subtitle}</p>
 			<Postmark className="absolute -right-10 -top-10 h-28 w-28 rotate-12" />
-			<Strawberry aria-hidden className="absolute -bottom-6 -left-4 h-14 w-12 -rotate-12" />
+			<Strawberry className="absolute -bottom-7 -left-5 h-16 w-16 -rotate-12" />
 		</div>
 	)
 }

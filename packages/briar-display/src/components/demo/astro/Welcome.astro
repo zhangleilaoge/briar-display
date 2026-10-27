@@ -12,13 +12,13 @@ import { buttonVariants } from '../../ui/button'
 	</p>
 	<div class="mt-6 flex flex-wrap gap-3">
 		<a
-			class="inline-flex h-9 items-center rounded-control px-5 font-control text-sm tracking-control text-primary-foreground shadow-control transition-shadow [background-image:var(--btn-primary-image)] hover:shadow-control-hover"
+			class={buttonVariants({ size: 'sm', className: 'px-5' })}
 			href="https://docs.astro.build"
 			target="_blank"
 			rel="noreferrer">阅读 Astro 文档</a
 		>
 		<a
-			class="inline-flex h-9 items-center rounded-control border border-border bg-card/80 px-5 font-control text-sm tracking-control text-foreground shadow-control transition-shadow hover:shadow-control-hover"
+			class={buttonVariants({ variant: 'outline', size: 'sm', className: 'px-5' })}
 			href="/demo/hello">Hello 子页面 →</a
 		>
 	</div>
