@@ -1,21 +1,11 @@
 'use client'
 
-import GoogleBindingDialog from '@/components/auth/GoogleBindingDialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { usePermissions } from '@/contexts/PermissionContext'
 import { useUnreadMessages } from '@/hooks/useUnreadMessages'
 import { buildLoginUrl } from '@/lib/loginRedirect'
 import { cn } from '@/lib/utils'
-import {
-	ChevronDown,
-	Home,
-	Link2,
-	LogIn,
-	LogOut,
-	Mail,
-	Shield,
-	User as UserIcon,
-} from 'lucide-react'
+import { ChevronDown, Home, LogIn, LogOut, Mail, Shield, User as UserIcon } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 interface StoredUser {
@@ -71,7 +61,6 @@ function Avatar({
 
 export default function UserMenu() {
 	const [open, setOpen] = useState(false)
-	const [bindOpen, setBindOpen] = useState(false)
 	const [user, setUser] = useState<StoredUser | null>(null)
 	const [token, setToken] = useState<string | null>(null)
 	// 首帧（SSR/hydration）还读不到 localStorage：先显示骨架，避免整页跳转时闪「登录」
@@ -229,18 +218,6 @@ export default function UserMenu() {
 						</a>
 					)}
 
-					<button
-						type="button"
-						onClick={() => {
-							setOpen(false)
-							setBindOpen(true)
-						}}
-						className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
-					>
-						<Link2 className="h-3.5 w-3.5" />
-						绑定谷歌账号
-					</button>
-
 					<div className="my-1 border-t border-border" />
 
 					<button
@@ -253,7 +230,6 @@ export default function UserMenu() {
 					</button>
 				</PopoverContent>
 			</Popover>
-			<GoogleBindingDialog open={bindOpen} onOpenChange={setBindOpen} />
 		</>
 	)
 }

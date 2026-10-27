@@ -9,7 +9,7 @@ import { useCallback, useState } from 'react'
 const errorMessage = (err: unknown, fallback: string) =>
 	(err as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback
 
-/** 当前用户的登录方式 + Google 绑定/解绑（「绑定谷歌账号」弹窗与个人中心「登录方式」卡片共用） */
+/** 当前用户的登录方式 + Google 绑定/解绑（个人中心「登录方式」卡片使用） */
 export function useLoginMethods() {
 	const [methods, setMethods] = useState<LoginMethods | null>(null)
 	const [loading, setLoading] = useState(false)

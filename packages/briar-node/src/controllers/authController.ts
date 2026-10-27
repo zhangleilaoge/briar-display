@@ -12,7 +12,7 @@ const GOOGLE_ERRORS: Record<string, [number, string]> = {
 	GOOGLE_NOT_CONFIGURED: [HTTP_STATUS.UNAUTHORIZED, 'Google 登录未配置'],
 	GOOGLE_EMAIL_CONFLICT: [
 		HTTP_STATUS.CONFLICT,
-		'该邮箱已注册本站账号，请先用密码登录后在用户菜单「绑定谷歌账号」',
+		'该邮箱已注册本站账号，请先用密码登录后在个人中心「登录方式」绑定谷歌账号',
 	],
 	GOOGLE_IDENTITY_TAKEN: [
 		HTTP_STATUS.CONFLICT,
