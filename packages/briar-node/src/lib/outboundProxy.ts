@@ -9,23 +9,31 @@ const proxyUri = () => process.env.BRIAR_MEDIA_OUTBOUND_PROXY?.trim() || ''
 
 export const hasOutboundProxy = () => Boolean(proxyUri())
 
-let dispatcherPromise: Promise<Dispatcher> | null = null
+/** 按代理 URI 缓存 ProxyAgent，不同用途（媒体 / Google）可共用同一出口 */
+const dispatchers = new Map<string, Promise<Dispatcher>>()
 
-const getDispatcher = (): Promise<Dispatcher> | null => {
-	const uri = proxyUri()
+const getDispatcher = (uri: string): Promise<Dispatcher> | null => {
 	if (!uri) return null
-	dispatcherPromise ??= import('undici')
-		.then((m) => new m.ProxyAgent(uri))
-		.catch((err) => {
-			dispatcherPromise = null
-			throw err
-		})
-	return dispatcherPromise
+	let pending = dispatchers.get(uri)
+	if (!pending) {
+		pending = import('undici')
+			.then((m) => new m.ProxyAgent(uri))
+			.catch((err) => {
+				dispatchers.delete(uri)
+				throw err
+			})
+		dispatchers.set(uri, pending)
+	}
+	return pending
 }
 
-/** 配了出站代理走 undici fetch（ProxyAgent 生效），否则全局 fetch 直连；返回类型按全局 Response 用 */
-export const fetchOutbound = async (url: string, init?: RequestInit): Promise<Response> => {
-	const pending = getDispatcher()
+/** 指定代理 URI 发请求；uri 为空时全局 fetch 直连 */
+export const fetchViaProxy = async (
+	uri: string,
+	url: string,
+	init?: RequestInit,
+): Promise<Response> => {
+	const pending = getDispatcher(uri)
 	if (!pending) return fetch(url, init)
 	const dispatcher = await pending
 	const { fetch: undiciFetch } = await import('undici')
@@ -34,3 +42,7 @@ export const fetchOutbound = async (url: string, init?: RequestInit): Promise<Re
 		dispatcher,
 	}) as unknown as Response
 }
+
+/** 配了出站代理走 undici fetch（ProxyAgent 生效），否则全局 fetch 直连；返回类型按全局 Response 用 */
+export const fetchOutbound = (url: string, init?: RequestInit): Promise<Response> =>
+	fetchViaProxy(proxyUri(), url, init)

@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken'
 import { AUTH_CONFIG, isGoogleAuthConfigured } from '../config/auth'
 import { type UserRecord, userDal } from '../dal/userDal'
 import { VerificationCodeType, verificationCodeDal } from '../dal/verificationCodeDal'
+import { fetchViaProxy } from '../lib/outboundProxy'
 import { emailService } from './emailService'
 import { permissionService } from './permissionService'
 
@@ -36,6 +37,17 @@ export interface GoogleProfile {
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v3/userinfo'
+const GOOGLE_FETCH_TIMEOUT_MS = 15_000
+
+/** 国内服务器直连 Google 不通：BRIAR_GOOGLE_PROXY 优先，其次复用 BRIAR_MEDIA_OUTBOUND_PROXY */
+const googleProxyUri = () =>
+	process.env.BRIAR_GOOGLE_PROXY?.trim() || process.env.BRIAR_MEDIA_OUTBOUND_PROXY?.trim() || ''
+
+const fetchGoogle = (url: string, init: RequestInit) =>
+	fetchViaProxy(googleProxyUri(), url, {
+		...init,
+		signal: AbortSignal.timeout(GOOGLE_FETCH_TIMEOUT_MS),
+	})
 
 /** 仅允许站内相对路径回跳，防止开放重定向 */
 export const sanitizeLoginRedirect = (
@@ -288,7 +300,7 @@ export const authService = {
 			grant_type: 'authorization_code',
 		})
 
-		const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
+		const tokenRes = await fetchGoogle(GOOGLE_TOKEN_URL, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 			body,
@@ -303,7 +315,7 @@ export const authService = {
 			throw new Error('GOOGLE_TOKEN_FAILED')
 		}
 
-		const infoRes = await fetch(GOOGLE_USERINFO_URL, {
+		const infoRes = await fetchGoogle(GOOGLE_USERINFO_URL, {
 			headers: { Authorization: `Bearer ${tokenJson.access_token}` },
 		})
 		if (!infoRes.ok) {
