@@ -357,6 +357,15 @@ CREATE TABLE IF NOT EXISTS market_watchlist (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='行情自选股';
 
+-- 头部沪深300ETF规模占比：官方完整月份内的每日原始快照，金额统一为元
+CREATE TABLE IF NOT EXISTS market_csi300_etf_snapshots (
+  trade_date DATE PRIMARY KEY COMMENT '共同交易日',
+  index_close DECIMAL(16,4) NOT NULL COMMENT '沪深300收盘点位',
+  float_market_cap DECIMAL(20,2) NOT NULL COMMENT '沪深300流通市值（元）',
+  funds JSON NOT NULL COMMENT '四只样本ETF：[{code, shares, unitNav}]，份额为份、单位净值非累计净值',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='头部沪深300ETF规模占比每日快照';
+
 -- ============================================================
 -- 历史增量守卫（存量库修补；全新库执行均为 no-op）
 -- 权限/角色种子以基线段为准（幂等，每次部署自动补全），此处不再重复

@@ -2,6 +2,7 @@ import type {
 	ApiResponse,
 	ChartPeriod,
 	ChartTarget,
+	Csi300EtfScaleResponse,
 	FearGreedBatchResponse,
 	FearGreedBoardResponse,
 	MarketChartResponse,
@@ -24,6 +25,15 @@ export const getMarketOverview = async () => {
 	const response = await apiClient.get<ApiResponse<MarketOverviewResponse>>('/markets/overview', {
 		timeout: 20_000,
 	})
+	return response.data
+}
+
+/** 四只头部沪深300ETF规模占比：官方完整月份的每日快照 */
+export const getCsi300EtfScale = async () => {
+	const response = await apiClient.get<ApiResponse<Csi300EtfScaleResponse>>(
+		'/markets/csi300-etf-scale',
+		{ timeout: 20_000 },
+	)
 	return response.data
 }
 

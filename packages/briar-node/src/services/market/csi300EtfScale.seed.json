@@ -1,0 +1,6512 @@
+{
+	"generatedAt": 1793066558973,
+	"snapshots": [
+		{
+			"date": "2025-10-09",
+			"indexClose": 4709.48,
+			"floatMarketCap": 51280466000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89960887700,
+					"unitNav": 4.8136
+				},
+				{
+					"code": "510330",
+					"shares": 47396949800,
+					"unitNav": 4.8832
+				},
+				{
+					"code": "159919",
+					"shares": 40823316600,
+					"unitNav": 4.966
+				},
+				{
+					"code": "510310",
+					"shares": 66797744000,
+					"unitNav": 4.6353
+				}
+			]
+		},
+		{
+			"date": "2025-10-10",
+			"indexClose": 4616.83,
+			"floatMarketCap": 50559317000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90294787700,
+					"unitNav": 4.7191
+				},
+				{
+					"code": "510330",
+					"shares": 47398749800,
+					"unitNav": 4.7874
+				},
+				{
+					"code": "159919",
+					"shares": 40825116600,
+					"unitNav": 4.8684
+				},
+				{
+					"code": "510310",
+					"shares": 66741044000,
+					"unitNav": 4.5445
+				}
+			]
+		},
+		{
+			"date": "2025-10-13",
+			"indexClose": 4593.98,
+			"floatMarketCap": 50311452000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90188587700,
+					"unitNav": 4.6959
+				},
+				{
+					"code": "510330",
+					"shares": 47429349800,
+					"unitNav": 4.7639
+				},
+				{
+					"code": "159919",
+					"shares": 40880916600,
+					"unitNav": 4.8444
+				},
+				{
+					"code": "510310",
+					"shares": 66981344000,
+					"unitNav": 4.5224
+				}
+			]
+		},
+		{
+			"date": "2025-10-14",
+			"indexClose": 4539.06,
+			"floatMarketCap": 50059830000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89700787700,
+					"unitNav": 4.6396
+				},
+				{
+					"code": "510330",
+					"shares": 47413149800,
+					"unitNav": 4.7071
+				},
+				{
+					"code": "159919",
+					"shares": 40826016600,
+					"unitNav": 4.7864
+				},
+				{
+					"code": "510310",
+					"shares": 66954344000,
+					"unitNav": 4.4684
+				}
+			]
+		},
+		{
+			"date": "2025-10-15",
+			"indexClose": 4606.29,
+			"floatMarketCap": 50720865000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89974387700,
+					"unitNav": 4.7092
+				},
+				{
+					"code": "510330",
+					"shares": 47419449800,
+					"unitNav": 4.7777
+				},
+				{
+					"code": "159919",
+					"shares": 40896216600,
+					"unitNav": 4.8582
+				},
+				{
+					"code": "510310",
+					"shares": 66996644000,
+					"unitNav": 4.5352
+				}
+			]
+		},
+		{
+			"date": "2025-10-16",
+			"indexClose": 4618.42,
+			"floatMarketCap": 51031464000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89705287700,
+					"unitNav": 4.7228
+				},
+				{
+					"code": "510330",
+					"shares": 47397849800,
+					"unitNav": 4.7914
+				},
+				{
+					"code": "159919",
+					"shares": 40862916600,
+					"unitNav": 4.8722
+				},
+				{
+					"code": "510310",
+					"shares": 67009244000,
+					"unitNav": 4.5484
+				}
+			]
+		},
+		{
+			"date": "2025-10-17",
+			"indexClose": 4514.24,
+			"floatMarketCap": 50078899000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89747587700,
+					"unitNav": 4.6173
+				},
+				{
+					"code": "510330",
+					"shares": 47404149800,
+					"unitNav": 4.6843
+				},
+				{
+					"code": "159919",
+					"shares": 40872816600,
+					"unitNav": 4.7633
+				},
+				{
+					"code": "510310",
+					"shares": 67072244000,
+					"unitNav": 4.447
+				}
+			]
+		},
+		{
+			"date": "2025-10-20",
+			"indexClose": 4538.22,
+			"floatMarketCap": 50384355000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89954587700,
+					"unitNav": 4.6422
+				},
+				{
+					"code": "510330",
+					"shares": 47417649800,
+					"unitNav": 4.7094
+				},
+				{
+					"code": "159919",
+					"shares": 40898016600,
+					"unitNav": 4.7887
+				},
+				{
+					"code": "510310",
+					"shares": 67108244000,
+					"unitNav": 4.4703
+				}
+			]
+		},
+		{
+			"date": "2025-10-21",
+			"indexClose": 4607.87,
+			"floatMarketCap": 51104075000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89793487700,
+					"unitNav": 4.7135
+				},
+				{
+					"code": "510330",
+					"shares": 47409549800,
+					"unitNav": 4.7815
+				},
+				{
+					"code": "159919",
+					"shares": 40806216600,
+					"unitNav": 4.8624
+				},
+				{
+					"code": "510310",
+					"shares": 67047944000,
+					"unitNav": 4.5389
+				}
+			]
+		},
+		{
+			"date": "2025-10-22",
+			"indexClose": 4592.57,
+			"floatMarketCap": 51104485000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89631487700,
+					"unitNav": 4.6981
+				},
+				{
+					"code": "510330",
+					"shares": 47407749800,
+					"unitNav": 4.7657
+				},
+				{
+					"code": "159919",
+					"shares": 40763916600,
+					"unitNav": 4.8464
+				},
+				{
+					"code": "510310",
+					"shares": 66979544000,
+					"unitNav": 4.524
+				}
+			]
+		},
+		{
+			"date": "2025-10-23",
+			"indexClose": 4606.35,
+			"floatMarketCap": 51288469000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89440687700,
+					"unitNav": 4.712
+				},
+				{
+					"code": "510330",
+					"shares": 47409549800,
+					"unitNav": 4.78
+				},
+				{
+					"code": "159919",
+					"shares": 40734216600,
+					"unitNav": 4.8607
+				},
+				{
+					"code": "510310",
+					"shares": 66920144000,
+					"unitNav": 4.5376
+				}
+			]
+		},
+		{
+			"date": "2025-10-24",
+			"indexClose": 4660.68,
+			"floatMarketCap": 51725074000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89275987700,
+					"unitNav": 4.7714
+				},
+				{
+					"code": "510330",
+					"shares": 47418549800,
+					"unitNav": 4.8401
+				},
+				{
+					"code": "159919",
+					"shares": 40633416600,
+					"unitNav": 4.9217
+				},
+				{
+					"code": "510310",
+					"shares": 66869744000,
+					"unitNav": 4.5947
+				}
+			]
+		},
+		{
+			"date": "2025-10-27",
+			"indexClose": 4716.02,
+			"floatMarketCap": 52371166000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89155387700,
+					"unitNav": 4.828
+				},
+				{
+					"code": "510330",
+					"shares": 47451849800,
+					"unitNav": 4.8977
+				},
+				{
+					"code": "159919",
+					"shares": 40580316600,
+					"unitNav": 4.9803
+				},
+				{
+					"code": "510310",
+					"shares": 66835544000,
+					"unitNav": 4.6494
+				}
+			]
+		},
+		{
+			"date": "2025-10-28",
+			"indexClose": 4691.97,
+			"floatMarketCap": 52211965000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89464087700,
+					"unitNav": 4.8043
+				},
+				{
+					"code": "510330",
+					"shares": 47466249800,
+					"unitNav": 4.8735
+				},
+				{
+					"code": "159919",
+					"shares": 40640616600,
+					"unitNav": 4.9558
+				},
+				{
+					"code": "510310",
+					"shares": 66857144000,
+					"unitNav": 4.6264
+				}
+			]
+		},
+		{
+			"date": "2025-10-29",
+			"indexClose": 4747.84,
+			"floatMarketCap": 52659415000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89587387700,
+					"unitNav": 4.8614
+				},
+				{
+					"code": "510330",
+					"shares": 47480649800,
+					"unitNav": 4.9316
+				},
+				{
+					"code": "159919",
+					"shares": 40646916600,
+					"unitNav": 5.0147
+				},
+				{
+					"code": "510310",
+					"shares": 66884144000,
+					"unitNav": 4.6816
+				}
+			]
+		},
+		{
+			"date": "2025-10-30",
+			"indexClose": 4709.91,
+			"floatMarketCap": 52312028000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89444287700,
+					"unitNav": 4.8226
+				},
+				{
+					"code": "510330",
+					"shares": 47469849800,
+					"unitNav": 4.8924
+				},
+				{
+					"code": "159919",
+					"shares": 40612716600,
+					"unitNav": 4.975
+				},
+				{
+					"code": "510310",
+					"shares": 66851744000,
+					"unitNav": 4.6443
+				}
+			]
+		},
+		{
+			"date": "2025-10-31",
+			"indexClose": 4640.67,
+			"floatMarketCap": 51561663000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90507187700,
+					"unitNav": 4.7519
+				},
+				{
+					"code": "510330",
+					"shares": 47507649800,
+					"unitNav": 4.8205
+				},
+				{
+					"code": "159919",
+					"shares": 40754916600,
+					"unitNav": 4.9021
+				},
+				{
+					"code": "510310",
+					"shares": 66971444000,
+					"unitNav": 4.5761
+				}
+			]
+		},
+		{
+			"date": "2025-11-03",
+			"indexClose": 4653.4,
+			"floatMarketCap": 51827800000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90368587700,
+					"unitNav": 4.7649
+				},
+				{
+					"code": "510330",
+					"shares": 47515749800,
+					"unitNav": 4.8338
+				},
+				{
+					"code": "159919",
+					"shares": 40780116600,
+					"unitNav": 4.9153
+				},
+				{
+					"code": "510310",
+					"shares": 66940844000,
+					"unitNav": 4.5889
+				}
+			]
+		},
+		{
+			"date": "2025-11-04",
+			"indexClose": 4618.7,
+			"floatMarketCap": 51619357000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89707087700,
+					"unitNav": 4.7292
+				},
+				{
+					"code": "510330",
+					"shares": 47450049800,
+					"unitNav": 4.7977
+				},
+				{
+					"code": "159919",
+					"shares": 40772016600,
+					"unitNav": 4.8783
+				},
+				{
+					"code": "510310",
+					"shares": 66732044000,
+					"unitNav": 4.5548
+				}
+			]
+		},
+		{
+			"date": "2025-11-05",
+			"indexClose": 4627.26,
+			"floatMarketCap": 51688750000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89555887700,
+					"unitNav": 4.7382
+				},
+				{
+					"code": "510330",
+					"shares": 47459949800,
+					"unitNav": 4.8068
+				},
+				{
+					"code": "159919",
+					"shares": 40781916600,
+					"unitNav": 4.8878
+				},
+				{
+					"code": "510310",
+					"shares": 66683444000,
+					"unitNav": 4.5634
+				}
+			]
+		},
+		{
+			"date": "2025-11-06",
+			"indexClose": 4693.4,
+			"floatMarketCap": 52287532000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89365987700,
+					"unitNav": 4.8061
+				},
+				{
+					"code": "510330",
+					"shares": 47421249800,
+					"unitNav": 4.8755
+				},
+				{
+					"code": "159919",
+					"shares": 40761216600,
+					"unitNav": 4.9576
+				},
+				{
+					"code": "510310",
+					"shares": 66680744000,
+					"unitNav": 4.6286
+				}
+			]
+		},
+		{
+			"date": "2025-11-07",
+			"indexClose": 4678.79,
+			"floatMarketCap": 52117774000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89201287700,
+					"unitNav": 4.7912
+				},
+				{
+					"code": "510330",
+					"shares": 47387949800,
+					"unitNav": 4.8605
+				},
+				{
+					"code": "159919",
+					"shares": 40712616600,
+					"unitNav": 4.9424
+				},
+				{
+					"code": "510310",
+					"shares": 66665444000,
+					"unitNav": 4.6145
+				}
+			]
+		},
+		{
+			"date": "2025-11-10",
+			"indexClose": 4695.05,
+			"floatMarketCap": 52372155000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89202187700,
+					"unitNav": 4.8082
+				},
+				{
+					"code": "510330",
+					"shares": 47374449800,
+					"unitNav": 4.8779
+				},
+				{
+					"code": "159919",
+					"shares": 40682916600,
+					"unitNav": 4.9599
+				},
+				{
+					"code": "510310",
+					"shares": 66653744000,
+					"unitNav": 4.6309
+				}
+			]
+		},
+		{
+			"date": "2025-11-11",
+			"indexClose": 4652.17,
+			"floatMarketCap": 51988814000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89205787700,
+					"unitNav": 4.7644
+				},
+				{
+					"code": "510330",
+					"shares": 47360949800,
+					"unitNav": 4.8333
+				},
+				{
+					"code": "159919",
+					"shares": 40639716600,
+					"unitNav": 4.9149
+				},
+				{
+					"code": "510310",
+					"shares": 66617744000,
+					"unitNav": 4.5887
+				}
+			]
+		},
+		{
+			"date": "2025-11-12",
+			"indexClose": 4645.91,
+			"floatMarketCap": 52083105000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89221987700,
+					"unitNav": 4.7583
+				},
+				{
+					"code": "510330",
+					"shares": 47340249800,
+					"unitNav": 4.8271
+				},
+				{
+					"code": "159919",
+					"shares": 40582116600,
+					"unitNav": 4.9086
+				},
+				{
+					"code": "510310",
+					"shares": 66568244000,
+					"unitNav": 4.5828
+				}
+			]
+		},
+		{
+			"date": "2025-11-13",
+			"indexClose": 4702.07,
+			"floatMarketCap": 52506224000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89137387700,
+					"unitNav": 4.8156
+				},
+				{
+					"code": "510330",
+					"shares": 47310549800,
+					"unitNav": 4.8854
+				},
+				{
+					"code": "159919",
+					"shares": 40577616600,
+					"unitNav": 4.9676
+				},
+				{
+					"code": "510310",
+					"shares": 66483644000,
+					"unitNav": 4.6382
+				}
+			]
+		},
+		{
+			"date": "2025-11-14",
+			"indexClose": 4628.14,
+			"floatMarketCap": 51803054000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89258887700,
+					"unitNav": 4.7402
+				},
+				{
+					"code": "510330",
+					"shares": 47304249800,
+					"unitNav": 4.8088
+				},
+				{
+					"code": "159919",
+					"shares": 40572216600,
+					"unitNav": 4.8901
+				},
+				{
+					"code": "510310",
+					"shares": 66446744000,
+					"unitNav": 4.5654
+				}
+			]
+		},
+		{
+			"date": "2025-11-17",
+			"indexClose": 4598.05,
+			"floatMarketCap": 51452189000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89610787700,
+					"unitNav": 4.7091
+				},
+				{
+					"code": "510330",
+					"shares": 47312349800,
+					"unitNav": 4.7774
+				},
+				{
+					"code": "159919",
+					"shares": 40567716600,
+					"unitNav": 4.8579
+				},
+				{
+					"code": "510310",
+					"shares": 66436844000,
+					"unitNav": 4.5356
+				}
+			]
+		},
+		{
+			"date": "2025-11-18",
+			"indexClose": 4568.19,
+			"floatMarketCap": 51136733000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89725987700,
+					"unitNav": 4.6795
+				},
+				{
+					"code": "510330",
+					"shares": 47301549800,
+					"unitNav": 4.7472
+				},
+				{
+					"code": "159919",
+					"shares": 40559616600,
+					"unitNav": 4.8271
+				},
+				{
+					"code": "510310",
+					"shares": 66453044000,
+					"unitNav": 4.507
+				}
+			]
+		},
+		{
+			"date": "2025-11-19",
+			"indexClose": 4588.29,
+			"floatMarketCap": 51480122000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89469487700,
+					"unitNav": 4.7
+				},
+				{
+					"code": "510330",
+					"shares": 47278149800,
+					"unitNav": 4.7681
+				},
+				{
+					"code": "159919",
+					"shares": 40508316600,
+					"unitNav": 4.8485
+				},
+				{
+					"code": "510310",
+					"shares": 66426044000,
+					"unitNav": 4.5269
+				}
+			]
+		},
+		{
+			"date": "2025-11-20",
+			"indexClose": 4564.95,
+			"floatMarketCap": 51296591000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89383087700,
+					"unitNav": 4.6768
+				},
+				{
+					"code": "510330",
+					"shares": 47234049800,
+					"unitNav": 4.7445
+				},
+				{
+					"code": "159919",
+					"shares": 40473216600,
+					"unitNav": 4.8245
+				},
+				{
+					"code": "510310",
+					"shares": 66363044000,
+					"unitNav": 4.5046
+				}
+			]
+		},
+		{
+			"date": "2025-11-21",
+			"indexClose": 4453.61,
+			"floatMarketCap": 50219840000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90225487700,
+					"unitNav": 4.5631
+				},
+				{
+					"code": "510330",
+					"shares": 47297049800,
+					"unitNav": 4.6291
+				},
+				{
+					"code": "159919",
+					"shares": 40642416600,
+					"unitNav": 4.7072
+				},
+				{
+					"code": "510310",
+					"shares": 66365744000,
+					"unitNav": 4.3715
+				}
+			]
+		},
+		{
+			"date": "2025-11-24",
+			"indexClose": 4448.05,
+			"floatMarketCap": 50016235000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 91029187700,
+					"unitNav": 4.5576
+				},
+				{
+					"code": "510330",
+					"shares": 47369949800,
+					"unitNav": 4.6235
+				},
+				{
+					"code": "159919",
+					"shares": 40799916600,
+					"unitNav": 4.7016
+				},
+				{
+					"code": "510310",
+					"shares": 66480044000,
+					"unitNav": 4.3662
+				}
+			]
+		},
+		{
+			"date": "2025-11-25",
+			"indexClose": 4490.41,
+			"floatMarketCap": 50424136000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90810487700,
+					"unitNav": 4.6009
+				},
+				{
+					"code": "510330",
+					"shares": 47368149800,
+					"unitNav": 4.6674
+				},
+				{
+					"code": "159919",
+					"shares": 40722516600,
+					"unitNav": 4.7461
+				},
+				{
+					"code": "510310",
+					"shares": 66440444000,
+					"unitNav": 4.4079
+				}
+			]
+		},
+		{
+			"date": "2025-11-26",
+			"indexClose": 4517.63,
+			"floatMarketCap": 50505272000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90269587700,
+					"unitNav": 4.6288
+				},
+				{
+					"code": "510330",
+					"shares": 47399649800,
+					"unitNav": 4.6956
+				},
+				{
+					"code": "159919",
+					"shares": 40715316600,
+					"unitNav": 4.7748
+				},
+				{
+					"code": "510310",
+					"shares": 66364844000,
+					"unitNav": 4.4346
+				}
+			]
+		},
+		{
+			"date": "2025-11-27",
+			"indexClose": 4515.4,
+			"floatMarketCap": 50614733000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90182287700,
+					"unitNav": 4.6266
+				},
+				{
+					"code": "510330",
+					"shares": 47407749800,
+					"unitNav": 4.6933
+				},
+				{
+					"code": "159919",
+					"shares": 40712616600,
+					"unitNav": 4.7725
+				},
+				{
+					"code": "510310",
+					"shares": 66336044000,
+					"unitNav": 4.4325
+				}
+			]
+		},
+		{
+			"date": "2025-11-28",
+			"indexClose": 4526.66,
+			"floatMarketCap": 50640263000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90122887700,
+					"unitNav": 4.6382
+				},
+				{
+					"code": "510330",
+					"shares": 47408649800,
+					"unitNav": 4.705
+				},
+				{
+					"code": "159919",
+					"shares": 40716216600,
+					"unitNav": 4.7844
+				},
+				{
+					"code": "510310",
+					"shares": 66352244000,
+					"unitNav": 4.4437
+				}
+			]
+		},
+		{
+			"date": "2025-12-01",
+			"indexClose": 4576.49,
+			"floatMarketCap": 51112899000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89819587700,
+					"unitNav": 4.689
+				},
+				{
+					"code": "510330",
+					"shares": 47408649800,
+					"unitNav": 4.7567
+				},
+				{
+					"code": "159919",
+					"shares": 40677516600,
+					"unitNav": 4.8368
+				},
+				{
+					"code": "510310",
+					"shares": 66312644000,
+					"unitNav": 4.4926
+				}
+			]
+		},
+		{
+			"date": "2025-12-02",
+			"indexClose": 4554.34,
+			"floatMarketCap": 50962210000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89761087700,
+					"unitNav": 4.6663
+				},
+				{
+					"code": "510330",
+					"shares": 47433849800,
+					"unitNav": 4.7337
+				},
+				{
+					"code": "159919",
+					"shares": 40606416600,
+					"unitNav": 4.8134
+				},
+				{
+					"code": "510310",
+					"shares": 66297344000,
+					"unitNav": 4.4709
+				}
+			]
+		},
+		{
+			"date": "2025-12-03",
+			"indexClose": 4531.05,
+			"floatMarketCap": 50708040000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89817787700,
+					"unitNav": 4.6425
+				},
+				{
+					"code": "510330",
+					"shares": 47452749800,
+					"unitNav": 4.7095
+				},
+				{
+					"code": "159919",
+					"shares": 40601016600,
+					"unitNav": 4.789
+				},
+				{
+					"code": "510310",
+					"shares": 66290144000,
+					"unitNav": 4.448
+				}
+			]
+		},
+		{
+			"date": "2025-12-04",
+			"indexClose": 4546.57,
+			"floatMarketCap": 50793515000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89906887700,
+					"unitNav": 4.6584
+				},
+				{
+					"code": "510330",
+					"shares": 47475249800,
+					"unitNav": 4.7256
+				},
+				{
+					"code": "159919",
+					"shares": 40612716600,
+					"unitNav": 4.8053
+				},
+				{
+					"code": "510310",
+					"shares": 66321644000,
+					"unitNav": 4.4632
+				}
+			]
+		},
+		{
+			"date": "2025-12-05",
+			"indexClose": 4584.54,
+			"floatMarketCap": 51053729000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90042787700,
+					"unitNav": 4.6974
+				},
+				{
+					"code": "510330",
+					"shares": 47486049800,
+					"unitNav": 4.7652
+				},
+				{
+					"code": "159919",
+					"shares": 40639716600,
+					"unitNav": 4.8457
+				},
+				{
+					"code": "510310",
+					"shares": 66372944000,
+					"unitNav": 4.5006
+				}
+			]
+		},
+		{
+			"date": "2025-12-08",
+			"indexClose": 4621.76,
+			"floatMarketCap": 51342601000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90237187700,
+					"unitNav": 4.7359
+				},
+				{
+					"code": "510330",
+					"shares": 47498649800,
+					"unitNav": 4.804
+				},
+				{
+					"code": "159919",
+					"shares": 40666716600,
+					"unitNav": 4.8116
+				},
+				{
+					"code": "510310",
+					"shares": 66416144000,
+					"unitNav": 4.5372
+				}
+			]
+		},
+		{
+			"date": "2025-12-09",
+			"indexClose": 4598.22,
+			"floatMarketCap": 51185444000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89907787700,
+					"unitNav": 4.7122
+				},
+				{
+					"code": "510330",
+					"shares": 47482449800,
+					"unitNav": 4.7798
+				},
+				{
+					"code": "159919",
+					"shares": 40636116600,
+					"unitNav": 4.7873
+				},
+				{
+					"code": "510310",
+					"shares": 66331544000,
+					"unitNav": 4.5143
+				}
+			]
+		},
+		{
+			"date": "2025-12-10",
+			"indexClose": 4591.83,
+			"floatMarketCap": 50975159000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89701687700,
+					"unitNav": 4.7057
+				},
+				{
+					"code": "510330",
+					"shares": 47471649800,
+					"unitNav": 4.7733
+				},
+				{
+					"code": "159919",
+					"shares": 40565016600,
+					"unitNav": 4.7809
+				},
+				{
+					"code": "510310",
+					"shares": 66280244000,
+					"unitNav": 4.5074
+				}
+			]
+		},
+		{
+			"date": "2025-12-11",
+			"indexClose": 4552.19,
+			"floatMarketCap": 50657748000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89500987700,
+					"unitNav": 4.6654
+				},
+				{
+					"code": "510330",
+					"shares": 47472549800,
+					"unitNav": 4.7326
+				},
+				{
+					"code": "159919",
+					"shares": 40561416600,
+					"unitNav": 4.7401
+				},
+				{
+					"code": "510310",
+					"shares": 66278444000,
+					"unitNav": 4.4693
+				}
+			]
+		},
+		{
+			"date": "2025-12-12",
+			"indexClose": 4580.95,
+			"floatMarketCap": 50765489000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90008587700,
+					"unitNav": 4.6959
+				},
+				{
+					"code": "510330",
+					"shares": 47530149800,
+					"unitNav": 4.7627
+				},
+				{
+					"code": "159919",
+					"shares": 40643316600,
+					"unitNav": 4.7713
+				},
+				{
+					"code": "510310",
+					"shares": 66362144000,
+					"unitNav": 4.4978
+				}
+			]
+		},
+		{
+			"date": "2025-12-15",
+			"indexClose": 4552.06,
+			"floatMarketCap": 50906100000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89779987700,
+					"unitNav": 4.6685
+				},
+				{
+					"code": "510330",
+					"shares": 47530149800,
+					"unitNav": 4.7347
+				},
+				{
+					"code": "159919",
+					"shares": 40636116600,
+					"unitNav": 4.7427
+				},
+				{
+					"code": "510310",
+					"shares": 66342344000,
+					"unitNav": 4.4709
+				}
+			]
+		},
+		{
+			"date": "2025-12-16",
+			"indexClose": 4497.56,
+			"floatMarketCap": 50425579000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89722387700,
+					"unitNav": 4.6127
+				},
+				{
+					"code": "510330",
+					"shares": 47536449800,
+					"unitNav": 4.678
+				},
+				{
+					"code": "159919",
+					"shares": 40691916600,
+					"unitNav": 4.6859
+				},
+				{
+					"code": "510310",
+					"shares": 66351344000,
+					"unitNav": 4.4175
+				}
+			]
+		},
+		{
+			"date": "2025-12-17",
+			"indexClose": 4579.88,
+			"floatMarketCap": 51187880000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90160687700,
+					"unitNav": 4.6977
+				},
+				{
+					"code": "510330",
+					"shares": 47568849800,
+					"unitNav": 4.7645
+				},
+				{
+					"code": "159919",
+					"shares": 40812516600,
+					"unitNav": 4.7724
+				},
+				{
+					"code": "510310",
+					"shares": 66426044000,
+					"unitNav": 4.4991
+				}
+			]
+		},
+		{
+			"date": "2025-12-18",
+			"indexClose": 4552.79,
+			"floatMarketCap": 51100222000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90248887700,
+					"unitNav": 4.6711
+				},
+				{
+					"code": "510330",
+					"shares": 47575149800,
+					"unitNav": 4.7373
+				},
+				{
+					"code": "159919",
+					"shares": 40830516600,
+					"unitNav": 4.7452
+				},
+				{
+					"code": "510310",
+					"shares": 66426944000,
+					"unitNav": 4.4736
+				}
+			]
+		},
+		{
+			"date": "2025-12-19",
+			"indexClose": 4568.18,
+			"floatMarketCap": 51153825000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 90034687700,
+					"unitNav": 4.6896
+				},
+				{
+					"code": "510330",
+					"shares": 47569749800,
+					"unitNav": 4.7562
+				},
+				{
+					"code": "159919",
+					"shares": 40840416600,
+					"unitNav": 4.7641
+				},
+				{
+					"code": "510310",
+					"shares": 66398144000,
+					"unitNav": 4.4914
+				}
+			]
+		},
+		{
+			"date": "2025-12-22",
+			"indexClose": 4611.62,
+			"floatMarketCap": 51563509000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89542387700,
+					"unitNav": 4.7338
+				},
+				{
+					"code": "510330",
+					"shares": 47468949800,
+					"unitNav": 4.8013
+				},
+				{
+					"code": "159919",
+					"shares": 40703616600,
+					"unitNav": 4.8093
+				},
+				{
+					"code": "510310",
+					"shares": 66207344000,
+					"unitNav": 4.534
+				}
+			]
+		},
+		{
+			"date": "2025-12-23",
+			"indexClose": 4620.73,
+			"floatMarketCap": 51719993000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89040187700,
+					"unitNav": 4.7432
+				},
+				{
+					"code": "510330",
+					"shares": 47423049800,
+					"unitNav": 4.8109
+				},
+				{
+					"code": "159919",
+					"shares": 40556016600,
+					"unitNav": 4.8189
+				},
+				{
+					"code": "510310",
+					"shares": 66106544000,
+					"unitNav": 4.5432
+				}
+			]
+		},
+		{
+			"date": "2025-12-24",
+			"indexClose": 4634.06,
+			"floatMarketCap": 51816715000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89140987700,
+					"unitNav": 4.757
+				},
+				{
+					"code": "510330",
+					"shares": 47418549800,
+					"unitNav": 4.8249
+				},
+				{
+					"code": "159919",
+					"shares": 40608216600,
+					"unitNav": 4.8329
+				},
+				{
+					"code": "510310",
+					"shares": 66130844000,
+					"unitNav": 4.5565
+				}
+			]
+		},
+		{
+			"date": "2025-12-25",
+			"indexClose": 4642.54,
+			"floatMarketCap": 51908182000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89151787700,
+					"unitNav": 4.7666
+				},
+				{
+					"code": "510330",
+					"shares": 47436549800,
+					"unitNav": 4.8346
+				},
+				{
+					"code": "159919",
+					"shares": 40618116600,
+					"unitNav": 4.8426
+				},
+				{
+					"code": "510310",
+					"shares": 66116444000,
+					"unitNav": 4.5657
+				}
+			]
+		},
+		{
+			"date": "2025-12-26",
+			"indexClose": 4657.24,
+			"floatMarketCap": 51929271000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89312887700,
+					"unitNav": 4.7817
+				},
+				{
+					"code": "510330",
+					"shares": 47482449800,
+					"unitNav": 4.85
+				},
+				{
+					"code": "159919",
+					"shares": 40694616600,
+					"unitNav": 4.8579
+				},
+				{
+					"code": "510310",
+					"shares": 66153344000,
+					"unitNav": 4.5802
+				}
+			]
+		},
+		{
+			"date": "2025-12-29",
+			"indexClose": 4639.37,
+			"floatMarketCap": 51915296000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89022187700,
+					"unitNav": 4.7632
+				},
+				{
+					"code": "510330",
+					"shares": 47449149800,
+					"unitNav": 4.8313
+				},
+				{
+					"code": "159919",
+					"shares": 40638816600,
+					"unitNav": 4.8391
+				},
+				{
+					"code": "510310",
+					"shares": 66018344000,
+					"unitNav": 4.5626
+				}
+			]
+		},
+		{
+			"date": "2025-12-30",
+			"indexClose": 4651.28,
+			"floatMarketCap": 52023790000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89028487700,
+					"unitNav": 4.7755
+				},
+				{
+					"code": "510330",
+					"shares": 47459949800,
+					"unitNav": 4.8437
+				},
+				{
+					"code": "159919",
+					"shares": 40769316600,
+					"unitNav": 4.8516
+				},
+				{
+					"code": "510310",
+					"shares": 66002144000,
+					"unitNav": 4.5744
+				}
+			]
+		},
+		{
+			"date": "2025-12-31",
+			"indexClose": 4629.94,
+			"floatMarketCap": 51926430000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 88829587700,
+					"unitNav": 4.7536
+				},
+				{
+					"code": "510330",
+					"shares": 47424849800,
+					"unitNav": 4.8214
+				},
+				{
+					"code": "159919",
+					"shares": 40818816600,
+					"unitNav": 4.8292
+				},
+				{
+					"code": "510310",
+					"shares": 65853644000,
+					"unitNav": 4.5533
+				}
+			]
+		},
+		{
+			"date": "2026-01-05",
+			"indexClose": 4717.75,
+			"floatMarketCap": 52640175000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89058187700,
+					"unitNav": 4.8437
+				},
+				{
+					"code": "510330",
+					"shares": 47459049800,
+					"unitNav": 4.9129
+				},
+				{
+					"code": "159919",
+					"shares": 40874616600,
+					"unitNav": 4.9208
+				},
+				{
+					"code": "510310",
+					"shares": 65969744000,
+					"unitNav": 4.6398
+				}
+			]
+		},
+		{
+			"date": "2026-01-06",
+			"indexClose": 4790.69,
+			"floatMarketCap": 53465568000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89344387700,
+					"unitNav": 4.9185
+				},
+				{
+					"code": "510330",
+					"shares": 47467149800,
+					"unitNav": 4.9888
+				},
+				{
+					"code": "159919",
+					"shares": 40938516600,
+					"unitNav": 4.9968
+				},
+				{
+					"code": "510310",
+					"shares": 65983244000,
+					"unitNav": 4.7115
+				}
+			]
+		},
+		{
+			"date": "2026-01-07",
+			"indexClose": 4776.67,
+			"floatMarketCap": 53246680000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89029387700,
+					"unitNav": 4.904
+				},
+				{
+					"code": "510330",
+					"shares": 47406849800,
+					"unitNav": 4.9742
+				},
+				{
+					"code": "159919",
+					"shares": 40876416600,
+					"unitNav": 4.9822
+				},
+				{
+					"code": "510310",
+					"shares": 65926544000,
+					"unitNav": 4.6977
+				}
+			]
+		},
+		{
+			"date": "2026-01-08",
+			"indexClose": 4737.65,
+			"floatMarketCap": 52904121000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89142787700,
+					"unitNav": 4.864
+				},
+				{
+					"code": "510330",
+					"shares": 47441049800,
+					"unitNav": 4.9336
+				},
+				{
+					"code": "159919",
+					"shares": 40880916600,
+					"unitNav": 4.9415
+				},
+				{
+					"code": "510310",
+					"shares": 65921144000,
+					"unitNav": 4.6594
+				}
+			]
+		},
+		{
+			"date": "2026-01-09",
+			"indexClose": 4758.92,
+			"floatMarketCap": 53150114000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89509087700,
+					"unitNav": 4.8861
+				},
+				{
+					"code": "510330",
+					"shares": 47475249800,
+					"unitNav": 4.956
+				},
+				{
+					"code": "159919",
+					"shares": 40925916600,
+					"unitNav": 4.964
+				},
+				{
+					"code": "510310",
+					"shares": 65934644000,
+					"unitNav": 4.6807
+				}
+			]
+		},
+		{
+			"date": "2026-01-12",
+			"indexClose": 4789.92,
+			"floatMarketCap": 53479334000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 89154487700,
+					"unitNav": 4.9182
+				},
+				{
+					"code": "510330",
+					"shares": 47424849800,
+					"unitNav": 4.9886
+				},
+				{
+					"code": "159919",
+					"shares": 40908816600,
+					"unitNav": 4.9965
+				},
+				{
+					"code": "510310",
+					"shares": 65813144000,
+					"unitNav": 4.7116
+				}
+			]
+		},
+		{
+			"date": "2026-01-13",
+			"indexClose": 4761.03,
+			"floatMarketCap": 53265622000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 88819687700,
+					"unitNav": 4.8887
+				},
+				{
+					"code": "510330",
+					"shares": 47387049800,
+					"unitNav": 4.9586
+				},
+				{
+					"code": "159919",
+					"shares": 40905216600,
+					"unitNav": 4.9664
+				},
+				{
+					"code": "510310",
+					"shares": 65710544000,
+					"unitNav": 4.6832
+				}
+			]
+		},
+		{
+			"date": "2026-01-14",
+			"indexClose": 4741.93,
+			"floatMarketCap": 52920223000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 88242787700,
+					"unitNav": 4.8699
+				},
+				{
+					"code": "510330",
+					"shares": 47266449800,
+					"unitNav": 4.9396
+				},
+				{
+					"code": "159919",
+					"shares": 40830516600,
+					"unitNav": 4.9474
+				},
+				{
+					"code": "510310",
+					"shares": 65505344000,
+					"unitNav": 4.6653
+				}
+			]
+		},
+		{
+			"date": "2026-01-15",
+			"indexClose": 4751.43,
+			"floatMarketCap": 52859604000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 84100987700,
+					"unitNav": 4.8796
+				},
+				{
+					"code": "510330",
+					"shares": 46473549800,
+					"unitNav": 4.9495
+				},
+				{
+					"code": "159919",
+					"shares": 39934116600,
+					"unitNav": 4.9574
+				},
+				{
+					"code": "510310",
+					"shares": 64113944000,
+					"unitNav": 4.6747
+				}
+			]
+		},
+		{
+			"date": "2026-01-16",
+			"indexClose": 4731.87,
+			"floatMarketCap": 52565811000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 79760287700,
+					"unitNav": 4.8623
+				},
+				{
+					"code": "510330",
+					"shares": 42010449800,
+					"unitNav": 4.9318
+				},
+				{
+					"code": "159919",
+					"shares": 38584116600,
+					"unitNav": 4.9395
+				},
+				{
+					"code": "510310",
+					"shares": 62414744000,
+					"unitNav": 4.658
+				}
+			]
+		},
+		{
+			"date": "2026-01-19",
+			"indexClose": 4734.46,
+			"floatMarketCap": 52549804000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 77863087700,
+					"unitNav": 4.7418
+				},
+				{
+					"code": "510330",
+					"shares": 40457049800,
+					"unitNav": 4.9344
+				},
+				{
+					"code": "159919",
+					"shares": 36875016600,
+					"unitNav": 4.9422
+				},
+				{
+					"code": "510310",
+					"shares": 61218644000,
+					"unitNav": 4.6604
+				}
+			]
+		},
+		{
+			"date": "2026-01-20",
+			"indexClose": 4718.88,
+			"floatMarketCap": 52557168000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 75533887700,
+					"unitNav": 4.7257
+				},
+				{
+					"code": "510330",
+					"shares": 39139449800,
+					"unitNav": 4.9181
+				},
+				{
+					"code": "159919",
+					"shares": 35381916600,
+					"unitNav": 4.9258
+				},
+				{
+					"code": "510310",
+					"shares": 59718344000,
+					"unitNav": 4.5701
+				}
+			]
+		},
+		{
+			"date": "2026-01-21",
+			"indexClose": 4723.07,
+			"floatMarketCap": 52426484000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 71977987700,
+					"unitNav": 4.7302
+				},
+				{
+					"code": "510330",
+					"shares": 36203649800,
+					"unitNav": 4.9226
+				},
+				{
+					"code": "159919",
+					"shares": 32694516600,
+					"unitNav": 4.9303
+				},
+				{
+					"code": "510310",
+					"shares": 56698844000,
+					"unitNav": 4.5744
+				}
+			]
+		},
+		{
+			"date": "2026-01-22",
+			"indexClose": 4723.71,
+			"floatMarketCap": 52408367000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 68534587700,
+					"unitNav": 4.7306
+				},
+				{
+					"code": "510330",
+					"shares": 34380249800,
+					"unitNav": 4.9229
+				},
+				{
+					"code": "159919",
+					"shares": 31417416600,
+					"unitNav": 4.9309
+				},
+				{
+					"code": "510310",
+					"shares": 53355344000,
+					"unitNav": 4.5748
+				}
+			]
+		},
+		{
+			"date": "2026-01-23",
+			"indexClose": 4702.5,
+			"floatMarketCap": 52107193000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 64415287700,
+					"unitNav": 4.7109
+				},
+				{
+					"code": "510330",
+					"shares": 30572349800,
+					"unitNav": 4.9021
+				},
+				{
+					"code": "159919",
+					"shares": 29033316600,
+					"unitNav": 4.9101
+				},
+				{
+					"code": "510310",
+					"shares": 48859844000,
+					"unitNav": 4.5554
+				}
+			]
+		},
+		{
+			"date": "2026-01-26",
+			"indexClose": 4706.96,
+			"floatMarketCap": 52292862000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 60517387700,
+					"unitNav": 4.7151
+				},
+				{
+					"code": "510330",
+					"shares": 27559149800,
+					"unitNav": 4.9066
+				},
+				{
+					"code": "159919",
+					"shares": 26264916600,
+					"unitNav": 4.9145
+				},
+				{
+					"code": "510310",
+					"shares": 43849544000,
+					"unitNav": 4.5595
+				}
+			]
+		},
+		{
+			"date": "2026-01-27",
+			"indexClose": 4705.69,
+			"floatMarketCap": 52269507000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 57532987700,
+					"unitNav": 4.7136
+				},
+				{
+					"code": "510330",
+					"shares": 26060649800,
+					"unitNav": 4.9053
+				},
+				{
+					"code": "159919",
+					"shares": 25216416600,
+					"unitNav": 4.9132
+				},
+				{
+					"code": "510310",
+					"shares": 41232344000,
+					"unitNav": 4.5583
+				}
+			]
+		},
+		{
+			"date": "2026-01-28",
+			"indexClose": 4717.99,
+			"floatMarketCap": 52381055000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 51504787700,
+					"unitNav": 4.7256
+				},
+				{
+					"code": "510330",
+					"shares": 20989149800,
+					"unitNav": 4.918
+				},
+				{
+					"code": "159919",
+					"shares": 22070916600,
+					"unitNav": 4.926
+				},
+				{
+					"code": "510310",
+					"shares": 34965644000,
+					"unitNav": 4.5701
+				}
+			]
+		},
+		{
+			"date": "2026-01-29",
+			"indexClose": 4753.87,
+			"floatMarketCap": 52788459000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 49260187700,
+					"unitNav": 4.7616
+				},
+				{
+					"code": "510330",
+					"shares": 19660749800,
+					"unitNav": 4.9551
+				},
+				{
+					"code": "159919",
+					"shares": 20991816600,
+					"unitNav": 4.9634
+				},
+				{
+					"code": "510310",
+					"shares": 33000944000,
+					"unitNav": 4.6046
+				}
+			]
+		},
+		{
+			"date": "2026-01-30",
+			"indexClose": 4706.34,
+			"floatMarketCap": 52301861000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 48687787700,
+					"unitNav": 4.7141
+				},
+				{
+					"code": "510330",
+					"shares": 19430349800,
+					"unitNav": 4.9055
+				},
+				{
+					"code": "159919",
+					"shares": 20773116600,
+					"unitNav": 4.9139
+				},
+				{
+					"code": "510310",
+					"shares": 32475344000,
+					"unitNav": 4.5588
+				}
+			]
+		},
+		{
+			"date": "2026-02-02",
+			"indexClose": 4605.98,
+			"floatMarketCap": 51384230000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 47506987700,
+					"unitNav": 4.6133
+				},
+				{
+					"code": "510330",
+					"shares": 19226949800,
+					"unitNav": 4.8007
+				},
+				{
+					"code": "159919",
+					"shares": 20667816600,
+					"unitNav": 4.8089
+				},
+				{
+					"code": "510310",
+					"shares": 32368244000,
+					"unitNav": 4.4613
+				}
+			]
+		},
+		{
+			"date": "2026-02-03",
+			"indexClose": 4660.11,
+			"floatMarketCap": 51742761000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 47543887700,
+					"unitNav": 4.6674
+				},
+				{
+					"code": "510330",
+					"shares": 19350249800,
+					"unitNav": 4.857
+				},
+				{
+					"code": "159919",
+					"shares": 20722716600,
+					"unitNav": 4.8654
+				},
+				{
+					"code": "510310",
+					"shares": 32525744000,
+					"unitNav": 4.5139
+				}
+			]
+		},
+		{
+			"date": "2026-02-04",
+			"indexClose": 4698.68,
+			"floatMarketCap": 52273202000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 46987687700,
+					"unitNav": 4.7058
+				},
+				{
+					"code": "510330",
+					"shares": 19331349800,
+					"unitNav": 4.8972
+				},
+				{
+					"code": "159919",
+					"shares": 20585916600,
+					"unitNav": 4.9055
+				},
+				{
+					"code": "510310",
+					"shares": 32446544000,
+					"unitNav": 4.5511
+				}
+			]
+		},
+		{
+			"date": "2026-02-05",
+			"indexClose": 4670.42,
+			"floatMarketCap": 52067721000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 47227987700,
+					"unitNav": 4.6781
+				},
+				{
+					"code": "510330",
+					"shares": 19344849800,
+					"unitNav": 4.8683
+				},
+				{
+					"code": "159919",
+					"shares": 20559816600,
+					"unitNav": 4.8765
+				},
+				{
+					"code": "510310",
+					"shares": 32514044000,
+					"unitNav": 4.5242
+				}
+			]
+		},
+		{
+			"date": "2026-02-06",
+			"indexClose": 4643.6,
+			"floatMarketCap": 51868020000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 47461087700,
+					"unitNav": 4.6534
+				},
+				{
+					"code": "510330",
+					"shares": 19351149800,
+					"unitNav": 4.8423
+				},
+				{
+					"code": "159919",
+					"shares": 20601216600,
+					"unitNav": 4.8506
+				},
+				{
+					"code": "510310",
+					"shares": 32568944000,
+					"unitNav": 4.5002
+				}
+			]
+		},
+		{
+			"date": "2026-02-09",
+			"indexClose": 4719.06,
+			"floatMarketCap": 52528973000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 47458387700,
+					"unitNav": 4.7291
+				},
+				{
+					"code": "510330",
+					"shares": 19358349800,
+					"unitNav": 4.9213
+				},
+				{
+					"code": "159919",
+					"shares": 20592216600,
+					"unitNav": 4.9297
+				},
+				{
+					"code": "510310",
+					"shares": 32569844000,
+					"unitNav": 4.5738
+				}
+			]
+		},
+		{
+			"date": "2026-02-10",
+			"indexClose": 4724.3,
+			"floatMarketCap": 52602406000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 47128987700,
+					"unitNav": 4.7344
+				},
+				{
+					"code": "510330",
+					"shares": 19349349800,
+					"unitNav": 4.9269
+				},
+				{
+					"code": "159919",
+					"shares": 20510316600,
+					"unitNav": 4.9352
+				},
+				{
+					"code": "510310",
+					"shares": 32469044000,
+					"unitNav": 4.579
+				}
+			]
+		},
+		{
+			"date": "2026-02-11",
+			"indexClose": 4713.82,
+			"floatMarketCap": 52574125000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 47025487700,
+					"unitNav": 4.724
+				},
+				{
+					"code": "510330",
+					"shares": 19350249800,
+					"unitNav": 4.9161
+				},
+				{
+					"code": "159919",
+					"shares": 20489616600,
+					"unitNav": 4.9243
+				},
+				{
+					"code": "510310",
+					"shares": 32410544000,
+					"unitNav": 4.5691
+				}
+			]
+		},
+		{
+			"date": "2026-02-12",
+			"indexClose": 4719.58,
+			"floatMarketCap": 52504598000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 46940887700,
+					"unitNav": 4.7304
+				},
+				{
+					"code": "510330",
+					"shares": 19335849800,
+					"unitNav": 4.9227
+				},
+				{
+					"code": "159919",
+					"shares": 20450016600,
+					"unitNav": 4.9309
+				},
+				{
+					"code": "510310",
+					"shares": 32373644000,
+					"unitNav": 4.5754
+				}
+			]
+		},
+		{
+			"date": "2026-02-13",
+			"indexClose": 4660.41,
+			"floatMarketCap": 51802085000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 46123687700,
+					"unitNav": 4.6708
+				},
+				{
+					"code": "510330",
+					"shares": 19284549800,
+					"unitNav": 4.8609
+				},
+				{
+					"code": "159919",
+					"shares": 20224116600,
+					"unitNav": 4.869
+				},
+				{
+					"code": "510310",
+					"shares": 32201744000,
+					"unitNav": 4.5182
+				}
+			]
+		},
+		{
+			"date": "2026-02-24",
+			"indexClose": 4707.54,
+			"floatMarketCap": 52266729000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 45907687700,
+					"unitNav": 4.7177
+				},
+				{
+					"code": "510330",
+					"shares": 19285449800,
+					"unitNav": 4.91
+				},
+				{
+					"code": "159919",
+					"shares": 20210616600,
+					"unitNav": 4.9179
+				},
+				{
+					"code": "510310",
+					"shares": 32180144000,
+					"unitNav": 4.5642
+				}
+			]
+		},
+		{
+			"date": "2026-02-25",
+			"indexClose": 4735.89,
+			"floatMarketCap": 52502469000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 45979687700,
+					"unitNav": 4.7463
+				},
+				{
+					"code": "510330",
+					"shares": 19309749800,
+					"unitNav": 4.9396
+				},
+				{
+					"code": "159919",
+					"shares": 20207916600,
+					"unitNav": 4.9476
+				},
+				{
+					"code": "510310",
+					"shares": 32181044000,
+					"unitNav": 4.5918
+				}
+			]
+		},
+		{
+			"date": "2026-02-26",
+			"indexClose": 4726.87,
+			"floatMarketCap": 52363441000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 45596287700,
+					"unitNav": 4.737
+				},
+				{
+					"code": "510330",
+					"shares": 19253949800,
+					"unitNav": 4.9301
+				},
+				{
+					"code": "159919",
+					"shares": 20092716600,
+					"unitNav": 4.938
+				},
+				{
+					"code": "510310",
+					"shares": 31995644000,
+					"unitNav": 4.5832
+				}
+			]
+		},
+		{
+			"date": "2026-02-27",
+			"indexClose": 4710.65,
+			"floatMarketCap": 52252096000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 45612487700,
+					"unitNav": 4.7211
+				},
+				{
+					"code": "510330",
+					"shares": 19259349800,
+					"unitNav": 4.9133
+				},
+				{
+					"code": "159919",
+					"shares": 20089116600,
+					"unitNav": 4.9212
+				},
+				{
+					"code": "510310",
+					"shares": 31969544000,
+					"unitNav": 4.5676
+				}
+			]
+		},
+		{
+			"date": "2026-03-02",
+			"indexClose": 4728.67,
+			"floatMarketCap": 52684388000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44765587700,
+					"unitNav": 4.7387
+				},
+				{
+					"code": "510330",
+					"shares": 19185549800,
+					"unitNav": 4.932
+				},
+				{
+					"code": "159919",
+					"shares": 19879416600,
+					"unitNav": 4.9398
+				},
+				{
+					"code": "510310",
+					"shares": 31801244000,
+					"unitNav": 4.5851
+				}
+			]
+		},
+		{
+			"date": "2026-03-03",
+			"indexClose": 4655.9,
+			"floatMarketCap": 52459179000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44573887700,
+					"unitNav": 4.6659
+				},
+				{
+					"code": "510330",
+					"shares": 19187349800,
+					"unitNav": 4.8562
+				},
+				{
+					"code": "159919",
+					"shares": 19914516600,
+					"unitNav": 4.8638
+				},
+				{
+					"code": "510310",
+					"shares": 31669844000,
+					"unitNav": 4.5145
+				}
+			]
+		},
+		{
+			"date": "2026-03-04",
+			"indexClose": 4602.62,
+			"floatMarketCap": 51835138000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44960887700,
+					"unitNav": 4.6124
+				},
+				{
+					"code": "510330",
+					"shares": 19205349800,
+					"unitNav": 4.8006
+				},
+				{
+					"code": "159919",
+					"shares": 19974816600,
+					"unitNav": 4.8082
+				},
+				{
+					"code": "510310",
+					"shares": 31752644000,
+					"unitNav": 4.4628
+				}
+			]
+		},
+		{
+			"date": "2026-03-05",
+			"indexClose": 4647.69,
+			"floatMarketCap": 52164410000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44612587700,
+					"unitNav": 4.6572
+				},
+				{
+					"code": "510330",
+					"shares": 19204449800,
+					"unitNav": 4.8474
+				},
+				{
+					"code": "159919",
+					"shares": 19909116600,
+					"unitNav": 4.8551
+				},
+				{
+					"code": "510310",
+					"shares": 31769744000,
+					"unitNav": 4.5062
+				}
+			]
+		},
+		{
+			"date": "2026-03-06",
+			"indexClose": 4660.44,
+			"floatMarketCap": 52232111000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44606287700,
+					"unitNav": 4.6704
+				},
+				{
+					"code": "510330",
+					"shares": 19211649800,
+					"unitNav": 4.8609
+				},
+				{
+					"code": "159919",
+					"shares": 19921716600,
+					"unitNav": 4.8685
+				},
+				{
+					"code": "510310",
+					"shares": 31785944000,
+					"unitNav": 4.5187
+				}
+			]
+		},
+		{
+			"date": "2026-03-09",
+			"indexClose": 4615.46,
+			"floatMarketCap": 51924983000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44621587700,
+					"unitNav": 4.6253
+				},
+				{
+					"code": "510330",
+					"shares": 19190949800,
+					"unitNav": 4.814
+				},
+				{
+					"code": "159919",
+					"shares": 19889316600,
+					"unitNav": 4.8215
+				},
+				{
+					"code": "510310",
+					"shares": 31785944000,
+					"unitNav": 4.4751
+				}
+			]
+		},
+		{
+			"date": "2026-03-10",
+			"indexClose": 4674.76,
+			"floatMarketCap": 52199725000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44522587700,
+					"unitNav": 4.6847
+				},
+				{
+					"code": "510330",
+					"shares": 19198149800,
+					"unitNav": 4.8758
+				},
+				{
+					"code": "159919",
+					"shares": 19877616600,
+					"unitNav": 4.8834
+				},
+				{
+					"code": "510310",
+					"shares": 31729244000,
+					"unitNav": 4.5327
+				}
+			]
+		},
+		{
+			"date": "2026-03-11",
+			"indexClose": 4704.5,
+			"floatMarketCap": 52560312000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44094187700,
+					"unitNav": 4.7142
+				},
+				{
+					"code": "510330",
+					"shares": 19103649800,
+					"unitNav": 4.9067
+				},
+				{
+					"code": "159919",
+					"shares": 19803816600,
+					"unitNav": 4.9143
+				},
+				{
+					"code": "510310",
+					"shares": 31654544000,
+					"unitNav": 4.5615
+				}
+			]
+		},
+		{
+			"date": "2026-03-12",
+			"indexClose": 4687.56,
+			"floatMarketCap": 52494201000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44007787700,
+					"unitNav": 4.697
+				},
+				{
+					"code": "510330",
+					"shares": 19082049800,
+					"unitNav": 4.889
+				},
+				{
+					"code": "159919",
+					"shares": 19775916600,
+					"unitNav": 4.8965
+				},
+				{
+					"code": "510310",
+					"shares": 31608644000,
+					"unitNav": 4.545
+				}
+			]
+		},
+		{
+			"date": "2026-03-13",
+			"indexClose": 4669.14,
+			"floatMarketCap": 52276084000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 43985287700,
+					"unitNav": 4.6789
+				},
+				{
+					"code": "510330",
+					"shares": 19117149800,
+					"unitNav": 4.8699
+				},
+				{
+					"code": "159919",
+					"shares": 19721016600,
+					"unitNav": 4.8774
+				},
+				{
+					"code": "510310",
+					"shares": 31619444000,
+					"unitNav": 4.5272
+				}
+			]
+		},
+		{
+			"date": "2026-03-16",
+			"indexClose": 4671.56,
+			"floatMarketCap": 52273810000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44097787700,
+					"unitNav": 4.6813
+				},
+				{
+					"code": "510330",
+					"shares": 19126149800,
+					"unitNav": 4.8725
+				},
+				{
+					"code": "159919",
+					"shares": 19726416600,
+					"unitNav": 4.8798
+				},
+				{
+					"code": "510310",
+					"shares": 31651844000,
+					"unitNav": 4.5297
+				}
+			]
+		},
+		{
+			"date": "2026-03-17",
+			"indexClose": 4637.44,
+			"floatMarketCap": 52063005000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44332687700,
+					"unitNav": 4.6475
+				},
+				{
+					"code": "510330",
+					"shares": 19154949800,
+					"unitNav": 4.837
+				},
+				{
+					"code": "159919",
+					"shares": 19762416600,
+					"unitNav": 4.8443
+				},
+				{
+					"code": "510310",
+					"shares": 31629344000,
+					"unitNav": 4.4967
+				}
+			]
+		},
+		{
+			"date": "2026-03-18",
+			"indexClose": 4658.33,
+			"floatMarketCap": 52151135000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44575687700,
+					"unitNav": 4.6679
+				},
+				{
+					"code": "510330",
+					"shares": 19167549800,
+					"unitNav": 4.8586
+				},
+				{
+					"code": "159919",
+					"shares": 19796616600,
+					"unitNav": 4.8659
+				},
+				{
+					"code": "510310",
+					"shares": 31632944000,
+					"unitNav": 4.5168
+				}
+			]
+		},
+		{
+			"date": "2026-03-19",
+			"indexClose": 4583.25,
+			"floatMarketCap": 51637444000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44822287700,
+					"unitNav": 4.5928
+				},
+				{
+					"code": "510330",
+					"shares": 19240449800,
+					"unitNav": 4.7803
+				},
+				{
+					"code": "159919",
+					"shares": 19856016600,
+					"unitNav": 4.7875
+				},
+				{
+					"code": "510310",
+					"shares": 31702244000,
+					"unitNav": 4.444
+				}
+			]
+		},
+		{
+			"date": "2026-03-20",
+			"indexClose": 4567.02,
+			"floatMarketCap": 51318446000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44918587700,
+					"unitNav": 4.5769
+				},
+				{
+					"code": "510330",
+					"shares": 19294449800,
+					"unitNav": 4.7636
+				},
+				{
+					"code": "159919",
+					"shares": 19900116600,
+					"unitNav": 4.7708
+				},
+				{
+					"code": "510310",
+					"shares": 31705844000,
+					"unitNav": 4.4284
+				}
+			]
+		},
+		{
+			"date": "2026-03-23",
+			"indexClose": 4418,
+			"floatMarketCap": 49734064000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 45749287700,
+					"unitNav": 4.427
+				},
+				{
+					"code": "510330",
+					"shares": 19379049800,
+					"unitNav": 4.6079
+				},
+				{
+					"code": "159919",
+					"shares": 20086416600,
+					"unitNav": 4.6149
+				},
+				{
+					"code": "510310",
+					"shares": 31870544000,
+					"unitNav": 4.2835
+				}
+			]
+		},
+		{
+			"date": "2026-03-24",
+			"indexClose": 4474.72,
+			"floatMarketCap": 50252025000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 45670987700,
+					"unitNav": 4.4837
+				},
+				{
+					"code": "510330",
+					"shares": 19483449800,
+					"unitNav": 4.667
+				},
+				{
+					"code": "159919",
+					"shares": 20082816600,
+					"unitNav": 4.674
+				},
+				{
+					"code": "510310",
+					"shares": 31875044000,
+					"unitNav": 4.3386
+				}
+			]
+		},
+		{
+			"date": "2026-03-25",
+			"indexClose": 4537.47,
+			"floatMarketCap": 50815508000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 45231787700,
+					"unitNav": 4.5468
+				},
+				{
+					"code": "510330",
+					"shares": 19486149800,
+					"unitNav": 4.7324
+				},
+				{
+					"code": "159919",
+					"shares": 20040516600,
+					"unitNav": 4.7395
+				},
+				{
+					"code": "510310",
+					"shares": 31836344000,
+					"unitNav": 4.3996
+				}
+			]
+		},
+		{
+			"date": "2026-03-26",
+			"indexClose": 4477.53,
+			"floatMarketCap": 50335244000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 45151687700,
+					"unitNav": 4.4869
+				},
+				{
+					"code": "510330",
+					"shares": 19494249800,
+					"unitNav": 4.67
+				},
+				{
+					"code": "159919",
+					"shares": 20032416600,
+					"unitNav": 4.677
+				},
+				{
+					"code": "510310",
+					"shares": 31799444000,
+					"unitNav": 4.3414
+				}
+			]
+		},
+		{
+			"date": "2026-03-27",
+			"indexClose": 4502.57,
+			"floatMarketCap": 50576551000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 45160687700,
+					"unitNav": 4.5121
+				},
+				{
+					"code": "510330",
+					"shares": 19496949800,
+					"unitNav": 4.6961
+				},
+				{
+					"code": "159919",
+					"shares": 20035116600,
+					"unitNav": 4.7032
+				},
+				{
+					"code": "510310",
+					"shares": 31839944000,
+					"unitNav": 4.3658
+				}
+			]
+		},
+		{
+			"date": "2026-03-30",
+			"indexClose": 4491.95,
+			"floatMarketCap": 50584394000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44913187700,
+					"unitNav": 4.5012
+				},
+				{
+					"code": "510330",
+					"shares": 19486149800,
+					"unitNav": 4.685
+				},
+				{
+					"code": "159919",
+					"shares": 19998216600,
+					"unitNav": 4.6919
+				},
+				{
+					"code": "510310",
+					"shares": 31797644000,
+					"unitNav": 4.3554
+				}
+			]
+		},
+		{
+			"date": "2026-03-31",
+			"indexClose": 4450.05,
+			"floatMarketCap": 50305471000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44828587700,
+					"unitNav": 4.4595
+				},
+				{
+					"code": "510330",
+					"shares": 19437549800,
+					"unitNav": 4.6414
+				},
+				{
+					"code": "159919",
+					"shares": 19964916600,
+					"unitNav": 4.6483
+				},
+				{
+					"code": "510310",
+					"shares": 31699544000,
+					"unitNav": 4.3153
+				}
+			]
+		},
+		{
+			"date": "2026-04-01",
+			"indexClose": 4526.07,
+			"floatMarketCap": 50951243000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44812387700,
+					"unitNav": 4.5355
+				},
+				{
+					"code": "510330",
+					"shares": 19415049800,
+					"unitNav": 4.7206
+				},
+				{
+					"code": "159919",
+					"shares": 19943316600,
+					"unitNav": 4.7275
+				},
+				{
+					"code": "510310",
+					"shares": 31673444000,
+					"unitNav": 4.3889
+				}
+			]
+		},
+		{
+			"date": "2026-04-02",
+			"indexClose": 4478.91,
+			"floatMarketCap": 50706808000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44718787700,
+					"unitNav": 4.4877
+				},
+				{
+					"code": "510330",
+					"shares": 19404249800,
+					"unitNav": 4.6713
+				},
+				{
+					"code": "159919",
+					"shares": 19839816600,
+					"unitNav": 4.6781
+				},
+				{
+					"code": "510310",
+					"shares": 31633844000,
+					"unitNav": 4.343
+				}
+			]
+		},
+		{
+			"date": "2026-04-03",
+			"indexClose": 4440.79,
+			"floatMarketCap": 50234555000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44869087700,
+					"unitNav": 4.4499
+				},
+				{
+					"code": "510330",
+					"shares": 19410549800,
+					"unitNav": 4.6316
+				},
+				{
+					"code": "159919",
+					"shares": 19848816600,
+					"unitNav": 4.6385
+				},
+				{
+					"code": "510310",
+					"shares": 31637444000,
+					"unitNav": 4.3062
+				}
+			]
+		},
+		{
+			"date": "2026-04-07",
+			"indexClose": 4440.62,
+			"floatMarketCap": 50223148000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 45052687700,
+					"unitNav": 4.4498
+				},
+				{
+					"code": "510330",
+					"shares": 19420449800,
+					"unitNav": 4.6316
+				},
+				{
+					"code": "159919",
+					"shares": 19890216600,
+					"unitNav": 4.6383
+				},
+				{
+					"code": "510310",
+					"shares": 31640144000,
+					"unitNav": 4.3061
+				}
+			]
+		},
+		{
+			"date": "2026-04-08",
+			"indexClose": 4595.56,
+			"floatMarketCap": 51429266000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 45165187700,
+					"unitNav": 4.6054
+				},
+				{
+					"code": "510330",
+					"shares": 19425849800,
+					"unitNav": 4.7932
+				},
+				{
+					"code": "159919",
+					"shares": 19868616600,
+					"unitNav": 4.8001
+				},
+				{
+					"code": "510310",
+					"shares": 31658144000,
+					"unitNav": 4.4564
+				}
+			]
+		},
+		{
+			"date": "2026-04-09",
+			"indexClose": 4566.22,
+			"floatMarketCap": 51096681000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44763787700,
+					"unitNav": 4.5758
+				},
+				{
+					"code": "510330",
+					"shares": 19344849800,
+					"unitNav": 4.7626
+				},
+				{
+					"code": "159919",
+					"shares": 19744416600,
+					"unitNav": 4.7694
+				},
+				{
+					"code": "510310",
+					"shares": 31565444000,
+					"unitNav": 4.4279
+				}
+			]
+		},
+		{
+			"date": "2026-04-10",
+			"indexClose": 4636.57,
+			"floatMarketCap": 51628735000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 44077087700,
+					"unitNav": 4.6466
+				},
+				{
+					"code": "510330",
+					"shares": 19261149800,
+					"unitNav": 4.8362
+				},
+				{
+					"code": "159919",
+					"shares": 19625616600,
+					"unitNav": 4.8431
+				},
+				{
+					"code": "510310",
+					"shares": 31350344000,
+					"unitNav": 4.4964
+				}
+			]
+		},
+		{
+			"date": "2026-04-13",
+			"indexClose": 4646.15,
+			"floatMarketCap": 51754979000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 43858387700,
+					"unitNav": 4.656
+				},
+				{
+					"code": "510330",
+					"shares": 19249449800,
+					"unitNav": 4.8461
+				},
+				{
+					"code": "159919",
+					"shares": 19602216600,
+					"unitNav": 4.853
+				},
+				{
+					"code": "510310",
+					"shares": 31285544000,
+					"unitNav": 4.5057
+				}
+			]
+		},
+		{
+			"date": "2026-04-14",
+			"indexClose": 4701.28,
+			"floatMarketCap": 52281095000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 43806187700,
+					"unitNav": 4.7111
+				},
+				{
+					"code": "510330",
+					"shares": 19254849800,
+					"unitNav": 4.9036
+				},
+				{
+					"code": "159919",
+					"shares": 19585116600,
+					"unitNav": 4.9104
+				},
+				{
+					"code": "510310",
+					"shares": 31319744000,
+					"unitNav": 4.5592
+				}
+			]
+		},
+		{
+			"date": "2026-04-15",
+			"indexClose": 4685.25,
+			"floatMarketCap": 52219092000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 43920487700,
+					"unitNav": 4.6957
+				},
+				{
+					"code": "510330",
+					"shares": 19252149800,
+					"unitNav": 4.8873
+				},
+				{
+					"code": "159919",
+					"shares": 19579716600,
+					"unitNav": 4.8941
+				},
+				{
+					"code": "510310",
+					"shares": 31380944000,
+					"unitNav": 4.5441
+				}
+			]
+		},
+		{
+			"date": "2026-04-16",
+			"indexClose": 4736.61,
+			"floatMarketCap": 52614789000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 43684687700,
+					"unitNav": 4.7472
+				},
+				{
+					"code": "510330",
+					"shares": 19236849800,
+					"unitNav": 4.9409
+				},
+				{
+					"code": "159919",
+					"shares": 19587816600,
+					"unitNav": 4.9477
+				},
+				{
+					"code": "510310",
+					"shares": 31396244000,
+					"unitNav": 4.5941
+				}
+			]
+		},
+		{
+			"date": "2026-04-17",
+			"indexClose": 4728.67,
+			"floatMarketCap": 52450889000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 43258987700,
+					"unitNav": 4.7393
+				},
+				{
+					"code": "510330",
+					"shares": 19227849800,
+					"unitNav": 4.9328
+				},
+				{
+					"code": "159919",
+					"shares": 19515816600,
+					"unitNav": 4.9396
+				},
+				{
+					"code": "510310",
+					"shares": 31334144000,
+					"unitNav": 4.5866
+				}
+			]
+		},
+		{
+			"date": "2026-04-20",
+			"indexClose": 4757.44,
+			"floatMarketCap": 52804926000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 42820687700,
+					"unitNav": 4.7681
+				},
+				{
+					"code": "510330",
+					"shares": 19212549800,
+					"unitNav": 4.9629
+				},
+				{
+					"code": "159919",
+					"shares": 19469016600,
+					"unitNav": 4.9696
+				},
+				{
+					"code": "510310",
+					"shares": 31293644000,
+					"unitNav": 4.6144
+				}
+			]
+		},
+		{
+			"date": "2026-04-21",
+			"indexClose": 4768,
+			"floatMarketCap": 52908500000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 42441787700,
+					"unitNav": 4.7789
+				},
+				{
+					"code": "510330",
+					"shares": 19165749800,
+					"unitNav": 4.9742
+				},
+				{
+					"code": "159919",
+					"shares": 19370916600,
+					"unitNav": 4.9809
+				},
+				{
+					"code": "510310",
+					"shares": 31157744000,
+					"unitNav": 4.6249
+				}
+			]
+		},
+		{
+			"date": "2026-04-22",
+			"indexClose": 4799.63,
+			"floatMarketCap": 53093656000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 41816287700,
+					"unitNav": 4.8139
+				},
+				{
+					"code": "510330",
+					"shares": 19136949800,
+					"unitNav": 5.0107
+				},
+				{
+					"code": "159919",
+					"shares": 19260216600,
+					"unitNav": 5.0174
+				},
+				{
+					"code": "510310",
+					"shares": 31055144000,
+					"unitNav": 4.6589
+				}
+			]
+		},
+		{
+			"date": "2026-04-23",
+			"indexClose": 4786.33,
+			"floatMarketCap": 53104822000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 41118787700,
+					"unitNav": 4.8005
+				},
+				{
+					"code": "510330",
+					"shares": 19059549800,
+					"unitNav": 4.9968
+				},
+				{
+					"code": "159919",
+					"shares": 19082016600,
+					"unitNav": 5.0035
+				},
+				{
+					"code": "510310",
+					"shares": 30822944000,
+					"unitNav": 4.6459
+				}
+			]
+		},
+		{
+			"date": "2026-04-24",
+			"indexClose": 4769.37,
+			"floatMarketCap": 52970745000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 40922587700,
+					"unitNav": 4.7842
+				},
+				{
+					"code": "510330",
+					"shares": 19010049800,
+					"unitNav": 4.9795
+				},
+				{
+					"code": "159919",
+					"shares": 19002816600,
+					"unitNav": 4.9861
+				},
+				{
+					"code": "510310",
+					"shares": 30807644000,
+					"unitNav": 4.63
+				}
+			]
+		},
+		{
+			"date": "2026-04-27",
+			"indexClose": 4770.95,
+			"floatMarketCap": 52926864000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 40362787700,
+					"unitNav": 4.7854
+				},
+				{
+					"code": "510330",
+					"shares": 18874149800,
+					"unitNav": 4.981
+				},
+				{
+					"code": "159919",
+					"shares": 18896616600,
+					"unitNav": 4.9876
+				},
+				{
+					"code": "510310",
+					"shares": 30598844000,
+					"unitNav": 4.6315
+				}
+			]
+		},
+		{
+			"date": "2026-04-28",
+			"indexClose": 4758.21,
+			"floatMarketCap": 52939970000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 39860587700,
+					"unitNav": 4.7726
+				},
+				{
+					"code": "510330",
+					"shares": 18810249800,
+					"unitNav": 4.9679
+				},
+				{
+					"code": "159919",
+					"shares": 18668016600,
+					"unitNav": 4.9745
+				},
+				{
+					"code": "510310",
+					"shares": 30415244000,
+					"unitNav": 4.6192
+				}
+			]
+		},
+		{
+			"date": "2026-04-29",
+			"indexClose": 4810.35,
+			"floatMarketCap": 53320734000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 39371887700,
+					"unitNav": 4.8257
+				},
+				{
+					"code": "510330",
+					"shares": 18748149800,
+					"unitNav": 5.0227
+				},
+				{
+					"code": "159919",
+					"shares": 18428616600,
+					"unitNav": 5.0294
+				},
+				{
+					"code": "510310",
+					"shares": 30152444000,
+					"unitNav": 4.6704
+				}
+			]
+		},
+		{
+			"date": "2026-04-30",
+			"indexClose": 4807.31,
+			"floatMarketCap": 53241935000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 38204587700,
+					"unitNav": 4.8231
+				},
+				{
+					"code": "510330",
+					"shares": 18551949800,
+					"unitNav": 5.02
+				},
+				{
+					"code": "159919",
+					"shares": 17953416600,
+					"unitNav": 5.0267
+				},
+				{
+					"code": "510310",
+					"shares": 29693444000,
+					"unitNav": 4.6679
+				}
+			]
+		},
+		{
+			"date": "2026-05-06",
+			"indexClose": 4877.09,
+			"floatMarketCap": 53740430000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 37932787700,
+					"unitNav": 4.8934
+				},
+				{
+					"code": "510330",
+					"shares": 18212649800,
+					"unitNav": 5.093
+				},
+				{
+					"code": "159919",
+					"shares": 17532216600,
+					"unitNav": 5.0995
+				},
+				{
+					"code": "510310",
+					"shares": 29198444000,
+					"unitNav": 4.7361
+				}
+			]
+		},
+		{
+			"date": "2026-05-07",
+			"indexClose": 4900.51,
+			"floatMarketCap": 53760181000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 36156187700,
+					"unitNav": 4.9169
+				},
+				{
+					"code": "510330",
+					"shares": 17889549800,
+					"unitNav": 5.1174
+				},
+				{
+					"code": "159919",
+					"shares": 17291916600,
+					"unitNav": 5.1239
+				},
+				{
+					"code": "510310",
+					"shares": 28725944000,
+					"unitNav": 4.7588
+				}
+			]
+		},
+		{
+			"date": "2026-05-08",
+			"indexClose": 4871.91,
+			"floatMarketCap": 53516349000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 35269687700,
+					"unitNav": 4.8882
+				},
+				{
+					"code": "510330",
+					"shares": 17636649800,
+					"unitNav": 5.0877
+				},
+				{
+					"code": "159919",
+					"shares": 16887816600,
+					"unitNav": 5.0942
+				},
+				{
+					"code": "510310",
+					"shares": 28219244000,
+					"unitNav": 4.7312
+				}
+			]
+		},
+		{
+			"date": "2026-05-11",
+			"indexClose": 4951.84,
+			"floatMarketCap": 54158550000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 33945787700,
+					"unitNav": 4.9685
+				},
+				{
+					"code": "510330",
+					"shares": 17192049800,
+					"unitNav": 5.1714
+				},
+				{
+					"code": "159919",
+					"shares": 16267716600,
+					"unitNav": 5.1779
+				},
+				{
+					"code": "510310",
+					"shares": 27433544000,
+					"unitNav": 4.8091
+				}
+			]
+		},
+		{
+			"date": "2026-05-12",
+			"indexClose": 4948.05,
+			"floatMarketCap": 54052557000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 33371587700,
+					"unitNav": 4.9646
+				},
+				{
+					"code": "510330",
+					"shares": 16845549800,
+					"unitNav": 5.1676
+				},
+				{
+					"code": "159919",
+					"shares": 15958116600,
+					"unitNav": 5.174
+				},
+				{
+					"code": "510310",
+					"shares": 26773844000,
+					"unitNav": 4.8055
+				}
+			]
+		},
+		{
+			"date": "2026-05-13",
+			"indexClose": 4998.34,
+			"floatMarketCap": 54406254000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 32727187700,
+					"unitNav": 5.0169
+				},
+				{
+					"code": "510330",
+					"shares": 16756449800,
+					"unitNav": 5.2222
+				},
+				{
+					"code": "159919",
+					"shares": 15594516600,
+					"unitNav": 5.2286
+				},
+				{
+					"code": "510310",
+					"shares": 26267144000,
+					"unitNav": 4.8564
+				}
+			]
+		},
+		{
+			"date": "2026-05-14",
+			"indexClose": 4914.6,
+			"floatMarketCap": 53669801000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 32091787700,
+					"unitNav": 4.9335
+				},
+				{
+					"code": "510330",
+					"shares": 16701549800,
+					"unitNav": 5.135
+				},
+				{
+					"code": "159919",
+					"shares": 15304716600,
+					"unitNav": 5.1414
+				},
+				{
+					"code": "510310",
+					"shares": 25810844000,
+					"unitNav": 4.7753
+				}
+			]
+		},
+		{
+			"date": "2026-05-15",
+			"indexClose": 4859.59,
+			"floatMarketCap": 53163412000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 32162887700,
+					"unitNav": 4.8774
+				},
+				{
+					"code": "510330",
+					"shares": 16643049800,
+					"unitNav": 5.0777
+				},
+				{
+					"code": "159919",
+					"shares": 15258816600,
+					"unitNav": 5.0839
+				},
+				{
+					"code": "510310",
+					"shares": 25719044000,
+					"unitNav": 4.722
+				}
+			]
+		},
+		{
+			"date": "2026-05-18",
+			"indexClose": 4833.52,
+			"floatMarketCap": 52941349000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 32182687700,
+					"unitNav": 4.8513
+				},
+				{
+					"code": "510330",
+					"shares": 16657449800,
+					"unitNav": 5.0506
+				},
+				{
+					"code": "159919",
+					"shares": 15233616600,
+					"unitNav": 5.0567
+				},
+				{
+					"code": "510310",
+					"shares": 25583144000,
+					"unitNav": 4.6967
+				}
+			]
+		},
+		{
+			"date": "2026-05-19",
+			"indexClose": 4852.88,
+			"floatMarketCap": 53219724000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 31662487700,
+					"unitNav": 4.8707
+				},
+				{
+					"code": "510330",
+					"shares": 16525149800,
+					"unitNav": 5.0711
+				},
+				{
+					"code": "159919",
+					"shares": 14900616600,
+					"unitNav": 5.0773
+				},
+				{
+					"code": "510310",
+					"shares": 25185344000,
+					"unitNav": 4.7157
+				}
+			]
+		},
+		{
+			"date": "2026-05-20",
+			"indexClose": 4850.7,
+			"floatMarketCap": 52975601000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 31027087700,
+					"unitNav": 4.8693
+				},
+				{
+					"code": "510330",
+					"shares": 16390149800,
+					"unitNav": 5.0696
+				},
+				{
+					"code": "159919",
+					"shares": 14540616600,
+					"unitNav": 5.0757
+				},
+				{
+					"code": "510310",
+					"shares": 24927044000,
+					"unitNav": 4.7143
+				}
+			]
+		},
+		{
+			"date": "2026-05-21",
+			"indexClose": 4783.1,
+			"floatMarketCap": 52300739000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 30494287700,
+					"unitNav": 4.8027
+				},
+				{
+					"code": "510330",
+					"shares": 16056249800,
+					"unitNav": 4.9994
+				},
+				{
+					"code": "159919",
+					"shares": 14087916600,
+					"unitNav": 5.0056
+				},
+				{
+					"code": "510310",
+					"shares": 24446444000,
+					"unitNav": 4.6491
+				}
+			]
+		},
+		{
+			"date": "2026-05-22",
+			"indexClose": 4845.1,
+			"floatMarketCap": 52698413000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 29795887700,
+					"unitNav": 4.864
+				},
+				{
+					"code": "510330",
+					"shares": 15775449800,
+					"unitNav": 5.0642
+				},
+				{
+					"code": "159919",
+					"shares": 13908816600,
+					"unitNav": 5.0702
+				},
+				{
+					"code": "510310",
+					"shares": 23973944000,
+					"unitNav": 4.7092
+				}
+			]
+		},
+		{
+			"date": "2026-05-25",
+			"indexClose": 4921.6,
+			"floatMarketCap": 53258717000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 28458487700,
+					"unitNav": 4.9404
+				},
+				{
+					"code": "510330",
+					"shares": 14652249800,
+					"unitNav": 5.144
+				},
+				{
+					"code": "159919",
+					"shares": 13002516600,
+					"unitNav": 5.1499
+				},
+				{
+					"code": "510310",
+					"shares": 22965944000,
+					"unitNav": 4.7835
+				}
+			]
+		},
+		{
+			"date": "2026-05-26",
+			"indexClose": 4947.85,
+			"floatMarketCap": 53493030000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 28028287700,
+					"unitNav": 4.9674
+				},
+				{
+					"code": "510330",
+					"shares": 14388549800,
+					"unitNav": 5.1718
+				},
+				{
+					"code": "159919",
+					"shares": 12804516600,
+					"unitNav": 5.1777
+				},
+				{
+					"code": "510310",
+					"shares": 22320644000,
+					"unitNav": 4.8089
+				}
+			]
+		},
+		{
+			"date": "2026-05-27",
+			"indexClose": 4908.17,
+			"floatMarketCap": 53029512000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 27896887700,
+					"unitNav": 4.9294
+				},
+				{
+					"code": "510330",
+					"shares": 14213049800,
+					"unitNav": 5.132
+				},
+				{
+					"code": "159919",
+					"shares": 12492216600,
+					"unitNav": 5.1379
+				},
+				{
+					"code": "510310",
+					"shares": 22120844000,
+					"unitNav": 4.772
+				}
+			]
+		},
+		{
+			"date": "2026-05-28",
+			"indexClose": 4914.21,
+			"floatMarketCap": 52996757000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 27968887700,
+					"unitNav": 4.9358
+				},
+				{
+					"code": "510330",
+					"shares": 14228349800,
+					"unitNav": 5.1388
+				},
+				{
+					"code": "159919",
+					"shares": 12386916600,
+					"unitNav": 5.1447
+				},
+				{
+					"code": "510310",
+					"shares": 22100144000,
+					"unitNav": 4.7783
+				}
+			]
+		},
+		{
+			"date": "2026-05-29",
+			"indexClose": 4892.12,
+			"floatMarketCap": 53003950000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 27956287700,
+					"unitNav": 4.9147
+				},
+				{
+					"code": "510330",
+					"shares": 14217549800,
+					"unitNav": 5.1169
+				},
+				{
+					"code": "159919",
+					"shares": 12356316600,
+					"unitNav": 5.1228
+				},
+				{
+					"code": "510310",
+					"shares": 22109144000,
+					"unitNav": 4.7578
+				}
+			]
+		},
+		{
+			"date": "2026-06-01",
+			"indexClose": 4844.26,
+			"floatMarketCap": 52775873000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 28199287700,
+					"unitNav": 4.8672
+				},
+				{
+					"code": "510330",
+					"shares": 14229249800,
+					"unitNav": 5.067
+				},
+				{
+					"code": "159919",
+					"shares": 12381516600,
+					"unitNav": 5.0729
+				},
+				{
+					"code": "510310",
+					"shares": 22122644000,
+					"unitNav": 4.7114
+				}
+			]
+		},
+		{
+			"date": "2026-06-02",
+			"indexClose": 4914.56,
+			"floatMarketCap": 53339330000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 28241587700,
+					"unitNav": 4.9377
+				},
+				{
+					"code": "510330",
+					"shares": 14249049800,
+					"unitNav": 5.1406
+				},
+				{
+					"code": "159919",
+					"shares": 12421116600,
+					"unitNav": 5.1467
+				},
+				{
+					"code": "510310",
+					"shares": 22100144000,
+					"unitNav": 4.7799
+				}
+			]
+		},
+		{
+			"date": "2026-06-03",
+			"indexClose": 4938.81,
+			"floatMarketCap": 53418428000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 28047187700,
+					"unitNav": 4.9621
+				},
+				{
+					"code": "510330",
+					"shares": 14172549800,
+					"unitNav": 5.1661
+				},
+				{
+					"code": "159919",
+					"shares": 12315816600,
+					"unitNav": 5.1721
+				},
+				{
+					"code": "510310",
+					"shares": 22049744000,
+					"unitNav": 4.8036
+				}
+			]
+		},
+		{
+			"date": "2026-06-04",
+			"indexClose": 4904.75,
+			"floatMarketCap": 52922224000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 27859987700,
+					"unitNav": 4.9284
+				},
+				{
+					"code": "510330",
+					"shares": 14157249800,
+					"unitNav": 5.1309
+				},
+				{
+					"code": "159919",
+					"shares": 12262716600,
+					"unitNav": 5.1369
+				},
+				{
+					"code": "510310",
+					"shares": 21899444000,
+					"unitNav": 4.7711
+				}
+			]
+		},
+		{
+			"date": "2026-06-05",
+			"indexClose": 4816.92,
+			"floatMarketCap": 52285589000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 27904987700,
+					"unitNav": 4.8422
+				},
+				{
+					"code": "510330",
+					"shares": 14173449800,
+					"unitNav": 5.0409
+				},
+				{
+					"code": "159919",
+					"shares": 12294216600,
+					"unitNav": 5.0469
+				},
+				{
+					"code": "510310",
+					"shares": 21995744000,
+					"unitNav": 4.6876
+				}
+			]
+		},
+		{
+			"date": "2026-06-08",
+			"indexClose": 4713.64,
+			"floatMarketCap": 51575689000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 28481887700,
+					"unitNav": 4.7389
+				},
+				{
+					"code": "510330",
+					"shares": 14347149800,
+					"unitNav": 4.9332
+				},
+				{
+					"code": "159919",
+					"shares": 12521016600,
+					"unitNav": 4.9391
+				},
+				{
+					"code": "510310",
+					"shares": 22299944000,
+					"unitNav": 4.5874
+				}
+			]
+		},
+		{
+			"date": "2026-06-09",
+			"indexClose": 4801.81,
+			"floatMarketCap": 52225320000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 28331587700,
+					"unitNav": 4.8269
+				},
+				{
+					"code": "510330",
+					"shares": 14315649800,
+					"unitNav": 5.0253
+				},
+				{
+					"code": "159919",
+					"shares": 12480516600,
+					"unitNav": 5.0312
+				},
+				{
+					"code": "510310",
+					"shares": 22268444000,
+					"unitNav": 4.6733
+				}
+			]
+		},
+		{
+			"date": "2026-06-10",
+			"indexClose": 4748.59,
+			"floatMarketCap": 51900109000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 28514287700,
+					"unitNav": 4.7789
+				},
+				{
+					"code": "510330",
+					"shares": 14328249800,
+					"unitNav": 4.9749
+				},
+				{
+					"code": "159919",
+					"shares": 12483216600,
+					"unitNav": 4.9809
+				},
+				{
+					"code": "510310",
+					"shares": 22306244000,
+					"unitNav": 4.6268
+				}
+			]
+		},
+		{
+			"date": "2026-06-11",
+			"indexClose": 4722.41,
+			"floatMarketCap": 51716043000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 28730287700,
+					"unitNav": 4.7533
+				},
+				{
+					"code": "510330",
+					"shares": 14380449800,
+					"unitNav": 4.949
+				},
+				{
+					"code": "159919",
+					"shares": 12495816600,
+					"unitNav": 4.9543
+				},
+				{
+					"code": "510310",
+					"shares": 22319744000,
+					"unitNav": 4.6025
+				}
+			]
+		},
+		{
+			"date": "2026-06-12",
+			"indexClose": 4777.32,
+			"floatMarketCap": 52361656000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 28624087700,
+					"unitNav": 4.8077
+				},
+				{
+					"code": "510330",
+					"shares": 14265249800,
+					"unitNav": 5.0033
+				},
+				{
+					"code": "159919",
+					"shares": 12413016600,
+					"unitNav": 5.0081
+				},
+				{
+					"code": "510310",
+					"shares": 22206344000,
+					"unitNav": 4.6554
+				}
+			]
+		},
+		{
+			"date": "2026-06-15",
+			"indexClose": 4891.71,
+			"floatMarketCap": 54168713000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 28382887700,
+					"unitNav": 4.9207
+				},
+				{
+					"code": "510330",
+					"shares": 13777449800,
+					"unitNav": 5.1236
+				},
+				{
+					"code": "159919",
+					"shares": 12005316600,
+					"unitNav": 5.1284
+				},
+				{
+					"code": "510310",
+					"shares": 21475544000,
+					"unitNav": 4.7669
+				}
+			]
+		},
+		{
+			"date": "2026-06-16",
+			"indexClose": 4884.23,
+			"floatMarketCap": 53886651000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 27970687700,
+					"unitNav": 4.9122
+				},
+				{
+					"code": "510330",
+					"shares": 13450749800,
+					"unitNav": 5.1161
+				},
+				{
+					"code": "159919",
+					"shares": 11605716600,
+					"unitNav": 5.121
+				},
+				{
+					"code": "510310",
+					"shares": 20565644000,
+					"unitNav": 4.7599
+				}
+			]
+		},
+		{
+			"date": "2026-06-17",
+			"indexClose": 4931.39,
+			"floatMarketCap": 54117464000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 27082387700,
+					"unitNav": 4.9582
+				},
+				{
+					"code": "510330",
+					"shares": 13170849800,
+					"unitNav": 5.1658
+				},
+				{
+					"code": "159919",
+					"shares": 11043216600,
+					"unitNav": 5.1705
+				},
+				{
+					"code": "510310",
+					"shares": 19510844000,
+					"unitNav": 4.8056
+				}
+			]
+		},
+		{
+			"date": "2026-06-18",
+			"indexClose": 4941.6,
+			"floatMarketCap": 53914759000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 26527087700,
+					"unitNav": 4.9697
+				},
+				{
+					"code": "510330",
+					"shares": 12889149800,
+					"unitNav": 5.1773
+				},
+				{
+					"code": "159919",
+					"shares": 10564416600,
+					"unitNav": 5.1823
+				},
+				{
+					"code": "510310",
+					"shares": 19000544000,
+					"unitNav": 4.8169
+				}
+			]
+		},
+		{
+			"date": "2026-06-22",
+			"indexClose": 5059.66,
+			"floatMarketCap": 55038560000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 26384887700,
+					"unitNav": 5.0878
+				},
+				{
+					"code": "510330",
+					"shares": 12753249800,
+					"unitNav": 5.3011
+				},
+				{
+					"code": "159919",
+					"shares": 10364616600,
+					"unitNav": 5.3058
+				},
+				{
+					"code": "510310",
+					"shares": 18380444000,
+					"unitNav": 4.9324
+				}
+			]
+		},
+		{
+			"date": "2026-06-23",
+			"indexClose": 4919.39,
+			"floatMarketCap": 53924085000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24676687700,
+					"unitNav": 4.947
+				},
+				{
+					"code": "510330",
+					"shares": 11727249800,
+					"unitNav": 5.1539
+				},
+				{
+					"code": "159919",
+					"shares": 9492516600,
+					"unitNav": 5.1585
+				},
+				{
+					"code": "510310",
+					"shares": 17021444000,
+					"unitNav": 4.7959
+				}
+			]
+		},
+		{
+			"date": "2026-06-24",
+			"indexClose": 4943.02,
+			"floatMarketCap": 53930137000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 22886587700,
+					"unitNav": 4.9707
+				},
+				{
+					"code": "510330",
+					"shares": 10534749800,
+					"unitNav": 5.1788
+				},
+				{
+					"code": "159919",
+					"shares": 8598816600,
+					"unitNav": 5.1834
+				},
+				{
+					"code": "510310",
+					"shares": 15741644000,
+					"unitNav": 4.8194
+				}
+			]
+		},
+		{
+			"date": "2026-06-25",
+			"indexClose": 5020.1,
+			"floatMarketCap": 54384640000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 20744587700,
+					"unitNav": 5.0472
+				},
+				{
+					"code": "510330",
+					"shares": 8762649800,
+					"unitNav": 5.2597
+				},
+				{
+					"code": "159919",
+					"shares": 7650216600,
+					"unitNav": 5.264
+				},
+				{
+					"code": "510310",
+					"shares": 13868744000,
+					"unitNav": 4.8947
+				}
+			]
+		},
+		{
+			"date": "2026-06-26",
+			"indexClose": 4868.22,
+			"floatMarketCap": 52906127000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 20800387700,
+					"unitNav": 4.9012
+				},
+				{
+					"code": "510330",
+					"shares": 8754549800,
+					"unitNav": 5.1076
+				},
+				{
+					"code": "159919",
+					"shares": 7608816600,
+					"unitNav": 5.1126
+				},
+				{
+					"code": "510310",
+					"shares": 13886744000,
+					"unitNav": 4.7533
+				}
+			]
+		},
+		{
+			"date": "2026-06-29",
+			"indexClose": 4926.92,
+			"floatMarketCap": 53465282000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 19936387700,
+					"unitNav": 4.9618
+				},
+				{
+					"code": "510330",
+					"shares": 8274849800,
+					"unitNav": 5.1725
+				},
+				{
+					"code": "159919",
+					"shares": 6996816600,
+					"unitNav": 5.1772
+				},
+				{
+					"code": "510310",
+					"shares": 13210844000,
+					"unitNav": 4.8137
+				}
+			]
+		},
+		{
+			"date": "2026-06-30",
+			"indexClose": 4979.43,
+			"floatMarketCap": 53660154000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 18914887700,
+					"unitNav": 5.0157
+				},
+				{
+					"code": "510330",
+					"shares": 7489149800,
+					"unitNav": 5.2284
+				},
+				{
+					"code": "159919",
+					"shares": 6939216600,
+					"unitNav": 5.2332
+				},
+				{
+					"code": "510310",
+					"shares": 11600744000,
+					"unitNav": 4.8661
+				}
+			]
+		},
+		{
+			"date": "2026-07-01",
+			"indexClose": 4958.98,
+			"floatMarketCap": 53648591000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 18395587700,
+					"unitNav": 4.9952
+				},
+				{
+					"code": "510330",
+					"shares": 7503549800,
+					"unitNav": 5.2071
+				},
+				{
+					"code": "159919",
+					"shares": 6554916600,
+					"unitNav": 5.2118
+				},
+				{
+					"code": "510310",
+					"shares": 11335244000,
+					"unitNav": 4.8462
+				}
+			]
+		},
+		{
+			"date": "2026-07-02",
+			"indexClose": 4812.3,
+			"floatMarketCap": 52448633000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 18532387700,
+					"unitNav": 4.85
+				},
+				{
+					"code": "510330",
+					"shares": 7554849800,
+					"unitNav": 5.0545
+				},
+				{
+					"code": "159919",
+					"shares": 6319116600,
+					"unitNav": 5.0595
+				},
+				{
+					"code": "510310",
+					"shares": 10822244000,
+					"unitNav": 4.7042
+				}
+			]
+		},
+		{
+			"date": "2026-07-03",
+			"indexClose": 4842.17,
+			"floatMarketCap": 52779293000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 17069887700,
+					"unitNav": 4.8814
+				},
+				{
+					"code": "510330",
+					"shares": 7548549800,
+					"unitNav": 5.0867
+				},
+				{
+					"code": "159919",
+					"shares": 5428116600,
+					"unitNav": 5.0919
+				},
+				{
+					"code": "510310",
+					"shares": 9175244000,
+					"unitNav": 4.7343
+				}
+			]
+		},
+		{
+			"date": "2026-07-06",
+			"indexClose": 4842,
+			"floatMarketCap": 52958674000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 16821487700,
+					"unitNav": 4.8813
+				},
+				{
+					"code": "510330",
+					"shares": 7520649800,
+					"unitNav": 5.0864
+				},
+				{
+					"code": "159919",
+					"shares": 5361516600,
+					"unitNav": 5.0915
+				},
+				{
+					"code": "510310",
+					"shares": 9121244000,
+					"unitNav": 4.7334
+				}
+			]
+		},
+		{
+			"date": "2026-07-07",
+			"indexClose": 4792.26,
+			"floatMarketCap": 52516888000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 17094187700,
+					"unitNav": 4.8311
+				},
+				{
+					"code": "510330",
+					"shares": 7514349800,
+					"unitNav": 5.0345
+				},
+				{
+					"code": "159919",
+					"shares": 5356116600,
+					"unitNav": 5.0393
+				},
+				{
+					"code": "510310",
+					"shares": 9129344000,
+					"unitNav": 4.686
+				}
+			]
+		},
+		{
+			"date": "2026-07-08",
+			"indexClose": 4755.53,
+			"floatMarketCap": 52365597000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 17203087700,
+					"unitNav": 4.795
+				},
+				{
+					"code": "510330",
+					"shares": 7534149800,
+					"unitNav": 4.9964
+				},
+				{
+					"code": "159919",
+					"shares": 5368716600,
+					"unitNav": 5.0019
+				},
+				{
+					"code": "510310",
+					"shares": 9169844000,
+					"unitNav": 4.6515
+				}
+			]
+		},
+		{
+			"date": "2026-07-09",
+			"indexClose": 4876.31,
+			"floatMarketCap": 53279044000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 17214787700,
+					"unitNav": 4.916
+				},
+				{
+					"code": "510330",
+					"shares": 7550349800,
+					"unitNav": 5.1232
+				},
+				{
+					"code": "159919",
+					"shares": 5343516600,
+					"unitNav": 5.1282
+				},
+				{
+					"code": "510310",
+					"shares": 9177944000,
+					"unitNav": 4.7691
+				}
+			]
+		},
+		{
+			"date": "2026-07-10",
+			"indexClose": 4780.79,
+			"floatMarketCap": 52559937000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 17157187700,
+					"unitNav": 4.827
+				},
+				{
+					"code": "510330",
+					"shares": 7578249800,
+					"unitNav": 5.0298
+				},
+				{
+					"code": "159919",
+					"shares": 5380416600,
+					"unitNav": 5.0354
+				},
+				{
+					"code": "510310",
+					"shares": 9177044000,
+					"unitNav": 4.6826
+				}
+			]
+		},
+		{
+			"date": "2026-07-13",
+			"indexClose": 4695.38,
+			"floatMarketCap": 52000412000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 18320887700,
+					"unitNav": 4.7423
+				},
+				{
+					"code": "510330",
+					"shares": 7710549800,
+					"unitNav": 4.9424
+				},
+				{
+					"code": "159919",
+					"shares": 5609916600,
+					"unitNav": 4.947
+				},
+				{
+					"code": "510310",
+					"shares": 9428144000,
+					"unitNav": 4.6023
+				}
+			]
+		},
+		{
+			"date": "2026-07-14",
+			"indexClose": 4796.5,
+			"floatMarketCap": 52887532000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 18481987700,
+					"unitNav": 4.8429
+				},
+				{
+					"code": "510330",
+					"shares": 7749249800,
+					"unitNav": 5.0484
+				},
+				{
+					"code": "159919",
+					"shares": 5614416600,
+					"unitNav": 5.0527
+				},
+				{
+					"code": "510310",
+					"shares": 9660344000,
+					"unitNav": 4.7006
+				}
+			]
+		},
+		{
+			"date": "2026-07-15",
+			"indexClose": 4786.78,
+			"floatMarketCap": 52935271000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 18395587700,
+					"unitNav": 4.8336
+				},
+				{
+					"code": "510330",
+					"shares": 7765449800,
+					"unitNav": 5.039
+				},
+				{
+					"code": "159919",
+					"shares": 5569416600,
+					"unitNav": 5.0434
+				},
+				{
+					"code": "510310",
+					"shares": 9753944000,
+					"unitNav": 4.6924
+				}
+			]
+		},
+		{
+			"date": "2026-07-16",
+			"indexClose": 4698.43,
+			"floatMarketCap": 52139899000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 19701487700,
+					"unitNav": 4.7485
+				},
+				{
+					"code": "510330",
+					"shares": 7889649800,
+					"unitNav": 4.9504
+				},
+				{
+					"code": "159919",
+					"shares": 5683716600,
+					"unitNav": 4.9547
+				},
+				{
+					"code": "510310",
+					"shares": 9969944000,
+					"unitNav": 4.6102
+				}
+			]
+		},
+		{
+			"date": "2026-07-17",
+			"indexClose": 4529.1,
+			"floatMarketCap": 50887351000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 21716587700,
+					"unitNav": 4.5827
+				},
+				{
+					"code": "510330",
+					"shares": 8252349800,
+					"unitNav": 4.776
+				},
+				{
+					"code": "159919",
+					"shares": 6239016600,
+					"unitNav": 4.7805
+				},
+				{
+					"code": "510310",
+					"shares": 10621544000,
+					"unitNav": 4.449
+				}
+			]
+		},
+		{
+			"date": "2026-07-20",
+			"indexClose": 4598.32,
+			"floatMarketCap": 51925011000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24421987700,
+					"unitNav": 4.6512
+				},
+				{
+					"code": "510330",
+					"shares": 8386449800,
+					"unitNav": 4.849
+				},
+				{
+					"code": "159919",
+					"shares": 6374016600,
+					"unitNav": 4.8523
+				},
+				{
+					"code": "510310",
+					"shares": 11019344000,
+					"unitNav": 4.5169
+				}
+			]
+		},
+		{
+			"date": "2026-07-21",
+			"indexClose": 4739.23,
+			"floatMarketCap": 52816826000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24357187700,
+					"unitNav": 4.7932
+				},
+				{
+					"code": "510330",
+					"shares": 8402649800,
+					"unitNav": 4.9974
+				},
+				{
+					"code": "159919",
+					"shares": 6194916600,
+					"unitNav": 5.0014
+				},
+				{
+					"code": "510310",
+					"shares": 11144444000,
+					"unitNav": 4.6545
+				}
+			]
+		},
+		{
+			"date": "2026-07-22",
+			"indexClose": 4717.24,
+			"floatMarketCap": 52844045000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24044887700,
+					"unitNav": 4.772
+				},
+				{
+					"code": "510330",
+					"shares": 8380149800,
+					"unitNav": 4.9748
+				},
+				{
+					"code": "159919",
+					"shares": 6182316600,
+					"unitNav": 4.9787
+				},
+				{
+					"code": "510310",
+					"shares": 11163344000,
+					"unitNav": 4.634
+				}
+			]
+		},
+		{
+			"date": "2026-07-23",
+			"indexClose": 4728,
+			"floatMarketCap": 53021864000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24026887700,
+					"unitNav": 4.7831
+				},
+				{
+					"code": "510330",
+					"shares": 8468349800,
+					"unitNav": 4.9863
+				},
+				{
+					"code": "159919",
+					"shares": 6192216600,
+					"unitNav": 4.9901
+				},
+				{
+					"code": "510310",
+					"shares": 11184944000,
+					"unitNav": 4.6448
+				}
+			]
+		},
+		{
+			"date": "2026-07-24",
+			"indexClose": 4649.19,
+			"floatMarketCap": 52319516000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24380587700,
+					"unitNav": 4.7045
+				},
+				{
+					"code": "510330",
+					"shares": 8532249800,
+					"unitNav": 4.9038
+				},
+				{
+					"code": "159919",
+					"shares": 6244416600,
+					"unitNav": 4.9078
+				},
+				{
+					"code": "510310",
+					"shares": 11281244000,
+					"unitNav": 4.5683
+				}
+			]
+		},
+		{
+			"date": "2026-07-27",
+			"indexClose": 4702.43,
+			"floatMarketCap": 52760076000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24641587700,
+					"unitNav": 4.7583
+				},
+				{
+					"code": "510330",
+					"shares": 8594349800,
+					"unitNav": 4.9614
+				},
+				{
+					"code": "159919",
+					"shares": 6290316600,
+					"unitNav": 4.9657
+				},
+				{
+					"code": "510310",
+					"shares": 11356844000,
+					"unitNav": 4.6215
+				}
+			]
+		},
+		{
+			"date": "2026-07-28",
+			"indexClose": 4569.52,
+			"floatMarketCap": 51956378000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 25334587700,
+					"unitNav": 4.6254
+				},
+				{
+					"code": "510330",
+					"shares": 8615949800,
+					"unitNav": 4.8219
+				},
+				{
+					"code": "159919",
+					"shares": 6335316600,
+					"unitNav": 4.8261
+				},
+				{
+					"code": "510310",
+					"shares": 11460344000,
+					"unitNav": 4.4922
+				}
+			]
+		},
+		{
+			"date": "2026-07-29",
+			"indexClose": 4600.26,
+			"floatMarketCap": 52148512000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 25947487700,
+					"unitNav": 4.6568
+				},
+				{
+					"code": "510330",
+					"shares": 8649249800,
+					"unitNav": 4.855
+				},
+				{
+					"code": "159919",
+					"shares": 6424416600,
+					"unitNav": 4.8592
+				},
+				{
+					"code": "510310",
+					"shares": 11574644000,
+					"unitNav": 4.5229
+				}
+			]
+		},
+		{
+			"date": "2026-07-30",
+			"indexClose": 4549.72,
+			"floatMarketCap": 52029612000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 26483887700,
+					"unitNav": 4.6069
+				},
+				{
+					"code": "510330",
+					"shares": 8712249800,
+					"unitNav": 4.8027
+				},
+				{
+					"code": "159919",
+					"shares": 6544116600,
+					"unitNav": 4.8071
+				},
+				{
+					"code": "510310",
+					"shares": 11658344000,
+					"unitNav": 4.4743
+				}
+			]
+		},
+		{
+			"date": "2026-07-31",
+			"indexClose": 4588.2,
+			"floatMarketCap": 52198690000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 26466787700,
+					"unitNav": 4.6473
+				},
+				{
+					"code": "510330",
+					"shares": 8714049800,
+					"unitNav": 4.8449
+				},
+				{
+					"code": "159919",
+					"shares": 6608916600,
+					"unitNav": 4.8493
+				},
+				{
+					"code": "510310",
+					"shares": 11662844000,
+					"unitNav": 4.5135
+				}
+			]
+		},
+		{
+			"date": "2026-08-03",
+			"indexClose": 4543.18,
+			"floatMarketCap": 51757855000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 27058087700,
+					"unitNav": 4.6025
+				},
+				{
+					"code": "510330",
+					"shares": 8785149800,
+					"unitNav": 4.7981
+				},
+				{
+					"code": "159919",
+					"shares": 6705216600,
+					"unitNav": 4.8023
+				},
+				{
+					"code": "510310",
+					"shares": 11796044000,
+					"unitNav": 4.4698
+				}
+			]
+		},
+		{
+			"date": "2026-08-04",
+			"indexClose": 4600.93,
+			"floatMarketCap": 51863280000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 26530687700,
+					"unitNav": 4.6608
+				},
+				{
+					"code": "510330",
+					"shares": 8762649800,
+					"unitNav": 4.859
+				},
+				{
+					"code": "159919",
+					"shares": 6612516600,
+					"unitNav": 4.8632
+				},
+				{
+					"code": "510310",
+					"shares": 11716844000,
+					"unitNav": 4.5263
+				}
+			]
+		},
+		{
+			"date": "2026-08-05",
+			"indexClose": 4658.15,
+			"floatMarketCap": 52329723000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 25937587700,
+					"unitNav": 4.718
+				},
+				{
+					"code": "510330",
+					"shares": 8718549800,
+					"unitNav": 4.9191
+				},
+				{
+					"code": "159919",
+					"shares": 6518016600,
+					"unitNav": 4.9236
+				},
+				{
+					"code": "510310",
+					"shares": 11607944000,
+					"unitNav": 4.5821
+				}
+			]
+		},
+		{
+			"date": "2026-08-06",
+			"indexClose": 4651.31,
+			"floatMarketCap": 52391321000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 25705387700,
+					"unitNav": 4.7111
+				},
+				{
+					"code": "510330",
+					"shares": 8737449800,
+					"unitNav": 4.9117
+				},
+				{
+					"code": "159919",
+					"shares": 6488316600,
+					"unitNav": 4.9167
+				},
+				{
+					"code": "510310",
+					"shares": 11631344000,
+					"unitNav": 4.5758
+				}
+			]
+		},
+		{
+			"date": "2026-08-07",
+			"indexClose": 4694.44,
+			"floatMarketCap": 52738353000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 25128487700,
+					"unitNav": 4.7556
+				},
+				{
+					"code": "510330",
+					"shares": 8726649800,
+					"unitNav": 4.9582
+				},
+				{
+					"code": "159919",
+					"shares": 6378516600,
+					"unitNav": 4.9635
+				},
+				{
+					"code": "510310",
+					"shares": 11559344000,
+					"unitNav": 4.6189
+				}
+			]
+		},
+		{
+			"date": "2026-08-10",
+			"indexClose": 4702.02,
+			"floatMarketCap": 52927383000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24861187700,
+					"unitNav": 4.7633
+				},
+				{
+					"code": "510330",
+					"shares": 8723049800,
+					"unitNav": 4.9665
+				},
+				{
+					"code": "159919",
+					"shares": 6335316600,
+					"unitNav": 4.9718
+				},
+				{
+					"code": "510310",
+					"shares": 11526044000,
+					"unitNav": 4.6237
+				}
+			]
+		},
+		{
+			"date": "2026-08-11",
+			"indexClose": 4663.79,
+			"floatMarketCap": 52542789000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24824287700,
+					"unitNav": 4.7258
+				},
+				{
+					"code": "510330",
+					"shares": 8715849800,
+					"unitNav": 4.9271
+				},
+				{
+					"code": "159919",
+					"shares": 6339816600,
+					"unitNav": 4.9326
+				},
+				{
+					"code": "510310",
+					"shares": 11519744000,
+					"unitNav": 4.5872
+				}
+			]
+		},
+		{
+			"date": "2026-08-12",
+			"indexClose": 4690.92,
+			"floatMarketCap": 52623012000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24168187700,
+					"unitNav": 4.7527
+				},
+				{
+					"code": "510330",
+					"shares": 8658249800,
+					"unitNav": 4.9556
+				},
+				{
+					"code": "159919",
+					"shares": 6284916600,
+					"unitNav": 4.9612
+				},
+				{
+					"code": "510310",
+					"shares": 11436044000,
+					"unitNav": 4.6137
+				}
+			]
+		},
+		{
+			"date": "2026-08-13",
+			"indexClose": 4663.95,
+			"floatMarketCap": 52435551000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23678587700,
+					"unitNav": 4.7267
+				},
+				{
+					"code": "510330",
+					"shares": 8599749800,
+					"unitNav": 4.9274
+				},
+				{
+					"code": "159919",
+					"shares": 6235416600,
+					"unitNav": 4.9342
+				},
+				{
+					"code": "510310",
+					"shares": 11375744000,
+					"unitNav": 4.5884
+				}
+			]
+		},
+		{
+			"date": "2026-08-14",
+			"indexClose": 4665.88,
+			"floatMarketCap": 52363527000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23501287700,
+					"unitNav": 4.7282
+				},
+				{
+					"code": "510330",
+					"shares": 8582649800,
+					"unitNav": 4.9293
+				},
+				{
+					"code": "159919",
+					"shares": 6227316600,
+					"unitNav": 4.936
+				},
+				{
+					"code": "510310",
+					"shares": 11373944000,
+					"unitNav": 4.5903
+				}
+			]
+		},
+		{
+			"date": "2026-08-17",
+			"indexClose": 4741.1,
+			"floatMarketCap": 52979619000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23044087700,
+					"unitNav": 4.8038
+				},
+				{
+					"code": "510330",
+					"shares": 8537649800,
+					"unitNav": 5.0087
+				},
+				{
+					"code": "159919",
+					"shares": 6172416600,
+					"unitNav": 5.0155
+				},
+				{
+					"code": "510310",
+					"shares": 11311844000,
+					"unitNav": 4.6643
+				}
+			]
+		},
+		{
+			"date": "2026-08-18",
+			"indexClose": 4725.81,
+			"floatMarketCap": 52975684000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 22693987700,
+					"unitNav": 4.7877
+				},
+				{
+					"code": "510330",
+					"shares": 8380149800,
+					"unitNav": 4.9921
+				},
+				{
+					"code": "159919",
+					"shares": 6132816600,
+					"unitNav": 4.9993
+				},
+				{
+					"code": "510310",
+					"shares": 11228144000,
+					"unitNav": 4.6491
+				}
+			]
+		},
+		{
+			"date": "2026-08-19",
+			"indexClose": 4588.7,
+			"floatMarketCap": 51970865000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23858587700,
+					"unitNav": 4.6502
+				},
+				{
+					"code": "510330",
+					"shares": 8501649800,
+					"unitNav": 4.8487
+				},
+				{
+					"code": "159919",
+					"shares": 6266016600,
+					"unitNav": 4.8555
+				},
+				{
+					"code": "510310",
+					"shares": 11433344000,
+					"unitNav": 4.5155
+				}
+			]
+		},
+		{
+			"date": "2026-08-20",
+			"indexClose": 4592.75,
+			"floatMarketCap": 51959179000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23743387700,
+					"unitNav": 4.6544
+				},
+				{
+					"code": "510330",
+					"shares": 8501649800,
+					"unitNav": 4.8531
+				},
+				{
+					"code": "159919",
+					"shares": 6271416600,
+					"unitNav": 4.8597
+				},
+				{
+					"code": "510310",
+					"shares": 11522444000,
+					"unitNav": 4.5197
+				}
+			]
+		},
+		{
+			"date": "2026-08-21",
+			"indexClose": 4618.9,
+			"floatMarketCap": 52152191000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23481487700,
+					"unitNav": 4.6831
+				},
+				{
+					"code": "510330",
+					"shares": 8378349800,
+					"unitNav": 4.8832
+				},
+				{
+					"code": "159919",
+					"shares": 6221016600,
+					"unitNav": 4.8898
+				},
+				{
+					"code": "510310",
+					"shares": 11458544000,
+					"unitNav": 4.5476
+				}
+			]
+		},
+		{
+			"date": "2026-08-24",
+			"indexClose": 4563.13,
+			"floatMarketCap": 51843099000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23809087700,
+					"unitNav": 4.6263
+				},
+				{
+					"code": "510330",
+					"shares": 8416149800,
+					"unitNav": 4.8239
+				},
+				{
+					"code": "159919",
+					"shares": 6278616600,
+					"unitNav": 4.8306
+				},
+				{
+					"code": "510310",
+					"shares": 11505344000,
+					"unitNav": 4.4928
+				}
+			]
+		},
+		{
+			"date": "2026-08-25",
+			"indexClose": 4552.03,
+			"floatMarketCap": 51770396000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24052987700,
+					"unitNav": 4.6157
+				},
+				{
+					"code": "510330",
+					"shares": 8437749800,
+					"unitNav": 4.8129
+				},
+				{
+					"code": "159919",
+					"shares": 6300216600,
+					"unitNav": 4.8194
+				},
+				{
+					"code": "510310",
+					"shares": 11563844000,
+					"unitNav": 4.4823
+				}
+			]
+		},
+		{
+			"date": "2026-08-26",
+			"indexClose": 4590.79,
+			"floatMarketCap": 52142172000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23853187700,
+					"unitNav": 4.655
+				},
+				{
+					"code": "510330",
+					"shares": 8428749800,
+					"unitNav": 4.8542
+				},
+				{
+					"code": "159919",
+					"shares": 6303816600,
+					"unitNav": 4.8605
+				},
+				{
+					"code": "510310",
+					"shares": 11572844000,
+					"unitNav": 4.5206
+				}
+			]
+		},
+		{
+			"date": "2026-08-27",
+			"indexClose": 4630.28,
+			"floatMarketCap": 52489010000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23578687700,
+					"unitNav": 4.6963
+				},
+				{
+					"code": "510330",
+					"shares": 8399949800,
+					"unitNav": 4.8974
+				},
+				{
+					"code": "159919",
+					"shares": 6284916600,
+					"unitNav": 4.9039
+				},
+				{
+					"code": "510310",
+					"shares": 11465744000,
+					"unitNav": 4.5609
+				}
+			]
+		},
+		{
+			"date": "2026-08-28",
+			"indexClose": 4609.18,
+			"floatMarketCap": 52404503000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23295187700,
+					"unitNav": 4.6758
+				},
+				{
+					"code": "510330",
+					"shares": 8392749800,
+					"unitNav": 4.8762
+				},
+				{
+					"code": "159919",
+					"shares": 6262416600,
+					"unitNav": 4.8825
+				},
+				{
+					"code": "510310",
+					"shares": 11430644000,
+					"unitNav": 4.5411
+				}
+			]
+		},
+		{
+			"date": "2026-08-31",
+			"indexClose": 4625.09,
+			"floatMarketCap": 52812837000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23503987700,
+					"unitNav": 4.6917
+				},
+				{
+					"code": "510330",
+					"shares": 8407149800,
+					"unitNav": 4.8927
+				},
+				{
+					"code": "159919",
+					"shares": 6298416600,
+					"unitNav": 4.8991
+				},
+				{
+					"code": "510310",
+					"shares": 11469344000,
+					"unitNav": 4.5568
+				}
+			]
+		},
+		{
+			"date": "2026-09-01",
+			"indexClose": 4611.44,
+			"floatMarketCap": 52789632000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 22999987700,
+					"unitNav": 4.6783
+				},
+				{
+					"code": "510330",
+					"shares": 8375649800,
+					"unitNav": 4.8787
+				},
+				{
+					"code": "159919",
+					"shares": 6230016600,
+					"unitNav": 4.8849
+				},
+				{
+					"code": "510310",
+					"shares": 11294744000,
+					"unitNav": 4.5437
+				}
+			]
+		},
+		{
+			"date": "2026-09-02",
+			"indexClose": 4547.96,
+			"floatMarketCap": 52223664000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 22956787700,
+					"unitNav": 4.614
+				},
+				{
+					"code": "510330",
+					"shares": 8352249800,
+					"unitNav": 4.8114
+				},
+				{
+					"code": "159919",
+					"shares": 6226416600,
+					"unitNav": 4.8177
+				},
+				{
+					"code": "510310",
+					"shares": 11290244000,
+					"unitNav": 4.4812
+				}
+			]
+		},
+		{
+			"date": "2026-09-03",
+			"indexClose": 4552.58,
+			"floatMarketCap": 52200744000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23120587700,
+					"unitNav": 4.6188
+				},
+				{
+					"code": "510330",
+					"shares": 8355849800,
+					"unitNav": 4.8166
+				},
+				{
+					"code": "159919",
+					"shares": 6235416600,
+					"unitNav": 4.8228
+				},
+				{
+					"code": "510310",
+					"shares": 11296544000,
+					"unitNav": 4.4859
+				}
+			]
+		},
+		{
+			"date": "2026-09-04",
+			"indexClose": 4548.05,
+			"floatMarketCap": 52202041000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23377087700,
+					"unitNav": 4.6147
+				},
+				{
+					"code": "510330",
+					"shares": 8384649800,
+					"unitNav": 4.8122
+				},
+				{
+					"code": "159919",
+					"shares": 6253416600,
+					"unitNav": 4.8184
+				},
+				{
+					"code": "510310",
+					"shares": 11353244000,
+					"unitNav": 4.4819
+				}
+			]
+		},
+		{
+			"date": "2026-09-07",
+			"indexClose": 4575.02,
+			"floatMarketCap": 52207418000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23648887700,
+					"unitNav": 4.6419
+				},
+				{
+					"code": "510330",
+					"shares": 8435949800,
+					"unitNav": 4.8405
+				},
+				{
+					"code": "159919",
+					"shares": 6287616600,
+					"unitNav": 4.8467
+				},
+				{
+					"code": "510310",
+					"shares": 11464844000,
+					"unitNav": 4.5083
+				}
+			]
+		},
+		{
+			"date": "2026-09-08",
+			"indexClose": 4558.74,
+			"floatMarketCap": 52084103000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23468887700,
+					"unitNav": 4.6257
+				},
+				{
+					"code": "510330",
+					"shares": 8390049800,
+					"unitNav": 4.8233
+				},
+				{
+					"code": "159919",
+					"shares": 6257016600,
+					"unitNav": 4.8295
+				},
+				{
+					"code": "510310",
+					"shares": 11396444000,
+					"unitNav": 4.4924
+				}
+			]
+		},
+		{
+			"date": "2026-09-09",
+			"indexClose": 4572.6,
+			"floatMarketCap": 52241321000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23185387700,
+					"unitNav": 4.6399
+				},
+				{
+					"code": "510330",
+					"shares": 8372049800,
+					"unitNav": 4.8383
+				},
+				{
+					"code": "159919",
+					"shares": 6247116600,
+					"unitNav": 4.8444
+				},
+				{
+					"code": "510310",
+					"shares": 11384744000,
+					"unitNav": 4.5064
+				}
+			]
+		},
+		{
+			"date": "2026-09-10",
+			"indexClose": 4548.39,
+			"floatMarketCap": 52099207000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23190787700,
+					"unitNav": 4.6177
+				},
+				{
+					"code": "510330",
+					"shares": 8362149800,
+					"unitNav": 4.8152
+				},
+				{
+					"code": "159919",
+					"shares": 6243516600,
+					"unitNav": 4.8214
+				},
+				{
+					"code": "510310",
+					"shares": 11377544000,
+					"unitNav": 4.4849
+				}
+			]
+		},
+		{
+			"date": "2026-09-11",
+			"indexClose": 4510.16,
+			"floatMarketCap": 51721456000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23398687700,
+					"unitNav": 4.5794
+				},
+				{
+					"code": "510330",
+					"shares": 8340549800,
+					"unitNav": 4.7749
+				},
+				{
+					"code": "159919",
+					"shares": 6262416600,
+					"unitNav": 4.7813
+				},
+				{
+					"code": "510310",
+					"shares": 11347844000,
+					"unitNav": 4.4477
+				}
+			]
+		},
+		{
+			"date": "2026-09-14",
+			"indexClose": 4480.08,
+			"floatMarketCap": 51471916000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23403187700,
+					"unitNav": 4.5489
+				},
+				{
+					"code": "510330",
+					"shares": 8351349800,
+					"unitNav": 4.7432
+				},
+				{
+					"code": "159919",
+					"shares": 6311016600,
+					"unitNav": 4.7494
+				},
+				{
+					"code": "510310",
+					"shares": 11373944000,
+					"unitNav": 4.4182
+				}
+			]
+		},
+		{
+			"date": "2026-09-15",
+			"indexClose": 4450.04,
+			"floatMarketCap": 51118089000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23542687700,
+					"unitNav": 4.5193
+				},
+				{
+					"code": "510330",
+					"shares": 8339649800,
+					"unitNav": 4.7122
+				},
+				{
+					"code": "159919",
+					"shares": 6337116600,
+					"unitNav": 4.7184
+				},
+				{
+					"code": "510310",
+					"shares": 11353244000,
+					"unitNav": 4.3893
+				}
+			]
+		},
+		{
+			"date": "2026-09-16",
+			"indexClose": 4480.27,
+			"floatMarketCap": 51256147000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23794687700,
+					"unitNav": 4.5509
+				},
+				{
+					"code": "510330",
+					"shares": 8327049800,
+					"unitNav": 4.7452
+				},
+				{
+					"code": "159919",
+					"shares": 6341616600,
+					"unitNav": 4.7514
+				},
+				{
+					"code": "510310",
+					"shares": 11342444000,
+					"unitNav": 4.42
+				}
+			]
+		},
+		{
+			"date": "2026-09-17",
+			"indexClose": 4460.16,
+			"floatMarketCap": 51025730000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23701087700,
+					"unitNav": 4.531
+				},
+				{
+					"code": "510330",
+					"shares": 8310849800,
+					"unitNav": 4.7244
+				},
+				{
+					"code": "159919",
+					"shares": 6340716600,
+					"unitNav": 4.7306
+				},
+				{
+					"code": "510310",
+					"shares": 11344244000,
+					"unitNav": 4.4005
+				}
+			]
+		},
+		{
+			"date": "2026-09-18",
+			"indexClose": 4507.39,
+			"floatMarketCap": 51358108000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23659687700,
+					"unitNav": 4.5793
+				},
+				{
+					"code": "510330",
+					"shares": 8317149800,
+					"unitNav": 4.7751
+				},
+				{
+					"code": "159919",
+					"shares": 6329016600,
+					"unitNav": 4.7811
+				},
+				{
+					"code": "510310",
+					"shares": 11344244000,
+					"unitNav": 4.4475
+				}
+			]
+		},
+		{
+			"date": "2026-09-21",
+			"indexClose": 4539.57,
+			"floatMarketCap": 51731495000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23713687700,
+					"unitNav": 4.6121
+				},
+				{
+					"code": "510330",
+					"shares": 8318949800,
+					"unitNav": 4.8095
+				},
+				{
+					"code": "159919",
+					"shares": 6331716600,
+					"unitNav": 4.8154
+				},
+				{
+					"code": "510310",
+					"shares": 11376644000,
+					"unitNav": 4.4796
+				}
+			]
+		},
+		{
+			"date": "2026-09-22",
+			"indexClose": 4544.59,
+			"floatMarketCap": 51805938000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23737987700,
+					"unitNav": 4.6179
+				},
+				{
+					"code": "510330",
+					"shares": 8428749800,
+					"unitNav": 4.8158
+				},
+				{
+					"code": "159919",
+					"shares": 6445116600,
+					"unitNav": 4.8212
+				},
+				{
+					"code": "510310",
+					"shares": 11456744000,
+					"unitNav": 4.4851
+				}
+			]
+		},
+		{
+			"date": "2026-09-23",
+			"indexClose": 4517.28,
+			"floatMarketCap": 51505741000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24005287700,
+					"unitNav": 4.5904
+				},
+				{
+					"code": "510330",
+					"shares": 8578149800,
+					"unitNav": 4.787
+				},
+				{
+					"code": "159919",
+					"shares": 6518916600,
+					"unitNav": 4.7924
+				},
+				{
+					"code": "510310",
+					"shares": 11806844000,
+					"unitNav": 4.4582
+				}
+			]
+		},
+		{
+			"date": "2026-09-24",
+			"indexClose": 4439.14,
+			"floatMarketCap": 50883783000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 23904487700,
+					"unitNav": 4.5127
+				},
+				{
+					"code": "510330",
+					"shares": 8518749800,
+					"unitNav": 4.7054
+				},
+				{
+					"code": "159919",
+					"shares": 6566616600,
+					"unitNav": 4.711
+				},
+				{
+					"code": "510310",
+					"shares": 11788844000,
+					"unitNav": 4.3828
+				}
+			]
+		},
+		{
+			"date": "2026-09-28",
+			"indexClose": 4340.76,
+			"floatMarketCap": 50162270000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24178087700,
+					"unitNav": 4.4133
+				},
+				{
+					"code": "510330",
+					"shares": 8512449800,
+					"unitNav": 4.6013
+				},
+				{
+					"code": "159919",
+					"shares": 6599016600,
+					"unitNav": 4.607
+				},
+				{
+					"code": "510310",
+					"shares": 11813144000,
+					"unitNav": 4.2864
+				}
+			]
+		},
+		{
+			"date": "2026-09-29",
+			"indexClose": 4345.21,
+			"floatMarketCap": 50181533000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24164587700,
+					"unitNav": 4.4181
+				},
+				{
+					"code": "510330",
+					"shares": 8508849800,
+					"unitNav": 4.6066
+				},
+				{
+					"code": "159919",
+					"shares": 6618816600,
+					"unitNav": 4.6121
+				},
+				{
+					"code": "510310",
+					"shares": 11867144000,
+					"unitNav": 4.291
+				}
+			]
+		},
+		{
+			"date": "2026-09-30",
+			"indexClose": 4357.62,
+			"floatMarketCap": 50411948000000,
+			"funds": [
+				{
+					"code": "510300",
+					"shares": 24119587700,
+					"unitNav": 4.4312
+				},
+				{
+					"code": "510330",
+					"shares": 8507049800,
+					"unitNav": 4.6207
+				},
+				{
+					"code": "159919",
+					"shares": 6866316600,
+					"unitNav": 4.626
+				},
+				{
+					"code": "510310",
+					"shares": 11987744000,
+					"unitNav": 4.3043
+				}
+			]
+		}
+	]
+}
