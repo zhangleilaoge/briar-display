@@ -62,7 +62,7 @@ const loadGisScript = () => {
 interface Props {
 	disabled?: boolean
 	onError?: (message: string | null) => void
-	/** 自定义凭证处理（如「绑定谷歌账号」）；不传则走登录并跳转 */
+	/** 自定义凭证处理（如个人中心「登录方式」绑定谷歌账号）；不传则走登录并跳转 */
 	onCredential?: (credential: string) => Promise<void>
 	/** GIS 按钮文案：signin_with（默认）/ continue_with 等 */
 	text?: 'signin_with' | 'continue_with' | 'signup_with' | 'signin'
