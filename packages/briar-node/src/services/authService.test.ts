@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { UserRecord } from '../dal/userDal'
-import { type AuthPayload, authService } from './authService'
+import { type AuthPayload, authService, sanitizeLoginRedirect } from './authService'
 
 const fakeUser = (overrides: Partial<UserRecord> = {}): UserRecord => ({
 	id: 'user-1',
@@ -9,6 +9,7 @@ const fakeUser = (overrides: Partial<UserRecord> = {}): UserRecord => ({
 	avatar: null,
 	passwordHash: 'hash',
 	securityPasswordHash: null,
+	googleSub: null,
 	tokenVersion: 3,
 	createdAt: new Date(),
 	...overrides,
@@ -65,5 +66,27 @@ describe('authService token 逻辑', () => {
 			const payload: AuthPayload = { sub: 'user-1', email: '', name: '' }
 			expect(authService.maybeRefreshLoginToken(payload, fakeUser())).toBeNull()
 		})
+	})
+})
+
+describe('Google OAuth 辅助逻辑', () => {
+	test('sanitizeLoginRedirect 只放行站内相对路径', () => {
+		expect(sanitizeLoginRedirect('/briar/tools')).toBe('/briar/tools')
+		expect(sanitizeLoginRedirect('https://evil.example/')).toBe('/briar/')
+		expect(sanitizeLoginRedirect('//evil.example')).toBe('/briar/')
+		expect(sanitizeLoginRedirect(undefined)).toBe('/briar/')
+	})
+
+	test('createGoogleOAuthState / verifyGoogleOAuthState 往返', () => {
+		const state = authService.createGoogleOAuthState('/briar/admin')
+		const payload = authService.verifyGoogleOAuthState(state)
+		expect(payload.purpose).toBe('google_oauth')
+		expect(payload.r).toBe('/briar/admin')
+		expect(payload.n.length).toBeGreaterThan(8)
+	})
+
+	test('verifyGoogleOAuthState 拒绝非 oauth purpose 的 token', () => {
+		const loginToken = authService.createToken(fakeUser())
+		expect(() => authService.verifyGoogleOAuthState(loginToken)).toThrow()
 	})
 })

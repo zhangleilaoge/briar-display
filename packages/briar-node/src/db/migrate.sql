@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255) NOT NULL UNIQUE COMMENT '邮箱',
   password_hash VARCHAR(255) NOT NULL COMMENT '密码哈希',
   security_password_hash VARCHAR(255) NULL COMMENT '隐私空间安全密码哈希',
+  google_sub VARCHAR(64) NULL UNIQUE COMMENT 'Google OAuth subject（openid sub）',
   token_version INT NOT NULL DEFAULT 0 COMMENT '令牌版本号：+1 吊销该用户全部已签发登录 token',
   avatar VARCHAR(500) COMMENT '头像 CDN URL',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -481,6 +482,13 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'deploy_runs' AND COLUMN_NAME = 'finished_at');
 SET @sql = IF(@col_exists = 0, 'ALTER TABLE deploy_runs ADD COLUMN finished_at TIMESTAMP NULL DEFAULT NULL COMMENT ''运行结束时间'' AFTER started_at', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- users 表新增 Google OAuth subject（按邮箱关联已有账号；首次 Google 登录写入）
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'google_sub');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE users ADD COLUMN google_sub VARCHAR(64) NULL UNIQUE COMMENT ''Google OAuth subject（openid sub）'' AFTER security_password_hash', 'SELECT 1');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;

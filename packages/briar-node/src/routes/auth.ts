@@ -7,4 +7,7 @@ authRoutes.post('/login', (c) => authController.login(c))
 authRoutes.post('/register', (c) => authController.register(c))
 authRoutes.post('/send-reset-code', (c) => authController.sendPasswordResetCode(c))
 authRoutes.post('/reset-password', (c) => authController.resetPassword(c))
+authRoutes.get('/google', (c) => authController.googleStart(c))
+authRoutes.get('/google/callback', (c) => authController.googleCallback(c))
+
 export default authRoutes
