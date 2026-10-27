@@ -28,14 +28,14 @@
 | `/briar/tools/compress` | 图片压缩工具（IndexedDB 历史） |
 | `/briar/images/` | 图床相册（COS 上传、SHA-256 去重） |
 | `/briar/admin/` | 管理后台（用户/角色/权限/日志/SQL 控制台） |
-| `/briar/login` / `register` | 认证页面 |
+| `/briar/login` / `register` / `auth/callback` | 认证页面（含 Google OAuth 落地） |
 | `/briar/profile` | 个人中心 |
 
 ### 后端 API（`@briar/node`）
 
 | 路由模块 | 说明 |
 | :--- | :--- |
-| `auth` | 注册 / 登录 / 密码重置（JWT） |
+| `auth` | 注册 / 登录 / 密码重置（JWT）；Google OAuth（`/api/auth/google`） |
 | `admin` | 角色/权限/用户管理、请求日志 |
 | `sqlConsole` | SQL 控制台（只读/读写、黑名单、审计日志） |
 | `images` | 图床上传（COS）、去重、列表 |
@@ -97,6 +97,14 @@ BRIAR_DATABASE_PORT=3306
 
 # JWT 密钥（随机字符串）
 BRIAR_JWT_SECRET=your_jwt_secret_key_here
+
+# Google OAuth（可选；不配则登录页按钮会 503）
+# Console 创建 Web 应用客户端后填入；重定向 URI 须完全一致：
+#   生产 https://xiaobuzi.cn/api/auth/google/callback
+#   本地 http://localhost:3888/api/auth/google/callback
+BRIAR_GOOGLE_CLIENT_ID=
+BRIAR_GOOGLE_CLIENT_SECRET=
+BRIAR_GOOGLE_REDIRECT_URI=https://xiaobuzi.cn/api/auth/google/callback
 
 # 服务器端口（默认 3888）
 PORT=3888

@@ -8,6 +8,8 @@ export interface UserRecord {
 	avatar: string | null
 	passwordHash: string
 	securityPasswordHash: string | null
+	/** Google OAuth subject（openid sub）；邮箱登录用户可为空 */
+	googleSub: string | null
 	/** 令牌版本号：JWT tv 与其不一致即失效（改密码自增，吊销全部旧 token） */
 	tokenVersion: number
 	createdAt: Date
@@ -21,13 +23,14 @@ interface UserRow {
 	avatar: string | null
 	password_hash: string
 	security_password_hash: string | null
+	google_sub: string | null
 	token_version: number
 	created_at: Date
 	updated_at: Date
 }
 
 const USER_COLUMNS =
-	'id, name, email, avatar, password_hash, security_password_hash, token_version, created_at, updated_at'
+	'id, name, email, avatar, password_hash, security_password_hash, google_sub, token_version, created_at, updated_at'
 
 const mapRowToRecord = (row: UserRow): UserRecord => ({
 	id: row.id,
@@ -36,6 +39,7 @@ const mapRowToRecord = (row: UserRow): UserRecord => ({
 	avatar: row.avatar,
 	passwordHash: row.password_hash,
 	securityPasswordHash: row.security_password_hash,
+	googleSub: row.google_sub ?? null,
 	tokenVersion: row.token_version ?? 0,
 	createdAt: row.created_at,
 	updatedAt: row.updated_at,
@@ -70,12 +74,19 @@ export const userDal = {
 		const total = countRow?.cnt ?? 0
 
 		const rows = await query<UserRow>(
-			`SELECT u.id, u.name, u.email, u.avatar, u.password_hash, u.security_password_hash, u.token_version, u.created_at, u.updated_at
+			`SELECT u.id, u.name, u.email, u.avatar, u.password_hash, u.security_password_hash, u.google_sub, u.token_version, u.created_at, u.updated_at
 			 FROM users u ${where} ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
 			[...values, params.limit, params.offset],
 		)
 
 		return { rows: rows.map(mapRowToRecord), total }
+	},
+
+	async findByGoogleSub(googleSub: string): Promise<UserRecord | null> {
+		const row = await queryOne<UserRow>(`SELECT ${USER_COLUMNS} FROM users WHERE google_sub = ?`, [
+			googleSub,
+		])
+		return row ? mapRowToRecord(row) : null
 	},
 
 	async findByEmail(email: string): Promise<UserRecord | null> {
@@ -91,12 +102,17 @@ export const userDal = {
 	},
 
 	async create(
-		data: Omit<UserRecord, 'id' | 'createdAt' | 'securityPasswordHash' | 'tokenVersion'>,
+		data: Omit<
+			UserRecord,
+			'id' | 'createdAt' | 'securityPasswordHash' | 'tokenVersion' | 'googleSub'
+		> & {
+			googleSub?: string | null
+		},
 	): Promise<UserRecord> {
 		const id = generateId()
 		await execute(
-			'INSERT INTO users (id, name, email, password_hash, avatar) VALUES (?, ?, ?, ?, ?)',
-			[id, data.name, data.email, data.passwordHash, data.avatar ?? null],
+			'INSERT INTO users (id, name, email, password_hash, avatar, google_sub) VALUES (?, ?, ?, ?, ?, ?)',
+			[id, data.name, data.email, data.passwordHash, data.avatar ?? null, data.googleSub ?? null],
 		)
 
 		const record = await userDal.findById(id)
@@ -132,6 +148,10 @@ export const userDal = {
 		if (data.avatar !== undefined) {
 			updates.push('avatar = ?')
 			values.push(data.avatar)
+		}
+		if (data.googleSub !== undefined) {
+			updates.push('google_sub = ?')
+			values.push(data.googleSub)
 		}
 
 		if (updates.length === 0) {
