@@ -2,6 +2,7 @@ import type { ApiResponse, User } from '@briar/shared'
 import { HTTP_STATUS } from '@briar/shared'
 import { generateId } from '@briar/shared'
 import { Hono } from 'hono'
+import { authController } from '../controllers/authController'
 import { userDal } from '../dal/userDal'
 import { cosService } from '../services/cosService'
 import { permissionService } from '../services/permissionService'
@@ -148,5 +149,10 @@ userRoutes.post('/me/avatar', async (c) => {
 
 	return c.json<ApiResponse>({ success: true, data: toPublicUser(updated) })
 })
+
+/** 登录方式（密码 / 第三方身份）与 Google 绑定、解绑 */
+userRoutes.get('/me/login-methods', (c) => authController.loginMethods(c))
+userRoutes.post('/me/identities/google', (c) => authController.bindGoogle(c))
+userRoutes.delete('/me/identities/google', (c) => authController.unbindGoogle(c))
 
 export default userRoutes

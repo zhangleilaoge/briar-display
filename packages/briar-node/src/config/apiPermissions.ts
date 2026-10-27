@@ -85,6 +85,8 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	// ==================== Users ====================
 	'PUT /api/users/me': null,
 	'POST /api/users/me/avatar': null,
+	'POST /api/users/me/identities/google': null, // 绑定 Google（需登录，仅操作自己）
+	'DELETE /api/users/me/identities/google': null, // 解绑 Google（需还剩其它登录方式）
 }
 
 /**

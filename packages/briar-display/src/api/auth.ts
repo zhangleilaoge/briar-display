@@ -101,3 +101,28 @@ export const loginWithGoogleCredential = async (credential: string) => {
 	)
 	return response.data
 }
+
+export interface LoginMethods {
+	hasPassword: boolean
+	identities: { provider: 'google'; email: string | null; createdAt: string }[]
+}
+
+/** 当前用户的登录方式 */
+export const getLoginMethods = async () => {
+	const response = await apiClient.get<ApiResponse<LoginMethods>>('/users/me/login-methods')
+	return response.data
+}
+
+/** 绑定 Google 账号：GIS 凭证交给后端验签后关联到当前用户 */
+export const bindGoogleAccount = async (credential: string) => {
+	const response = await apiClient.post<ApiResponse<LoginMethods>>('/users/me/identities/google', {
+		credential,
+	})
+	return response.data
+}
+
+/** 解绑 Google 账号（需还剩其它登录方式） */
+export const unbindGoogleAccount = async () => {
+	const response = await apiClient.delete<ApiResponse<LoginMethods>>('/users/me/identities/google')
+	return response.data
+}

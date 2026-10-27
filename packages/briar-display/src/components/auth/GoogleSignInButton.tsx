@@ -62,9 +62,18 @@ const loadGisScript = () => {
 interface Props {
 	disabled?: boolean
 	onError?: (message: string | null) => void
+	/** 自定义凭证处理（如「绑定谷歌账号」）；不传则走登录并跳转 */
+	onCredential?: (credential: string) => Promise<void>
+	/** GIS 按钮文案：signin_with（默认）/ continue_with 等 */
+	text?: 'signin_with' | 'continue_with' | 'signup_with' | 'signin'
 }
 
-export default function GoogleSignInButton({ disabled, onError }: Props) {
+export default function GoogleSignInButton({
+	disabled,
+	onError,
+	onCredential,
+	text = 'signin_with',
+}: Props) {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const [status, setStatus] = useState<'loading' | 'ready' | 'failed' | 'submitting'>('loading')
 
@@ -79,6 +88,11 @@ export default function GoogleSignInButton({ disabled, onError }: Props) {
 			setStatus('submitting')
 			onError?.(null)
 			try {
+				if (onCredential) {
+					await onCredential(response.credential)
+					setStatus('ready')
+					return
+				}
 				const result = await loginWithGoogleCredential(response.credential)
 				if (result.success && result.data) {
 					setAuthToken(result.data.token, result.data.user, result.data.permissions)
@@ -109,7 +123,7 @@ export default function GoogleSignInButton({ disabled, onError }: Props) {
 					type: 'standard',
 					theme: 'outline',
 					size: 'large',
-					text: 'signin_with',
+					text,
 					shape: 'rectangular',
 					logo_alignment: 'center',
 					locale: 'zh_CN',
@@ -141,7 +155,7 @@ export default function GoogleSignInButton({ disabled, onError }: Props) {
 				<p className="text-center text-xs text-muted-foreground">正在加载 Google 登录…</p>
 			)}
 			{status === 'submitting' && (
-				<p className="mt-1 text-center text-xs text-muted-foreground">正在完成 Google 登录…</p>
+				<p className="mt-1 text-center text-xs text-muted-foreground">正在处理 Google 凭证…</p>
 			)}
 			{status === 'failed' && (
 				<p className="text-center text-xs text-muted-foreground">

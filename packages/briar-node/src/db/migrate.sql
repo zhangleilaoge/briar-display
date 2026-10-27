@@ -514,3 +514,36 @@ SET @sql = IF(@col_exists = 0, 'ALTER TABLE deploy_runs ADD COLUMN failure_check
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- ============================================================
+-- 多登录方式：users.has_password（是否设置过可用的登录密码）+ user_identities（第三方身份，如 Google sub）
+-- ============================================================
+-- has_password：首次加列时，已有 google_sub 的账号视为「Google 注册、无可用密码」（随机哈希），其余为 1；重置密码后置 1
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'has_password');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE users ADD COLUMN has_password TINYINT(1) NOT NULL DEFAULT 1 COMMENT ''是否设置过可用的登录密码（Google 注册的账号为 0，重置密码后为 1）'' AFTER password_hash', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+SET @sql = IF(@col_exists = 0, 'UPDATE users SET has_password = 0 WHERE google_sub IS NOT NULL', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 第三方登录身份：一个用户可绑定多个身份；(provider, provider_uid) 全局唯一
+CREATE TABLE IF NOT EXISTS user_identities (
+  id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
+  user_id VARCHAR(36) NOT NULL COMMENT '所属用户 ID',
+  provider VARCHAR(32) NOT NULL COMMENT '身份提供方（google）',
+  provider_uid VARCHAR(128) NOT NULL COMMENT '提供方内的用户标识（Google sub）',
+  email VARCHAR(255) NULL COMMENT '绑定时该身份的邮箱',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '绑定时间',
+  UNIQUE KEY uk_provider_uid (provider, provider_uid),
+  INDEX idx_user_id (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户第三方登录身份';
+
+-- 存量 users.google_sub → user_identities（幂等），迁移后清空旧列（旧列保留但不再读写）
+INSERT IGNORE INTO user_identities (id, user_id, provider, provider_uid, email)
+SELECT UUID(), id, 'google', google_sub, email FROM users WHERE google_sub IS NOT NULL;
+UPDATE users u JOIN user_identities i ON i.user_id = u.id AND i.provider = 'google' AND i.provider_uid = u.google_sub
+SET u.google_sub = NULL;

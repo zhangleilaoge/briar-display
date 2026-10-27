@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { AUTH_CONFIG, isGoogleAuthConfigured } from '../config/auth'
 import { type UserRecord, userDal } from '../dal/userDal'
+import { userIdentityDal } from '../dal/userIdentityDal'
 import { VerificationCodeType, verificationCodeDal } from '../dal/verificationCodeDal'
 import { emailService } from './emailService'
 import { verifyGoogleIdToken } from './googleIdToken'
@@ -37,6 +38,40 @@ export const sanitizeLoginRedirect = (
 	}
 	return fallback
 }
+
+/**
+ * Google 登录落点决策（纯函数）：
+ * 1. 该 Google sub 已绑定 → 登录绑定的用户
+ * 2. 未绑定 + 邮箱已验证 + 同邮箱用户存在 → 自动关联到该用户
+ * 3. 同邮箱用户存在但邮箱未验证 → 冲突（不能自动关联，也不能再建同邮箱账号）
+ * 4. 否则新建用户
+ */
+export type GoogleLoginDecision =
+	| { action: 'login'; userId: string }
+	| { action: 'link'; userId: string }
+	| { action: 'create' }
+	| { action: 'conflict' }
+
+export const decideGoogleLogin = (input: {
+	identityUserId: string | null
+	emailUserId: string | null
+	emailVerified: boolean
+}): GoogleLoginDecision => {
+	if (input.identityUserId) return { action: 'login', userId: input.identityUserId }
+	if (input.emailUserId) {
+		return input.emailVerified
+			? { action: 'link', userId: input.emailUserId }
+			: { action: 'conflict' }
+	}
+	return { action: 'create' }
+}
+
+/** 解绑 Google 的前提：解绑后至少还剩一种登录方式（密码或其它第三方身份） */
+export const canUnbindIdentity = (input: { hasPassword: boolean; otherIdentityCount: number }) =>
+	input.hasPassword || input.otherIdentityCount > 0
+
+const isDuplicateKeyError = (e: unknown) =>
+	!!e && typeof e === 'object' && (e as { code?: string }).code === 'ER_DUP_ENTRY'
 
 const toPublicUser = (record: UserRecord): User => ({
 	id: record.id,
@@ -166,7 +201,7 @@ export const authService = {
 
 		// 更新密码并吊销既有 token（token_version 自增，旧 token 立即失效）
 		const passwordHash = await bcrypt.hash(newPassword, 10)
-		await userDal.update(user.id, { passwordHash })
+		await userDal.update(user.id, { passwordHash, hasPassword: true })
 		const updatedUser = await userDal.incrementTokenVersion(user.id)
 
 		if (!updatedUser) {
@@ -241,42 +276,112 @@ export const authService = {
 	},
 
 	/**
-	 * 用 Google 资料登录：优先 google_sub，其次邮箱关联已有账号；新用户随机密码哈希（仅 OAuth）。
-	 * 关联到 zhangleilaoge@qq.com 时确保 admin 角色。
+	 * 用 Google 资料登录：先按 Google sub 找已绑定身份；未绑定且邮箱已验证则自动关联同邮箱用户；
+	 * 否则新建用户（随机密码哈希，has_password=0）。关联到 zhangleilaoge@qq.com 时确保 admin 角色。
 	 */
 	async loginWithGoogle(profile: GoogleProfile) {
-		let record = await userDal.findByGoogleSub(profile.sub)
-		if (!record) {
-			record = await userDal.findByEmail(profile.email)
-			if (record) {
-				// 邮箱已存在 → 绑定 google_sub；头像空时补 Google 头像
-				const patch: Partial<UserRecord> = { googleSub: profile.sub }
-				if (!record.avatar && profile.picture) {
-					patch.avatar = profile.picture
-				}
-				record = (await userDal.update(record.id, patch)) || record
-			} else {
-				const passwordHash = await bcrypt.hash(randomBytes(32).toString('hex'), 10)
-				record = await userDal.create({
-					name: profile.name,
-					email: profile.email,
-					passwordHash,
-					avatar: profile.picture ?? null,
-					googleSub: profile.sub,
-				})
-			}
-		} else if (!record.avatar && profile.picture) {
+		const identity = await userIdentityDal.findByProviderUid('google', profile.sub)
+		let record = identity ? await userDal.findById(identity.userId) : null
+		const emailUser = record ? null : await userDal.findByEmail(profile.email)
+		const decision = decideGoogleLogin({
+			identityUserId: record?.id ?? null,
+			emailUserId: emailUser?.id ?? null,
+			emailVerified: profile.emailVerified,
+		})
+
+		if (decision.action === 'conflict') {
+			throw new Error('GOOGLE_EMAIL_CONFLICT')
+		}
+		if (decision.action === 'link' && emailUser) {
+			await userIdentityDal.create({
+				userId: emailUser.id,
+				provider: 'google',
+				providerUid: profile.sub,
+				email: profile.email,
+			})
+			record = emailUser
+		} else if (decision.action === 'create') {
+			const passwordHash = await bcrypt.hash(randomBytes(32).toString('hex'), 10)
+			record = await userDal.create({
+				name: profile.name,
+				email: profile.email,
+				passwordHash,
+				hasPassword: false,
+				avatar: profile.picture ?? null,
+			})
+			await userIdentityDal.create({
+				userId: record.id,
+				provider: 'google',
+				providerUid: profile.sub,
+				email: profile.email,
+			})
+		}
+		if (!record) throw new Error('USER_NOT_FOUND')
+
+		if (!record.avatar && profile.picture) {
 			record = (await userDal.update(record.id, { avatar: profile.picture })) || record
 		}
 
 		// 超级管理员邮箱：与启动时 ensureAdminRole 一致，首次 Google 登录也要落到 admin
-		if (profile.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+		if (record.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
 			await ensureAdminRole()
 		}
 
 		const token = authService.createToken(record)
 		const permissions = await permissionService.getUserPermissions(record.id)
 		return { user: toPublicUser(record), token, permissions }
+	},
+
+	/** 当前用户的登录方式：是否有密码 + 已绑定的第三方身份 */
+	async listLoginMethods(userId: string) {
+		const record = await userDal.findById(userId)
+		if (!record) throw new Error('USER_NOT_FOUND')
+		const identities = await userIdentityDal.listByUser(userId)
+		return {
+			hasPassword: record.hasPassword,
+			identities: identities.map((i) => ({
+				provider: i.provider,
+				email: i.email,
+				createdAt: i.createdAt,
+			})),
+		}
+	},
+
+	/** 给已登录用户绑定 Google 身份；该 Google 账号已属于其他用户则报 GOOGLE_IDENTITY_TAKEN */
+	async bindGoogle(userId: string, profile: GoogleProfile) {
+		const existing = await userIdentityDal.findByProviderUid('google', profile.sub)
+		if (existing) {
+			if (existing.userId !== userId) throw new Error('GOOGLE_IDENTITY_TAKEN')
+			return authService.listLoginMethods(userId)
+		}
+		const mine = await userIdentityDal.listByUser(userId)
+		if (mine.some((i) => i.provider === 'google')) throw new Error('GOOGLE_ALREADY_BOUND')
+		try {
+			await userIdentityDal.create({
+				userId,
+				provider: 'google',
+				providerUid: profile.sub,
+				email: profile.email,
+			})
+		} catch (e) {
+			if (isDuplicateKeyError(e)) throw new Error('GOOGLE_IDENTITY_TAKEN')
+			throw e
+		}
+		return authService.listLoginMethods(userId)
+	},
+
+	/** 解绑 Google：必须还剩其它登录方式（密码或其它身份），否则 LAST_LOGIN_METHOD */
+	async unbindGoogle(userId: string) {
+		const record = await userDal.findById(userId)
+		if (!record) throw new Error('USER_NOT_FOUND')
+		const identities = await userIdentityDal.listByUser(userId)
+		if (!identities.some((i) => i.provider === 'google')) throw new Error('GOOGLE_NOT_BOUND')
+		const otherIdentityCount = identities.filter((i) => i.provider !== 'google').length
+		if (!canUnbindIdentity({ hasPassword: record.hasPassword, otherIdentityCount })) {
+			throw new Error('LAST_LOGIN_METHOD')
+		}
+		await userIdentityDal.deleteByUserProvider(userId, 'google')
+		return authService.listLoginMethods(userId)
 	},
 
 	async getUserById(id: string) {

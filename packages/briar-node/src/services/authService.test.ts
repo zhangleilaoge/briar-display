@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import type { UserRecord } from '../dal/userDal'
-import { type AuthPayload, authService, sanitizeLoginRedirect } from './authService'
+import {
+	type AuthPayload,
+	authService,
+	canUnbindIdentity,
+	decideGoogleLogin,
+	sanitizeLoginRedirect,
+} from './authService'
 
 const fakeUser = (overrides: Partial<UserRecord> = {}): UserRecord => ({
 	id: 'user-1',
@@ -9,7 +15,7 @@ const fakeUser = (overrides: Partial<UserRecord> = {}): UserRecord => ({
 	avatar: null,
 	passwordHash: 'hash',
 	securityPasswordHash: null,
-	googleSub: null,
+	hasPassword: true,
 	tokenVersion: 3,
 	createdAt: new Date(),
 	...overrides,
@@ -75,5 +81,40 @@ describe('登录回跳', () => {
 		expect(sanitizeLoginRedirect('https://evil.example/')).toBe('/briar/')
 		expect(sanitizeLoginRedirect('//evil.example')).toBe('/briar/')
 		expect(sanitizeLoginRedirect(undefined)).toBe('/briar/')
+	})
+})
+
+describe('Google 登录落点（decideGoogleLogin）', () => {
+	test('已绑定 sub → 登录绑定的用户（即使邮箱属于另一个账号）', () => {
+		expect(
+			decideGoogleLogin({ identityUserId: 'u-qq', emailUserId: 'u-gmail', emailVerified: true }),
+		).toEqual({ action: 'login', userId: 'u-qq' })
+	})
+	test('未绑定 + 邮箱已验证 + 同邮箱用户 → 自动关联', () => {
+		expect(
+			decideGoogleLogin({ identityUserId: null, emailUserId: 'u-1', emailVerified: true }),
+		).toEqual({ action: 'link', userId: 'u-1' })
+	})
+	test('未绑定 + 邮箱未验证 + 同邮箱用户 → 冲突', () => {
+		expect(
+			decideGoogleLogin({ identityUserId: null, emailUserId: 'u-1', emailVerified: false }),
+		).toEqual({ action: 'conflict' })
+	})
+	test('无匹配 → 新建', () => {
+		expect(
+			decideGoogleLogin({ identityUserId: null, emailUserId: null, emailVerified: true }),
+		).toEqual({ action: 'create' })
+	})
+})
+
+describe('解绑前提（canUnbindIdentity）', () => {
+	test('有密码可解绑', () => {
+		expect(canUnbindIdentity({ hasPassword: true, otherIdentityCount: 0 })).toBe(true)
+	})
+	test('无密码但有其它身份可解绑', () => {
+		expect(canUnbindIdentity({ hasPassword: false, otherIdentityCount: 1 })).toBe(true)
+	})
+	test('唯一登录方式不可解绑', () => {
+		expect(canUnbindIdentity({ hasPassword: false, otherIdentityCount: 0 })).toBe(false)
 	})
 })
