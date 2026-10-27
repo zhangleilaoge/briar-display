@@ -469,6 +469,86 @@ body {
 	filter: drop-shadow(0 1px 0 rgb(255 255 255 / 0.9)) drop-shadow(0 -0.5px 0 rgb(0 0 0 / 0.18));
 }
 
+/* 移动端底部吊牌栏：横滑轨道、隐藏滚动条、边缘渐隐与箭头提示 */
+.rv-ribbon-mobile-track {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+	-webkit-overflow-scrolling: touch;
+	scroll-snap-type: x proximity;
+	touch-action: pan-x;
+}
+.rv-ribbon-mobile-track::-webkit-scrollbar {
+	display: none;
+	width: 0;
+	height: 0;
+}
+.rv-ribbon-fade {
+	pointer-events: none;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 2.75rem;
+	opacity: 0;
+	transition: opacity 0.22s ease;
+	z-index: 1;
+}
+.rv-ribbon-fade.is-on {
+	opacity: 1;
+}
+.rv-ribbon-fade-l {
+	left: 0;
+	background: linear-gradient(
+		to right,
+		hsl(var(--background) / 0.96) 0%,
+		hsl(var(--background) / 0.72) 42%,
+		transparent 100%
+	);
+}
+.rv-ribbon-fade-r {
+	right: 0;
+	background: linear-gradient(
+		to left,
+		hsl(var(--background) / 0.96) 0%,
+		hsl(var(--background) / 0.72) 42%,
+		transparent 100%
+	);
+}
+/* 右缘「还有更多」点点提示 */
+.rv-ribbon-fade-r.is-on::after {
+	content: "";
+	position: absolute;
+	right: 0.45rem;
+	top: 50%;
+	translate: 0 -35%;
+	width: 0.28rem;
+	height: 0.28rem;
+	border-radius: 999px;
+	background: var(--sidebar-tag-stroke);
+	box-shadow: 0 0.45rem 0 var(--sidebar-tag-stroke), 0 0.9rem 0 var(--sidebar-tag-stroke);
+	opacity: 0.7;
+}
+.rv-ribbon-fade-l.is-on::after {
+	content: "";
+	position: absolute;
+	left: 0.45rem;
+	top: 50%;
+	translate: 0 -35%;
+	width: 0.28rem;
+	height: 0.28rem;
+	border-radius: 999px;
+	background: var(--sidebar-tag-stroke);
+	box-shadow: 0 0.45rem 0 var(--sidebar-tag-stroke), 0 0.9rem 0 var(--sidebar-tag-stroke);
+	opacity: 0.7;
+}
+@media (prefers-reduced-motion: reduce) {
+	.rv-ribbon-mobile-track {
+		scroll-behavior: auto;
+	}
+	.rv-ribbon-fade {
+		transition: none;
+	}
+}
+
 /* 移动端底部吊牌栏：给页面底部留出空间，避免内容被遮挡 */
 @media (max-width: 767.98px) {
 	body:has(.rv-ribbon-mobile) {
