@@ -32,7 +32,7 @@
 	--secondary: 24 33% 94%; /* #F5EFEB 米 */
 	--secondary-foreground: 222 25% 23%;
 	--muted: 24 33% 94%;
-	--muted-foreground: 222 13% 46%;
+	--muted-foreground: 222 16% 40%;
 	--accent: 345 47% 92%; /* #F5E1E6 粉 */
 	--accent-foreground: 222 25% 23%;
 	--destructive: 356 58% 52%;
@@ -115,9 +115,9 @@
 	--surface-texture-repeat: repeat;
 
 	--page-bg: var(--paper-grain),
-		radial-gradient(ellipse 70% 45% at 85% 8%, hsl(345 50% 92% / 0.8), transparent 70%),
-		radial-gradient(ellipse 60% 50% at 10% 95%, hsl(214 40% 88% / 0.7), transparent 70%),
-		linear-gradient(180deg, #d5dbec 0%, #e9e8f0 38%, #f6f1ec 100%);
+		radial-gradient(ellipse 70% 45% at 85% 8%, hsl(345 55% 91% / 0.72), transparent 70%),
+		radial-gradient(ellipse 60% 50% at 10% 95%, hsl(214 45% 88% / 0.62), transparent 70%),
+		linear-gradient(160deg, #e4e6f0 0%, #f5f1ee 48%, #faf3eb 100%);
 	--page-bg-size: 180px 180px, auto, auto, auto;
 
 	--sidebar-bg: linear-gradient(180deg, hsl(222 30% 86% / 0.55), hsl(222 30% 90% / 0.35));
@@ -154,7 +154,7 @@
 	--secondary: 210 42% 88%;
 	--secondary-foreground: 221 46% 20%;
 	--muted: 210 45% 92%;
-	--muted-foreground: 217 24% 40%;
+	--muted-foreground: 217 26% 34%;
 	--accent: 210 45% 85%; /* #C5D7E8 */
 	--accent-foreground: 221 46% 20%;
 	--destructive: 354 62% 48%;
@@ -178,7 +178,7 @@
 	--radius-surface: 2px;
 	--radius-control: 2px;
 	--radius-field: 2px;
-	--control-tracking: 0.14em;
+	--control-tracking: 0.08em;
 	--control-transform: uppercase;
 	--control-weight: 600;
 	--label-tracking: 0.22em;
@@ -316,7 +316,7 @@ body {
 
 .theme-arcane .glass,
 .theme-arcane .glass-soft {
-	background-color: hsl(var(--card) / 0.62);
+	background-color: hsl(var(--card) / 0.72);
 }
 
 .glass-interactive {

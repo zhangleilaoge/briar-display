@@ -67,7 +67,7 @@ const ENTRIES: Entry[] = [
 	},
 ]
 
-function EntryCard({ entry, tilt }: { entry: Entry; tilt: number }) {
+function EntryCard({ entry, tilt, index }: { entry: Entry; tilt: number; index: number }) {
 	const Icon = entry.icon
 	return (
 		<a
@@ -76,19 +76,28 @@ function EntryCard({ entry, tilt }: { entry: Entry; tilt: number }) {
 			style={{ rotate: `${tilt}deg` }}
 		>
 			<Card className="glass-interactive overflow-hidden group-focus-visible:shadow-focus">
-				<CardContent className="flex items-center gap-4 p-5">
+				<CardContent className="relative flex items-center gap-4 p-5 sm:px-6">
+					<span className="absolute right-4 top-3 font-label text-[9px] tracking-[0.18em] text-muted-foreground/70">
+						{String(index + 1).padStart(2, '0')}
+					</span>
 					<div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[color:var(--rv-rose)] bg-[var(--rv-pink)] shadow-[inset_0_2px_4px_rgb(255_255_255/0.9),inset_0_-2px_4px_rgb(185_84_95/0.18)]">
 						<Icon className="h-7 w-7 text-[color:var(--rv-ink)]" />
 					</div>
-					<div className="min-w-0">
+					<div className="min-w-0 pr-5">
 						<span className="rv-script block text-lg leading-none text-[color:var(--rv-rose-deep)]">
 							{entry.caption}
 						</span>
-						<h3 className="font-heading text-lg font-semibold transition-colors group-hover:text-[color:var(--rv-rose-deep)]">
+						<h3 className="mt-0.5 font-heading text-xl font-semibold transition-colors group-hover:text-[color:var(--rv-rose-deep)]">
 							{entry.title}
 						</h3>
-						<p className="truncate text-sm text-muted-foreground">{entry.description}</p>
+						<p className="mt-0.5 text-sm leading-5 text-muted-foreground">{entry.description}</p>
 					</div>
+					<span
+						aria-hidden
+						className="absolute bottom-3 right-4 font-display text-xl text-[color:var(--rv-rose-deep)] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+					>
+						↗
+					</span>
 				</CardContent>
 			</Card>
 		</a>
@@ -120,11 +129,10 @@ function PortalPageInner() {
 		)
 	}, [isAdmin, query])
 
-	const tilts = [-1.2, 0.8, 1, -0.8, -1]
+	const tilts = [-0.55, 0.4, 0.35, -0.45, -0.4]
 
 	return (
 		<ThemeShell variant="scrapbook" className="flex flex-col overflow-hidden">
-			{/* Top bar */}
 			<header className="glass-header sticky top-0 z-30 flex h-14 items-center justify-between px-4 sm:px-6">
 				<span className="rv-script text-2xl leading-none text-foreground">xiaobuzi</span>
 				<div className="flex items-center gap-3">
@@ -136,35 +144,62 @@ function PortalPageInner() {
 				</div>
 			</header>
 
-			{/* Main */}
-			<main className="flex flex-1 items-center justify-center p-4 sm:p-6">
-				<div className="w-full max-w-3xl space-y-8">
-					{/* 拼贴问候卡 */}
+			<main className="flex flex-1 items-center justify-center px-4 py-7 sm:px-6 sm:py-9">
+				<div className="w-full max-w-5xl space-y-7">
 					<Card className="relative overflow-visible">
-						<CardContent className="relative flex flex-col gap-2 p-6 sm:p-8">
-							<span className="rv-label text-muted-foreground">
-								Carnet de voyage · {date || '\u00a0'}
-							</span>
-							<h1 className="font-display text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
-								<span className="rv-script mr-2 font-normal text-[color:var(--rv-rose-deep)]">
-									{greet},
+						<CardContent className="relative grid gap-8 p-6 sm:p-9 md:grid-cols-[minmax(0,1fr)_180px] md:p-10">
+							<div className="relative z-10">
+								<span className="rv-label text-muted-foreground">
+									Carnet de voyage · {date || '\u00a0'}
 								</span>
-								xiaobuzi
-							</h1>
-							<p className="font-display text-lg italic text-muted-foreground">
-								今天想去哪里看看？
-							</p>
-							<Postmark
-								className="absolute -top-6 right-4 h-24 w-24 rotate-12 sm:right-8"
-								date={date.slice(-2) || '27'}
-							/>
-							<Strawberry className="absolute -bottom-6 right-24 h-14 w-14 -rotate-12 sm:right-32" />
-							<Ribbon className="absolute -left-5 -top-6 h-14 w-14 -rotate-[18deg]" />
+								<h1 className="mt-3 font-display text-4xl font-semibold leading-[0.95] text-foreground sm:text-6xl">
+									<span className="rv-script block font-normal text-[color:var(--rv-rose-deep)]">
+										{greet},
+									</span>
+									<span className="mt-2 block tracking-[-0.03em]">xiaobuzi</span>
+								</h1>
+								<p className="mt-4 font-display text-lg italic text-muted-foreground">
+									今天想去哪里看看？
+								</p>
+								<p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+									工具、文件、行情与文字，都收在这本随时等待翻阅的册子里。
+								</p>
+							</div>
+							<div className="relative hidden min-h-48 flex-col justify-between border-l border-dashed border-[color:var(--rv-rose)] pl-8 md:flex">
+								<span className="rv-label text-muted-foreground">Index des pages</span>
+								<div>
+									<span className="block font-display text-7xl leading-none text-[color:var(--rv-ink)]">
+										{String(visible.length).padStart(2, '0')}
+									</span>
+									<span className="mt-2 block font-label text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+										Destinations
+									</span>
+								</div>
+								<p className="font-display text-sm italic leading-6 text-muted-foreground">
+									Choisissez une page,
+									<br />
+									laissez-vous porter.
+								</p>
+							</div>
 						</CardContent>
+						<Postmark
+							className="absolute -top-7 right-3 h-24 w-24 rotate-12 sm:right-5"
+							date={date.slice(-2) || '27'}
+						/>
+						<Strawberry className="absolute -bottom-6 right-24 h-14 w-14 -rotate-12 sm:right-32" />
+						<Ribbon className="absolute -left-5 -top-6 h-14 w-14 -rotate-[18deg]" />
 					</Card>
 
-					{/* 邮票输入条：筛选下方入口 */}
 					<div className="space-y-3">
+						<div className="flex items-center justify-between gap-3 px-1">
+							<span className="rv-label text-muted-foreground">Trouver une page</span>
+							<span
+								aria-live="polite"
+								className="font-label text-[10px] tracking-[0.12em] text-muted-foreground"
+							>
+								{String(visible.length).padStart(2, '0')} 页可前往
+							</span>
+						</div>
 						<StampInputBar
 							value={query}
 							onChange={(e) => setQuery(e.target.value)}
@@ -178,10 +213,9 @@ function PortalPageInner() {
 						)}
 					</div>
 
-					{/* 入口卡片 */}
-					<div className="grid gap-5 sm:grid-cols-2">
+					<div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
 						{visible.map((entry, i) => (
-							<EntryCard key={entry.href} entry={entry} tilt={tilts[i % tilts.length]} />
+							<EntryCard key={entry.href} entry={entry} tilt={tilts[i % tilts.length]} index={i} />
 						))}
 						{visible.length === 0 && (
 							<ChatBubble from="bot">没有找到相关入口，换个词试试？</ChatBubble>
@@ -190,8 +224,7 @@ function PortalPageInner() {
 				</div>
 			</main>
 
-			{/* Footer */}
-			<footer className="pb-6 pt-8 text-center text-xs text-muted-foreground/80">
+			<footer className="pb-6 pt-4 text-center text-xs text-muted-foreground/80">
 				<p className="font-display italic">Powered by zhangleilaoge</p>
 				<a
 					href="https://beian.miit.gov.cn/"

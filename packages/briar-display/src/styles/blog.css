@@ -1,5 +1,5 @@
 /* ============================================================
-   个人博客主题：暖纸 + 朱砂（暗色自动切换为墨黑 + 金）
+   个人博客主题：暖纸 + 玫瑰，与全站 Scrapbook 保持一致
    仅作用于 .blog-theme 内部，不影响站点其他页面
    ============================================================ */
 
@@ -8,27 +8,13 @@
 	--blog-bg: #fdfbf7;
 	--blog-bg-soft: #f5efeb;
 	--blog-ink: #2c3549;
-	--blog-muted: #8a8194;
+	--blog-muted: #756d80;
 	--blog-accent: #b9545f;
 	--blog-accent-soft: rgba(234, 200, 205, 0.32);
 	--blog-line: #ecd9dc;
 	--blog-dot: rgba(44, 53, 73, 0.04);
 	--blog-glow: rgba(234, 200, 205, 0.55);
 	--blog-serif: var(--font-display, "Songti SC", "STSong", "Noto Serif CJK SC", serif);
-}
-
-@media (prefers-color-scheme: dark) {
-	:root {
-		--blog-bg: #15120d;
-		--blog-bg-soft: #1e1a13;
-		--blog-ink: #e8e1d2;
-		--blog-muted: #998e7b;
-		--blog-accent: #d9a441;
-		--blog-accent-soft: rgba(217, 164, 65, 0.12);
-		--blog-line: #2f2a1f;
-		--blog-dot: rgba(232, 225, 210, 0.04);
-		--blog-glow: rgba(217, 164, 65, 0.06);
-	}
 }
 
 .blog-theme {
@@ -213,6 +199,18 @@
 
 .post-item a:hover {
 	background: var(--blog-accent-soft);
+}
+
+.post-item a:focus-visible,
+.article-back:focus-visible,
+.article-nav-card:focus-visible {
+	outline: 2px solid var(--blog-accent);
+	outline-offset: 4px;
+}
+
+.post-item a:focus-visible .post-item-go {
+	opacity: 1;
+	transform: none;
 }
 
 .post-item-title {
