@@ -98,7 +98,7 @@ export const schedulerTasks: SchedulerTask[] = [
 	{
 		name: 'sync-csi300-etf-scale',
 		label: '沪深300ETF占比快照',
-		description: '同步官方完整月份的四只头部沪深300ETF份额、单位净值与指数流通市值',
+		description: '同步官方完整月份的四只头部沪深300ETF份额、单位/累计净值与指数流通市值',
 		scheduleText: '每日 21:43',
 		cron: resolveCron('BRIAR_CSI300_ETF_SCALE_CRON', '43 21 * * *'),
 		runOnStart: false,

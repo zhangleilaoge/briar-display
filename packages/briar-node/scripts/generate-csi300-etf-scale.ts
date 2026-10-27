@@ -1,12 +1,12 @@
 import { writeFile } from 'node:fs/promises'
 import {
+	CSI300_HISTORY_START,
 	type Csi300EtfScaleSeed,
 	assertDate,
 	buildScaleData,
 	latestCompletedMonth,
 	monthBounds,
 	monthKey,
-	shanghaiDate,
 } from '../src/services/market/csi300EtfScale'
 import { fetchCompletedMonthSnapshots } from '../src/services/market/csi300EtfSources'
 
@@ -25,8 +25,7 @@ const unknown = process.argv.slice(2).filter((arg, index, args) => {
 if (unknown.length > 0) throw new Error(`未知参数: ${unknown.join(', ')}`)
 
 const now = Date.now()
-const firstMonth = monthKey(shanghaiDate(now - 365 * 86_400_000))
-const from = option('--from') ?? monthBounds(firstMonth).start
+const from = option('--from') ?? CSI300_HISTORY_START
 const to = option('--to') ?? monthBounds(latestCompletedMonth(now)).end
 if (from > to) throw new Error('--from 不能晚于 --to')
 const endMonth = monthKey(to)

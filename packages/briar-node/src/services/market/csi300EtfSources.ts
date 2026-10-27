@@ -113,31 +113,49 @@ export async function fetchSzseEtfShares(month: string): Promise<Record<string, 
 	return shares
 }
 
-export function parseUnitNavTrend(
+export function parseNavTrend(
 	script: string,
-): Record<string, { date: string; unitNav: number }> {
-	const match = /\bvar\s+Data_netWorthTrend\s*=\s*(\[[\s\S]*?\]);/.exec(script)
-	if (!match) throw new Error('基金净值响应缺少 Data_netWorthTrend')
-	const rows: unknown = JSON.parse(match[1])
-	if (!Array.isArray(rows)) throw new Error('基金单位净值格式错误')
-	const result: Record<string, { date: string; unitNav: number }> = {}
-	for (const row of rows) {
+): Record<string, { date: string; unitNav: number; cumulativeNav: number }> {
+	const unitMatch = /\bvar\s+Data_netWorthTrend\s*=\s*(\[[\s\S]*?\]);/.exec(script)
+	if (!unitMatch) throw new Error('基金净值响应缺少 Data_netWorthTrend')
+	const cumulativeMatch = /\bvar\s+Data_ACWorthTrend\s*=\s*(\[[\s\S]*?\]);/.exec(script)
+	if (!cumulativeMatch) throw new Error('基金净值响应缺少 Data_ACWorthTrend')
+	const unitRows: unknown = JSON.parse(unitMatch[1])
+	const cumulativeRows: unknown = JSON.parse(cumulativeMatch[1])
+	if (!Array.isArray(unitRows) || !Array.isArray(cumulativeRows)) {
+		throw new Error('基金净值格式错误')
+	}
+	const cumulativeByTimestamp = new Map<number, number>()
+	for (const row of cumulativeRows) {
+		if (!Array.isArray(row) || row.length < 2) throw new Error('基金累计净值行格式错误')
+		const [timestamp, value] = row as [number, number]
+		const date = shanghaiDate(timestamp)
+		cumulativeByTimestamp.set(timestamp, positiveNumber(value, `${date} 累计净值`))
+	}
+	const result: Record<string, { date: string; unitNav: number; cumulativeNav: number }> = {}
+	for (const row of unitRows) {
 		if (typeof row !== 'object' || row === null) throw new Error('基金单位净值行格式错误')
 		const { x, y } = row as { x?: number; y?: number }
 		const date = shanghaiDate(x ?? Number.NaN)
-		result[date] = { date, unitNav: positiveNumber(y ?? Number.NaN, `${date} 单位净值`) }
+		const cumulativeNav = cumulativeByTimestamp.get(x ?? Number.NaN)
+		if (cumulativeNav === undefined) throw new Error(`${date} 缺少当日累计净值`)
+		result[date] = {
+			date,
+			unitNav: positiveNumber(y ?? Number.NaN, `${date} 单位净值`),
+			cumulativeNav,
+		}
 	}
 	return result
 }
 
-export async function fetchUnitNavTrend(code: string) {
+export async function fetchNavTrend(code: string) {
 	if (!CSI300_ETFS.some((fund) => fund.code === code)) throw new Error(`不在样本内的基金: ${code}`)
 	const result = await cachedLoad(`csi300:nav:${code}`, NAV_CACHE_MS, () =>
 		fetchText(`https://fund.eastmoney.com/pingzhongdata/${code}.js`, {
 			headers: { Referer: `https://fund.eastmoney.com/${code}.html` },
 			timeoutMs: 15_000,
 			retries: 1,
-		}).then(parseUnitNavTrend),
+		}).then(parseNavTrend),
 	)
 	return result.value
 }
@@ -186,11 +204,11 @@ export async function fetchSseIndexMonth(month: string): Promise<Csi300IndexDay[
 
 export async function fetchNavTrends() {
 	const entries = await Promise.all(
-		CSI300_ETFS.map(async (fund) => [fund.code, await fetchUnitNavTrend(fund.code)] as const),
+		CSI300_ETFS.map(async (fund) => [fund.code, await fetchNavTrend(fund.code)] as const),
 	)
 	return Object.fromEntries(entries) as Record<
 		string,
-		Record<string, { date: string; unitNav: number }>
+		Record<string, { date: string; unitNav: number; cumulativeNav: number }>
 	>
 }
 

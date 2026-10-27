@@ -108,13 +108,17 @@ export interface MarketOverviewResponse {
 }
 
 export interface Csi300EtfScalePoint {
-	/** 官方完整月份内的交易日 YYYY-MM-DD */
+	/** 官方历史快照交易日 YYYY-MM-DD */
 	date: string
-	/** 四只样本 ETF 合计规模 / 沪深300流通市值 × 100 */
+	/** 四只样本 ETF 实际规模 / 沪深300流通市值 × 100 */
 	ratioPct: number
+	/** 视频口径：四只样本 ETF 份额 × 累计净值之和 / 沪深300流通市值 × 100 */
+	videoRatioPct: number
 	indexClose: number
 	/** 四只样本 ETF 合计资产规模（元） */
 	totalAssets: number
+	/** 视频口径的份额 × 累计净值计算值（元），不是实际资产规模 */
+	videoValue: number
 	/** 沪深300流通市值（元） */
 	floatMarketCap: number
 }
@@ -124,10 +128,14 @@ export interface Csi300EtfFundItem {
 	name: string
 	/** 截止日份额（份） */
 	shares: number
-	/** 截止日单位净值，不是累计净值 */
+	/** 截止日单位净值 */
 	unitNav: number
+	/** 截止日累计净值 */
+	cumulativeNav: number
 	/** 份额 × 单位净值（元） */
 	assets: number
+	/** 份额 × 累计净值（元），不是实际资产规模 */
+	cumulativeValue: number
 }
 
 export interface Csi300EtfScaleResponse extends MarketDataMeta {
