@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import dotenv from 'dotenv'
 import mysql from 'mysql2/promise'
 import { DatabaseConfig } from '../config/database.js'
+import { runSqlFiles } from './sqlFiles.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -38,45 +38,8 @@ const setupDatabase = async () => {
 
 		console.log('✅ 数据库连接成功')
 
-		// 读取并执行 SQL 文件（migrate.sql 是数据库结构唯一事实来源：从零建库 + 增量迁移）
-		const migratePath = path.join(__dirname, 'migrate.sql')
-		const schemaSql = fs.readFileSync(migratePath, 'utf-8')
-
-		console.log('\n📝 执行数据库脚本...')
-
-		// 去除注释并分割 SQL 语句
-		const cleanSql = schemaSql
-			.split('\n')
-			.filter((line) => !line.trim().startsWith('--'))
-			.join('\n')
-
-		const statements = cleanSql
-			.split(';')
-			.map((s) => s.trim())
-			.filter((s) => s.length > 0)
-
-		console.log(`\n📊 共解析出 ${statements.length} 条 SQL 语句\n`)
-
-		for (const statement of statements) {
-			if (statement) {
-				try {
-					await connection.query(statement)
-					// 只输出 CREATE 和 USE 语句的摘要
-					const firstLine = statement.split('\n')[0]
-					console.log(`  ✓ ${firstLine}`)
-				} catch (error: any) {
-					// 如果数据库或表已存在，跳过错误
-					if (error.code === 'ER_TABLE_EXISTS_ERROR' || error.code === 'ER_DB_CREATE_EXISTS') {
-						const firstLine = statement.split('\n')[0]
-						console.log(`  ⊙ ${firstLine} (已存在)`)
-					} else {
-						console.error(`\n❌ 执行 SQL 失败: ${error.message}`)
-						console.error(`   SQL: ${statement.substring(0, 100)}...`)
-						throw error
-					}
-				}
-			}
-		}
+		// schema.sql 含 CREATE DATABASE / USE；之后执行 migrate.sql（全新库上应为 no-op）
+		await runSqlFiles(connection, __dirname)
 
 		console.log('\n✅ 数据库初始化完成！')
 		console.log('='.repeat(60))

@@ -5,18 +5,19 @@ import { IGNORED_USER_COLUMNS, USER_MERGE_HANDLERS } from './registry'
 import { findUserColumns } from './schemaGuard'
 
 /**
- * 用户合并 schema 守卫：扫描 db/migrate.sql 里所有「引用用户」的列，
+ * 用户合并 schema 守卫：扫描 db/schema.sql 里所有「引用用户」的列，
  * 每一列都必须被某个合并 handler 认领（claims），或在 IGNORED_USER_COLUMNS 中写明原因。
  * 新增按用户存数据的表却忘了处理合并 → 这里失败，CI 拦截。
  */
 
+const schemaSql = readFileSync(join(import.meta.dir, '../../db/schema.sql'), 'utf8')
 const migrateSql = readFileSync(join(import.meta.dir, '../../db/migrate.sql'), 'utf8')
 const claimed = new Set(
 	USER_MERGE_HANDLERS.flatMap((h) => h.claims.map((c) => `${c.table}.${c.column}`)),
 )
 
 describe('用户合并 schema 守卫：每个引用用户的表都必须有合并处理', () => {
-	const userColumns = findUserColumns(migrateSql)
+	const userColumns = findUserColumns(schemaSql)
 
 	it('能识别出已知的用户引用列（解析器自检）', () => {
 		for (const col of [
@@ -41,9 +42,14 @@ describe('用户合并 schema 守卫：每个引用用户的表都必须有合�
 		])
 	})
 
-	it('migrate.sql 中每个引用用户的列都被 handler 认领或列入忽略清单', () => {
+	it('schema.sql 中每个引用用户的列都被 handler 认领或列入忽略清单', () => {
 		const missing = userColumns.filter((c) => !claimed.has(c) && !(c in IGNORED_USER_COLUMNS))
 		expect(missing).toEqual([])
+	})
+
+	it('migrate.sql 里新增的用户引用列也已写进 schema.sql（结构变更必须同步 schema.sql）', () => {
+		const inSchema = new Set(userColumns)
+		expect(findUserColumns(migrateSql).filter((c) => !inSchema.has(c))).toEqual([])
 	})
 
 	it('忽略清单每项都写明原因', () => {

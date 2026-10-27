@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import dotenv from 'dotenv'
 import mysql from 'mysql2/promise'
 import { DatabaseConfig } from '../config/database.js'
+import { runSqlFiles } from './sqlFiles.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -38,11 +38,8 @@ const runMigrate = async () => {
 
 		console.log('✅ 数据库连接成功')
 
-		const migratePath = path.join(__dirname, 'migrate.sql')
-		const migrateSql = fs.readFileSync(migratePath, 'utf-8')
-
-		console.log('\n📝 执行迁移脚本...')
-		await connection.query(migrateSql)
+		// schema.sql（完整结构，幂等）→ migrate.sql（临时迁移，可为空）
+		await runSqlFiles(connection, __dirname)
 		console.log('\n✅ 数据库迁移完成！')
 		console.log('='.repeat(60))
 

@@ -17,10 +17,11 @@ import {
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import type { Role } from '@briar/shared'
-import { AlertCircle, Check, Loader2, Search, Shield, User, X } from 'lucide-react'
+import { AlertCircle, Check, History, Loader2, Search, Shield, User, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import AdminLayout from './AdminLayout'
 import AdminPagination from './AdminPagination'
+import MergeLogsDialog from './MergeLogsDialog'
 import MergeUserDialog from './MergeUserDialog'
 
 interface UserWithRoles {
@@ -60,6 +61,7 @@ function AdminUsersPageInner() {
 	const { isAdmin } = usePermissions()
 	const [mergeSource, setMergeSource] = useState<UserWithRoles | null>(null)
 	const [notice, setNotice] = useState<string | null>(null)
+	const [mergeLogsOpen, setMergeLogsOpen] = useState(false)
 
 	const [editingUserId, setEditingUserId] = useState<string | null>(null)
 	const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(new Set())
@@ -170,14 +172,28 @@ function AdminUsersPageInner() {
 						<User className="h-5 w-5" />
 						用户角色管理
 					</CardTitle>
-					<div className="relative w-full sm:w-64">
-						<Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-						<Input
-							placeholder="搜索用户名或邮箱..."
-							value={search}
-							onChange={(e) => handleSearchChange(e.target.value)}
-							className="h-9 pl-8"
-						/>
+					<div className="flex w-full items-center gap-2 sm:w-auto">
+						{isAdmin && (
+							<Button
+								variant="outline"
+								size="sm"
+								className="h-9 shrink-0 gap-1"
+								onClick={() => setMergeLogsOpen(true)}
+								data-testid="merge-logs-button"
+							>
+								<History className="h-3.5 w-3.5" />
+								合并记录
+							</Button>
+						)}
+						<div className="relative w-full sm:w-64">
+							<Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								placeholder="搜索用户名或邮箱..."
+								value={search}
+								onChange={(e) => handleSearchChange(e.target.value)}
+								className="h-9 pl-8"
+							/>
+						</div>
 					</div>
 				</CardHeader>
 				<CardContent>
@@ -329,6 +345,7 @@ function AdminUsersPageInner() {
 					)}
 				</CardContent>
 			</Card>
+			<MergeLogsDialog open={mergeLogsOpen} onOpenChange={setMergeLogsOpen} />
 			<MergeUserDialog
 				source={mergeSource}
 				onOpenChange={(open) => !open && setMergeSource(null)}

@@ -153,6 +153,37 @@ export const mergeUser = async (sourceUserId: string, targetUserId: string) => {
 	return response.data
 }
 
+export interface UserMergeLog {
+	id: string
+	operatorId?: string
+	operatorName: string
+	sourceUserId: string
+	sourceName: string
+	sourceEmail: string
+	targetUserId: string
+	targetName: string
+	targetEmail: string
+	modules: { name: string; label: string; moved: number; notes: string[] }[]
+	conflicts: { module: string; label: string; message: string }[]
+	status: 'success' | 'failed'
+	error: string | null
+	startedAt: string
+	finishedAt: string
+}
+
+/** 用户合并记录（仅超级管理员） */
+export const getUserMergeLogs = async (q: {
+	limit: number
+	offset: number
+	status?: 'success' | 'failed'
+}) => {
+	const response = await apiClient.get<ApiResponse<{ items: UserMergeLog[]; total: number }>>(
+		'/admin/user-merge-logs',
+		{ params: q },
+	)
+	return response.data
+}
+
 // ==================== 当前用户权限 ====================
 
 export const getMyPermissions = async () => {

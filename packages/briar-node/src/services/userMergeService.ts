@@ -1,5 +1,6 @@
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise'
-import { transaction } from '../lib/db'
+import { type MergeLogConflict, type UserSnapshot, userMergeLogDal } from '../dal/userMergeLogDal'
+import { query, transaction } from '../lib/db'
 import { permissionService } from './permissionService'
 import { USER_MERGE_HANDLERS } from './userMerge/registry'
 import type { MergeContext, MergeUserRow, ModulePreview, UserMergeHandler } from './userMerge/types'
@@ -107,23 +108,69 @@ export const userMergeService = {
 		return preview as unknown as MergePreview
 	},
 
-	async mergeUsers(sourceId: string, targetId: string): Promise<MergeResult> {
+	/**
+	 * 执行合并并落一条 user_merge_logs：成功时与业务同事务之后写入；
+	 * 失败时事务已回滚，在事务外写一条 failed 记录（写日志本身失败不掩盖原错误）。
+	 */
+	async mergeUsers(
+		sourceId: string,
+		targetId: string,
+		operator: UserSnapshot,
+	): Promise<MergeResult> {
+		const startedAt = new Date()
+		const snapshot = await snapshotUsers(sourceId, targetId)
 		const afterCommitTasks: (() => Promise<void>)[] = []
-		const result = await transaction(async (conn) => {
-			const ctx = await buildContext(conn, sourceId, targetId, true, (task) => {
-				afterCommitTasks.push(task)
+		let result: MergeResult
+		let conflicts: MergeLogConflict[] = []
+		try {
+			result = await transaction(async (conn) => {
+				const ctx = await buildContext(conn, sourceId, targetId, true, (task) => {
+					afterCommitTasks.push(task)
+				})
+				const modules: MergeResult['modules'] = []
+				const found: MergeLogConflict[] = []
+				for (const h of userMergeService.handlers) {
+					// 先记下合并前的冲突说明（写入合并记录），再执行合并
+					const pv = await h.preview(ctx)
+					for (const message of pv.conflicts)
+						found.push({ module: h.name, label: h.label, message })
+					modules.push({ name: h.name, label: h.label, ...(await h.merge(ctx)) })
+				}
+				const [del] = await conn.execute<import('mysql2/promise').ResultSetHeader>(
+					'DELETE FROM users WHERE id = ?',
+					[sourceId],
+				)
+				if (del.affectedRows !== 1) throw new Error('MERGE_SOURCE_NOT_FOUND')
+				conflicts = found
+				return { sourceId, targetId, modules }
 			})
-			const modules: MergeResult['modules'] = []
-			for (const h of userMergeService.handlers) {
-				modules.push({ name: h.name, label: h.label, ...(await h.merge(ctx)) })
-			}
-			const [del] = await conn.execute<import('mysql2/promise').ResultSetHeader>(
-				'DELETE FROM users WHERE id = ?',
-				[sourceId],
-			)
-			if (del.affectedRows !== 1) throw new Error('MERGE_SOURCE_NOT_FOUND')
-			return { sourceId, targetId, modules }
-		})
+		} catch (err) {
+			await userMergeLogDal
+				.create({
+					operator,
+					...snapshot,
+					modules: [],
+					conflicts,
+					status: 'failed',
+					error: err instanceof Error ? err.message : String(err),
+					startedAt,
+					finishedAt: new Date(),
+				})
+				.catch((logErr) => console.error('[userMerge] 写失败记录出错:', logErr))
+			throw err
+		}
+
+		await userMergeLogDal
+			.create({
+				operator,
+				...snapshot,
+				modules: result.modules,
+				conflicts,
+				status: 'success',
+				startedAt,
+				finishedAt: new Date(),
+			})
+			.catch((logErr) => console.error('[userMerge] 写合并记录出错:', logErr))
 
 		permissionService.invalidateCache(sourceId)
 		permissionService.invalidateCache(targetId)
@@ -133,4 +180,17 @@ export const userMergeService = {
 		}
 		return result
 	},
+}
+
+/** 合并前的双方名字/邮箱快照（源用户合并后会被删除）；不存在的用户只留 id */
+const snapshotUsers = async (sourceId: string, targetId: string) => {
+	const users = await query<{ id: string; name: string; email: string }>(
+		'SELECT id, name, email FROM users WHERE id IN (?, ?)',
+		[sourceId, targetId],
+	)
+	const pick = (id: string): UserSnapshot => {
+		const u = users.find((x) => x.id === id)
+		return { id, name: u?.name ?? '', email: u?.email ?? '' }
+	}
+	return { source: pick(sourceId), target: pick(targetId) }
 }

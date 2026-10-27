@@ -27,7 +27,7 @@ BRIAR_JWT_SECRET="your-jwt-secret"
 bun run --filter @briar/node db:setup
 ```
 
-该脚本执行 `src/db/migrate.sql`（全部语句幂等，可重复执行）：
+该脚本依次执行 `src/db/schema.sql`（完整目标态结构，唯一事实来源）与 `src/db/migrate.sql`（存量库临时迁移，可为空），全部语句幂等，可重复执行：
 
 1. 创建 `briar_display` 数据库（如果不存在）
 2. 创建全部表结构（用户/RBAC/文件/日志/缓存等）
@@ -35,11 +35,14 @@ bun run --filter @briar/node db:setup
 
 ### 方式二：手动执行 SQL
 
-连接到 MySQL 服务器后，执行 `packages/briar-node/src/db/migrate.sql` 文件中的 SQL 语句（数据库结构唯一事实来源：从零建库 + 增量迁移，全部幂等）。
+连接到 MySQL 服务器后，按顺序执行 `schema.sql`（含 CREATE DATABASE / USE）与 `migrate.sql`：
 
 ```bash
-mysql -h your-host -u your-user -p < packages/briar-node/src/db/migrate.sql
+mysql -h your-host -u your-user -p < packages/briar-node/src/db/schema.sql
+mysql -h your-host -u your-user -p briar_display < packages/briar-node/src/db/migrate.sql
 ```
+
+> 约定：结构变更必须改 `schema.sql` 中对应的 CREATE TABLE；存量库需要的 ALTER / 数据修补写进 `migrate.sql`（幂等），线上生效后可清空。
 
 ## 数据库表结构
 

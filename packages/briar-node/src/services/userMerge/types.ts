@@ -43,7 +43,7 @@ export interface UserMergeHandler {
 	/** 中文名，给预览/结果展示 */
 	label: string
 	/**
-	 * 本 handler 负责的「引用用户的列」。schemaGuard.test.ts 会扫描 migrate.sql，
+	 * 本 handler 负责的「引用用户的列」。schemaGuard.test.ts 会扫描 schema.sql，
 	 * 每个引用用户的列都必须被某个 handler 认领，或列入 IGNORED_USER_COLUMNS 并写明原因。
 	 */
 	claims: { table: string; column: string }[]

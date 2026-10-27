@@ -45,7 +45,7 @@
 
 ## 数据表
 
-`files`（原 `images` 表改名）+ `folders`（嵌套文件夹，含 `is_private`），结构见 `src/db/migrate.sql`。
+`files`（原 `images` 表改名）+ `folders`（嵌套文件夹，含 `is_private`），结构见 `src/db/schema.sql`。
 
 ## 注意
 

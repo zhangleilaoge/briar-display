@@ -17,7 +17,7 @@ const RATE_LIMIT_PER_MINUTE = 30
 /** 永远禁止的 SQL 模式（不区分大小写） */
 const BLOCKED_PATTERNS: { pattern: RegExp; reason: string }[] = [
 	{ pattern: /\bDROP\s+DATABASE\b/i, reason: '禁止删除数据库' },
-	{ pattern: /\bDROP\s+TABLE\b/i, reason: '禁止删除表（请使用 migrate.sql）' },
+	{ pattern: /\bDROP\s+TABLE\b/i, reason: '禁止删除表（请走 schema.sql / migrate.sql 迁移）' },
 	{ pattern: /\bTRUNCATE\s+TABLE\b/i, reason: '禁止清空表' },
 	{ pattern: /\bALTER\s+USER\b/i, reason: '禁止修改用户' },
 	{ pattern: /\bGRANT\b/i, reason: '禁止权限操作' },

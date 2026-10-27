@@ -4,6 +4,7 @@ import { generateId } from '@briar/shared'
 import { Hono } from 'hono'
 import { authController } from '../controllers/authController'
 import { userDal } from '../dal/userDal'
+import { userMergeLogDal } from '../dal/userMergeLogDal'
 import { cosService } from '../services/cosService'
 import { permissionService } from '../services/permissionService'
 
@@ -154,5 +155,24 @@ userRoutes.post('/me/avatar', async (c) => {
 userRoutes.get('/me/login-methods', (c) => authController.loginMethods(c))
 userRoutes.post('/me/identities/google', (c) => authController.bindGoogle(c))
 userRoutes.delete('/me/identities/google', (c) => authController.unbindGoogle(c))
+
+/** 与当前用户相关的合并记录（作为目标被并入，或作为源被合并） */
+userRoutes.get('/me/merge-logs', async (c) => {
+	const user = (c as any).get('user') as { id: string } | undefined
+	if (!user) {
+		return c.json<ApiResponse>({ success: false, message: '未登录' }, HTTP_STATUS.UNAUTHORIZED)
+	}
+	const limit = Math.min(Math.max(Number(c.req.query('limit')) || 20, 1), 50)
+	const { items, total } = await userMergeLogDal.list({ limit, offset: 0, userId: user.id })
+	// 普通用户视角不暴露执行人 id / 失败细节
+	const data = {
+		total,
+		items: items.map(({ operatorId: _o, error, ...rest }) => ({
+			...rest,
+			error: error ? '合并失败，数据未改动' : null,
+		})),
+	}
+	return c.json<ApiResponse>({ success: true, data })
+})
 
 export default userRoutes

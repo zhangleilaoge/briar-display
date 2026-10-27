@@ -128,7 +128,7 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 | `default.conf` | `./scripts/deploy-nginx.sh`（手动） |
 | `.env` | `pm2 restart briar-node`（手动，.env 不在 git） |
 
-**数据库**：`src/db/migrate.sql` 是数据库结构唯一事实来源（从零建库 `make db-setup` 与每次部署的增量迁移都执行它，全部语句幂等；新变更 = 改基线段定义 + 末尾历史段追加存量库守卫）。
+**数据库**：`packages/briar-node/src/db/schema.sql` 是数据库结构唯一事实来源（完整、幂等的 CREATE TABLE IF NOT EXISTS + 种子数据，与线上一致）；`migrate.sql` 只放存量库的临时迁移/数据修补（幂等，线上生效后任何 agent 都可清空到只剩头注释）。建库（`make db-setup`）与每次部署（`scripts/deploy.sh`）都按 schema.sql → migrate.sql 顺序执行。结构变更 = 改 schema.sql 的 CREATE TABLE（全新库）+ 在 migrate.sql 写对应 ALTER（存量库）。
 
 **版本校验**：`https://xiaobuzi.cn/api/version` 看 `backend.commit` 与 `frontend.commit` 是否一致。
 

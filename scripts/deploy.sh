@@ -173,10 +173,12 @@ sync_code() {
 
 # 数据库迁移：从 .env 读凭证，不硬编码
 run_migrate() {
-  log_info "执行数据库迁移..."
-  if [ ! -f "packages/briar-node/src/db/migrate.sql" ]; then
-    log_warn "migrate.sql 不存在，跳过迁移"
-    return
+  # 顺序：schema.sql（完整目标态结构，幂等）→ migrate.sql（临时迁移/数据修补，可为空）
+  log_info "执行数据库迁移（schema.sql → migrate.sql）..."
+  local db_dir="packages/briar-node/src/db"
+  if [ ! -f "$db_dir/schema.sql" ] || [ ! -f "$db_dir/migrate.sql" ]; then
+    log_error "$db_dir/schema.sql 或 migrate.sql 不存在"
+    exit 1
   fi
 
   if [ ! -f ".env" ]; then
@@ -195,9 +197,12 @@ run_migrate() {
       exit 1
     fi
 
-    mysql -h"${BRIAR_DATABASE_HOST:-127.0.0.1}" -P"${BRIAR_DATABASE_PORT:-3306}" \
-      -u"$BRIAR_DATABASE_USER" --password="$BRIAR_DATABASE_PASSWORD" \
-      briar_display < packages/briar-node/src/db/migrate.sql
+    for f in schema.sql migrate.sql; do
+      echo "  → $f"
+      mysql -h"${BRIAR_DATABASE_HOST:-127.0.0.1}" -P"${BRIAR_DATABASE_PORT:-3306}" \
+        -u"$BRIAR_DATABASE_USER" --password="$BRIAR_DATABASE_PASSWORD" \
+        briar_display < "$db_dir/$f" || exit 1
+    done
   ) || {
     log_error "数据库迁移失败"
     exit 1

@@ -2,6 +2,8 @@
 
 import { uploadAvatar } from '@/api/users'
 import UserMenu from '@/components/common/UserMenu'
+import LoginMethodsCard from '@/components/profile/LoginMethodsCard'
+import MergeHistoryCard from '@/components/profile/MergeHistoryCard'
 import MessagesPanel from '@/components/profile/MessagesPanel'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -283,25 +285,11 @@ function ProfilePageInner() {
 								</CardContent>
 							</Card>
 
-							{/* 安全 */}
-							<Card>
-								<CardHeader>
-									<CardTitle className="flex items-center gap-2 text-base">
-										<KeyRound className="h-4 w-4" />
-										安全
-									</CardTitle>
-									<CardDescription>账号安全相关操作</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<a
-										href="/briar/forgot-password"
-										className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm transition-colors hover:bg-accent"
-									>
-										<KeyRound className="h-3.5 w-3.5" />
-										修改密码
-									</a>
-								</CardContent>
-							</Card>
+							{/* 登录方式（含修改密码，原「安全」卡片并入此处） */}
+							<LoginMethodsCard email={user?.email} />
+
+							{/* 账号合并记录（无记录时不显示） */}
+							<MergeHistoryCard userId={user?.id} />
 						</TabsContent>
 
 						<TabsContent value="messages" className="mt-0">

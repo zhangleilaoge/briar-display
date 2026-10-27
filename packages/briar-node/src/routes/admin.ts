@@ -2,6 +2,7 @@ import type { ApiResponse } from '@briar/shared'
 import { HTTP_STATUS, PERMISSIONS } from '@briar/shared'
 import { Hono } from 'hono'
 import { logDal } from '../dal/logDal'
+import { userMergeLogDal } from '../dal/userMergeLogDal'
 import { requirePermission } from '../middleware/permissionMiddleware'
 import { permissionService } from '../services/permissionService'
 import { userMergeService, validateMerge } from '../services/userMergeService'
@@ -324,13 +325,35 @@ adminRoutes.post(
 		const denied = await checkMergeRequest(c, sourceId, targetId)
 		if (denied) return denied
 		try {
-			const result = await userMergeService.mergeUsers(sourceId, targetId)
+			const operator = (c as any).get('user') as { id: string; name?: string; email?: string }
+			const result = await userMergeService.mergeUsers(sourceId, targetId, {
+				id: operator.id,
+				name: operator.name ?? '',
+				email: operator.email ?? '',
+			})
 			return c.json<ApiResponse>({ success: true, data: result, message: '用户已合并' })
 		} catch (err) {
 			return mergeNotFound(c, err)
 		}
 	},
 )
+
+/** 用户合并记录（仅超级管理员）：分页，可按 status 过滤 */
+adminRoutes.get('/user-merge-logs', requirePermission(PERMISSIONS.ADMIN_USER_MANAGE), async (c) => {
+	const currentUser = (c as any).get('user') as { id: string } | undefined
+	if (!currentUser || !(await permissionService.isAdmin(currentUser.id))) {
+		return c.json<ApiResponse>(
+			{ success: false, message: '仅超级管理员可查看合并记录' },
+			HTTP_STATUS.FORBIDDEN,
+		)
+	}
+	const limit = Math.min(Math.max(Number(c.req.query('limit')) || 20, 1), 100)
+	const offset = Math.max(Number(c.req.query('offset')) || 0, 0)
+	const statusQ = c.req.query('status')
+	const status = statusQ === 'success' || statusQ === 'failed' ? statusQ : undefined
+	const data = await userMergeLogDal.list({ limit, offset, status })
+	return c.json<ApiResponse>({ success: true, data })
+})
 
 /** 获取当前用户的权限信息 */
 adminRoutes.get('/me/permissions', async (c) => {

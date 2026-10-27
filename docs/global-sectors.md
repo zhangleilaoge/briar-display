@@ -104,7 +104,7 @@
 
 - `csi300EtfScale.ts`：样本定义、日期 / 单位、快照校验、合并和两种占比计算；`csi300EtfSources.ts`：上游解析与抓取；`csi300EtfService.ts`：读取、缓存和增量同步。解析、生成种子和线上同步共用同一套逻辑。
 - 手动重建种子：根目录运行 `bun run --filter @briar/node generate:csi300-etf-scale`。默认从 **2022-10-10** 覆盖到最近已结束月份，可用 `--from YYYY-MM-DD --to YYYY-MM-DD` 限定日期。脚本限速顺序请求上交所日份额，输出 `services/market/csi300EtfScale.seed.json`（原始快照，不手写行情数值）；本次内置 2022-10-10 至 2026-09-30 共 968 个交易日。
-- MySQL 表 `market_csi300_etf_snapshots` 以 `trade_date` 为主键，保存指数收盘、流通市值（元）及四只基金原始 JSON。表定义在 `migrate.sql` 基线段，`CREATE TABLE IF NOT EXISTS` 同时覆盖新库与存量库；DAL 为 `csi300EtfScaleDal.ts`，同日多条批量 upsert 幂等。读取旧数据库快照时，可从同日种子补累计净值；无法在构建响应时取得累计净值则明确失败。
+- MySQL 表 `market_csi300_etf_snapshots` 以 `trade_date` 为主键，保存指数收盘、流通市值（元）及四只基金原始 JSON。表定义在 `schema.sql`，`CREATE TABLE IF NOT EXISTS` 同时覆盖新库与存量库；DAL 为 `csi300EtfScaleDal.ts`，同日多条批量 upsert 幂等。读取旧数据库快照时，可从同日种子补累计净值；无法在构建响应时取得累计净值则明确失败。
 - GET 合并内置种子与 2022-10-10 以来的数据库快照（同日以数据库为准），通过 `cachedLoad('csi300:etf-scale', 5分钟)` 单飞缓存，**不会在用户打开页面时回溯上游**。数据库未迁移或暂时不可用时返回内置种子并标 `stale`；有效快照为空才返回 502。前端按接口 `pollMs` 每小时刷新。
 - 调度任务 `sync-csi300-etf-scale` 每日 **21:43** 检查最近完整月份（`BRIAR_CSI300_ETF_SCALE_CRON` 可覆盖，`runOnStart: false`）：月报未发布或种子 / 数据库已完整则跳过；有缺日才完整抓取、校验并 upsert 该月。任务注册于 `schedulerConfig.ts`，支持管理后台手动触发，worker 为 `src/jobs/sync-csi300-etf-scale.mjs`，运行记录沿用 `scheduler_runs`。
 - 视频可辨认采样点复算（2025-06-03）：沪深300收盘 **3852.01**，视频口径占比 **1.097194%**（图中约 1.0979%），实际规模口径 **2.336535%**。采样测试使用当日交易所份额、上交所流通市值和公开累计净值，不能用实际规模曲线冒充视频曲线。

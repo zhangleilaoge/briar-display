@@ -1,12 +1,12 @@
-/** 扫描 migrate.sql 中「引用用户」的列，供 schemaGuard.test.ts 使用 */
+/** 扫描 schema.sql 中「引用用户」的列，供 schemaGuard.test.ts 使用 */
 
 /** 列名看起来指向用户 */
 export const USER_COLUMN_RE =
-	/^(user_id|owner_id|author_id|creator_id|created_by|updated_by|uploader_id|person|user_name)$|_user_id$/i
+	/^(user_id|owner_id|author_id|creator_id|created_by|updated_by|uploader_id|person|user_name|operator_id)$|_user_id$/i
 
 const stripComments = (sql: string) => sql.replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
 
-/** 从 migrate.sql 提取 table.column（CREATE TABLE 列 + ALTER TABLE ADD COLUMN + REFERENCES users） */
+/** 从 schema.sql 提取 table.column（CREATE TABLE 列 + ALTER TABLE ADD COLUMN + REFERENCES users） */
 export const findUserColumns = (sql: string) => {
 	const found = new Set<string>()
 	const text = stripComments(sql)

@@ -126,3 +126,12 @@ export const unbindGoogleAccount = async () => {
 	const response = await apiClient.delete<ApiResponse<LoginMethods>>('/users/me/identities/google')
 	return response.data
 }
+
+/** 与当前用户相关的账号合并记录 */
+export const getMyMergeLogs = async () => {
+	const response =
+		await apiClient.get<ApiResponse<{ items: import('./admin').UserMergeLog[]; total: number }>>(
+			'/users/me/merge-logs',
+		)
+	return response.data
+}

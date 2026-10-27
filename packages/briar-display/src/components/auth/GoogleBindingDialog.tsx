@@ -1,11 +1,5 @@
 'use client'
 
-import {
-	type LoginMethods,
-	bindGoogleAccount,
-	getLoginMethods,
-	unbindGoogleAccount,
-} from '@/api/auth'
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,10 +9,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog'
-import { useCallback, useEffect, useState } from 'react'
-
-const errorMessage = (err: unknown, fallback: string) =>
-	(err as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback
+import { useEffect } from 'react'
+import { useLoginMethods } from './useLoginMethods'
 
 interface Props {
 	open: boolean
@@ -27,71 +19,27 @@ interface Props {
 
 /** 「绑定谷歌账号」：查看登录方式，绑定 / 解绑 Google */
 export default function GoogleBindingDialog({ open, onOpenChange }: Props) {
-	const [methods, setMethods] = useState<LoginMethods | null>(null)
-	const [loading, setLoading] = useState(false)
-	const [busy, setBusy] = useState(false)
-	const [error, setError] = useState<string | null>(null)
-	const [notice, setNotice] = useState<string | null>(null)
-
-	const load = useCallback(async () => {
-		setLoading(true)
-		setError(null)
-		try {
-			const res = await getLoginMethods()
-			if (res.success && res.data) setMethods(res.data)
-			else setError(res.message || '获取登录方式失败')
-		} catch (err) {
-			setError(errorMessage(err, '获取登录方式失败'))
-		} finally {
-			setLoading(false)
-		}
-	}, [])
+	const {
+		methods,
+		loading,
+		busy,
+		error,
+		notice,
+		setError,
+		setNotice,
+		load,
+		google,
+		canUnbind,
+		bind,
+		unbind,
+	} = useLoginMethods()
 
 	useEffect(() => {
 		if (open) {
 			setNotice(null)
 			void load()
 		}
-	}, [open, load])
-
-	const google = methods?.identities.find((i) => i.provider === 'google')
-	const canUnbind = !!methods && (methods.hasPassword || methods.identities.length > 1)
-
-	const handleBind = async (credential: string) => {
-		setError(null)
-		setNotice(null)
-		try {
-			const res = await bindGoogleAccount(credential)
-			if (res.success && res.data) {
-				setMethods(res.data)
-				setNotice('已绑定 Google 账号，之后可用 Google 直接登录本账号')
-			} else {
-				setError(res.message || '绑定失败')
-			}
-		} catch (err) {
-			setError(errorMessage(err, '绑定失败，请稍后再试'))
-		}
-	}
-
-	const handleUnbind = async () => {
-		if (!window.confirm('确定解绑 Google 账号？解绑后将无法用该 Google 账号登录。')) return
-		setBusy(true)
-		setError(null)
-		setNotice(null)
-		try {
-			const res = await unbindGoogleAccount()
-			if (res.success && res.data) {
-				setMethods(res.data)
-				setNotice('已解绑 Google 账号')
-			} else {
-				setError(res.message || '解绑失败')
-			}
-		} catch (err) {
-			setError(errorMessage(err, '解绑失败，请稍后再试'))
-		} finally {
-			setBusy(false)
-		}
-	}
+	}, [open, load, setNotice])
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -128,7 +76,7 @@ export default function GoogleBindingDialog({ open, onOpenChange }: Props) {
 									variant="outline"
 									className="w-full"
 									disabled={busy || !canUnbind}
-									onClick={handleUnbind}
+									onClick={unbind}
 								>
 									解绑 Google 账号
 								</Button>
@@ -139,11 +87,7 @@ export default function GoogleBindingDialog({ open, onOpenChange }: Props) {
 								)}
 							</div>
 						) : (
-							<GoogleSignInButton
-								text="continue_with"
-								onCredential={handleBind}
-								onError={setError}
-							/>
+							<GoogleSignInButton text="continue_with" onCredential={bind} onError={setError} />
 						)}
 					</div>
 				) : null}
