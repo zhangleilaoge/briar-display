@@ -12,6 +12,8 @@
 			"**/dist-electron/**",
 			"**/.astro/**",
 			"**/node_modules/**",
+			"**/.venv/**",
+			"**/target/**",
 			"**/logs/**",
 			"**/backups/**",
 			"bun.lock"
