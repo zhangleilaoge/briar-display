@@ -109,7 +109,6 @@ export default function DeployProgressView({ progress, liveLines }: DeployProgre
 					<div className="max-h-48 overflow-auto rounded border border-zinc-800 bg-zinc-900/60 p-2.5">
 						{liveLines.map((line, i) => (
 							// 行内容可能重复（重试场景），用索引兜底
-							// biome-ignore lint/suspicious/noArrayIndexKey: 日志行无唯一 id
 							<p key={i} className="whitespace-pre-wrap text-zinc-300">
 								{line}
 							</p>
