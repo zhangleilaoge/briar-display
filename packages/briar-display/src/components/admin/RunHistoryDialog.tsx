@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import type { ApiResponse, RunHistoryPage, RunRecord, RunRecordStatus } from '@briar/shared'
-import { ChevronDown, ChevronRight, Loader2, RefreshCw } from 'lucide-react'
+import { ChevronDown, ChevronRight, ExternalLink, Loader2, RefreshCw } from 'lucide-react'
 import { Fragment, useCallback, useEffect, useState } from 'react'
 import AdminPagination from './AdminPagination'
 
@@ -49,6 +49,51 @@ export function formatRunDuration(ms: number | null): string {
 	if (ms < 1000) return `${ms}ms`
 	const seconds = Math.round(ms / 1000)
 	return seconds >= 60 ? `${Math.floor(seconds / 60)}m${seconds % 60}s` : `${seconds}s`
+}
+
+const str = (v: unknown): string | null => (typeof v === 'string' && v ? v : null)
+
+/** 展开行：失败原因（job/step + 报错片段）与 GitHub 运行链接优先展示，其余字段仍给原始 JSON */
+function RunDetail({ detail }: { detail: Record<string, unknown> }) {
+	const runUrl = str(detail.runUrl)
+	const failedJob = str(detail.failedJob)
+	const failedStep = str(detail.failedStep)
+	const errorExcerpt = str(detail.errorExcerpt)
+	const { runUrl: _u, failedJob: _j, failedStep: _s, errorExcerpt: _e, ...rest } = detail
+	return (
+		<div className="space-y-2" data-testid="run-detail">
+			{(failedJob || failedStep) && (
+				<div className="text-xs">
+					<span className="font-medium text-red-700">失败位置：</span>
+					<span className="font-mono">
+						{failedJob ?? '-'}
+						{failedStep && ` › ${failedStep}`}
+					</span>
+				</div>
+			)}
+			{errorExcerpt && (
+				<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-all rounded border border-red-200 bg-red-50 p-2 font-mono text-[11px] text-red-900">
+					{errorExcerpt}
+				</pre>
+			)}
+			{runUrl && (
+				<a
+					href={runUrl}
+					target="_blank"
+					rel="noreferrer"
+					className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+					onClick={(e) => e.stopPropagation()}
+				>
+					<ExternalLink className="h-3 w-3" />在 GitHub Actions 查看本次运行
+				</a>
+			)}
+			{Object.keys(rest).length > 0 && (
+				<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-muted-foreground">
+					{JSON.stringify(rest, null, 2)}
+				</pre>
+			)}
+		</div>
+	)
 }
 
 interface RunHistoryDialogProps {
@@ -243,9 +288,7 @@ export default function RunHistoryDialog({
 												<tr className="bg-muted/30">
 													<td />
 													<td colSpan={5} className="px-3 py-2">
-														<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px]">
-															{JSON.stringify(item.detail, null, 2)}
-														</pre>
+														<RunDetail detail={item.detail as Record<string, unknown>} />
 													</td>
 												</tr>
 											)}

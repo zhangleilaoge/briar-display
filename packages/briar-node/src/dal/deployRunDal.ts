@@ -1,5 +1,6 @@
 import type { RunRecord, RunRecordStatus } from '@briar/shared'
 import { execute, query } from '../lib/db'
+import { githubRunUrl } from '../lib/deployFailure'
 import { toRunRecord } from '../lib/runHistory'
 import type { DeployHistoryItem } from '../services/deploymentService'
 
@@ -13,6 +14,9 @@ interface DeployRunRow {
 	deployed_at: Date | null
 	started_at: Date | null
 	finished_at: Date | null
+	failure_job?: string | null
+	failure_step?: string | null
+	failure_excerpt?: string | null
 }
 
 /** GitHub 状态 → 通用状态 */
@@ -38,6 +42,11 @@ const STATUS_FILTER: Record<RunRecordStatus, string> = {
 	running:
 		"status NOT IN ('success','failure','failed','cancelled','timed_out','startup_failure','action_required','skipped','neutral')",
 }
+
+const FAILED_SQL =
+	"status IN ('failure','failed','cancelled','timed_out','startup_failure','action_required')"
+
+const resolveRepo = () => process.env.BRIAR_GITHUB_REPO || 'zhangleilaoge/briar-display'
 
 const toDate = (at: string | undefined): Date | null => {
 	if (!at) return null
@@ -101,6 +110,12 @@ export const deployRunDal = {
 						ref: row.ref,
 						actor: row.actor,
 						rawStatus: row.status,
+						...(/^\d+$/.test(row.run_id)
+							? { runUrl: githubRunUrl(resolveRepo(), row.run_id) }
+							: {}),
+						...(row.failure_job ? { failedJob: row.failure_job } : {}),
+						...(row.failure_step ? { failedStep: row.failure_step } : {}),
+						...(row.failure_excerpt ? { errorExcerpt: row.failure_excerpt } : {}),
 					},
 				}),
 			),
@@ -118,6 +133,33 @@ export const deployRunDal = {
 			[limit],
 		)
 		return rows.map((r) => r.run_id)
+	},
+
+	/** 失败但尚未拉取失败原因的 run（最近优先） */
+	async listMissingFailure(limit: number): Promise<string[]> {
+		const rows = await query<{ run_id: string }>(
+			`SELECT run_id FROM deploy_runs
+       WHERE failure_checked_at IS NULL AND ${FAILED_SQL}
+       ORDER BY deployed_at DESC LIMIT ?`,
+			[limit],
+		)
+		return rows.map((r) => r.run_id)
+	},
+
+	async saveFailure(
+		runId: string,
+		info: { job: string | null; step: string | null; excerpt: string | null },
+	): Promise<void> {
+		await execute(
+			`UPDATE deploy_runs SET failure_job = ?, failure_step = ?, failure_excerpt = ?, failure_checked_at = NOW()
+       WHERE run_id = ?`,
+			[
+				info.job?.slice(0, 255) ?? null,
+				info.step?.slice(0, 255) ?? null,
+				info.excerpt ?? null,
+				runId,
+			],
+		)
 	},
 
 	async recentStatuses(limit: number): Promise<RunRecordStatus[]> {

@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { deployRunDal } from '../dal/deployRunDal'
+import { type GithubJobLite, extractErrorExcerpt, pickFailedJobStep } from '../lib/deployFailure'
 import { findRepoRoot } from './certificate/utils'
 
 export interface DeployHistoryItem {
@@ -271,6 +272,8 @@ export const deploymentService = {
 			await backfillDeployDurations(workingToken).catch((e) =>
 				console.error('部署耗时回填失败:', e),
 			)
+			// 失败原因（job/step + 日志尾部片段）后台回填，不阻塞列表返回
+			void backfillDeployFailures(workingToken)
 		}
 		return merged.slice(0, limit)
 	},
@@ -442,6 +445,55 @@ const backfillDeployDurations = async (token: string): Promise<void> => {
 		if (item?.startedAt && item.finishedAt) items.push(item)
 	}
 	if (items.length > 0) await deployRunDal.upsertMany(items)
+}
+
+const FAILURE_BATCH = 3
+let failureBackfillRunning = false
+
+/** 失败 run：拉 jobs 定位失败 job/step，再拉该 job 日志截取报错片段，写回 deploy_runs */
+const backfillDeployFailures = async (token: string): Promise<void> => {
+	if (failureBackfillRunning) return
+	failureBackfillRunning = true
+	try {
+		const repo = resolveGithubRepo()
+		const headers = githubHeaders(token)
+		const runIds = await deployRunDal.listMissingFailure(FAILURE_BATCH)
+		for (const runId of runIds) {
+			if (!/^\d+$/.test(runId)) continue
+			try {
+				const jobsRes = await fetch(
+					`${GITHUB_API}/repos/${repo}/actions/runs/${runId}/jobs?per_page=100&filter=latest`,
+					{ headers, signal: AbortSignal.timeout(15000) },
+				)
+				if (jobsRes.status === 404) {
+					await deployRunDal.saveFailure(runId, { job: null, step: null, excerpt: null })
+					continue
+				}
+				if (!jobsRes.ok) throw new Error(`HTTP ${jobsRes.status}`)
+				const { jobs } = (await jobsRes.json()) as { jobs: GithubJobLite[] }
+				const info = pickFailedJobStep(jobs ?? [])
+				let excerpt: string | null = null
+				if (info.jobId) {
+					const logRes = await fetch(
+						`${GITHUB_API}/repos/${repo}/actions/jobs/${info.jobId}/logs`,
+						{
+							headers,
+							signal: AbortSignal.timeout(20000),
+						},
+					).catch(() => null)
+					if (logRes?.ok) excerpt = extractErrorExcerpt(await logRes.text())
+					else if (logRes && logRes.status !== 404 && logRes.status !== 410) continue // 暂不可用，下次再试
+				}
+				await deployRunDal.saveFailure(runId, { job: info.job, step: info.step, excerpt })
+			} catch (e) {
+				console.warn(`⚠️  部署失败原因回填 run ${runId} 失败:`, e instanceof Error ? e.message : e)
+			}
+		}
+	} catch (e) {
+		console.error('部署失败原因回填失败:', e)
+	} finally {
+		failureBackfillRunning = false
+	}
 }
 
 /** 单个 run 详情（用于回填旧记录的开始/结束时间） */

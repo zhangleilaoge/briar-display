@@ -562,7 +562,7 @@ function AdminDeployPageInner() {
 				open={historyDialog === 'deploy'}
 				onOpenChange={(open) => !open && setHistoryDialog(null)}
 				title="部署 · 历史记录"
-				description="CI 部署记录同步落库（deploy_runs），点击行展开 commit / ref / 触发者"
+				description="CI 部署记录同步落库（deploy_runs），点击行展开失败原因、GitHub 运行链接与 commit / ref / 触发者"
 				fetcher={getDeployRunHistory}
 			/>
 		</AdminLayout>

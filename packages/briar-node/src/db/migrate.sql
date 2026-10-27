@@ -492,3 +492,25 @@ SET @sql = IF(@col_exists = 0, 'ALTER TABLE users ADD COLUMN google_sub VARCHAR(
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- deploy_runs 新增失败原因（失败 job/step + 日志尾部报错片段；后端同步时按 run 拉 GitHub jobs/日志回填）
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'deploy_runs' AND COLUMN_NAME = 'failure_job');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE deploy_runs ADD COLUMN failure_job VARCHAR(255) NULL DEFAULT NULL COMMENT ''失败的 job 名'' AFTER finished_at', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'deploy_runs' AND COLUMN_NAME = 'failure_step');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE deploy_runs ADD COLUMN failure_step VARCHAR(255) NULL DEFAULT NULL COMMENT ''失败的 step 名'' AFTER failure_job', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'deploy_runs' AND COLUMN_NAME = 'failure_excerpt');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE deploy_runs ADD COLUMN failure_excerpt TEXT NULL COMMENT ''失败日志尾部报错片段'' AFTER failure_step', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'deploy_runs' AND COLUMN_NAME = 'failure_checked_at');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE deploy_runs ADD COLUMN failure_checked_at TIMESTAMP NULL DEFAULT NULL COMMENT ''已拉取失败原因的时间（NULL=待拉取）'' AFTER failure_excerpt', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
