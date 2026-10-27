@@ -3,6 +3,8 @@ dist/
 dist-electron/
 packages/briar-display/web/
 packages/briar-node/jobs/
+# Google 登录公钥缓存（CI 部署写入）
+packages/briar-node/data/
 
 # generated types
 .astro/

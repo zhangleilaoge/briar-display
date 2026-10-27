@@ -77,6 +77,25 @@ jobs:
             packages/briar-display/dist/ \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:$REMOTE_DIR
 
+      # ============ Google 登录公钥：runner 拉取后写到服务器（国内服务器连不上 Google） ============
+      - name: Sync Google JWKS to server
+        env:
+          PROJECT_DIR: ${{ secrets.DEPLOY_PROJECT_DIR }}
+        run: |
+          SSH_OPTS="-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3"
+          PROJECT_DIR="${PROJECT_DIR:-/home/ubuntu/github/briar-display}"
+          JWKS_DIR="$PROJECT_DIR/packages/briar-node/data"
+          if curl -fsS --retry 3 --max-time 20 https://www.googleapis.com/oauth2/v3/certs -o google-jwks.json \
+            && jq -e '.keys | length > 0' google-jwks.json >/dev/null; then
+            echo "拉到 $(jq '.keys | length' google-jwks.json) 个 Google 公钥：$(jq -r '[.keys[].kid] | join(",")' google-jwks.json)"
+            # 先写临时文件再 mv，避免服务进程读到半截 JSON
+            ssh $SSH_OPTS ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+              "mkdir -p $JWKS_DIR && cat > $JWKS_DIR/google-jwks.json.tmp && mv $JWKS_DIR/google-jwks.json.tmp $JWKS_DIR/google-jwks.json && ls -l $JWKS_DIR/google-jwks.json" \
+              < google-jwks.json
+          else
+            echo "::warning::拉取 Google JWKS 失败，服务器沿用旧文件"
+          fi
+
       # ============ 后端：SSH 调用 deploy.sh ============
       - name: Deploy backend (SSH)
         env:

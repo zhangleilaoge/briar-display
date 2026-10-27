@@ -69,24 +69,11 @@ describe('authService token 逻辑', () => {
 	})
 })
 
-describe('Google OAuth 辅助逻辑', () => {
+describe('登录回跳', () => {
 	test('sanitizeLoginRedirect 只放行站内相对路径', () => {
 		expect(sanitizeLoginRedirect('/briar/tools')).toBe('/briar/tools')
 		expect(sanitizeLoginRedirect('https://evil.example/')).toBe('/briar/')
 		expect(sanitizeLoginRedirect('//evil.example')).toBe('/briar/')
 		expect(sanitizeLoginRedirect(undefined)).toBe('/briar/')
-	})
-
-	test('createGoogleOAuthState / verifyGoogleOAuthState 往返', () => {
-		const state = authService.createGoogleOAuthState('/briar/admin')
-		const payload = authService.verifyGoogleOAuthState(state)
-		expect(payload.purpose).toBe('google_oauth')
-		expect(payload.r).toBe('/briar/admin')
-		expect(payload.n.length).toBeGreaterThan(8)
-	})
-
-	test('verifyGoogleOAuthState 拒绝非 oauth purpose 的 token', () => {
-		const loginToken = authService.createToken(fakeUser())
-		expect(() => authService.verifyGoogleOAuthState(loginToken)).toThrow()
 	})
 })

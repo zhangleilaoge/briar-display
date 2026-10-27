@@ -14,6 +14,7 @@ import { schedulerTasks } from './lib/schedulerConfig'
 import { applyConfiguredMiddlewares, globalMiddlewares } from './middleware/config'
 import apiRoutes from './routes/api'
 import { setupTerminalWebSocket } from './routes/terminalWs'
+import { initGoogleJwks } from './services/googleIdToken'
 
 // 服务器无 IPv6 出口，而部分 CDN（如 sns-bak-v8.xhscdn.com → Akamai）DNS 会返回 AAAA，
 // Node 18 默认按 DNS 顺序连接，v6 不通时偶发 "fetch failed"；强制 IPv4 优先
@@ -51,6 +52,9 @@ const validateStaticPath = () => {
 	}
 }
 validateStaticPath()
+
+// Google 登录公钥：读本地文件（CI 部署写入）+ 尝试联网刷新，每日一次
+initGoogleJwks()
 
 const app = new Hono()
 

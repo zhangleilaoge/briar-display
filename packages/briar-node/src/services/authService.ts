@@ -5,8 +5,8 @@ import jwt from 'jsonwebtoken'
 import { AUTH_CONFIG, isGoogleAuthConfigured } from '../config/auth'
 import { type UserRecord, userDal } from '../dal/userDal'
 import { VerificationCodeType, verificationCodeDal } from '../dal/verificationCodeDal'
-import { fetchViaProxy } from '../lib/outboundProxy'
 import { emailService } from './emailService'
+import { verifyGoogleIdToken } from './googleIdToken'
 import { permissionService } from './permissionService'
 
 export interface AuthPayload {
@@ -19,13 +19,6 @@ export interface AuthPayload {
 	exp?: number
 }
 
-/** Google OAuth state（短时 JWT，防 CSRF；r = 登录成功回跳路径） */
-interface GoogleOAuthState {
-	purpose: 'google_oauth'
-	r: string
-	n: string
-}
-
 export interface GoogleProfile {
 	sub: string
 	email: string
@@ -33,21 +26,6 @@ export interface GoogleProfile {
 	name: string
 	picture?: string
 }
-
-const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
-const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
-const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v3/userinfo'
-const GOOGLE_FETCH_TIMEOUT_MS = 15_000
-
-/** 国内服务器直连 Google 不通：BRIAR_GOOGLE_PROXY 优先，其次复用 BRIAR_MEDIA_OUTBOUND_PROXY */
-const googleProxyUri = () =>
-	process.env.BRIAR_GOOGLE_PROXY?.trim() || process.env.BRIAR_MEDIA_OUTBOUND_PROXY?.trim() || ''
-
-const fetchGoogle = (url: string, init: RequestInit) =>
-	fetchViaProxy(googleProxyUri(), url, {
-		...init,
-		signal: AbortSignal.timeout(GOOGLE_FETCH_TIMEOUT_MS),
-	})
 
 /** 仅允许站内相对路径回跳，防止开放重定向 */
 export const sanitizeLoginRedirect = (
@@ -244,105 +222,21 @@ export const authService = {
 		return authService.createToken(user)
 	},
 
-	/** Google OAuth 是否已配置 Client ID/Secret */
+	/** Google 登录（GIS ID Token）是否已配置 Client ID */
 	isGoogleConfigured() {
 		return isGoogleAuthConfigured()
 	},
 
-	/** 签发 OAuth state（10 分钟有效） */
-	createGoogleOAuthState(redirect: string) {
-		const payload: GoogleOAuthState = {
-			purpose: 'google_oauth',
-			r: sanitizeLoginRedirect(redirect),
-			n: randomBytes(16).toString('hex'),
-		}
-		return jwt.sign(payload, AUTH_CONFIG.jwtSecret, { expiresIn: '10m' })
-	},
-
-	verifyGoogleOAuthState(state: string): GoogleOAuthState {
-		const payload = jwt.verify(state, AUTH_CONFIG.jwtSecret) as GoogleOAuthState & {
-			purpose?: string
-		}
-		if (payload.purpose !== 'google_oauth' || typeof payload.r !== 'string') {
-			throw new Error('INVALID_STATE')
-		}
-		return payload
-	},
-
-	/** 构造 Google 授权页 URL */
-	buildGoogleAuthorizeUrl(state: string) {
-		if (!isGoogleAuthConfigured()) {
-			throw new Error('GOOGLE_NOT_CONFIGURED')
-		}
-		const params = new URLSearchParams({
-			client_id: AUTH_CONFIG.googleClientId,
-			redirect_uri: AUTH_CONFIG.googleRedirectUri,
-			response_type: 'code',
-			scope: 'openid email profile',
-			state,
-			access_type: 'online',
-			prompt: 'select_account',
-		})
-		return `${GOOGLE_AUTH_URL}?${params.toString()}`
-	},
-
-	/** code → Google 用户资料 */
-	async fetchGoogleProfile(code: string): Promise<GoogleProfile> {
-		if (!isGoogleAuthConfigured()) {
-			throw new Error('GOOGLE_NOT_CONFIGURED')
-		}
-
-		const body = new URLSearchParams({
-			code,
-			client_id: AUTH_CONFIG.googleClientId,
-			client_secret: AUTH_CONFIG.googleClientSecret,
-			redirect_uri: AUTH_CONFIG.googleRedirectUri,
-			grant_type: 'authorization_code',
-		})
-
-		const tokenRes = await fetchGoogle(GOOGLE_TOKEN_URL, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-			body,
-		})
-		if (!tokenRes.ok) {
-			const detail = await tokenRes.text().catch(() => '')
-			console.error('Google token exchange failed:', tokenRes.status, detail.slice(0, 500))
-			throw new Error('GOOGLE_TOKEN_FAILED')
-		}
-		const tokenJson = (await tokenRes.json()) as { access_token?: string }
-		if (!tokenJson.access_token) {
-			throw new Error('GOOGLE_TOKEN_FAILED')
-		}
-
-		const infoRes = await fetchGoogle(GOOGLE_USERINFO_URL, {
-			headers: { Authorization: `Bearer ${tokenJson.access_token}` },
-		})
-		if (!infoRes.ok) {
-			console.error('Google userinfo failed:', infoRes.status)
-			throw new Error('GOOGLE_USERINFO_FAILED')
-		}
-		const info = (await infoRes.json()) as {
-			sub?: string
-			email?: string
-			email_verified?: boolean | string
-			name?: string
-			picture?: string
-		}
-		if (!info.sub || !info.email) {
-			throw new Error('GOOGLE_PROFILE_INCOMPLETE')
-		}
-		const emailVerified = info.email_verified === true || info.email_verified === 'true'
-		if (!emailVerified) {
-			throw new Error('GOOGLE_EMAIL_UNVERIFIED')
-		}
-
+	/** GIS credential（ID Token）→ 本地验签 → Google 资料 */
+	async verifyGoogleCredential(credential: string): Promise<GoogleProfile> {
+		const claims = await verifyGoogleIdToken(credential)
+		const email = claims.email.toLowerCase()
 		return {
-			sub: info.sub,
-			email: info.email.toLowerCase(),
-			emailVerified,
-			name: (info.name || info.email.split('@')[0] || 'Google User').slice(0, 100),
-			picture: info.picture,
+			sub: claims.sub,
+			email,
+			emailVerified: true,
+			name: (claims.name || email.split('@')[0] || 'Google User').slice(0, 100),
+			picture: claims.picture,
 		}
 	},
 
