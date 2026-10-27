@@ -13,6 +13,13 @@ const badgeVariants = cva(
 				destructive:
 					'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
 				outline: 'text-foreground',
+				// 语义状态（token 见 theme.css --success / --warning / --info / --danger / --plum）
+				success: 'border-transparent bg-success-soft text-success',
+				warning: 'border-transparent bg-warning-soft text-warning',
+				info: 'border-transparent bg-info-soft text-info',
+				danger: 'border-transparent bg-danger-soft text-danger',
+				plum: 'border-transparent bg-plum-soft text-plum',
+				muted: 'border-transparent bg-muted text-muted-foreground',
 			},
 		},
 		defaultVariants: {

@@ -221,11 +221,11 @@ export function ChartPanelBody({
 			{current?.available && (
 				<div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
 					{current.delayMinutes > 0 ? (
-						<Badge variant="outline" className="border-transparent bg-amber-500/10 text-amber-700">
+						<Badge variant="outline" className="border-transparent bg-warning/10 text-warning">
 							延迟 {current.delayMinutes} 分钟
 						</Badge>
 					) : (
-						<Badge variant="outline" className="border-transparent bg-sky-500/10 text-sky-700">
+						<Badge variant="outline" className="border-transparent bg-info/10 text-info">
 							实时
 						</Badge>
 					)}

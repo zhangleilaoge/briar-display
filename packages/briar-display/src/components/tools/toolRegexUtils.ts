@@ -345,9 +345,9 @@ function tag(name: string, attrs: string, body?: string): string {
 }
 
 function toneFill(tone: string): string {
-	if (tone === 'meta') return '#eef6ff'
-	if (tone === 'anchor') return '#fff4e5'
-	return '#ffffff'
+	if (tone === 'meta') return '#e6eef8'
+	if (tone === 'anchor') return '#f8eedd'
+	return '#f7fafd'
 }
 
 function drawNode(node: Laid, x: number, cy: number): string {
@@ -359,13 +359,13 @@ function drawNode(node: Laid, x: number, cy: number): string {
 			parts.push(
 				tag(
 					'rect',
-					`x="${x}" y="${y}" width="${node.box.w}" height="${node.box.h}" rx="${rx}" fill="${toneFill(node.tone)}" stroke="#333" stroke-width="1.5"`,
+					`x="${x}" y="${y}" width="${node.box.w}" height="${node.box.h}" rx="${rx}" fill="${toneFill(node.tone)}" stroke="#1c2a4a" stroke-width="1.5"`,
 				),
 			)
 			parts.push(
 				tag(
 					'text',
-					`x="${x + node.box.w / 2}" y="${cy + 4}" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#222"`,
+					`x="${x + node.box.w / 2}" y="${cy + 4}" text-anchor="middle" font-family="'Josefin Sans Variable', ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1c2a4a"`,
 					esc(node.label),
 				),
 			)
@@ -378,7 +378,7 @@ function drawNode(node: Laid, x: number, cy: number): string {
 					parts.push(
 						tag(
 							'line',
-							`x1="${cx - GAP}" y1="${cy}" x2="${cx}" y2="${cy}" stroke="#333" stroke-width="1.5"`,
+							`x1="${cx - GAP}" y1="${cy}" x2="${cx}" y2="${cy}" stroke="#1c2a4a" stroke-width="1.5"`,
 						),
 					)
 				}
@@ -392,13 +392,13 @@ function drawNode(node: Laid, x: number, cy: number): string {
 			parts.push(
 				tag(
 					'rect',
-					`x="${x}" y="${top}" width="${node.box.w}" height="${node.box.h}" rx="8" fill="#fafafa" stroke="#666" stroke-width="1.25" stroke-dasharray="4 3"`,
+					`x="${x}" y="${top}" width="${node.box.w}" height="${node.box.h}" rx="8" fill="#f2f6fb" stroke="#4e607e" stroke-width="1.25" stroke-dasharray="4 3"`,
 				),
 			)
 			parts.push(
 				tag(
 					'text',
-					`x="${x + 12}" y="${top + 16}" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#555"`,
+					`x="${x + 12}" y="${top + 16}" font-family="'Josefin Sans Variable', ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#4e607e"`,
 					esc(node.label),
 				),
 			)
@@ -413,13 +413,13 @@ function drawNode(node: Laid, x: number, cy: number): string {
 				parts.push(
 					tag(
 						'line',
-						`x1="${railX0}" y1="${icy}" x2="${ix}" y2="${icy}" stroke="#333" stroke-width="1.5"`,
+						`x1="${railX0}" y1="${icy}" x2="${ix}" y2="${icy}" stroke="#1c2a4a" stroke-width="1.5"`,
 					),
 				)
 				parts.push(
 					tag(
 						'line',
-						`x1="${ix + it.box.w}" y1="${icy}" x2="${railX1}" y2="${icy}" stroke="#333" stroke-width="1.5"`,
+						`x1="${ix + it.box.w}" y1="${icy}" x2="${railX1}" y2="${icy}" stroke="#1c2a4a" stroke-width="1.5"`,
 					),
 				)
 				parts.push(drawNode(it, ix, icy))
@@ -429,25 +429,25 @@ function drawNode(node: Laid, x: number, cy: number): string {
 				parts.push(
 					tag(
 						'line',
-						`x1="${railX0}" y1="${centers[0]}" x2="${railX0}" y2="${centers[centers.length - 1]}" stroke="#333" stroke-width="1.5"`,
+						`x1="${railX0}" y1="${centers[0]}" x2="${railX0}" y2="${centers[centers.length - 1]}" stroke="#1c2a4a" stroke-width="1.5"`,
 					),
 				)
 				parts.push(
 					tag(
 						'line',
-						`x1="${railX1}" y1="${centers[0]}" x2="${railX1}" y2="${centers[centers.length - 1]}" stroke="#333" stroke-width="1.5"`,
+						`x1="${railX1}" y1="${centers[0]}" x2="${railX1}" y2="${centers[centers.length - 1]}" stroke="#1c2a4a" stroke-width="1.5"`,
 					),
 				)
 				parts.push(
 					tag(
 						'line',
-						`x1="${x}" y1="${cy}" x2="${railX0}" y2="${cy}" stroke="#333" stroke-width="1.5"`,
+						`x1="${x}" y1="${cy}" x2="${railX0}" y2="${cy}" stroke="#1c2a4a" stroke-width="1.5"`,
 					),
 				)
 				parts.push(
 					tag(
 						'line',
-						`x1="${railX1}" y1="${cy}" x2="${x + node.box.w}" y2="${cy}" stroke="#333" stroke-width="1.5"`,
+						`x1="${railX1}" y1="${cy}" x2="${x + node.box.w}" y2="${cy}" stroke="#1c2a4a" stroke-width="1.5"`,
 					),
 				)
 			}
@@ -463,7 +463,7 @@ function drawNode(node: Laid, x: number, cy: number): string {
 				parts.push(
 					tag(
 						'path',
-						`d="M ${x0} ${cy} L ${x0} ${loopY + 8} Q ${x0} ${loopY}, ${x0 + 8} ${loopY} L ${x1 - 8} ${loopY} Q ${x1} ${loopY}, ${x1} ${loopY + 8} L ${x1} ${cy}" fill="none" stroke="#333" stroke-width="1.5"`,
+						`d="M ${x0} ${cy} L ${x0} ${loopY + 8} Q ${x0} ${loopY}, ${x0 + 8} ${loopY} L ${x1 - 8} ${loopY} Q ${x1} ${loopY}, ${x1} ${loopY + 8} L ${x1} ${cy}" fill="none" stroke="#1c2a4a" stroke-width="1.5"`,
 					),
 				)
 			}
@@ -472,24 +472,27 @@ function drawNode(node: Laid, x: number, cy: number): string {
 				parts.push(
 					tag(
 						'path',
-						`d="M ${x0} ${cy} L ${x0} ${bypassY - 8} Q ${x0} ${bypassY}, ${x0 + 8} ${bypassY} L ${x1 - 8} ${bypassY} Q ${x1} ${bypassY}, ${x1} ${bypassY - 8} L ${x1} ${cy}" fill="none" stroke="#333" stroke-width="1.5"`,
+						`d="M ${x0} ${cy} L ${x0} ${bypassY - 8} Q ${x0} ${bypassY}, ${x0 + 8} ${bypassY} L ${x1 - 8} ${bypassY} Q ${x1} ${bypassY}, ${x1} ${bypassY - 8} L ${x1} ${cy}" fill="none" stroke="#1c2a4a" stroke-width="1.5"`,
 					),
 				)
 			}
 			parts.push(
 				tag(
 					'text',
-					`x="${(x0 + x1) / 2}" y="${cy - node.item.box.up - 16}" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#444"`,
+					`x="${(x0 + x1) / 2}" y="${cy - node.item.box.up - 16}" text-anchor="middle" font-family="'Josefin Sans Variable', ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#4e607e"`,
 					esc(node.text),
 				),
 			)
 			parts.push(
-				tag('line', `x1="${x}" y1="${cy}" x2="${ix}" y2="${cy}" stroke="#333" stroke-width="1.5"`),
+				tag(
+					'line',
+					`x1="${x}" y1="${cy}" x2="${ix}" y2="${cy}" stroke="#1c2a4a" stroke-width="1.5"`,
+				),
 			)
 			parts.push(
 				tag(
 					'line',
-					`x1="${ix + node.item.box.w}" y1="${cy}" x2="${x + node.box.w}" y2="${cy}" stroke="#333" stroke-width="1.5"`,
+					`x1="${ix + node.item.box.w}" y1="${cy}" x2="${x + node.box.w}" y2="${cy}" stroke="#1c2a4a" stroke-width="1.5"`,
 				),
 			)
 			break
@@ -499,25 +502,28 @@ function drawNode(node: Laid, x: number, cy: number): string {
 			parts.push(
 				tag(
 					'rect',
-					`x="${x}" y="${top}" width="${node.box.w}" height="${node.box.h}" rx="6" fill="#f7f7ff" stroke="#556" stroke-width="1.25"`,
+					`x="${x}" y="${top}" width="${node.box.w}" height="${node.box.h}" rx="6" fill="#eef0f8" stroke="#4e607e" stroke-width="1.25"`,
 				),
 			)
 			parts.push(
 				tag(
 					'text',
-					`x="${x + 10}" y="${top + 14}" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#445"`,
+					`x="${x + 10}" y="${top + 14}" font-family="'Josefin Sans Variable', ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#4e607e"`,
 					esc(node.label),
 				),
 			)
 			const ix = x + (node.box.w - node.item.box.w) / 2
 			parts.push(
-				tag('line', `x1="${x}" y1="${cy}" x2="${ix}" y2="${cy}" stroke="#333" stroke-width="1.5"`),
+				tag(
+					'line',
+					`x1="${x}" y1="${cy}" x2="${ix}" y2="${cy}" stroke="#1c2a4a" stroke-width="1.5"`,
+				),
 			)
 			parts.push(drawNode(node.item, ix, cy))
 			parts.push(
 				tag(
 					'line',
-					`x1="${ix + node.item.box.w}" y1="${cy}" x2="${x + node.box.w}" y2="${cy}" stroke="#333" stroke-width="1.5"`,
+					`x1="${ix + node.item.box.w}" y1="${cy}" x2="${x + node.box.w}" y2="${cy}" stroke="#1c2a4a" stroke-width="1.5"`,
 				),
 			)
 			break
@@ -550,24 +556,27 @@ function finalizeSvg(root: Laid): string {
 	const endX = contentX + contentW + GAP
 
 	const body: string[] = []
-	body.push(tag('circle', `cx="${x0 + 8}" cy="${cy}" r="6" fill="#333"`))
+	body.push(tag('circle', `cx="${x0 + 8}" cy="${cy}" r="6" fill="#1c2a4a"`))
 	body.push(
 		tag(
 			'line',
-			`x1="${x0 + 14}" y1="${cy}" x2="${contentX}" y2="${cy}" stroke="#333" stroke-width="1.5"`,
+			`x1="${x0 + 14}" y1="${cy}" x2="${contentX}" y2="${cy}" stroke="#1c2a4a" stroke-width="1.5"`,
 		),
 	)
 	body.push(drawNode(root, contentX, cy))
 	body.push(
 		tag(
 			'line',
-			`x1="${contentX + contentW}" y1="${cy}" x2="${endX}" y2="${cy}" stroke="#333" stroke-width="1.5"`,
+			`x1="${contentX + contentW}" y1="${cy}" x2="${endX}" y2="${cy}" stroke="#1c2a4a" stroke-width="1.5"`,
 		),
 	)
 	body.push(
-		tag('circle', `cx="${endX + 8}" cy="${cy}" r="6" fill="none" stroke="#333" stroke-width="2"`),
+		tag(
+			'circle',
+			`cx="${endX + 8}" cy="${cy}" r="6" fill="none" stroke="#1c2a4a" stroke-width="2"`,
+		),
 	)
-	body.push(tag('circle', `cx="${endX + 8}" cy="${cy}" r="2.5" fill="#333"`))
+	body.push(tag('circle', `cx="${endX + 8}" cy="${cy}" r="2.5" fill="#1c2a4a"`))
 
 	return tag(
 		'svg',

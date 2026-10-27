@@ -16,7 +16,7 @@ const PREVIEW = 5
 
 function Row({ item, showMarket }: { item: FearGreedResult; showMarket?: boolean }) {
 	return (
-		<div className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 hover:bg-white/60">
+		<div className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 hover:bg-card/60">
 			<span className="min-w-0 truncate text-sm" title={item.name}>
 				{item.name}
 				{showMarket && (
@@ -51,7 +51,7 @@ export default function FearGreedBoardCard() {
 						<h2 className="text-base font-medium">恐贪指数</h2>
 						<span className="text-xs text-muted-foreground">0 极度恐惧 – 100 极度贪婪</span>
 					</div>
-					<div className="flex rounded-lg border bg-white/60 p-0.5 text-xs">
+					<div className="flex rounded-lg border bg-card/60 p-0.5 text-xs">
 						{(
 							[
 								['indices', '大盘指数'],

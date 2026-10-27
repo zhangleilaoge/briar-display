@@ -80,10 +80,10 @@ function EntryCard({ entry, tilt }: { entry: Entry; tilt: number }) {
 						<Icon className="rv-cameo h-7 w-7 text-[color:var(--rv-ink)]" />
 					</div>
 					<div className="min-w-0">
-						<span className="rv-script block text-lg leading-none text-[#b9545f]">
+						<span className="rv-script block text-lg leading-none text-[color:var(--rv-rose-deep)]">
 							{entry.caption}
 						</span>
-						<h3 className="font-heading text-lg font-semibold transition-colors group-hover:text-[#b9545f]">
+						<h3 className="font-heading text-lg font-semibold transition-colors group-hover:text-[color:var(--rv-rose-deep)]">
 							{entry.title}
 						</h3>
 						<p className="truncate text-sm text-muted-foreground">{entry.description}</p>
@@ -145,7 +145,9 @@ function PortalPageInner() {
 								Carnet de voyage · {date || '\u00a0'}
 							</span>
 							<h1 className="font-display text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
-								<span className="rv-script mr-2 font-normal text-[#b9545f]">{greet},</span>
+								<span className="rv-script mr-2 font-normal text-[color:var(--rv-rose-deep)]">
+									{greet},
+								</span>
 								xiaobuzi
 							</h1>
 							<p className="font-display text-lg italic text-muted-foreground">

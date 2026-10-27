@@ -77,7 +77,7 @@ function AdminTerminalPageInner() {
 						分钟无输入自动断开。
 					</p>
 					<div className="flex items-center gap-2 text-xs text-muted-foreground">
-						<ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+						<ShieldCheck className="h-3.5 w-3.5 text-success" />
 						<span>设备已授权{deviceExpiry ? `至 ${deviceExpiry.toLocaleDateString()}` : ''}</span>
 						<Button
 							variant="ghost"

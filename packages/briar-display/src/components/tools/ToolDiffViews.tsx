@@ -46,17 +46,13 @@ function CollapseBar({
 function UnifiedLine({ line }: { line: DiffLine }) {
 	const bg =
 		line.type === 'added'
-			? 'bg-green-100/80 dark:bg-green-500/15'
+			? 'bg-success-soft/80'
 			: line.type === 'removed'
-				? 'bg-red-100/80 dark:bg-red-500/15'
+				? 'bg-danger-soft/80'
 				: ''
 	const marker = line.type === 'added' ? '+' : line.type === 'removed' ? '-' : ''
 	const markerColor =
-		line.type === 'added'
-			? 'text-green-600 dark:text-green-400'
-			: line.type === 'removed'
-				? 'text-red-600 dark:text-red-400'
-				: ''
+		line.type === 'added' ? 'text-success' : line.type === 'removed' ? 'text-danger' : ''
 	return (
 		<div className={`flex whitespace-pre px-2 ${bg}`}>
 			<span className="w-10 shrink-0 select-none pr-1 text-right text-muted-foreground/60">
@@ -146,9 +142,9 @@ function pairSegmentLines(lines: DiffLine[]): [SplitCell, SplitCell][] {
 function SplitCellView({ cell, side }: { cell: SplitCell; side: 'left' | 'right' }) {
 	const bg =
 		cell.type === 'removed'
-			? 'bg-red-100/80 dark:bg-red-500/15'
+			? 'bg-danger-soft/80'
 			: cell.type === 'added'
-				? 'bg-green-100/80 dark:bg-green-500/15'
+				? 'bg-success-soft/80'
 				: cell.type === 'blank'
 					? 'bg-muted/50'
 					: ''

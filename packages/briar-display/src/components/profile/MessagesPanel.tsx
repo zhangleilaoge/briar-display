@@ -116,7 +116,7 @@ export default function MessagesPanel() {
 										<span
 											className={cn(
 												'h-1.5 w-1.5 shrink-0 rounded-full',
-												msg.readAt ? 'bg-transparent' : 'bg-red-500',
+												msg.readAt ? 'bg-transparent' : 'bg-danger',
 											)}
 										/>
 										<span

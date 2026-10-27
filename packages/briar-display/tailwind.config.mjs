@@ -76,6 +76,27 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))',
 				},
+				// Reverie 语义状态色（见 src/styles/theme.css）
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					soft: 'hsl(var(--success-soft))',
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					soft: 'hsl(var(--warning-soft))',
+				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					soft: 'hsl(var(--info-soft))',
+				},
+				danger: {
+					DEFAULT: 'hsl(var(--danger))',
+					soft: 'hsl(var(--danger-soft))',
+				},
+				plum: {
+					DEFAULT: 'hsl(var(--plum))',
+					soft: 'hsl(var(--plum-soft))',
+				},
 				chart: {
 					1: 'hsl(var(--chart-1))',
 					2: 'hsl(var(--chart-2))',

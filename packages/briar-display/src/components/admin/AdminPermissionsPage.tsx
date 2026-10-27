@@ -307,24 +307,24 @@ function AdminPermissionsPageInner() {
 												<Button
 													size="icon"
 													variant="ghost"
-													className="h-6 w-6 hover:bg-green-100"
+													className="h-6 w-6 hover:bg-success-soft"
 													onClick={(e) => {
 														e.stopPropagation()
 														handleUpdateRole(role.id)
 													}}
 												>
-													<Check className="h-3 w-3 text-green-600" />
+													<Check className="h-3 w-3 text-success" />
 												</Button>
 												<Button
 													size="icon"
 													variant="ghost"
-													className="h-6 w-6 hover:bg-red-100"
+													className="h-6 w-6 hover:bg-danger-soft"
 													onClick={(e) => {
 														e.stopPropagation()
 														setEditingRole(null)
 													}}
 												>
-													<X className="h-3 w-3 text-red-500" />
+													<X className="h-3 w-3 text-danger" />
 												</Button>
 											</div>
 										</div>
@@ -356,13 +356,13 @@ function AdminPermissionsPageInner() {
 													<Button
 														size="icon"
 														variant="ghost"
-														className="h-6 w-6 hover:bg-red-50"
+														className="h-6 w-6 hover:bg-danger-soft"
 														onClick={(e) => {
 															e.stopPropagation()
 															handleDeleteRole(role.id)
 														}}
 													>
-														<Trash2 className="h-3 w-3 text-red-500" />
+														<Trash2 className="h-3 w-3 text-danger" />
 													</Button>
 												)}
 											</div>

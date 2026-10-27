@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { CHART } from '@/lib/chartPalette'
 import { cn } from '@/lib/utils'
 import type { Csi300EtfScalePoint } from '@briar/shared'
 import type { MouseEventParams, Time } from 'lightweight-charts'
@@ -8,10 +9,10 @@ import { Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { formatAmount, formatPrice } from './marketUtils'
 
-const RATIO_COLOR = '#f59e0b'
-const INDEX_COLOR = '#9333ea'
-const TEXT = '#64748b'
-const GRID = 'rgba(148, 163, 184, 0.18)'
+const RATIO_COLOR = CHART.warning
+const INDEX_COLOR = CHART.plum
+const TEXT = CHART.text
+const GRID = CHART.grid
 
 type ChartLib = typeof import('lightweight-charts')
 let libPromise: Promise<ChartLib> | null = null
@@ -65,6 +66,7 @@ export default function Csi300EtfScaleChart({
 			layout: {
 				background: { type: lib.ColorType.Solid, color: 'transparent' },
 				textColor: TEXT,
+				fontFamily: CHART.fontFamily,
 				fontSize: 11,
 				attributionLogo: true,
 			},

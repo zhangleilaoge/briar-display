@@ -13,10 +13,10 @@ import RunHistoryDialog from './RunHistoryDialog'
 const COLLAPSED_COUNT = 3
 
 const STATUS_STYLE: Record<SchedulerRunStatus, { label: string; className: string }> = {
-	running: { label: '运行中', className: 'animate-pulse bg-blue-100 text-blue-700' },
-	success: { label: '成功', className: 'bg-green-100 text-green-700' },
-	skipped: { label: '跳过', className: 'bg-gray-100 text-gray-600' },
-	failed: { label: '失败', className: 'bg-red-100 text-red-700' },
+	running: { label: '运行中', className: 'animate-pulse bg-info-soft text-info' },
+	success: { label: '成功', className: 'bg-success-soft text-success' },
+	skipped: { label: '跳过', className: 'bg-muted text-muted-foreground' },
+	failed: { label: '失败', className: 'bg-danger-soft text-danger' },
 }
 
 function formatTime(date: string) {

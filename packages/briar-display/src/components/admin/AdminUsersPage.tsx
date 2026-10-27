@@ -213,7 +213,7 @@ function AdminUsersPageInner() {
 					)}
 
 					{notice && (
-						<div className="mb-4 flex items-center gap-2 rounded-md border border-green-600/30 bg-green-600/5 px-3 py-2 text-sm text-green-700 dark:text-green-400">
+						<div className="mb-4 flex items-center gap-2 rounded-md border border-success/30 bg-success/5 px-3 py-2 text-sm text-success">
 							<Check className="h-4 w-4 shrink-0" />
 							<span className="flex-1">{notice}</span>
 							<Button

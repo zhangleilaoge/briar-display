@@ -120,7 +120,7 @@ function QuizPanel() {
 					</CardHeader>
 					<CardContent>
 						<p className="mb-2 text-sm leading-relaxed">{question.prompt}</p>
-						<p className="mb-2 text-xs text-amber-700">
+						<p className="mb-2 text-xs text-warning">
 							{question.questionGrid
 								? '先观察展开图的公共边，再判断折叠后的相对面。'
 								: '可拖动左侧立体旋转查看；提交后悬停、聚焦或点击选项可切换解析。'}
@@ -200,7 +200,7 @@ function QuizPanel() {
 										onFocus={() => {
 											if (revealed) setPreviewId(option.id)
 										}}
-										className={`flex flex-col items-center gap-2 rounded-lg border p-3 text-left transition hover:bg-muted/40 ${isSelected && !revealed ? 'border-primary ring-2 ring-primary/30 ' : ''}${revealed && option.isCorrect ? 'border-emerald-500 bg-emerald-50 ' : ''}${revealed && isSelected && !option.isCorrect ? 'border-rose-400 bg-rose-50 ' : ''}${isPreviewed ? 'ring-2 ring-sky-300 ' : ''}`}
+										className={`flex flex-col items-center gap-2 rounded-lg border p-3 text-left transition hover:bg-muted/40 ${isSelected && !revealed ? 'border-primary ring-2 ring-primary/30 ' : ''}${revealed && option.isCorrect ? 'border-success bg-success-soft ' : ''}${revealed && isSelected && !option.isCorrect ? 'border-danger bg-danger-soft ' : ''}${isPreviewed ? 'ring-2 ring-info ' : ''}`}
 									>
 										<div className="flex w-full items-center justify-between gap-2 text-sm font-semibold">
 											<span className="shrink-0">{option.id}</span>
@@ -227,9 +227,9 @@ function QuizPanel() {
 							{revealed ? (
 								<p className="self-center text-sm">
 									{question.options.find((option) => option.id === selected)?.isCorrect ? (
-										<span className="text-emerald-700">回答正确</span>
+										<span className="text-success">回答正确</span>
 									) : (
-										<span className="text-rose-700">回答错误，正确答案是 {correctOption.id}</span>
+										<span className="text-danger">回答错误，正确答案是 {correctOption.id}</span>
 									)}
 								</p>
 							) : null}

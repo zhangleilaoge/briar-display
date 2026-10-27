@@ -142,7 +142,7 @@ export default function ForgotPasswordPage() {
 								</p>
 							)}
 							{success && (
-								<p className="rounded-md border border-green-300 bg-green-500/10 px-3 py-2 text-sm text-green-700">
+								<p className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-sm text-success">
 									{success}
 								</p>
 							)}
@@ -237,7 +237,7 @@ export default function ForgotPasswordPage() {
 								</p>
 							)}
 							{success && (
-								<p className="rounded-md border border-green-300 bg-green-500/10 px-3 py-2 text-sm text-green-700">
+								<p className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-sm text-success">
 									{success}
 								</p>
 							)}

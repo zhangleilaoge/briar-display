@@ -51,7 +51,7 @@ export default function SortHead<K extends string>({
 					<Icon
 						className={cn(
 							'mt-0.5 h-3.5 w-3.5 shrink-0',
-							active ? 'text-sky-600' : 'opacity-0 transition-opacity group-hover:opacity-50',
+							active ? 'text-info' : 'opacity-0 transition-opacity group-hover:opacity-50',
 						)}
 					/>
 				</button>

@@ -112,7 +112,7 @@ function ProfilePageInner() {
 
 			<main className="mx-auto max-w-5xl p-4 sm:p-6">
 				<div>
-					<span className="rv-script text-2xl text-[#b9545f]">Mon carnet</span>
+					<span className="rv-script text-2xl text-[color:var(--rv-rose-deep)]">Mon carnet</span>
 					<h1 className="font-heading text-3xl font-semibold tracking-tight">个人中心</h1>
 					<p className="mt-1 text-sm text-muted-foreground">管理你的账号信息、角色与权限</p>
 				</div>
@@ -138,7 +138,7 @@ function ProfilePageInner() {
 							<Mail className="h-3.5 w-3.5" />
 							站内信
 							{unread > 0 && (
-								<span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium text-white">
+								<span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-white">
 									{unread > 99 ? '99+' : unread}
 								</span>
 							)}

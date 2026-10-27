@@ -1,3 +1,4 @@
+import { CHART } from '@/lib/chartPalette'
 import { cn } from '@/lib/utils'
 import type { MarketId, TrendSeries } from '@briar/shared'
 import { type PointerEvent, useId, useMemo, useRef, useState } from 'react'
@@ -24,9 +25,9 @@ interface IntradayChartProps {
 }
 
 const VB_W = 1000
-const UP = '#dc2626'
-const DOWN = '#16a34a'
-const FLAT = '#64748b'
+const UP = CHART.up
+const DOWN = CHART.down
+const FLAT = CHART.flat
 
 const pctOf = (price: number, base: number | null) => (base ? ((price - base) / base) * 100 : null)
 
@@ -119,7 +120,7 @@ export default function IntradayChart({
 							x2={b * VB_W}
 							y1={0}
 							y2={height}
-							stroke="#94a3b8"
+							stroke={CHART.base}
 							strokeOpacity={0.35}
 							strokeDasharray="3 3"
 							vectorEffect="non-scaling-stroke"
@@ -131,7 +132,7 @@ export default function IntradayChart({
 							x2={VB_W}
 							y1={geo.baseY}
 							y2={geo.baseY}
-							stroke="#64748b"
+							stroke={CHART.text}
 							strokeOpacity={0.6}
 							strokeDasharray="4 4"
 							vectorEffect="non-scaling-stroke"
@@ -158,10 +159,10 @@ export default function IntradayChart({
 						</span>
 						{prevClose != null && (
 							<>
-								<span className="pointer-events-none absolute right-1 top-0.5 text-[10px] tabular-nums text-red-600">
+								<span className="pointer-events-none absolute right-1 top-0.5 text-[10px] tabular-nums text-danger">
 									{formatPct(pctOf(hi, prevClose))}
 								</span>
-								<span className="pointer-events-none absolute bottom-0.5 right-1 text-[10px] tabular-nums text-green-600">
+								<span className="pointer-events-none absolute bottom-0.5 right-1 text-[10px] tabular-nums text-success">
 									{formatPct(pctOf(lo, prevClose))}
 								</span>
 							</>
@@ -172,11 +173,11 @@ export default function IntradayChart({
 				{hoverPoint && hoverCoord && (
 					<>
 						<div
-							className="pointer-events-none absolute inset-y-0 w-px bg-slate-400/70"
+							className="pointer-events-none absolute inset-y-0 w-px bg-muted-foreground/40"
 							style={{ left: `${(hoverCoord[0] / VB_W) * 100}%` }}
 						/>
 						<div
-							className="pointer-events-none absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow"
+							className="pointer-events-none absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card shadow"
 							style={{
 								left: `${(hoverCoord[0] / VB_W) * 100}%`,
 								top: `${(hoverCoord[1] / height) * 100}%`,
@@ -185,7 +186,7 @@ export default function IntradayChart({
 						/>
 						<div
 							className={cn(
-								'pointer-events-none absolute top-1 z-10 whitespace-nowrap rounded-md bg-white/95 px-2 py-1 text-[11px] leading-tight shadow-md ring-1 ring-black/5',
+								'pointer-events-none absolute top-1 z-10 whitespace-nowrap rounded-md bg-card/95 px-2 py-1 text-[11px] leading-tight shadow-md ring-1 ring-border',
 								hoverCoord[0] / VB_W > 0.6 ? '-translate-x-[calc(100%+8px)]' : 'translate-x-2',
 							)}
 							style={{ left: `${(hoverCoord[0] / VB_W) * 100}%` }}
@@ -205,7 +206,7 @@ export default function IntradayChart({
 									<span
 										className={cn(
 											'ml-1.5',
-											hoverPct > 0 ? 'text-red-600' : hoverPct < 0 ? 'text-green-600' : '',
+											hoverPct > 0 ? 'text-danger' : hoverPct < 0 ? 'text-success' : '',
 										)}
 									>
 										{formatPct(hoverPct)}

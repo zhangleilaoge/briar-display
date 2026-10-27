@@ -25,7 +25,7 @@ export default function StorageQuota() {
 	if (!stats) return null
 
 	const percent = Math.min(100, Math.round((stats.used / stats.quota) * 100))
-	const colorClass = percent >= 90 ? 'bg-red-500' : percent >= 70 ? 'bg-yellow-500' : 'bg-green-500'
+	const colorClass = percent >= 90 ? 'bg-danger' : percent >= 70 ? 'bg-warning' : 'bg-success'
 
 	return (
 		<div className="flex items-center gap-3">

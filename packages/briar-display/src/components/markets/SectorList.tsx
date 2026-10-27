@@ -206,14 +206,14 @@ export default function SectorList({
 										'--'
 									) : item.downCount != null ? (
 										<>
-											<span className="text-red-600">{item.upCount ?? 0}</span>
+											<span className="text-danger">{item.upCount ?? 0}</span>
 											<span className="text-muted-foreground"> / </span>
-											<span className="text-green-600">{item.downCount}</span>
+											<span className="text-success">{item.downCount}</span>
 										</>
 									) : (
 										// 腾讯只给「上涨家数/成分股总数」
 										<>
-											<span className="text-red-600">{item.upCount ?? 0}</span>
+											<span className="text-danger">{item.upCount ?? 0}</span>
 											<span className="text-muted-foreground"> / 共 {item.total}</span>
 										</>
 									)}

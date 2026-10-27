@@ -9,6 +9,17 @@
 
 :root,
 .theme-scrapbook {
+	/* —— 语义状态色 token（成功/警告/信息/危险/紫；soft 为浅底） —— */
+	--success: 152 32% 32%;
+	--success-soft: 140 32% 92%;
+	--warning: 30 68% 38%;
+	--warning-soft: 40 72% 91%;
+	--info: 214 36% 40%;
+	--info-soft: 214 42% 93%;
+	--danger: 352 56% 46%;
+	--danger-soft: 350 72% 95%;
+	--plum: 300 22% 40%;
+	--plum-soft: 310 30% 94%;
 	/* —— shadcn 颜色 token（HSL 三元组） —— */
 	--background: 36 60% 98%; /* #FDFBF7 奶油纸 */
 	--foreground: 222 25% 23%; /* #2C3549 墨蓝 */
@@ -39,6 +50,10 @@
 
 	/* —— 风格 token —— */
 	--rv-rose: #eac8cd;
+	--rv-rose-deep: #b9545f;
+	/* 文件夹图标（双色） */
+	--folder-back: #d9a3ac;
+	--folder-front: #efd2d7;
 	--rv-pink: #f5e1e6;
 	--rv-cream: #fdfbf7;
 	--rv-beige: #f5efeb;
@@ -115,6 +130,19 @@
 }
 
 .theme-arcane {
+	--folder-back: #7d9ac3;
+	--folder-front: #b8cbe5;
+	/* —— 语义状态色 token —— */
+	--success: 166 42% 28%;
+	--success-soft: 166 36% 91%;
+	--warning: 34 72% 35%;
+	--warning-soft: 40 70% 91%;
+	--info: 212 58% 36%;
+	--info-soft: 210 62% 93%;
+	--danger: 355 60% 45%;
+	--danger-soft: 355 70% 95%;
+	--plum: 262 30% 44%;
+	--plum-soft: 262 36% 94%;
 	--background: 211 45% 91%;
 	--foreground: 221 46% 20%; /* #1C2B4B */
 	--card: 210 60% 98%;
@@ -424,4 +452,12 @@ body {
 /* 浮雕效果：内阴影 + 高光 */
 .rv-cameo {
 	filter: drop-shadow(0 1px 0 rgb(255 255 255 / 0.9)) drop-shadow(0 -0.5px 0 rgb(0 0 0 / 0.18));
+}
+
+/* 原生复选框/单选/滑块跟随主题主色 */
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"],
+progress {
+	accent-color: hsl(var(--primary));
 }

@@ -86,13 +86,16 @@ export interface RibbonSidebarProps {
 export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 	const { isAdmin } = usePermissions()
 	const [path, setPath] = useState(currentPath ?? '')
+	// 管理员入口依赖 localStorage 里的登录态，SSR 拿不到；挂载后再显示，避免 hydration 不一致
+	const [mounted, setMounted] = useState(false)
 
 	useEffect(() => {
 		setPath(window.location.pathname)
+		setMounted(true)
 	}, [])
 
 	const active = activeRibbonHref(path)
-	const items = RIBBON_ITEMS.filter((item) => !item.adminOnly || isAdmin)
+	const items = RIBBON_ITEMS.filter((item) => !item.adminOnly || (mounted && isAdmin))
 
 	return (
 		<nav

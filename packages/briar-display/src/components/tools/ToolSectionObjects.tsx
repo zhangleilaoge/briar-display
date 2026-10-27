@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { cutPointLabelOffset } from './toolSectionGeometry'
 import type { Solid, Vec3, Voxel } from './toolSectionUtils'
 
-const POINT_COLORS = ['#dc2626', '#ea580c', '#2563eb']
+const POINT_COLORS = ['#b82e39', '#b86a2a', '#275891']
 
 function interaction(meta: Record<string, unknown>) {
 	return { sectionInteraction: meta }
@@ -129,16 +129,16 @@ export function VoxelMesh({
 			<meshStandardMaterial
 				color={
 					selected
-						? '#3b82f6'
+						? '#4a78b0'
 						: hovered
-							? '#bae6fd'
+							? '#cfe0f3'
 							: accent
-								? '#f59e0b'
+								? '#c98a3a'
 								: voxel.color === 'gray'
-									? '#1f2937'
-									: '#f8fafc'
+									? '#1c2a4a'
+									: '#f4f7fc'
 				}
-				emissive={accent ? '#d97706' : hovered ? '#38bdf8' : selected ? '#2563eb' : '#000000'}
+				emissive={accent ? '#a86f24' : hovered ? '#7fa9d8' : selected ? '#275891' : '#000000'}
 				emissiveIntensity={accent ? 0.24 : hovered ? 0.38 : selected ? 0.16 : 0}
 				transparent
 				opacity={accent ? 0.86 : 0.55}
@@ -148,7 +148,7 @@ export function VoxelMesh({
 			/>
 			<lineSegments geometry={edgeGeometry} scale={selected ? 1.003 : 1.001}>
 				<lineBasicMaterial
-					color={accent ? '#b45309' : selected || hovered ? '#0284c7' : '#334155'}
+					color={accent ? '#8a5718' : selected || hovered ? '#0284c7' : '#33476a'}
 				/>
 			</lineSegments>
 		</mesh>
@@ -174,7 +174,7 @@ function AdditionArrow({ selectedCell, cell }: { selectedCell: Vec3; cell: Vec3 
 				userData={meta}
 			>
 				<cylinderGeometry args={[0.035, 0.035, 0.28, 10]} />
-				<meshStandardMaterial color="#2563eb" roughness={0.45} />
+				<meshStandardMaterial color="#275891" roughness={0.45} />
 			</mesh>
 			<mesh
 				position={[direction[0] * 0.86, direction[1] * 0.86, direction[2] * 0.86]}
@@ -182,7 +182,7 @@ function AdditionArrow({ selectedCell, cell }: { selectedCell: Vec3; cell: Vec3 
 				userData={meta}
 			>
 				<coneGeometry args={[0.11, 0.24, 16]} />
-				<meshStandardMaterial color="#2563eb" roughness={0.45} />
+				<meshStandardMaterial color="#275891" roughness={0.45} />
 			</mesh>
 			<mesh
 				position={[direction[0] * 0.79, direction[1] * 0.79, direction[2] * 0.79]}
@@ -213,7 +213,7 @@ export function StarterCell() {
 		<group position={[0.5, 0.5, 0.5]}>
 			<mesh userData={interaction(meta)}>
 				<boxGeometry args={[1, 1, 1]} />
-				<meshStandardMaterial color="#22c55e" transparent opacity={0.24} depthWrite={false} />
+				<meshStandardMaterial color="#3f8a76" transparent opacity={0.24} depthWrite={false} />
 			</mesh>
 			<LabelSprite label="+" position={[0, 0, 0]} scale={0.55} meta={meta} />
 		</group>

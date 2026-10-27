@@ -46,7 +46,7 @@ function MarketCard({ item }: { item: MarketOverviewItem }) {
 					<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
 						<span>行情 {formatShanghaiTime(item.quoteTime)}</span>
 						<span>当地 {item.session.sessionText}</span>
-						{item.delayNote && <span className="text-amber-700">{item.delayNote}</span>}
+						{item.delayNote && <span className="text-warning">{item.delayNote}</span>}
 					</div>
 					{item.stale && <StaleBadge error={item.error} />}
 				</CardContent>

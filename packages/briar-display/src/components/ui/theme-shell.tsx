@@ -108,9 +108,7 @@ export function ScrapTitle({
 	return (
 		<div className={cn('flex flex-col leading-tight', className)}>
 			{script && (
-				<span className="rv-script text-2xl text-[color:var(--rv-rose-deep,#b9545f)]">
-					{script}
-				</span>
+				<span className="rv-script text-2xl text-[color:var(--rv-rose-deep)]">{script}</span>
 			)}
 			<span className="font-heading text-2xl font-semibold text-foreground">{title}</span>
 		</div>
@@ -129,7 +127,7 @@ export function BrandCollage({
 		>
 			<div className="rv-surface absolute inset-0 -rotate-2 rounded-surface border border-border/60 bg-card shadow-raised" />
 			<div className="absolute inset-3 -rotate-2 rounded-[calc(var(--radius-surface)-6px)] border border-dashed border-[color:var(--rv-rose)]" />
-			<span className="rv-script relative text-4xl text-[#b9545f]">{script}</span>
+			<span className="rv-script relative text-4xl text-[color:var(--rv-rose-deep)]">{script}</span>
 			<h1 className="relative font-display text-6xl font-semibold tracking-tight text-foreground">
 				xiaobuzi
 			</h1>

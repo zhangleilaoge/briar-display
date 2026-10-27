@@ -155,7 +155,7 @@ export default function ToolRegexPage() {
 								解析失败：{diagram.error}
 							</div>
 						) : (
-							<div className="overflow-auto rounded-md border bg-white p-6">
+							<div className="overflow-auto rounded-md border bg-card p-6">
 								<div ref={svgHostRef} className="mx-auto w-fit" />
 							</div>
 						)}

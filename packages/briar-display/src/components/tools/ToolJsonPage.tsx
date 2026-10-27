@@ -176,7 +176,7 @@ export default function ToolJsonPage() {
 					const text = span.textContent?.trim()
 					if (text === `"${targetValue}"` || text === targetValue || text === `${targetValue},`) {
 						span.scrollIntoView({ behavior: 'smooth', block: 'center' })
-						span.style.backgroundColor = '#fde047'
+						span.style.backgroundColor = 'hsl(var(--warning-soft))'
 						span.style.transition = 'background-color 0.5s ease-out'
 						setTimeout(() => {
 							span.style.backgroundColor = 'transparent'
@@ -192,7 +192,7 @@ export default function ToolJsonPage() {
 					const text = span.textContent?.trim()
 					if (text === `"${targetKey}"` || text === targetKey || text === `${targetKey}:`) {
 						span.scrollIntoView({ behavior: 'smooth', block: 'center' })
-						span.style.backgroundColor = '#fde047'
+						span.style.backgroundColor = 'hsl(var(--warning-soft))'
 						span.style.transition = 'background-color 0.5s ease-out'
 						setTimeout(() => {
 							span.style.backgroundColor = 'transparent'
@@ -291,7 +291,7 @@ export default function ToolJsonPage() {
 													className="h-auto gap-1 px-2 py-1 text-xs"
 												>
 													{copied ? (
-														<Check className="h-3 w-3 text-green-600" />
+														<Check className="h-3 w-3 text-success" />
 													) : (
 														<Copy className="h-3 w-3" />
 													)}
