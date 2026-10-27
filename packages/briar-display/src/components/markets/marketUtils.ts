@@ -3,7 +3,7 @@ import type { MarketId, MarketSessionStatus, SectorItem, SectorSortKey } from '@
 /** 红涨绿跌（所有市场统一） */
 export function changeColorClass(pct: number | null | undefined): string {
 	if (pct == null || pct === 0) return 'text-muted-foreground'
-	return pct > 0 ? 'text-red-600' : 'text-green-600'
+	return pct > 0 ? 'text-danger' : 'text-success'
 }
 
 export function formatPct(pct: number | null | undefined): string {
@@ -66,9 +66,9 @@ export const SESSION_LABELS: Record<MarketSessionStatus, string> = {
 export function sessionBadgeClass(status: MarketSessionStatus): string {
 	switch (status) {
 		case 'open':
-			return 'border-transparent bg-red-500/10 text-red-600'
+			return 'border-transparent bg-danger/10 text-danger'
 		case 'break':
-			return 'border-transparent bg-amber-500/10 text-amber-700'
+			return 'border-transparent bg-warning/10 text-warning'
 		default:
 			return 'border-transparent bg-muted text-muted-foreground'
 	}
@@ -180,11 +180,12 @@ export function heatStyle(
 	const intensity = Math.min(1, Math.abs(pct) / scale)
 	// 浅 → 深：up 0~360 色相红，down 绿
 	const lightness = 88 - intensity * 46
-	const hue = pct > 0 ? 0 : 142
-	const saturation = pct > 0 ? 72 : 62
+	// 色相对齐主题 danger(355) / success(166) token
+	const hue = pct > 0 ? 355 : 166
+	const saturation = pct > 0 ? 60 : 42
 	return {
 		backgroundColor: `hsl(${hue} ${saturation}% ${lightness}%)`,
-		color: lightness < 60 ? '#fff' : pct > 0 ? 'hsl(0 70% 28%)' : 'hsl(142 60% 20%)',
+		color: lightness < 60 ? '#fff' : pct > 0 ? 'hsl(355 60% 28%)' : 'hsl(166 42% 20%)',
 	}
 }
 

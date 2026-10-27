@@ -1,5 +1,6 @@
 'use client'
 
+import { CHART } from '@/lib/chartPalette'
 import { cn } from '@/lib/utils'
 import type { Candle, MinuteDay } from '@briar/shared'
 import type {
@@ -35,14 +36,14 @@ const loadLib = () => {
 	return libPromise
 }
 
-const UP = '#dc2626'
-const DOWN = '#16a34a'
-const UP_VOL = 'rgba(220, 38, 38, 0.55)'
-const DOWN_VOL = 'rgba(22, 163, 74, 0.55)'
-const TEXT = '#64748b'
-const GRID = 'rgba(148, 163, 184, 0.18)'
-const BASE = '#94a3b8'
-const MA_COLORS = { 5: '#f59e0b', 10: '#3b82f6', 20: '#a855f7' } as const
+const UP = CHART.up
+const DOWN = CHART.down
+const UP_VOL = CHART.upSoft
+const DOWN_VOL = CHART.downSoft
+const TEXT = CHART.text
+const GRID = CHART.grid
+const BASE = CHART.base
+const MA_COLORS = { 5: CHART.warning, 10: CHART.info, 20: CHART.plum } as const
 const MA_PERIODS = [5, 10, 20] as const
 
 export type TrendChartData =
@@ -142,6 +143,7 @@ export default function TrendChart({ data, timeZone, resetKey, className }: Tren
 			layout: {
 				background: { type: lib.ColorType.Solid, color: 'transparent' },
 				textColor: TEXT,
+				fontFamily: CHART.fontFamily,
 				fontSize: 11,
 				attributionLogo: true,
 			},
@@ -195,11 +197,11 @@ export default function TrendChart({ data, timeZone, resetKey, className }: Tren
 			main = chart.addSeries(lib.BaselineSeries, {
 				baseValue: { type: 'price', price: base },
 				topLineColor: UP,
-				topFillColor1: 'rgba(220, 38, 38, 0.18)',
-				topFillColor2: 'rgba(220, 38, 38, 0.02)',
+				topFillColor1: CHART.upFillTop,
+				topFillColor2: CHART.upFillBottom,
 				bottomLineColor: DOWN,
-				bottomFillColor1: 'rgba(22, 163, 74, 0.02)',
-				bottomFillColor2: 'rgba(22, 163, 74, 0.18)',
+				bottomFillColor1: CHART.downFillTop,
+				bottomFillColor2: CHART.downFillBottom,
 				lineWidth: 2,
 				priceLineVisible: false,
 				// 纵轴以昨收为中心对称（同花顺分时的做法），涨跌幅一眼可比

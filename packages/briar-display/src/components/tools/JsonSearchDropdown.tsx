@@ -67,7 +67,7 @@ export default function JsonSearchDropdown({ flatEntries, onSelect }: JsonSearch
 									<span className="truncate font-mono text-[11px]">
 										{entry.key}
 										<span className="text-muted-foreground">: </span>
-										<span className="text-blue-600">{entry.value}</span>
+										<span className="text-info">{entry.value}</span>
 									</span>
 									<span className="truncate text-[10px] text-muted-foreground">{entry.path}</span>
 								</CommandItem>

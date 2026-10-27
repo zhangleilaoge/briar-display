@@ -278,7 +278,7 @@ export function ToolSectionSandbox() {
 									>
 										<span
 											className="font-semibold"
-											style={{ color: ['#dc2626', '#ea580c', '#2563eb'][index] }}
+											style={{ color: ['#b82e39', '#b86a2a', '#275891'][index] }}
 										>
 											{'ABC'[index]}
 										</span>

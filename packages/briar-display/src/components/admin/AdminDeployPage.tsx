@@ -45,17 +45,17 @@ function formatTime(date: string) {
 }
 
 function daysBadge(days: number) {
-	if (days < 0) return <Badge className="bg-red-100 text-red-700">已过期</Badge>
-	if (days <= 7) return <Badge className="bg-red-100 text-red-700">剩 {days} 天</Badge>
-	if (days <= 30) return <Badge className="bg-yellow-100 text-yellow-700">剩 {days} 天</Badge>
-	return <Badge className="bg-green-100 text-green-700">剩 {days} 天</Badge>
+	if (days < 0) return <Badge className="bg-danger-soft text-danger">已过期</Badge>
+	if (days <= 7) return <Badge className="bg-danger-soft text-danger">剩 {days} 天</Badge>
+	if (days <= 30) return <Badge className="bg-warning-soft text-warning">剩 {days} 天</Badge>
+	return <Badge className="bg-success-soft text-success">剩 {days} 天</Badge>
 }
 
 const RENEWAL_STATUS: Record<CertRenewalItem['status'], { label: string; className: string }> = {
-	running: { label: '运行中', className: 'bg-blue-100 text-blue-700' },
-	success: { label: '成功', className: 'bg-green-100 text-green-700' },
-	skipped: { label: '跳过', className: 'bg-gray-100 text-gray-600' },
-	failed: { label: '失败', className: 'bg-red-100 text-red-700' },
+	running: { label: '运行中', className: 'bg-info-soft text-info' },
+	success: { label: '成功', className: 'bg-success-soft text-success' },
+	skipped: { label: '跳过', className: 'bg-muted text-muted-foreground' },
+	failed: { label: '失败', className: 'bg-danger-soft text-danger' },
 }
 
 const TRIGGER_LABEL: Record<CertRenewalItem['triggerType'], string> = {
@@ -69,13 +69,14 @@ const RUNNING_DEPLOY_STATUS = ['in_progress', 'queued', 'waiting', 'requested']
 const COLLAPSED_COUNT = 3
 
 function deployStatusBadge(status: string) {
-	if (status === 'success') return <Badge className="bg-green-100 text-green-700">成功</Badge>
-	if (status === 'failure') return <Badge className="bg-red-100 text-red-700">失败</Badge>
-	if (status === 'cancelled') return <Badge className="bg-gray-100 text-gray-600">已取消</Badge>
+	if (status === 'success') return <Badge className="bg-success-soft text-success">成功</Badge>
+	if (status === 'failure') return <Badge className="bg-danger-soft text-danger">失败</Badge>
+	if (status === 'cancelled')
+		return <Badge className="bg-muted text-muted-foreground">已取消</Badge>
 	if (RUNNING_DEPLOY_STATUS.includes(status)) {
-		return <Badge className="animate-pulse bg-blue-100 text-blue-700">进行中</Badge>
+		return <Badge className="animate-pulse bg-info-soft text-info">进行中</Badge>
 	}
-	return <Badge className="bg-gray-100 text-gray-600">{status}</Badge>
+	return <Badge className="bg-muted text-muted-foreground">{status}</Badge>
 }
 
 /** commit message 单元格：单行截断，hover 弹窗查看全文（HoverCard 自带悬停延迟，鼠标可移入弹层） */
@@ -272,9 +273,9 @@ function AdminDeployPageInner() {
 		<AdminLayout currentPath={PAGE_PATH}>
 			{/* 证书状态 */}
 			<div className="mb-4 rounded-md border bg-card p-4">
-				<div className="mb-4 flex items-center gap-2">
-					<ShieldCheck className="h-4 w-4 text-muted-foreground" />
-					<h2 className="text-sm font-semibold">证书状态</h2>
+				<div className="mb-4 flex flex-wrap items-center gap-2">
+					<ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" />
+					<h2 className="shrink-0 text-sm font-semibold">证书状态</h2>
 					{certStatus && (
 						<span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
 							{certStatus.domain}
@@ -283,9 +284,9 @@ function AdminDeployPageInner() {
 					{certStatus?.local &&
 						certStatus?.live &&
 						(certConsistent ? (
-							<Badge className="bg-green-100 text-green-700">本地与线上一致</Badge>
+							<Badge className="bg-success-soft text-success">本地与线上一致</Badge>
 						) : (
-							<Badge className="bg-yellow-100 text-yellow-700">本地与线上不一致</Badge>
+							<Badge className="bg-warning-soft text-warning">本地与线上不一致</Badge>
 						))}
 				</div>
 				{statusLoading ? (

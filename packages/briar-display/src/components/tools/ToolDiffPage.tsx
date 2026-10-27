@@ -283,10 +283,10 @@ export default function ToolDiffPage() {
 									{stats && (
 										<div className="flex items-center gap-3 text-sm">
 											<span className="text-muted-foreground">结果：</span>
-											<Badge variant="outline" className="bg-green-50 text-green-700">
+											<Badge variant="outline" className="bg-success-soft text-success">
 												+{stats.added} 行新增
 											</Badge>
-											<Badge variant="outline" className="bg-red-50 text-red-700">
+											<Badge variant="outline" className="bg-danger-soft text-danger">
 												-{stats.removed} 行删除
 											</Badge>
 										</div>
@@ -294,7 +294,7 @@ export default function ToolDiffPage() {
 									<div className="h-[70dvh] min-h-[280px]">
 										{stats && stats.added === 0 && stats.removed === 0 ? (
 											<div className="flex h-full flex-col items-center justify-center gap-2 rounded-md border bg-muted/30 text-sm text-muted-foreground">
-												<CircleCheck className="h-8 w-8 text-green-600/70 dark:text-green-400/70" />
+												<CircleCheck className="h-8 w-8 text-success/70" />
 												两段文本完全相同，无差异
 											</div>
 										) : viewMode === 'split' ? (
@@ -348,7 +348,7 @@ export default function ToolDiffPage() {
 								<div
 									key={entry.id}
 									onClick={() => handleRestore(entry)}
-									className="group flex cursor-pointer flex-col rounded-md border border-white/70 bg-white/75 px-3 py-2.5 text-left transition-colors hover:bg-white"
+									className="group flex cursor-pointer flex-col rounded-md border border-border/70 bg-card/75 px-3 py-2.5 text-left transition-colors hover:bg-card"
 								>
 									<div className="flex items-center justify-between">
 										<span className="text-xs font-medium text-foreground">

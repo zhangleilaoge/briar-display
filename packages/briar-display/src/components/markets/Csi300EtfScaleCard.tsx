@@ -43,7 +43,7 @@ export default function Csi300EtfScaleCard() {
 				<div className="flex flex-wrap items-start justify-between gap-3">
 					<div>
 						<div className="flex items-center gap-2">
-							<TrendingUp className="h-4 w-4 text-amber-600" />
+							<TrendingUp className="h-4 w-4 text-warning" />
 							<h2 className="text-base font-medium">头部沪深300ETF占比</h2>
 						</div>
 						<p className="mt-1 text-xs text-muted-foreground">
@@ -98,7 +98,7 @@ export default function Csi300EtfScaleCard() {
 					<>
 						{latest && (
 							<div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-								<span className="text-2xl font-semibold tabular-nums text-amber-600">
+								<span className="text-2xl font-semibold tabular-nums text-warning">
 									{latest.ratioPct.toFixed(3)}%
 								</span>
 								<span className="text-sm text-muted-foreground">
@@ -120,7 +120,7 @@ export default function Csi300EtfScaleCard() {
 						/>
 						<div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
 							{data.funds.map((fund) => (
-								<div key={fund.code} className="min-w-0 rounded-xl border bg-white/45 p-3">
+								<div key={fund.code} className="min-w-0 rounded-xl border bg-card/45 p-3">
 									<div className="flex items-center justify-between gap-2">
 										<span className="truncate text-sm" title={fund.name}>
 											{fund.name.replace('沪深300ETF', '')}
@@ -144,7 +144,7 @@ export default function Csi300EtfScaleCard() {
 
 				<div className="space-y-2 text-xs text-muted-foreground">
 					<p>官方月报发布后补齐完整月份，未公布的当月不估算。份额与两种净值按交易日对齐。</p>
-					<details className="rounded-lg bg-white/40 px-3 py-2">
+					<details className="rounded-lg bg-card/40 px-3 py-2">
 						<summary className="cursor-pointer select-none">计算公式与数据来源</summary>
 						<div className="mt-2 space-y-1.5 leading-5">
 							<p>实际规模 = 当日份额 × 当日单位净值；视频口径 = 当日份额 × 当日累计净值。</p>
@@ -160,7 +160,7 @@ export default function Csi300EtfScaleCard() {
 						不代表中央汇金或“国家队”真实持仓；不含其他ETF、场外及联接基金。非投资建议。
 					</p>
 					{data?.stale && <StaleBadge error={data.error} />}
-					{data && error && <p className="text-amber-700">刷新失败：{error}，继续显示上次快照。</p>}
+					{data && error && <p className="text-warning">刷新失败：{error}，继续显示上次快照。</p>}
 				</div>
 			</CardContent>
 		</Card>

@@ -48,15 +48,15 @@ const getExtension = (name: string): string => {
 const pickIcon = (fileName: string, mimeType: string) => {
 	const ext = getExtension(fileName)
 	if (mimeType === 'application/pdf' || ext === 'pdf') {
-		return { Icon: FaFilePdf, color: 'text-red-500' }
+		return { Icon: FaFilePdf, color: 'text-danger' }
 	}
-	if (['doc', 'docx'].includes(ext)) return { Icon: FaFileWord, color: 'text-blue-500' }
-	if (['xls', 'xlsx'].includes(ext)) return { Icon: FaFileExcel, color: 'text-green-600' }
-	if (ext === 'csv') return { Icon: FaFileCsv, color: 'text-green-600' }
-	if (['ppt', 'pptx'].includes(ext)) return { Icon: FaFilePowerpoint, color: 'text-orange-500' }
-	if (ARCHIVE_EXTENSIONS.has(ext)) return { Icon: FaFileArchive, color: 'text-yellow-600' }
+	if (['doc', 'docx'].includes(ext)) return { Icon: FaFileWord, color: 'text-info' }
+	if (['xls', 'xlsx'].includes(ext)) return { Icon: FaFileExcel, color: 'text-success' }
+	if (ext === 'csv') return { Icon: FaFileCsv, color: 'text-success' }
+	if (['ppt', 'pptx'].includes(ext)) return { Icon: FaFilePowerpoint, color: 'text-warning' }
+	if (ARCHIVE_EXTENSIONS.has(ext)) return { Icon: FaFileArchive, color: 'text-warning' }
 	if (mimeType.startsWith('audio/') || AUDIO_EXTENSIONS.has(ext)) {
-		return { Icon: FaFileAudio, color: 'text-purple-500' }
+		return { Icon: FaFileAudio, color: 'text-plum' }
 	}
 	if (CODE_EXTENSIONS.has(ext)) return { Icon: FaFileCode, color: 'text-muted-foreground' }
 	if (mimeType === 'application/json' || mimeType.startsWith('text/')) {

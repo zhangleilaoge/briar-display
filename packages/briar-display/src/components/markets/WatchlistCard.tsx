@@ -107,7 +107,7 @@ function StockSearch({ onOpen }: { onOpen: (s: StockRef) => void }) {
 					if (e.key === 'Escape') setOpen(false)
 				}}
 				placeholder="搜索全部市场个股：代码 / 名称 / 拼音首字母（如 gzmt、AAPL、00700、삼성）"
-				className="bg-white/70 pl-9"
+				className="bg-card/70 pl-9"
 				aria-label="搜索个股"
 			/>
 			{showPanel && (
@@ -158,7 +158,7 @@ function StockSearch({ onOpen }: { onOpen: (s: StockRef) => void }) {
 									>
 										{inList ? (
 											<>
-												<Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+												<Star className="h-3.5 w-3.5 fill-warning text-warning" />
 												已自选
 											</>
 										) : (
@@ -222,7 +222,7 @@ export default function WatchlistCard({ onOpen }: { onOpen: (s: StockRef) => voi
 			<CardContent className="space-y-3 p-4 sm:p-5">
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
-						<Star className="h-4 w-4 fill-amber-400 text-amber-500" />
+						<Star className="h-4 w-4 fill-warning text-warning" />
 						<h2 className="text-base font-medium">自选股</h2>
 						{watchlist.ready && (
 							<span className="text-xs text-muted-foreground">
@@ -251,13 +251,13 @@ export default function WatchlistCard({ onOpen }: { onOpen: (s: StockRef) => voi
 						还没有自选股。在上方搜索个股，或在板块详情的成分股里点开个股后「加自选」
 					</p>
 				) : (
-					<div className="divide-y rounded-xl border bg-white/40">
+					<div className="divide-y rounded-xl border bg-card/40">
 						{refs.map((item) => {
 							const q = quotes.get(stockId(item))
 							return (
 								<div
 									key={stockId(item)}
-									className="flex items-center gap-2 px-3 py-2 hover:bg-white/60"
+									className="flex items-center gap-2 px-3 py-2 hover:bg-card/60"
 								>
 									<button
 										type="button"
@@ -272,7 +272,7 @@ export default function WatchlistCard({ onOpen }: { onOpen: (s: StockRef) => voi
 												<MarketTag market={item.market} />
 												{displayCode(item.code)}
 												{q && q.delayMinutes > 0 && (
-													<span className="text-amber-700">延迟{q.delayMinutes}分</span>
+													<span className="text-warning">延迟{q.delayMinutes}分</span>
 												)}
 											</div>
 										</div>

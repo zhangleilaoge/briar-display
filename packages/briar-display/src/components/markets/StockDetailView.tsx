@@ -82,14 +82,11 @@ export default function StockDetailView({ market, stock }: { market: MarketId; s
 						{current && <SessionBadge session={current.session} />}
 						{q &&
 							(q.delayMinutes > 0 ? (
-								<Badge
-									variant="outline"
-									className="border-transparent bg-amber-500/10 text-amber-700"
-								>
+								<Badge variant="outline" className="border-transparent bg-warning/10 text-warning">
 									延迟 {q.delayMinutes} 分钟
 								</Badge>
 							) : (
-								<Badge variant="outline" className="border-transparent bg-sky-500/10 text-sky-700">
+								<Badge variant="outline" className="border-transparent bg-info/10 text-info">
 									实时
 								</Badge>
 							))}
@@ -108,7 +105,7 @@ export default function StockDetailView({ market, stock }: { market: MarketId; s
 					}
 					title={inList ? '移出自选' : '加入自选'}
 				>
-					<Star className={cn('h-4 w-4', inList && 'fill-amber-400 text-amber-500')} />
+					<Star className={cn('h-4 w-4', inList && 'fill-warning text-warning')} />
 					{inList ? '已自选' : '加自选'}
 				</Button>
 			</div>

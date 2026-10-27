@@ -251,13 +251,13 @@ function SqlConsoleContent() {
 	const statusColor = (status: string) => {
 		switch (status) {
 			case 'success':
-				return 'text-green-600'
+				return 'text-success'
 			case 'error':
-				return 'text-red-600'
+				return 'text-danger'
 			case 'timeout':
-				return 'text-amber-600'
+				return 'text-warning'
 			case 'blocked':
-				return 'text-orange-600'
+				return 'text-warning'
 			default:
 				return 'text-muted-foreground'
 		}
@@ -278,7 +278,7 @@ function SqlConsoleContent() {
 							type="checkbox"
 							checked={readOnly}
 							onChange={(e) => setReadOnly(e.target.checked)}
-							className="h-3.5 w-3.5 rounded border-gray-300"
+							className="h-3.5 w-3.5 rounded border-border"
 						/>
 						只读模式
 					</label>
@@ -350,7 +350,7 @@ function SqlConsoleContent() {
 					{activeTab === 'result' && (
 						<div className="min-h-[200px]">
 							{error && (
-								<div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+								<div className="rounded-md border border-danger/30 bg-danger-soft p-3 text-sm text-danger">
 									{error}
 								</div>
 							)}
@@ -533,10 +533,7 @@ function SchemaPanel({
 										title={`${col.type}${col.nullable ? ' NULL' : ' NOT NULL'}${col.comment ? ` — ${col.comment}` : ''}`}
 									>
 										<span
-											className={cn(
-												'font-mono',
-												col.key === 'PRI' && 'font-semibold text-amber-600',
-											)}
+											className={cn('font-mono', col.key === 'PRI' && 'font-semibold text-warning')}
 										>
 											{col.name}
 										</span>
@@ -558,10 +555,10 @@ function SchemaPanel({
 function ResultView({ result }: { result: QueryResult }) {
 	if (result.type === 'execute') {
 		return (
-			<div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+			<div className="rounded-md border border-success/30 bg-success-soft p-3 text-sm text-success">
 				执行成功 — 影响 {result.affectedRows} 行
 				{result.insertId ? `，插入 ID: ${result.insertId}` : ''}
-				<span className="ml-2 text-green-500">({result.durationMs}ms)</span>
+				<span className="ml-2 text-success">({result.durationMs}ms)</span>
 			</div>
 		)
 	}
@@ -574,7 +571,7 @@ function ResultView({ result }: { result: QueryResult }) {
 		<div className="flex flex-col gap-2">
 			<div className="flex items-center gap-2 text-xs text-muted-foreground">
 				<span>{result.totalRows} 行</span>
-				{result.truncated && <span className="text-amber-600">（已截断，最多显示 1000 行）</span>}
+				{result.truncated && <span className="text-warning">（已截断，最多显示 1000 行）</span>}
 				<span>({result.durationMs}ms)</span>
 			</div>
 			{rows.length > 0 ? (

@@ -83,7 +83,7 @@ export default function SectorHeatmap({
 							title={tooltip(item, amountCurrency)}
 							style={heatStyle(item.changePct, scale)}
 							onClick={() => onSelect?.(item)}
-							className="flex min-h-[68px] min-w-0 flex-col justify-center rounded-lg px-2 py-1.5 text-center shadow-sm transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+							className="flex min-h-[68px] min-w-0 flex-col justify-center rounded-lg px-2 py-1.5 text-center shadow-sm transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info"
 						>
 							<div className="truncate text-xs font-medium sm:text-sm">{item.name}</div>
 							<div className="text-sm font-semibold tabular-nums">{formatPct(item.changePct)}</div>

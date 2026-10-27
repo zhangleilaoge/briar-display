@@ -53,7 +53,7 @@ export default function JsonHistoryPanel({
 							<div
 								key={entry.id}
 								onClick={() => onRestore(entry)}
-								className="group flex cursor-pointer flex-col rounded-md border border-white/70 bg-white/75 px-3 py-2.5 text-left transition-colors hover:bg-white"
+								className="group flex cursor-pointer flex-col rounded-md border border-border/70 bg-card/75 px-3 py-2.5 text-left transition-colors hover:bg-card"
 							>
 								<div className="flex items-center justify-between">
 									<span className="text-xs font-medium text-foreground">
@@ -81,12 +81,12 @@ export default function JsonHistoryPanel({
 												key={tag}
 												className={
 													tag === '非法'
-														? 'rounded bg-red-100 px-1.5 py-0.5 text-[10px] text-red-700'
+														? 'rounded bg-danger-soft px-1.5 py-0.5 text-[10px] text-danger'
 														: tag === '对象'
-															? 'rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700'
+															? 'rounded bg-warning-soft px-1.5 py-0.5 text-[10px] text-warning'
 															: tag === 'JSON'
-																? 'rounded bg-blue-100 px-1.5 py-0.5 text-[10px] text-blue-700'
-																: 'rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600'
+																? 'rounded bg-info-soft px-1.5 py-0.5 text-[10px] text-info'
+																: 'rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground'
 												}
 											>
 												{tag}

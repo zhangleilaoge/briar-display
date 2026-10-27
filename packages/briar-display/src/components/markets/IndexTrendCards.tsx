@@ -44,14 +44,14 @@ export default function IndexTrendCards({
 						type="button"
 						key={idx.code}
 						onClick={() => onSelect?.(idx, series?.code ?? idx.name)}
-						className="rounded-xl bg-white/55 px-3 pb-2 pt-2.5 text-left transition-colors hover:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						className="rounded-xl bg-card/55 px-3 pb-2 pt-2.5 text-left transition-colors hover:bg-card/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						title="查看分时 / 五日 / K 线"
 					>
 						<div className="flex items-baseline justify-between gap-2">
 							<span className="truncate text-sm text-muted-foreground">
 								{idx.name}
 								{(idx.delayMinutes > 0 || (series?.delayMinutes ?? 0) > 0) && (
-									<span className="ml-1 text-[10px] text-amber-700">延迟</span>
+									<span className="ml-1 text-[10px] text-warning">延迟</span>
 								)}
 							</span>
 							<span className="flex items-baseline gap-2 tabular-nums">

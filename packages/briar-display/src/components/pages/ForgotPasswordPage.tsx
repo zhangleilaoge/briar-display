@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ThemeShell } from '@/components/ui/theme-shell'
 import { Eye, EyeOff } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 
@@ -110,27 +111,13 @@ export default function ForgotPasswordPage() {
 	}
 
 	return (
-		<div className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
-			{/* Mesh gradient background */}
-			<div className="pointer-events-none fixed inset-0 -z-20">
-				<div className="absolute inset-0 bg-background" />
-				<div className="absolute -left-[10%] -top-[20%] h-[50%] w-[50%] rounded-full bg-indigo-600/20 blur-[120px]" />
-				<div className="absolute -right-[15%] bottom-[10%] h-[45%] w-[45%] rounded-full bg-blue-500/15 blur-[100px]" />
-				<div className="absolute left-1/2 top-1/2 h-[35%] w-[35%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/10 blur-[80px]" />
-			</div>
-
-			{/* Dot grid overlay */}
-			<div
-				className="pointer-events-none fixed inset-0 -z-10"
-				style={{
-					backgroundImage:
-						'radial-gradient(circle, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)',
-					backgroundSize: '24px 24px',
-				}}
-			/>
-
+		<ThemeShell
+			variant="scrapbook"
+			sidebar={false}
+			className="flex items-center justify-center overflow-hidden p-4"
+		>
 			{/* Centered card */}
-			<Card className="relative w-full max-w-md bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-xl">
+			<Card className="relative w-full max-w-md shadow-raised">
 				{step === 'email' ? (
 					<form onSubmit={handleSendCode}>
 						<CardHeader className="text-center">
@@ -155,7 +142,7 @@ export default function ForgotPasswordPage() {
 								</p>
 							)}
 							{success && (
-								<p className="rounded-md border border-green-300 bg-green-500/10 px-3 py-2 text-sm text-green-700">
+								<p className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-sm text-success">
 									{success}
 								</p>
 							)}
@@ -250,7 +237,7 @@ export default function ForgotPasswordPage() {
 								</p>
 							)}
 							{success && (
-								<p className="rounded-md border border-green-300 bg-green-500/10 px-3 py-2 text-sm text-green-700">
+								<p className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-sm text-success">
 									{success}
 								</p>
 							)}
@@ -276,6 +263,6 @@ export default function ForgotPasswordPage() {
 					</form>
 				)}
 			</Card>
-		</div>
+		</ThemeShell>
 	)
 }

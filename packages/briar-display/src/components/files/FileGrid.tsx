@@ -14,7 +14,7 @@ function FolderVisual({ previews }: { previews: FolderPreview[] }) {
 			<svg viewBox="0 0 112 84" aria-hidden className="absolute bottom-0 left-0 h-20 w-28">
 				<path
 					d="M8 20a8 8 0 0 1 8-8h22l10 10h48a8 8 0 0 1 8 8v46a8 8 0 0 1-8 8H16a8 8 0 0 1-8-8Z"
-					fill="#57A8F5"
+					style={{ fill: 'var(--folder-back)' }}
 				/>
 			</svg>
 			{/* 扇形预览图（z-[1]：低于前板 z-[2]，下半部被前板盖住，形成插在文件夹里的效果） */}
@@ -54,7 +54,10 @@ function FolderVisual({ previews }: { previews: FolderPreview[] }) {
 			})}
 			{/* 前板 */}
 			<svg viewBox="0 0 112 84" aria-hidden className="absolute bottom-0 left-0 z-[2] h-20 w-28">
-				<path d="M4 32h104v44a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8Z" fill="#8CC8FA" />
+				<path
+					d="M4 32h104v44a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8Z"
+					style={{ fill: 'var(--folder-front)' }}
+				/>
 			</svg>
 		</div>
 	)
@@ -186,7 +189,7 @@ export default function FileGrid({
 					</button>
 					<div className="mt-1">
 						<p className="flex items-center gap-1 truncate text-xs font-medium" title={folder.name}>
-							{folder.isPrivate && <Lock className="h-3 w-3 shrink-0 text-amber-500" />}
+							{folder.isPrivate && <Lock className="h-3 w-3 shrink-0 text-warning" />}
 							<span className="truncate">{folder.name}</span>
 						</p>
 						<p className="text-[11px] text-muted-foreground">

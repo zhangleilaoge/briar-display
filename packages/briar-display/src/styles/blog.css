@@ -4,16 +4,17 @@
    ============================================================ */
 
 :root {
-	--blog-bg: #f7f4ee;
-	--blog-bg-soft: #efeae0;
-	--blog-ink: #2b2520;
-	--blog-muted: #8d8272;
-	--blog-accent: #b0482e;
-	--blog-accent-soft: rgba(176, 72, 46, 0.1);
-	--blog-line: #e3dccd;
-	--blog-dot: rgba(43, 37, 32, 0.045);
-	--blog-glow: rgba(176, 72, 46, 0.05);
-	--blog-serif: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun", serif;
+	/* Reverie 剪贴簿配色（奶油纸 + 玫瑰粉 + 墨蓝）；字体 token 来自 theme.css */
+	--blog-bg: #fdfbf7;
+	--blog-bg-soft: #f5efeb;
+	--blog-ink: #2c3549;
+	--blog-muted: #8a8194;
+	--blog-accent: #b9545f;
+	--blog-accent-soft: rgba(234, 200, 205, 0.32);
+	--blog-line: #ecd9dc;
+	--blog-dot: rgba(44, 53, 73, 0.04);
+	--blog-glow: rgba(234, 200, 205, 0.55);
+	--blog-serif: var(--font-display, "Songti SC", "STSong", "Noto Serif CJK SC", serif);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -33,13 +34,22 @@
 .blog-theme {
 	min-height: 100vh;
 	background-color: var(--blog-bg);
-	background-image: radial-gradient(ellipse 80% 50% at 50% -10%, var(--blog-glow), transparent),
+	background-image: var(--paper-grain, none),
+		radial-gradient(ellipse 80% 50% at 50% -10%, var(--blog-glow), transparent),
 		radial-gradient(var(--blog-dot) 1px, transparent 1px);
-	background-size: auto, 26px 26px;
+	background-size: 180px 180px, auto, 26px 26px;
 	background-attachment: fixed;
 	color: var(--blog-ink);
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
-		"Microsoft YaHei", sans-serif;
+	font-family: var(
+		--font-body,
+		-apple-system,
+		BlinkMacSystemFont,
+		"Segoe UI",
+		"PingFang SC",
+		"Hiragino Sans GB",
+		"Microsoft YaHei",
+		sans-serif
+	);
 }
 
 .blog-theme ::selection {
@@ -131,6 +141,7 @@
 }
 
 .blog-hero-eyebrow {
+	font-family: var(--font-label, inherit);
 	font-size: 0.72rem;
 	letter-spacing: 0.4em;
 	text-indent: 0.4em;
@@ -451,6 +462,9 @@
 }
 
 .blog-article pre {
+	/* 代码块保持普通 IDE 风格：细灰框、等宽字，不加主题装饰 */
+	border: 1px solid #e5e7eb;
+	font-family: var(--font-mono, ui-monospace, monospace);
 	margin: 1.5em 0;
 	padding: 1.1rem 1.3rem;
 	border-radius: 12px;
@@ -559,4 +573,14 @@
 	.article-nav-card.newer {
 		text-align: left;
 	}
+}
+
+/* Reverie：博客首页标题下的花体副题 */
+.blog-hero-script {
+	display: block;
+	font-family: var(--font-script, cursive);
+	font-size: 1.9rem;
+	letter-spacing: 0;
+	color: var(--blog-accent);
+	line-height: 1;
 }

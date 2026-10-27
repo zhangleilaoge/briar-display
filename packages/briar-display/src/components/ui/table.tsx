@@ -15,7 +15,14 @@ const TableHeader = React.forwardRef<
 	HTMLTableSectionElement,
 	React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-	<thead ref={ref} className={cn('[&_tr]:border-b', className)} {...props} />
+	<thead
+		ref={ref}
+		className={cn(
+			'bg-[var(--table-head-bg)] [&_tr]:border-b [&_tr]:border-foreground/30',
+			className,
+		)}
+		{...props}
+	/>
 ))
 TableHeader.displayName = 'TableHeader'
 
@@ -44,7 +51,8 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
 		<tr
 			ref={ref}
 			className={cn(
-				'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
+				// 选中行：剪贴簿粉底 / HUD 藏青反色白字
+				'border-b border-border/70 transition-colors hover:bg-[var(--row-hover)] data-[state=selected]:bg-[var(--row-selected)] data-[state=selected]:text-[color:var(--row-selected-fg)]',
 				className,
 			)}
 			{...props}
@@ -60,7 +68,7 @@ const TableHead = React.forwardRef<
 	<th
 		ref={ref}
 		className={cn(
-			'h-10 px-2 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+			'h-10 px-2 text-left align-middle font-label text-[11px] font-semibold tracking-label text-muted-foreground [text-transform:var(--label-transform)] [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
 			className,
 		)}
 		{...props}

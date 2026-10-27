@@ -99,7 +99,7 @@ function SectionFill({ plane, solid }: { plane: Plane; solid: Solid }) {
 				? new THREE.LineSegments(
 						new THREE.BufferGeometry().setFromPoints(boundaryPoints),
 						new THREE.LineDashedMaterial({
-							color: patch.color === 'gray' ? '#5eead4' : '#0f766e',
+							color: patch.color === 'gray' ? '#8cc6b8' : '#296557',
 							dashSize: 0.12,
 							gapSize: 0.06,
 							transparent: true,
@@ -117,7 +117,7 @@ function SectionFill({ plane, solid }: { plane: Plane; solid: Solid }) {
 					geometry: new THREE.ShapeGeometry(shape),
 					position: origin.toArray() as Vec3,
 					quaternion: quaternion.clone(),
-					color: patch.color === 'gray' ? '#0f766e' : '#22d3ee',
+					color: patch.color === 'gray' ? '#296557' : '#6fa8d6',
 					outline,
 				},
 			]
@@ -261,7 +261,7 @@ function SceneContent({
 					>
 						<boxGeometry args={[1.002, 1.002, 1.002]} />
 						<meshBasicMaterial
-							color={dragPreview.valid ? '#2563eb' : '#dc2626'}
+							color={dragPreview.valid ? '#275891' : '#b82e39'}
 							transparent
 							opacity={0.42}
 							depthTest={false}
@@ -289,12 +289,12 @@ function SceneContent({
 				maxDistance={16}
 			/>
 			<gridHelper
-				args={[16, 16, '#cbd5e1', '#e2e8f0']}
+				args={[16, 16, '#c3d0e4', '#e1e8f3']}
 				position={[0, bottom - center[1] - 0.01, 0]}
 			/>
 			<GizmoHelper alignment="bottom-left" margin={[60, 60]}>
 				<GizmoViewport
-					axisColors={['#ef4444', '#22c55e', '#3b82f6']}
+					axisColors={['#c9505a', '#3f8a76', '#4a78b0']}
 					labelColor="#ffffff"
 					hideNegativeAxes
 					disabled={!orbitEnabled}

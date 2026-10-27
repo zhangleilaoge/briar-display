@@ -146,10 +146,10 @@ export default function UserMenu() {
 							<Avatar
 								url={user?.avatar}
 								initial={initial}
-								className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-[12px] font-semibold text-white"
+								className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-info to-plum text-[12px] font-semibold text-white"
 							/>
 							{unread > 0 && (
-								<span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-red-500" />
+								<span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-danger" />
 							)}
 						</span>
 						<span className="hidden max-w-[80px] truncate text-foreground sm:inline">
@@ -205,7 +205,7 @@ export default function UserMenu() {
 							站内信
 						</span>
 						{unread > 0 && (
-							<span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium text-white">
+							<span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-white">
 								{unread > 99 ? '99+' : unread}
 							</span>
 						)}

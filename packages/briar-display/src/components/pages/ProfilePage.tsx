@@ -7,6 +7,7 @@ import MergeHistoryCard from '@/components/profile/MergeHistoryCard'
 import MessagesPanel from '@/components/profile/MessagesPanel'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, syncUserToStorage, usePermissions } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import { useUnreadMessages } from '@/hooks/useUnreadMessages'
@@ -50,18 +51,21 @@ function ProfilePageInner() {
 
 	if (permLoading || permsLoading) {
 		return (
-			<div className="flex min-h-screen items-center justify-center">
+			<ThemeShell variant="scrapbook" className="flex items-center justify-center">
 				<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-			</div>
+			</ThemeShell>
 		)
 	}
 
 	if (denied) {
 		return (
-			<div className="flex min-h-screen items-center justify-center gap-2 text-muted-foreground">
+			<ThemeShell
+				variant="scrapbook"
+				className="flex items-center justify-center gap-2 text-muted-foreground"
+			>
 				<AlertCircle className="h-5 w-5" />
 				<span>你没有权限访问此页面</span>
-			</div>
+			</ThemeShell>
 		)
 	}
 
@@ -97,10 +101,10 @@ function ProfilePageInner() {
 	const initial = user?.name?.charAt(0)?.toUpperCase() || 'U'
 
 	return (
-		<div className="min-h-screen bg-background">
+		<ThemeShell variant="scrapbook">
 			{/* 顶部导航 */}
-			<header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b bg-background/80 px-6 backdrop-blur-md">
-				<a href="/briar/" className="text-sm font-semibold text-foreground">
+			<header className="glass-header sticky top-0 z-30 flex h-14 items-center justify-between px-6">
+				<a href="/briar/" className="rv-script text-2xl leading-none text-foreground">
 					xiaobuzi
 				</a>
 				<UserMenu />
@@ -108,7 +112,8 @@ function ProfilePageInner() {
 
 			<main className="mx-auto max-w-5xl p-4 sm:p-6">
 				<div>
-					<h1 className="text-2xl font-semibold tracking-tight">个人中心</h1>
+					<span className="rv-script text-2xl text-[color:var(--rv-rose-deep)]">Mon carnet</span>
+					<h1 className="font-heading text-3xl font-semibold tracking-tight">个人中心</h1>
 					<p className="mt-1 text-sm text-muted-foreground">管理你的账号信息、角色与权限</p>
 				</div>
 
@@ -121,19 +126,19 @@ function ProfilePageInner() {
 					<TabsList className="h-auto w-full shrink-0 flex-row justify-start gap-1 bg-transparent p-0 md:w-44 md:flex-col md:items-stretch">
 						<TabsTrigger
 							value="profile"
-							className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-accent data-[state=active]:shadow-none md:w-full"
+							className="justify-start gap-2 px-3 py-2 data-[state=active]:shadow-control md:w-full"
 						>
 							<UserIcon className="h-3.5 w-3.5" />
 							基本信息
 						</TabsTrigger>
 						<TabsTrigger
 							value="messages"
-							className="justify-start gap-2 px-3 py-2 data-[state=active]:bg-accent data-[state=active]:shadow-none md:w-full"
+							className="justify-start gap-2 px-3 py-2 data-[state=active]:shadow-control md:w-full"
 						>
 							<Mail className="h-3.5 w-3.5" />
 							站内信
 							{unread > 0 && (
-								<span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium text-white">
+								<span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-white">
 									{unread > 99 ? '99+' : unread}
 								</span>
 							)}
@@ -298,7 +303,7 @@ function ProfilePageInner() {
 					</div>
 				</Tabs>
 			</main>
-		</div>
+		</ThemeShell>
 	)
 }
 

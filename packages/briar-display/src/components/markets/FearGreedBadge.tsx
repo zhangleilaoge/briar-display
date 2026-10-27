@@ -16,7 +16,7 @@ function Gauge({ score }: { score: number }) {
 			}}
 		>
 			<div
-				className="absolute top-1/2 h-3.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-white bg-foreground shadow"
+				className="absolute top-1/2 h-3.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-card bg-foreground shadow"
 				style={{ left: `${Math.min(100, Math.max(0, score))}%` }}
 			/>
 		</div>

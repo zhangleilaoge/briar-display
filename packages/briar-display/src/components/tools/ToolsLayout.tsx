@@ -10,6 +10,7 @@ import {
 	BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { HudTitle, ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import {
 	Braces,
@@ -105,13 +106,23 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 
 	return (
 		<PermissionProvider>
-			{/* 云系浅蓝渐变底（与首页 shader 色阶同源的静态版本，工作页不用 WebGL） */}
-			<div className="cloud-scope flex h-screen flex-col overflow-hidden bg-gradient-to-b from-[#e7f0f8] via-[#f0f5fa] to-[#e9f1f8]">
+			{/* Arcane HUD 外壳：冰蓝玻璃底 + 星盘/希腊柱装饰 + 全局吊牌侧栏 */}
+			<ThemeShell
+				variant="arcane"
+				currentPath={currentPath}
+				className="flex h-screen flex-col overflow-hidden"
+			>
 				{/* 顶部导航栏 */}
 				<header className="glass-header sticky top-0 z-50">
 					<div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
 						<div className="flex items-center gap-6">
-							<Breadcrumb>
+							<HudTitle
+								index="02"
+								label="Outils"
+								title="工具箱"
+								className="hidden shrink-0 2xl:flex"
+							/>
+							<Breadcrumb className="shrink-0 whitespace-nowrap">
 								<BreadcrumbList>
 									<BreadcrumbItem>
 										<BreadcrumbLink href="/briar/">xiaobuzi</BreadcrumbLink>
@@ -125,7 +136,9 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 							{/* 宽屏：tab 与面包屑同行 */}
 							<div className="hidden lg:block">{tabs}</div>
 						</div>
-						<UserMenu />
+						<div className="shrink-0">
+							<UserMenu />
+						</div>
 					</div>
 					{/* 窄屏：tab 独占一行，横向滚动 */}
 					<div className="overflow-x-auto px-3 pb-2 lg:hidden">{tabs}</div>
@@ -135,7 +148,7 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 				<main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
 					<div className="flex w-full flex-1 flex-col min-h-0">{children}</div>
 				</main>
-			</div>
+			</ThemeShell>
 		</PermissionProvider>
 	)
 }

@@ -189,7 +189,7 @@ export default function MergeUserDialog({ source, onOpenChange, onMerged }: Prop
 												<td className="px-2 py-1.5 text-right tabular-nums">{m.count}</td>
 												<td className="px-3 py-1.5 text-xs">
 													{m.conflicts.map((c) => (
-														<p key={c} className="text-amber-600">
+														<p key={c} className="text-warning">
 															⚠ {c}
 														</p>
 													))}

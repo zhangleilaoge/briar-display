@@ -76,6 +76,27 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))',
 				},
+				// Reverie 语义状态色（见 src/styles/theme.css）
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					soft: 'hsl(var(--success-soft))',
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					soft: 'hsl(var(--warning-soft))',
+				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					soft: 'hsl(var(--info-soft))',
+				},
+				danger: {
+					DEFAULT: 'hsl(var(--danger))',
+					soft: 'hsl(var(--danger-soft))',
+				},
+				plum: {
+					DEFAULT: 'hsl(var(--plum))',
+					soft: 'hsl(var(--plum-soft))',
+				},
 				chart: {
 					1: 'hsl(var(--chart-1))',
 					2: 'hsl(var(--chart-2))',
@@ -88,6 +109,29 @@ export default {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)',
+				// Reverie 主题 token（见 src/styles/theme.css）
+				surface: 'var(--radius-surface)',
+				control: 'var(--radius-control)',
+				field: 'var(--radius-field)',
+			},
+			fontFamily: {
+				display: 'var(--font-display)',
+				script: 'var(--font-script)',
+				label: 'var(--font-label)',
+				heading: 'var(--font-heading)',
+				control: 'var(--font-control)',
+				mono: 'var(--font-mono)',
+			},
+			boxShadow: {
+				surface: 'var(--shadow-surface)',
+				raised: 'var(--shadow-raised)',
+				control: 'var(--shadow-control)',
+				'control-hover': 'var(--shadow-control-hover)',
+				focus: 'var(--glow-focus)',
+			},
+			letterSpacing: {
+				control: 'var(--control-tracking)',
+				label: 'var(--label-tracking)',
 			},
 		},
 	},

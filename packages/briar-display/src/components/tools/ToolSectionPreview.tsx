@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { type SectionSvgProjection, sectionToSvgPaths } from './toolSectionSvg'
 import { type Plane, type Section, type Vec3, voxelKey } from './toolSectionUtils'
 
-const POINT_COLORS = ['#dc2626', '#ea580c', '#2563eb']
+const POINT_COLORS = ['#b82e39', '#b86a2a', '#275891']
 
 export function SectionSvgShapes({ svg }: { svg: SectionSvgProjection }) {
 	return (
@@ -11,7 +11,7 @@ export function SectionSvgShapes({ svg }: { svg: SectionSvgProjection }) {
 				<path
 					key={voxelKey(path.voxel)}
 					d={path.d}
-					fill={path.color === 'gray' ? '#1f2937' : '#f8fafc'}
+					fill={path.color === 'gray' ? '#1c2a4a' : '#f4f7fc'}
 					data-section-fill={voxelKey(path.voxel)}
 				/>
 			))}
@@ -20,7 +20,7 @@ export function SectionSvgShapes({ svg }: { svg: SectionSvgProjection }) {
 					key={`${d}-${index}`}
 					d={d}
 					fill="none"
-					stroke="#1e293b"
+					stroke="#1c2a4a"
 					strokeWidth={2}
 					strokeLinejoin="round"
 					data-section-outline

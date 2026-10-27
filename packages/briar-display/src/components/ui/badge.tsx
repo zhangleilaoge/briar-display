@@ -3,7 +3,7 @@ import { type VariantProps, cva } from 'class-variance-authority'
 import type { HTMLAttributes } from 'react'
 
 const badgeVariants = cva(
-	'inline-flex items-center rounded-full border px-2.5 py-0.5 text-[12px] font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+	'inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-control border px-2.5 font-control text-[12px] font-medium leading-none tracking-control transition-colors focus-visible:outline-none focus-visible:shadow-focus [&_svg]:h-3 [&_svg]:w-3',
 	{
 		variants: {
 			variant: {
@@ -13,6 +13,13 @@ const badgeVariants = cva(
 				destructive:
 					'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
 				outline: 'text-foreground',
+				// 语义状态（token 见 theme.css --success / --warning / --info / --danger / --plum）
+				success: 'border-transparent bg-success-soft text-success',
+				warning: 'border-transparent bg-warning-soft text-warning',
+				info: 'border-transparent bg-info-soft text-info',
+				danger: 'border-transparent bg-danger-soft text-danger',
+				plum: 'border-transparent bg-plum-soft text-plum',
+				muted: 'border-transparent bg-muted text-muted-foreground',
 			},
 		},
 		defaultVariants: {

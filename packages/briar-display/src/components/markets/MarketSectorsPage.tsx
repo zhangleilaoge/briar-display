@@ -168,25 +168,19 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 								{sectors && <SessionBadge session={sectors.session} />}
 								{sectors &&
 									(sectors.realtime ? (
-										<Badge
-											variant="outline"
-											className="border-transparent bg-sky-500/10 text-sky-700"
-										>
+										<Badge variant="outline" className="border-transparent bg-info/10 text-info">
 											实时
 										</Badge>
 									) : (
 										<Badge
 											variant="outline"
-											className="border-transparent bg-amber-500/10 text-amber-700"
+											className="border-transparent bg-warning/10 text-warning"
 										>
 											延迟 {sectors.delayMinutes} 分钟
 										</Badge>
 									))}
 								{sectors && sectors.listMode !== 'dynamic' && sectors.proxyNote && (
-									<Badge
-										variant="outline"
-										className="border-transparent bg-violet-500/10 text-violet-700"
-									>
+									<Badge variant="outline" className="border-transparent bg-plum/10 text-plum">
 										{sectors.proxyNote}
 									</Badge>
 								)}
@@ -257,7 +251,7 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 					)}
 					{kind === 'industry' && kindOption?.levels && (
 						<Select value={level} onValueChange={setLevel}>
-							<SelectTrigger className="h-9 w-[132px] bg-white/60">
+							<SelectTrigger className="h-9 w-[132px] bg-card/60">
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
@@ -271,7 +265,7 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 					)}
 					{sectors && sortOptions.length > 1 && (
 						<Select value={effectiveSort} onValueChange={(v) => setSortKey(v as ListSortKey)}>
-							<SelectTrigger className="h-9 w-[140px] bg-white/60">
+							<SelectTrigger className="h-9 w-[140px] bg-card/60">
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
@@ -286,7 +280,7 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 					<Button
 						variant="outline"
 						size="sm"
-						className="h-9 bg-white/60"
+						className="h-9 bg-card/60"
 						onClick={() => setDirection((d) => (d === 'desc' ? 'asc' : 'desc'))}
 						title="切换排序方向"
 					>

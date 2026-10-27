@@ -432,7 +432,7 @@ export default function ToolCompressPage() {
 					onDragLeave={() => setDragging(false)}
 					onClick={() => fileInputRef.current?.click()}
 					className={`glass-soft flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-8 transition-colors sm:p-12 ${
-						dragging ? 'border-primary' : 'border-white/80 hover:border-primary/50'
+						dragging ? 'border-primary' : 'border-border/80 hover:border-primary/50'
 					}`}
 				>
 					<input
@@ -489,7 +489,7 @@ export default function ToolCompressPage() {
 									<button
 										type="button"
 										onClick={() => removePending(p.id)}
-										className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border bg-white text-muted-foreground shadow transition-colors hover:text-destructive"
+										className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border bg-card text-muted-foreground shadow transition-colors hover:text-destructive"
 										title="移除"
 									>
 										<X className="h-3 w-3" />
@@ -547,7 +547,7 @@ export default function ToolCompressPage() {
 										<Badge
 											variant="outline"
 											className={
-												isBigger ? 'bg-yellow-50 text-yellow-700' : 'bg-green-50 text-green-700'
+												isBigger ? 'bg-warning-soft text-warning' : 'bg-success-soft text-success'
 											}
 										>
 											{isBigger ? `+${Math.abs(ratio)}%` : `-${ratio}%`}
@@ -606,7 +606,7 @@ export default function ToolCompressPage() {
 												<img
 													src={entry.thumbnail}
 													alt={entry.name}
-													className="aspect-square w-full object-contain bg-white p-1"
+													className="aspect-square w-full object-contain bg-card p-1"
 												/>
 											) : (
 												<div className="flex aspect-square w-full items-center justify-center bg-muted">
@@ -624,7 +624,7 @@ export default function ToolCompressPage() {
 												</p>
 												<p
 													className={
-														isBigger ? 'font-medium text-yellow-600' : 'font-medium text-green-600'
+														isBigger ? 'font-medium text-warning' : 'font-medium text-success'
 													}
 												>
 													{isBigger ? `+${Math.abs(ratio)}%` : `-${ratio}%`}

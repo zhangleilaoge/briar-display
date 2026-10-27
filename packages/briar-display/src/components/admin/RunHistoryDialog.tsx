@@ -18,12 +18,16 @@ export const RUN_STATUS_STYLE: Record<
 > = {
 	running: {
 		label: '运行中',
-		className: 'animate-pulse bg-blue-100 text-blue-700',
-		bar: 'bg-blue-400',
+		className: 'animate-pulse bg-info-soft text-info',
+		bar: 'bg-info',
 	},
-	success: { label: '成功', className: 'bg-green-100 text-green-700', bar: 'bg-green-500' },
-	skipped: { label: '跳过', className: 'bg-gray-100 text-gray-600', bar: 'bg-gray-300' },
-	failed: { label: '失败', className: 'bg-red-100 text-red-700', bar: 'bg-red-500' },
+	success: { label: '成功', className: 'bg-success-soft text-success', bar: 'bg-success' },
+	skipped: {
+		label: '跳过',
+		className: 'bg-muted text-muted-foreground',
+		bar: 'bg-muted-foreground/40',
+	},
+	failed: { label: '失败', className: 'bg-danger-soft text-danger', bar: 'bg-danger' },
 }
 
 const TRIGGER_LABEL: Record<string, string> = {
@@ -64,7 +68,7 @@ function RunDetail({ detail }: { detail: Record<string, unknown> }) {
 		<div className="space-y-2" data-testid="run-detail">
 			{(failedJob || failedStep) && (
 				<div className="text-xs">
-					<span className="font-medium text-red-700">失败位置：</span>
+					<span className="font-medium text-danger">失败位置：</span>
 					<span className="font-mono">
 						{failedJob ?? '-'}
 						{failedStep && ` › ${failedStep}`}
@@ -72,7 +76,7 @@ function RunDetail({ detail }: { detail: Record<string, unknown> }) {
 				</div>
 			)}
 			{errorExcerpt && (
-				<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-all rounded border border-red-200 bg-red-50 p-2 font-mono text-[11px] text-red-900">
+				<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-all rounded border border-danger/30 bg-danger-soft p-2 font-mono text-[11px] text-danger">
 					{errorExcerpt}
 				</pre>
 			)}
@@ -81,7 +85,7 @@ function RunDetail({ detail }: { detail: Record<string, unknown> }) {
 					href={runUrl}
 					target="_blank"
 					rel="noreferrer"
-					className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+					className="inline-flex items-center gap-1 text-xs text-info hover:underline"
 					onClick={(e) => e.stopPropagation()}
 				>
 					<ExternalLink className="h-3 w-3" />在 GitHub Actions 查看本次运行
@@ -228,7 +232,7 @@ export default function RunHistoryDialog({
 							加载中...
 						</div>
 					) : error ? (
-						<p className="py-10 text-center text-xs text-red-600">{error}</p>
+						<p className="py-10 text-center text-xs text-danger">{error}</p>
 					) : !data || data.items.length === 0 ? (
 						<p className="py-10 text-center text-xs text-muted-foreground">暂无记录</p>
 					) : (

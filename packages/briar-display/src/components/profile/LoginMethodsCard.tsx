@@ -114,7 +114,7 @@ export default function LoginMethodsCard({ email }: { email?: string | null }) {
 						)}
 					</>
 				) : null}
-				{notice && <p className="text-sm text-green-600">{notice}</p>}
+				{notice && <p className="text-sm text-success">{notice}</p>}
 				{error && <p className="text-sm text-destructive">{error}</p>}
 			</CardContent>
 		</Card>

@@ -1,15 +1,19 @@
 ---
 import HelloComponent from '../../components/demo/react/Hello.tsx'
 import TodoList from '../../components/demo/vue/TodoList.vue'
+import { RibbonSidebar } from '../../components/ui/ribbon-sidebar'
+import Layout from '../../layouts/Layout.astro'
 ---
 
-<html>
-  <head><meta charset="UTF-8" /></head>
-  <body>
-    <h1>Hello World 页面</h1>
-    <TodoList client:load />
-    <HelloComponent client:load />
-    <br />
-    <a href="/demo">返回 Demo 首页</a>
-  </body>
-</html>
+<Layout title="Hello World">
+	<RibbonSidebar client:load currentPath={Astro.url.pathname} />
+	<main class="rv-page min-h-screen md:pl-16">
+		<div class="mx-auto max-w-3xl px-6 py-10">
+			<span class="rv-script block text-3xl text-[color:var(--rv-rose-deep)]">Bonjour</span>
+			<h1 class="font-heading text-3xl font-semibold text-foreground">Hello World 页面</h1>
+			<TodoList client:load />
+			<HelloComponent client:load />
+			<a class="font-control text-sm tracking-control text-muted-foreground underline-offset-4 hover:underline" href="/demo">← 返回 Demo 首页</a>
+		</div>
+	</main>
+</Layout>

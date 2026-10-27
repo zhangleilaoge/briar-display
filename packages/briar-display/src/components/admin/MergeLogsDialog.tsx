@@ -27,14 +27,14 @@ export function MergeLogDetail({ log }: { log: UserMergeLog }) {
 	return (
 		<div className="space-y-2 text-xs" data-testid="merge-log-detail">
 			{log.error && (
-				<pre className="whitespace-pre-wrap break-all rounded border border-red-200 bg-red-50 p-2 font-mono text-[11px] text-red-900">
+				<pre className="whitespace-pre-wrap break-all rounded border border-danger/30 bg-danger-soft p-2 font-mono text-[11px] text-danger">
 					{log.error}
 				</pre>
 			)}
 			{log.conflicts.length > 0 && (
 				<div className="space-y-0.5">
 					{log.conflicts.map((c) => (
-						<p key={`${c.module}-${c.message}`} className="text-amber-700">
+						<p key={`${c.module}-${c.message}`} className="text-warning">
 							⚠ {c.label}：{c.message}
 						</p>
 					))}
@@ -156,7 +156,7 @@ export default function MergeLogsDialog({ open, onOpenChange }: Props) {
 							加载中...
 						</div>
 					) : error ? (
-						<p className="py-10 text-center text-xs text-red-600">{error}</p>
+						<p className="py-10 text-center text-xs text-danger">{error}</p>
 					) : !data || data.items.length === 0 ? (
 						<p className="py-10 text-center text-xs text-muted-foreground">暂无合并记录</p>
 					) : (
@@ -210,7 +210,7 @@ export default function MergeLogsDialog({ open, onOpenChange }: Props) {
 														{style.label}
 													</Badge>
 													{log.conflicts.length > 0 && (
-														<span className="ml-1 text-[11px] text-amber-600">
+														<span className="ml-1 text-[11px] text-warning">
 															{log.conflicts.length} 冲突
 														</span>
 													)}

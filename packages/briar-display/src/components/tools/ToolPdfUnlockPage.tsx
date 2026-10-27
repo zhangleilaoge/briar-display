@@ -154,7 +154,7 @@ export default function ToolPdfUnlockPage() {
 					onDragLeave={() => setDragging(false)}
 					onClick={() => fileInputRef.current?.click()}
 					className={`glass-soft flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-8 transition-colors sm:p-12 ${
-						dragging ? 'border-primary' : 'border-white/80 hover:border-primary/50'
+						dragging ? 'border-primary' : 'border-border/80 hover:border-primary/50'
 					}`}
 				>
 					<input
@@ -212,7 +212,7 @@ export default function ToolPdfUnlockPage() {
 									<button
 										type="button"
 										onClick={() => removePending(p.id)}
-										className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border bg-white text-muted-foreground shadow transition-colors hover:text-destructive"
+										className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow transition-colors hover:text-destructive"
 										title="移除"
 									>
 										<X className="h-3 w-3" />
@@ -243,7 +243,7 @@ export default function ToolPdfUnlockPage() {
 										</p>
 									</div>
 
-									<Badge variant="outline" className="bg-green-50 text-green-700">
+									<Badge variant="outline" className="bg-success-soft text-success">
 										已解除限制
 									</Badge>
 

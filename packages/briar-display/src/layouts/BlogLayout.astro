@@ -1,6 +1,9 @@
 ---
 import '../styles/globals.css'
+import '../styles/theme.css'
+import '../styles/fonts'
 import '../styles/blog.css'
+import { RibbonSidebar } from '../components/ui/ribbon-sidebar'
 
 interface Props {
 	title?: string
@@ -20,7 +23,10 @@ const { title = '博客', description } = Astro.props
 		{description && <meta name="description" content={description} />}
 		<title>{title}</title>
 	</head>
-	<body class="blog-theme">
-		<slot />
+	<body class="blog-theme theme-scrapbook">
+		<RibbonSidebar client:load currentPath={Astro.url.pathname} />
+		<div class="md:pl-16">
+			<slot />
+		</div>
 	</body>
 </html>

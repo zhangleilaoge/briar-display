@@ -277,7 +277,7 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 					<div className="flex flex-wrap items-center gap-2 border-t pt-4">
 						<Button variant="outline" size="sm" className="gap-1.5" onClick={copyLink}>
 							{copied ? (
-								<Check className="h-4 w-4 text-green-600" />
+								<Check className="h-4 w-4 text-success" />
 							) : (
 								<Clipboard className="h-4 w-4" />
 							)}

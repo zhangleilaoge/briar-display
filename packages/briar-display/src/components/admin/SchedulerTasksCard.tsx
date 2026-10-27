@@ -13,10 +13,10 @@ import RunHistoryDialog from './RunHistoryDialog'
 const COLLAPSED_COUNT = 3
 
 const STATUS_STYLE: Record<SchedulerRunStatus, { label: string; className: string }> = {
-	running: { label: '运行中', className: 'animate-pulse bg-blue-100 text-blue-700' },
-	success: { label: '成功', className: 'bg-green-100 text-green-700' },
-	skipped: { label: '跳过', className: 'bg-gray-100 text-gray-600' },
-	failed: { label: '失败', className: 'bg-red-100 text-red-700' },
+	running: { label: '运行中', className: 'animate-pulse bg-info-soft text-info' },
+	success: { label: '成功', className: 'bg-success-soft text-success' },
+	skipped: { label: '跳过', className: 'bg-muted text-muted-foreground' },
+	failed: { label: '失败', className: 'bg-danger-soft text-danger' },
 }
 
 function formatTime(date: string) {
@@ -120,7 +120,10 @@ export default function SchedulerTasksCard() {
 								: null
 
 							return (
-								<div key={task.name} className="flex items-start justify-between gap-3 px-3 py-3">
+								<div
+									key={task.name}
+									className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-start sm:justify-between"
+								>
 									<div className="min-w-0 flex-1 space-y-1">
 										<div className="flex flex-wrap items-center gap-2">
 											<span className="text-sm font-medium">{task.label}</span>
@@ -160,7 +163,7 @@ export default function SchedulerTasksCard() {
 											)}
 										</p>
 									</div>
-									<div className="flex shrink-0 items-center gap-1.5">
+									<div className="flex shrink-0 items-center justify-end gap-1.5">
 										<Button
 											size="sm"
 											variant="ghost"

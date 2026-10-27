@@ -9,13 +9,13 @@ import {
 import type { GridDiagram } from './toolSectionSolids'
 import type { Solid, Vec3, VoxelColor } from './toolSectionUtils'
 
-const FACE_COLORS = ['#0f172a', '#475569', '#0f766e', '#0369a1', '#b45309', '#be123c']
+const FACE_COLORS = ['#0f172a', '#4e607e', '#296557', '#0369a1', '#8a5718', '#be123c']
 
 function fillFor(color: VoxelColor, role: SolidPreviewFace['role']): string {
 	if (color === 'gray') {
-		return role === 'y' ? '#475569' : role === 'x' ? '#1f2937' : '#334155'
+		return role === 'y' ? '#4e607e' : role === 'x' ? '#1c2a4a' : '#33476a'
 	}
-	return role === 'y' ? '#f8fafc' : role === 'x' ? '#cbd5e1' : '#e2e8f0'
+	return role === 'y' ? '#f4f7fc' : role === 'x' ? '#c3d0e4' : '#e1e8f3'
 }
 
 export function SolidSvgPreview({
@@ -65,7 +65,7 @@ export function SolidSvgPreview({
 					key={`${face.normal.join(',')}-${index}`}
 					d={`${face.d} Z`}
 					fill={fillFor(face.color, face.role)}
-					stroke="#334155"
+					stroke="#33476a"
 					strokeWidth={1.2}
 					strokeLinejoin="round"
 				/>
@@ -95,12 +95,12 @@ export function GridSvgPreview({ grid, size = 128 }: { grid: GridDiagram; size?:
 							height={unit}
 							fill={
 								cell.color === 'gray'
-									? '#1f2937'
+									? '#1c2a4a'
 									: colorIndex >= 0
 										? FACE_COLORS[colorIndex]
-										: '#f8fafc'
+										: '#f4f7fc'
 							}
-							stroke="#334155"
+							stroke="#33476a"
 							strokeWidth={1.5}
 						/>
 						{cell.label ? (
@@ -139,7 +139,7 @@ function ValueSvgPreview({
 				textAnchor="middle"
 				fontSize={size * 0.36}
 				fontWeight={700}
-				fill="#1e293b"
+				fill="#1c2a4a"
 			>
 				{value}
 			</text>
@@ -170,7 +170,7 @@ function FacesSvgPreview({ labels, size }: { labels: [string, string]; size: num
 							width={tile}
 							height={tile}
 							fill={color}
-							stroke="#334155"
+							stroke="#33476a"
 							strokeWidth={1.5}
 						/>
 						<text

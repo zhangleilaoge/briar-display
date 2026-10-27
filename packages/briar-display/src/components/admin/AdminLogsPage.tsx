@@ -36,24 +36,24 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 const PAGE_SIZE = 50
 
 const METHOD_COLORS: Record<string, string> = {
-	GET: 'bg-blue-100 text-blue-700',
-	POST: 'bg-green-100 text-green-700',
-	PUT: 'bg-orange-100 text-orange-700',
-	DELETE: 'bg-red-100 text-red-700',
-	PATCH: 'bg-purple-100 text-purple-700',
+	GET: 'bg-info-soft text-info',
+	POST: 'bg-success-soft text-success',
+	PUT: 'bg-warning-soft text-warning',
+	DELETE: 'bg-danger-soft text-danger',
+	PATCH: 'bg-plum-soft text-plum',
 }
 
 function statusColor(s: number) {
-	if (s >= 500) return 'bg-red-100 text-red-700'
-	if (s >= 400) return 'bg-yellow-100 text-yellow-700'
-	if (s >= 300) return 'bg-cyan-100 text-cyan-700'
-	return 'bg-green-100 text-green-700'
+	if (s >= 500) return 'bg-danger-soft text-danger'
+	if (s >= 400) return 'bg-warning-soft text-warning'
+	if (s >= 300) return 'bg-info-soft text-info'
+	return 'bg-success-soft text-success'
 }
 
 function durationColor(ms: number) {
-	if (ms > 1000) return 'text-red-600'
-	if (ms > 200) return 'text-yellow-600'
-	return 'text-green-600'
+	if (ms > 1000) return 'text-danger'
+	if (ms > 200) return 'text-warning'
+	return 'text-success'
 }
 
 function formatTime(date: string | Date) {
@@ -201,7 +201,7 @@ function AdminLogsPageInner() {
 					<div className="flex items-center gap-2 text-muted-foreground text-xs">
 						<AlertTriangle className="h-3.5 w-3.5" /> 错误数
 					</div>
-					<p className="mt-1 text-2xl font-semibold text-red-600">
+					<p className="mt-1 text-2xl font-semibold text-danger">
 						{stats.todayErrors.toLocaleString()}
 						{stats.todayTotal > 0 && (
 							<span className="ml-1 text-sm font-normal text-muted-foreground">
@@ -222,7 +222,7 @@ function AdminLogsPageInner() {
 					<div className="flex items-center gap-2 text-muted-foreground text-xs">
 						<Zap className="h-3.5 w-3.5" /> 慢请求 (&gt;1s)
 					</div>
-					<p className="mt-1 text-2xl font-semibold text-yellow-600">
+					<p className="mt-1 text-2xl font-semibold text-warning">
 						{stats.slowCount.toLocaleString()}
 					</p>
 				</div>
@@ -432,15 +432,15 @@ function AdminLogsPageInner() {
 					</span>
 					<span className="hidden h-3 w-px bg-border sm:inline" />
 					<span className="flex items-center gap-1.5">
-						<span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+						<span className="inline-block h-2 w-2 rounded-full bg-success" />
 						2xx <strong className="text-foreground">{querySummary.success}</strong>
 					</span>
 					<span className="flex items-center gap-1.5">
-						<span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+						<span className="inline-block h-2 w-2 rounded-full bg-warning" />
 						4xx <strong className="text-foreground">{querySummary.clientError}</strong>
 					</span>
 					<span className="flex items-center gap-1.5">
-						<span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+						<span className="inline-block h-2 w-2 rounded-full bg-danger" />
 						5xx <strong className="text-foreground">{querySummary.serverError}</strong>
 					</span>
 					{total > logs.length && <span className="ml-auto text-[11px] opacity-60">本页统计</span>}
@@ -557,7 +557,7 @@ function AdminLogsPageInner() {
 																	className="text-muted-foreground hover:text-foreground"
 																>
 																	{copiedTraceId === log.traceId ? (
-																		<Check className="h-3.5 w-3.5 text-green-600" />
+																		<Check className="h-3.5 w-3.5 text-success" />
 																	) : (
 																		<Copy className="h-3.5 w-3.5" />
 																	)}
@@ -599,16 +599,16 @@ function AdminLogsPageInner() {
 															)}
 															{log.errorMessage && (
 																<div className="mt-2">
-																	<p className="mb-0.5 font-medium text-red-600">错误信息</p>
-																	<pre className="rounded border border-red-200 bg-red-50 p-2 text-red-700">
+																	<p className="mb-0.5 font-medium text-danger">错误信息</p>
+																	<pre className="rounded border border-danger/30 bg-danger-soft p-2 text-danger">
 																		{log.errorMessage}
 																	</pre>
 																</div>
 															)}
 															{log.errorStack && (
 																<div className="mt-2">
-																	<p className="mb-0.5 font-medium text-red-600">错误堆栈</p>
-																	<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-all rounded border border-red-200 bg-red-50 p-2 font-mono text-[11px] text-red-700">
+																	<p className="mb-0.5 font-medium text-danger">错误堆栈</p>
+																	<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-all rounded border border-danger/30 bg-danger-soft p-2 font-mono text-[11px] text-danger">
 																		{log.errorStack}
 																	</pre>
 																</div>
