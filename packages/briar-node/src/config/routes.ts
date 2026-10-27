@@ -10,6 +10,7 @@ export const RouteConfig = {
 		'/briar/login',
 		'/briar/register',
 		'/briar/forgot-password',
+		'/briar/auth/callback', // Google OAuth 回跳落地（读 token 写入 localStorage）
 	]),
 
 	/** 公开的路径前缀 */
@@ -22,6 +23,8 @@ export const RouteConfig = {
 		'/api/auth/register',
 		'/api/auth/send-reset-code',
 		'/api/auth/reset-password',
+		// Google OAuth 起跳 + 回调（startsWith 覆盖 /api/auth/google/callback）
+		'/api/auth/google',
 		// 媒体解析免登录（路由内自带 IP 限频），「添加到文件」仍需登录
 		'/api/media/parse',
 		'/api/media/proxy',

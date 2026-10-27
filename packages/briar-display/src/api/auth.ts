@@ -92,3 +92,22 @@ export const resetPassword = async (payload: ResetPasswordPayload) => {
 	)
 	return response.data
 }
+
+/** 跳转后端 Google OAuth 起跳地址（浏览器整页导航，非 XHR） */
+export const getGoogleLoginUrl = (redirect?: string) => {
+	const base = apiClient.defaults.baseURL?.replace(/\/$/, '') || '/api'
+	const target =
+		redirect || (typeof window !== 'undefined' ? getSafeRedirectFromWindow() : '/briar/')
+	const q = new URLSearchParams({ redirect: target })
+	return `${base}/auth/google?${q.toString()}`
+}
+
+const getSafeRedirectFromWindow = () => {
+	try {
+		const redirect = new URLSearchParams(window.location.search).get('redirect')
+		if (redirect?.startsWith('/') && !redirect.startsWith('//')) return redirect
+	} catch {
+		/* ignore */
+	}
+	return '/briar/'
+}
