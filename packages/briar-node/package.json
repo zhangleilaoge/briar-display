@@ -11,6 +11,7 @@
 		"clean": "rm -rf dist",
 		"db:setup": "tsx src/db/setup.ts",
 		"db:migrate": "tsx src/db/migrate.ts",
+		"generate:csi300-etf-scale": "tsx scripts/generate-csi300-etf-scale.ts",
 		"test": "bun test",
 		"upload:cdn": "tsx scripts/upload-cdn.ts",
 		"typecheck": "tsc --noEmit"

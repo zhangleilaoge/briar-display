@@ -83,11 +83,11 @@ export interface MarketSessionInfo {
 
 /** 统一的缓存/降级元信息 */
 export interface MarketDataMeta {
-	/** 后端成功拉取上游的时间（毫秒） */
+	/** 后端成功取得该份数据的时间（毫秒；实时源为拉取时间，快照为装载时间） */
 	fetchedAt: number
-	/** true = 上游失败，返回的是最近一次缓存 */
+	/** true = 数据更新失败，返回最近一次缓存或历史快照 */
 	stale: boolean
-	/** stale 时的上游错误摘要 */
+	/** stale 时的错误摘要 */
 	error?: string
 }
 
@@ -105,6 +105,38 @@ export interface MarketOverviewItem extends MarketDataMeta {
 
 export interface MarketOverviewResponse {
 	markets: MarketOverviewItem[]
+}
+
+export interface Csi300EtfScalePoint {
+	/** 官方完整月份内的交易日 YYYY-MM-DD */
+	date: string
+	/** 四只样本 ETF 合计规模 / 沪深300流通市值 × 100 */
+	ratioPct: number
+	indexClose: number
+	/** 四只样本 ETF 合计资产规模（元） */
+	totalAssets: number
+	/** 沪深300流通市值（元） */
+	floatMarketCap: number
+}
+
+export interface Csi300EtfFundItem {
+	code: string
+	name: string
+	/** 截止日份额（份） */
+	shares: number
+	/** 截止日单位净值，不是累计净值 */
+	unitNav: number
+	/** 份额 × 单位净值（元） */
+	assets: number
+}
+
+export interface Csi300EtfScaleResponse extends MarketDataMeta {
+	/** 所有曲线及基金明细的共同数据截止日 */
+	asOf: string
+	points: Csi300EtfScalePoint[]
+	funds: Csi300EtfFundItem[]
+	sources: string[]
+	pollMs: number
 }
 
 export interface SectorKindOption {
