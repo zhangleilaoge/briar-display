@@ -23,7 +23,14 @@ function mapRow(row: Csi300EtfSnapshotRow): Csi300EtfSnapshot {
 		},
 		Object.fromEntries(funds.map((fund) => [fund.code, fund.shares])),
 		Object.fromEntries(
-			funds.map((fund) => [fund.code, { date: row.trade_date, unitNav: fund.unitNav }]),
+			funds.map((fund) => [
+				fund.code,
+				{
+					date: row.trade_date,
+					unitNav: fund.unitNav,
+					...(fund.cumulativeNav === undefined ? {} : { cumulativeNav: fund.cumulativeNav }),
+				},
+			]),
 		),
 	)
 }

@@ -12,10 +12,10 @@ const snapshot = createSnapshot(
 	index,
 	Object.fromEntries(['510300', '510330', '159919', '510310'].map((code) => [code, 1_000_000])),
 	{
-		'510300': { date: index.date, unitNav: 4 },
-		'510330': { date: index.date, unitNav: 3 },
-		'159919': { date: index.date, unitNav: 2 },
-		'510310': { date: index.date, unitNav: 1 },
+		'510300': { date: index.date, unitNav: 4, cumulativeNav: 2 },
+		'510330': { date: index.date, unitNav: 3, cumulativeNav: 1.5 },
+		'159919': { date: index.date, unitNav: 2, cumulativeNav: 1 },
+		'510310': { date: index.date, unitNav: 1, cumulativeNav: 0.5 },
 	},
 )
 

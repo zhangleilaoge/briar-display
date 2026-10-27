@@ -3,12 +3,12 @@ import { csi300EtfScaleDal } from '../../dal/csi300EtfScaleDal'
 import type { SchedulerRunResult } from '../schedulerRunService'
 import { cachedLoad } from './cache'
 import {
+	CSI300_HISTORY_START,
 	type Csi300EtfScaleSeed,
 	buildScaleData,
 	latestCompletedMonth,
 	mergeSnapshots,
 	monthBounds,
-	shanghaiDate,
 } from './csi300EtfScale'
 import seedJson from './csi300EtfScale.seed.json'
 import { fetchCompletedMonthSnapshots, fetchSseIndexMonth } from './csi300EtfSources'
@@ -22,7 +22,7 @@ async function loadScaleData() {
 	let warning: string | undefined
 	let stored: Awaited<ReturnType<typeof csi300EtfScaleDal.list>> = []
 	try {
-		stored = await csi300EtfScaleDal.list(shanghaiDate(Date.now() - 365 * 86_400_000))
+		stored = await csi300EtfScaleDal.list(CSI300_HISTORY_START)
 	} catch (error) {
 		warning = FALLBACK_MESSAGE
 		console.warn(`[markets] ${CACHE_KEY} 增量快照读取失败，使用内置种子:`, error)

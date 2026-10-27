@@ -54,7 +54,7 @@ marketRoutes.get('/overview', async (c) => {
 	return c.json<ApiResponse<MarketOverviewResponse>>({ success: true, data })
 })
 
-/** GET /csi300-etf-scale — 四只头部沪深300ETF规模占比，官方完整月份快照 */
+/** GET /csi300-etf-scale — 四只头部沪深300ETF官方历史快照，视频口径与实际规模双序列 */
 marketRoutes.get('/csi300-etf-scale', async (c) => {
 	try {
 		const data = await getCsi300EtfScale()

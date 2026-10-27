@@ -23,17 +23,29 @@ const loadLib = () => {
 	return libPromise
 }
 
+type Csi300EtfChartPoint = Pick<
+	Csi300EtfScalePoint,
+	'date' | 'indexClose' | 'ratioPct' | 'totalAssets'
+>
+
 interface Csi300EtfScaleChartProps {
-	data: Csi300EtfScalePoint[]
+	data: Csi300EtfChartPoint[]
+	ratioLabel: string
+	amountLabel: string
 	className?: string
 }
 
-export default function Csi300EtfScaleChart({ data, className }: Csi300EtfScaleChartProps) {
+export default function Csi300EtfScaleChart({
+	data,
+	ratioLabel,
+	amountLabel,
+	className,
+}: Csi300EtfScaleChartProps) {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const [lib, setLib] = useState<ChartLib | null>(null)
 	const [libError, setLibError] = useState(false)
 	const [attempt, setAttempt] = useState(0)
-	const [hover, setHover] = useState<Csi300EtfScalePoint | null>(null)
+	const [hover, setHover] = useState<Csi300EtfChartPoint | null>(null)
 
 	useEffect(() => {
 		let cancelled = false
@@ -94,7 +106,7 @@ export default function Csi300EtfScaleChart({ data, className }: Csi300EtfScaleC
 			priceScaleId: 'left',
 			priceFormat: { type: 'price', precision: 3, minMove: 0.001 },
 			priceLineVisible: false,
-			title: '占比',
+			title: ratioLabel,
 		})
 		ratio.setData(data.map((point) => ({ time: point.date, value: point.ratioPct })))
 		const index = chart.addSeries(lib.LineSeries, {
@@ -117,7 +129,7 @@ export default function Csi300EtfScaleChart({ data, className }: Csi300EtfScaleC
 			chart.remove()
 			setHover(null)
 		}
-	}, [lib, data])
+	}, [lib, data, ratioLabel])
 
 	const point = hover ?? data.at(-1)
 	return (
@@ -126,21 +138,25 @@ export default function Csi300EtfScaleChart({ data, className }: Csi300EtfScaleC
 				{point && (
 					<>
 						<span>{point.date}</span>
-						<span style={{ color: RATIO_COLOR }}>占比 {point.ratioPct.toFixed(3)}%</span>
+						<span style={{ color: RATIO_COLOR }}>
+							{ratioLabel} {point.ratioPct.toFixed(3)}%
+						</span>
 						<span style={{ color: INDEX_COLOR }}>沪深300 {formatPrice(point.indexClose)}</span>
-						<span>合计 {formatAmount(point.totalAssets)}</span>
+						<span>
+							{amountLabel} {formatAmount(point.totalAssets)}
+						</span>
 					</>
 				)}
 			</div>
 			<div className="mb-1 flex justify-between px-1 text-[10px] text-muted-foreground">
-				<span>左轴：占比（%）</span>
+				<span>左轴：{ratioLabel}（%）</span>
 				<span>右轴：沪深300（点）</span>
 			</div>
 			<div
 				ref={containerRef}
 				className="min-h-0 w-full flex-1"
 				role="img"
-				aria-label="头部四只沪深300ETF规模占比与沪深300收盘双轴走势图"
+				aria-label={`头部四只沪深300ETF${ratioLabel}与沪深300收盘双轴走势图`}
 			/>
 			{!lib && (
 				<div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
