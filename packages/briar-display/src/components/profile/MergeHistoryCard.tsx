@@ -4,8 +4,8 @@ import type { UserMergeLog } from '@/api/admin'
 import { getMyMergeLogs } from '@/api/auth'
 import { MergeLogDetail } from '@/components/admin/MergeLogsDialog'
 import { RUN_STATUS_STYLE, formatRunTime } from '@/components/admin/RunHistoryDialog'
+import { ProfileSheet, ProfileSheetHeader } from '@/components/profile/ProfileSheet'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChevronDown, ChevronRight, GitMerge } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -26,15 +26,13 @@ export default function MergeHistoryCard({ userId }: { userId?: string }) {
 	if (items.length === 0) return null
 
 	return (
-		<Card data-testid="merge-history-card">
-			<CardHeader>
-				<CardTitle className="flex items-center gap-2 text-base">
-					<GitMerge className="h-4 w-4" />
-					账号合并记录
-				</CardTitle>
-				<CardDescription>其它账号并入本账号的记录，点击查看迁移明细</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-1">
+		<ProfileSheet data-testid="merge-history-card">
+			<ProfileSheetHeader
+				icon={<GitMerge className="h-4 w-4" />}
+				title="账号合并记录"
+				description="其它账号并入本账号的记录，点击查看迁移明细"
+			/>
+			<div className="space-y-1">
 				{items.map((log) => {
 					const expanded = expandedId === log.id
 					const style = RUN_STATUS_STYLE[log.status]
@@ -71,7 +69,7 @@ export default function MergeHistoryCard({ userId }: { userId?: string }) {
 						</div>
 					)
 				})}
-			</CardContent>
-		</Card>
+			</div>
+		</ProfileSheet>
 	)
 }

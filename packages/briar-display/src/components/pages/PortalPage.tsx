@@ -1,6 +1,7 @@
 'use client'
 
 import UserMenu from '@/components/common/UserMenu'
+import { BinderPeel } from '@/components/portal/BinderPeel'
 import { PortalScrapDecor } from '@/components/portal/PortalScrapDecor'
 import { WidgetDesktop } from '@/components/portal/WidgetDesktop'
 import { useGreeting } from '@/components/portal/greetingStore'
@@ -210,16 +211,11 @@ function SubRouteRow({
 			className="group relative block outline-none transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1 data-[active]:-translate-y-1.5 animate-[rv-rise_var(--motion-base)_var(--ease-paper)_both]"
 			style={{ rotate: `${tilt}deg`, animationDelay: `${Math.min(index, 10) * 35}ms` }}
 		>
-			{/* 叠纸底片：同款 binder，孔洞略露 */}
-			<PaperSheet
-				variant="binder"
-				holes={5}
+			{/* 叠纸底片：普通纸片（非 binder；打孔只留给问候活页堆叠） */}
+			<div
 				aria-hidden
-				className="pointer-events-none !absolute inset-x-1 -bottom-0.5 top-2 -rotate-[1.2deg] opacity-80"
-				bodyClassName="!p-0 min-h-[100%]"
-			>
-				{'\u00a0'}
-			</PaperSheet>
+				className="rv-paper-back absolute inset-x-1 -bottom-0.5 top-2 -rotate-[1.2deg] rounded-md opacity-80"
+			/>
 			<Card
 				className={cn(
 					'relative z-[1] rv-tile glass-interactive overflow-hidden transition-[box-shadow,border-color,background-color] duration-200 group-focus-visible:shadow-focus',
@@ -362,36 +358,40 @@ function PortalPageInner() {
 							className="relative z-[1] overflow-visible"
 							bodyClassName="relative flex flex-col gap-2 !px-5 !py-6 sm:!px-7 sm:!py-8"
 						>
-							<span className="relative z-[1] rv-label text-muted-foreground">
-								{tod || '\u00a0'} · {date || '\u00a0'}
-							</span>
-							<h1 className="relative z-[1] font-display text-3xl font-semibold leading-snug text-foreground sm:text-4xl">
-								<span className="rv-script font-normal text-[color:var(--rv-rose-deep)]">
-									{greet || '\u00a0'}
-								</span>
-							</h1>
-							{author ? (
-								<p className="relative z-[1] -mt-0.5 font-display text-sm italic text-muted-foreground/80">
-									— {author}
-								</p>
-							) : null}
-							<div className="relative z-[1] flex items-center gap-2">
-								<p className="min-w-0 flex-1 font-display text-lg text-muted-foreground">
-									{line || '\u00a0'}
-								</p>
-								<button
-									type="button"
-									onClick={shuffle}
-									aria-label="换一句"
-									title="换一句"
-									className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--rv-navy)]/55 transition hover:bg-[color:var(--rv-navy)]/5 hover:text-[color:var(--rv-rose-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose)]/40"
-								>
-									<RefreshCw
-										className={cn('h-3.5 w-3.5', spinning && 'animate-spin')}
-										aria-hidden
-									/>
-								</button>
-							</div>
+							<BinderPeel contentKey={index} ready={Boolean(greet || line)}>
+								<div className="relative z-[1] flex flex-col gap-2">
+									<span className="rv-label text-muted-foreground">
+										{tod || '\u00a0'} · {date || '\u00a0'}
+									</span>
+									<h1 className="font-display text-3xl font-semibold leading-snug text-foreground sm:text-4xl">
+										<span className="rv-script font-normal text-[color:var(--rv-rose-deep)]">
+											{greet || '\u00a0'}
+										</span>
+									</h1>
+									{author ? (
+										<p className="-mt-0.5 font-display text-sm italic text-muted-foreground/80">
+											— {author}
+										</p>
+									) : null}
+									<div className="flex items-center gap-2">
+										<p className="min-w-0 flex-1 font-display text-lg text-muted-foreground">
+											{line || '\u00a0'}
+										</p>
+										<button
+											type="button"
+											onClick={shuffle}
+											aria-label="换一句"
+											title="换一句"
+											className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--rv-navy)]/55 transition hover:bg-[color:var(--rv-navy)]/5 hover:text-[color:var(--rv-rose-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose)]/40"
+										>
+											<RefreshCw
+												className={cn('h-3.5 w-3.5', spinning && 'animate-spin')}
+												aria-hidden
+											/>
+										</button>
+									</div>
+								</div>
+							</BinderPeel>
 							<Postmark
 								className="absolute -top-6 right-2 h-24 w-24 rotate-12 sm:right-4"
 								date={date.slice(-2) || '27'}

@@ -179,56 +179,64 @@ export default function RunHistoryDialog({
 						{description ?? '所有运行记录均已落库，保留 180 天'}
 					</DialogDescription>
 				</DialogHeader>
-				<div className="flex shrink-0 justify-end">
-					<Button
-						size="sm"
-						variant="ghost"
-						onClick={() => void load()}
-						disabled={loading}
-						className="h-7 gap-1 text-xs"
-					>
-						<RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
-						刷新
-					</Button>
-				</div>
 
-				{stats && stats.total > 0 && (
-					<div className="shrink-0 space-y-1 rounded-md border bg-muted/30 p-2 min-h-fit">
-						<div className="flex items-center justify-between text-xs text-muted-foreground">
-							<span>最近 {stats.total} 次</span>
-							<span>
-								成功率 {successRate === null ? '-' : `${successRate}%`} · 成功 {stats.success} ·
-								失败 {stats.failed}
-								{stats.skipped > 0 && ` · 跳过 ${stats.skipped}`}
-							</span>
-						</div>
-						<div className="flex h-3 gap-0.5">
-							{[...stats.recent].reverse().map((s, i) => (
-								<div
-									key={i}
-									className={cn('flex-1 rounded-sm', RUN_STATUS_STYLE[s].bar)}
-									title={RUN_STATUS_STYLE[s].label}
-								/>
-							))}
-						</div>
-					</div>
-				)}
-
-				<div className="flex shrink-0 flex-wrap gap-1">
-					{FILTERS.map((f) => (
+				{/* 上面这块（刷新 + 近期条/热力 + 状态 Tab）禁止压缩，只让下面表格区滚动 */}
+				<div
+					data-rv-dialog-fixed=""
+					className="flex shrink-0 flex-col gap-3"
+					style={{ flexShrink: 0, minHeight: 'fit-content' }}
+				>
+					<div className="flex justify-end">
 						<Button
-							key={f.value}
 							size="sm"
-							variant={status === f.value ? 'secondary' : 'ghost'}
-							className="h-7 px-2.5 text-xs"
-							onClick={() => {
-								setStatus(f.value)
-								setOffset(0)
-							}}
+							variant="ghost"
+							onClick={() => void load()}
+							disabled={loading}
+							className="h-7 gap-1 text-xs"
 						>
-							{f.label}
+							<RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
+							刷新
 						</Button>
-					))}
+					</div>
+
+					{stats && stats.total > 0 && (
+						<div className="space-y-1 rounded-md border bg-muted/30 p-2">
+							<div className="flex items-center justify-between text-xs text-muted-foreground">
+								<span>最近 {stats.total} 次</span>
+								<span>
+									成功率 {successRate === null ? '-' : `${successRate}%`} · 成功 {stats.success} ·
+									失败 {stats.failed}
+									{stats.skipped > 0 && ` · 跳过 ${stats.skipped}`}
+								</span>
+							</div>
+							<div className="flex h-3 gap-0.5">
+								{[...stats.recent].reverse().map((s, i) => (
+									<div
+										key={i}
+										className={cn('flex-1 rounded-sm', RUN_STATUS_STYLE[s].bar)}
+										title={RUN_STATUS_STYLE[s].label}
+									/>
+								))}
+							</div>
+						</div>
+					)}
+
+					<div className="flex flex-wrap gap-1">
+						{FILTERS.map((f) => (
+							<Button
+								key={f.value}
+								size="sm"
+								variant={status === f.value ? 'secondary' : 'ghost'}
+								className="h-7 px-2.5 text-xs"
+								onClick={() => {
+									setStatus(f.value)
+									setOffset(0)
+								}}
+							>
+								{f.label}
+							</Button>
+						))}
+					</div>
 				</div>
 
 				<div className="min-h-0 flex-1 overflow-auto rounded-md border">
@@ -311,7 +319,7 @@ export default function RunHistoryDialog({
 				</div>
 
 				{data && data.total > PAGE_SIZE && (
-					<div className="shrink-0">
+					<div data-rv-dialog-fixed="" className="shrink-0" style={{ flexShrink: 0 }}>
 						<AdminPagination
 							total={data.total}
 							limit={PAGE_SIZE}

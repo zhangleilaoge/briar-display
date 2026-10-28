@@ -9,6 +9,8 @@ import {
 	unlikeThought,
 	updateThought,
 } from '@/api/thoughts'
+import { ScrapStickerDecor } from '@/components/portal/ScrapStickerDecor'
+import { EmojiInsertButton } from '@/components/thoughts/EmojiInsertButton'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
 import { PaperSheet } from '@/components/ui/paper-sheet'
@@ -105,6 +107,7 @@ function ThoughtsPageInner() {
 
 	return (
 		<ThemeShell variant="scrapbook">
+			<ScrapStickerDecor page="thoughts" seedKey="thoughts" />
 			<PageHeader crumbs={[{ label: '想法' }]} />
 
 			<main className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
@@ -130,9 +133,15 @@ function ThoughtsPageInner() {
 							className="min-h-[96px] resize-y rounded-none border-border/60 bg-[var(--rv-beige)]/80 font-normal"
 						/>
 						<div className="flex items-center justify-between gap-3">
-							<span className="text-xs text-muted-foreground">
-								{draft.trim().length}/{MAX_BODY}
-							</span>
+							<div className="flex items-center gap-2">
+								<EmojiInsertButton
+									disabled={publishing}
+									onPick={(emoji) => setDraft((prev) => (prev + emoji).slice(0, MAX_BODY))}
+								/>
+								<span className="text-xs text-muted-foreground">
+									{draft.trim().length}/{MAX_BODY}
+								</span>
+							</div>
 							<Button
 								type="button"
 								onClick={() => void handlePublish()}
@@ -352,9 +361,15 @@ function ThoughtCard({
 						autoFocus
 					/>
 					<div className="flex items-center justify-between gap-3">
-						<span className="text-xs text-muted-foreground">
-							{editDraft.trim().length}/{MAX_BODY}
-						</span>
+						<div className="flex items-center gap-2">
+							<EmojiInsertButton
+								disabled={saving}
+								onPick={(emoji) => setEditDraft((prev) => (prev + emoji).slice(0, MAX_BODY))}
+							/>
+							<span className="text-xs text-muted-foreground">
+								{editDraft.trim().length}/{MAX_BODY}
+							</span>
+						</div>
 						<div className="flex items-center gap-2">
 							<Button
 								type="button"
