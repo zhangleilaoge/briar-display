@@ -22,16 +22,21 @@ export function GreetingWidget({
 		<div className="relative h-full min-h-0 overflow-visible">
 			<WidgetChrome editing={editing} onRemove={onRemove} bodyClassName="relative !pt-3" tilt={-1}>
 				<span className="relative z-[1] rv-label text-muted-foreground">
-					{state.tod || ' '} · {state.date || ' '}
+					{state.tod || '\u00a0'} · {state.date || '\u00a0'}
 				</span>
-				<h2 className="relative z-[1] mt-1 font-display text-2xl font-semibold leading-tight sm:text-3xl">
+				<h2 className="relative z-[1] mt-1 font-display text-xl font-semibold leading-snug sm:text-2xl">
 					<span className="rv-script font-normal text-[color:var(--rv-rose-deep)]">
-						{state.greet || ' '}
+						{state.greet || '\u00a0'}
 					</span>
 				</h2>
+				{state.author ? (
+					<p className="relative z-[1] font-display text-xs italic text-muted-foreground/80">
+						— {state.author}
+					</p>
+				) : null}
 				<div className="relative z-[1] mt-1 flex items-center gap-1.5">
 					<p className="min-w-0 flex-1 line-clamp-3 font-display text-sm text-muted-foreground sm:text-base">
-						{state.line || ' '}
+						{state.line || '\u00a0'}
 					</p>
 					{!editing && (
 						<button

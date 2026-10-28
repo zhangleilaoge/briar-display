@@ -4,20 +4,18 @@
  * 共 1000 条；每条带 kind，用于明信片分类贴纸。
  */
 
-export type GreetingKind =
-	| 'proverb'
-	| 'joke'
-	| 'encourage'
-	| 'witty'
-	| 'seasonal'
-	| 'calm'
+import { frenchQuoteAt } from '@/data/french-quotes'
+
+export type GreetingKind = 'proverb' | 'joke' | 'encourage' | 'witty' | 'seasonal' | 'calm'
 
 export interface DailyGreeting {
-	/** 招呼语（大字） */
+	/** 大字标题：现为法语名言（由 frenchQuoteAt 叠加；池内原中文招呼仅作占位） */
 	greet: string
-	/** 谚语 / 笑话 / 短句（小字） */
+	/** 作者小字（法语名言） */
+	author?: string
+	/** 谚语 / 笑话 / 短句（小字，中文保留） */
 	line: string
-	/** 语气分类：决定贴纸视觉家族 */
+	/** 语气分类 */
 	kind: GreetingKind
 }
 
@@ -270,7 +268,11 @@ export const DAILY_GREETINGS: readonly DailyGreeting[] = [
 	{ greet: '抬头看看', line: '注释写着「不要删」，下一秒就被删了。', kind: 'witty' },
 	{ greet: '深呼吸', line: '依赖升级：打开潘多拉魔盒。', kind: 'calm' },
 	{ greet: '微笑一下', line: '今天天气不错，适合修 bug。', kind: 'witty' },
-	{ greet: '给自己鼓鼓掌', line: '雨天适合写前端，阳光适合写文档——骗你的，都适合摸鱼。', kind: 'seasonal' },
+	{
+		greet: '给自己鼓鼓掌',
+		line: '雨天适合写前端，阳光适合写文档——骗你的，都适合摸鱼。',
+		kind: 'seasonal',
+	},
 	{ greet: '早上好', line: '摸鱼被发现的正确姿势：假装在看架构图。', kind: 'joke' },
 	{ greet: '早安', line: '架构图越画越美，代码越写越方。', kind: 'witty' },
 	{ greet: '午安', line: '「这个很简单」——著名的著名发言。', kind: 'witty' },
@@ -1033,6 +1035,12 @@ export const DAILY_GREETINGS: readonly DailyGreeting[] = [
 	{ greet: '朋友', line: '把接口写稳定 就从现在开始。', kind: 'encourage' },
 ]
 
+/** 将池条目的大字替换为法语名言（小字 line / kind 不变） */
+function withFrench<T extends DailyGreeting>(entry: T, index: number): T & { author?: string } {
+	const q = frenchQuoteAt(index)
+	return { ...entry, greet: q.text, author: q.author }
+}
+
 /** 以 Asia/Shanghai 的 YYYY-MM-DD 为种子，映射到 [0, n) */
 export function dailyIndex(dateKey: string, n: number): number {
 	let h = 2166136261
@@ -1092,7 +1100,8 @@ export function pickDailyGreeting(
 	d = new Date(),
 ): DailyGreeting & { dateKey: string; dateLabel: string } {
 	const dateKey = shanghaiDateKey(d)
-	const entry = DAILY_GREETINGS[dailyIndex(dateKey, DAILY_GREETINGS.length)]
+	const index = dailyIndex(dateKey, DAILY_GREETINGS.length)
+	const entry = withFrench(DAILY_GREETINGS[index], index)
 	const [y, m, day] = dateKey.split('-')
 	return { ...entry, dateKey, dateLabel: `${y}/${m}/${day}` }
 }
@@ -1120,7 +1129,7 @@ export function pickRandomGreeting(
 			}
 		}
 	}
-	return { ...DAILY_GREETINGS[index], index, dateKey, dateLabel }
+	return { ...withFrench(DAILY_GREETINGS[index], index), index, dateKey, dateLabel }
 }
 
 /** 今日种子对应的下标，方便「换一句」避开 */
@@ -1138,5 +1147,5 @@ export function pickGreetingAt(
 	const dateLabel = `${y}/${m}/${day}`
 	const n = DAILY_GREETINGS.length
 	const i = Number.isInteger(index) && index >= 0 && index < n ? index : dailyIndex(dateKey, n)
-	return { ...DAILY_GREETINGS[i], index: i, dateKey, dateLabel }
+	return { ...withFrench(DAILY_GREETINGS[i], i), index: i, dateKey, dateLabel }
 }
