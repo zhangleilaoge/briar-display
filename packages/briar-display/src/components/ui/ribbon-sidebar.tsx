@@ -1,72 +1,71 @@
 'use client'
 
 /**
- * 全局左侧导航：一串挂在细绳上的行李吊牌，每张吊牌嵌一枚浮雕小图标（Phosphor duotone，MIT）。
- * 颜色全部来自主题 token（--sidebar-*），在 scrapbook / arcane 下自动切换。
- * md 以下收起为底部吊牌栏：固定在屏幕底部，触控区 ≥ 44px，适配 safe-area；
- * 条目过多时横向滑动，边缘渐隐 + 轻点头动画提示可滑（尊重 prefers-reduced-motion）。
+ * 全局左侧导航：各异形蓝白线稿贴纸吊牌（拱形 / 花边圆 / 波浪底 / 心形 / 椭圆 Cameo 等）。
+ * 颜色走 --sidebar-*；md+ 无底不占位，热区拉出；窄屏底部横滑。
  */
 import { usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { type ComponentType, useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFlip } from './motion'
 import {
-	FilesIcon,
-	HomeIcon,
-	JournalIcon,
-	KeyIcon,
-	MarketsIcon,
-	type OrnamentIconProps,
-	ProfileIcon,
-	ToolsIcon,
-} from './ornaments'
+	RIBBON_JITTER,
+	RIBBON_TAG_BY_KIND,
+	type RibbonTagKind,
+	TagAdmin,
+	TagFiles,
+	TagHome,
+	TagMarkets,
+	TagProfile,
+	TagThoughts,
+	TagTools,
+} from './ribbon-tags'
 
 interface RibbonItem {
 	href: string
-	/** 匹配前缀 */
 	match: string
 	label: string
 	caption: string
-	icon: ComponentType<OrnamentIconProps>
+	kind: RibbonTagKind
 	adminOnly?: boolean
 }
 
 export const RIBBON_ITEMS: RibbonItem[] = [
-	{ href: '/briar/', match: '/briar', label: '首页', caption: 'Accueil', icon: HomeIcon },
+	{ href: '/briar/', match: '/briar', label: '首页', caption: 'Accueil', kind: 'home' },
 	{
 		href: '/briar/tools',
 		match: '/briar/tools',
 		label: '工具箱',
 		caption: 'Outils',
-		icon: ToolsIcon,
+		kind: 'tools',
 	},
 	{
 		href: '/briar/files',
 		match: '/briar/files',
 		label: '文件',
 		caption: 'Fichiers',
-		icon: FilesIcon,
+		kind: 'files',
 	},
 	{
 		href: '/briar/thoughts/',
 		match: '/briar/thoughts',
 		label: '想法',
 		caption: 'Pensées',
-		icon: JournalIcon,
+		kind: 'thoughts',
 	},
 	{
 		href: '/briar/markets',
 		match: '/briar/markets',
 		label: '行情',
 		caption: 'Étoiles',
-		icon: MarketsIcon,
+		kind: 'markets',
 	},
 	{
 		href: '/briar/admin',
 		match: '/briar/admin',
 		label: '管理',
 		caption: 'Clef',
-		icon: KeyIcon,
+		kind: 'admin',
 		adminOnly: true,
 	},
 	{
@@ -74,7 +73,7 @@ export const RIBBON_ITEMS: RibbonItem[] = [
 		match: '/briar/profile',
 		label: '个人',
 		caption: 'Moi',
-		icon: ProfileIcon,
+		kind: 'profile',
 	},
 ]
 
@@ -92,19 +91,16 @@ export function activeRibbonHref(pathname: string): string | null {
 	return best?.href ?? null
 }
 
-const TILTS = [-4, 3, -2, 4, -3, 2, -4]
 const NUDGE_KEY = 'rv-ribbon-nudge-v1'
 
 export interface RibbonSidebarProps {
 	className?: string
-	/** SSR 时传入当前路径，避免首帧无选中态 */
 	currentPath?: string
 }
 
 export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 	const { isAdmin } = usePermissions()
 	const [path, setPath] = useState(currentPath ?? '')
-	// 管理员入口依赖 localStorage 里的登录态，SSR 拿不到；挂载后再显示，避免 hydration 不一致
 	const [mounted, setMounted] = useState(false)
 
 	useEffect(() => {
@@ -114,7 +110,6 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 
 	const active = activeRibbonHref(path)
 	const items = RIBBON_ITEMS.filter((item) => !item.adminOnly || (mounted && isAdmin))
-	// 异步出现的吊牌（如 CLEF）垂落入列，其后吊牌 FLIP 平滑下移
 	const listRef = useRef<HTMLUListElement>(null)
 	useFlip(listRef, [items.length])
 
@@ -123,71 +118,54 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 			<nav
 				aria-label="全局导航"
 				className={cn(
-					'fixed inset-y-0 left-0 z-40 hidden w-16 flex-col items-center border-r border-[color:var(--rv-line)] pt-3 [background-image:var(--sidebar-bg)] backdrop-blur-sm md:flex',
+					'rv-ribbon group/ribbon fixed inset-y-0 left-0 z-[60] hidden w-3 hover:w-[5.25rem] focus-within:w-[5.25rem] md:block',
 					className,
 				)}
 			>
-				{/* 吊绳 */}
-				<span
-					aria-hidden
-					className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[var(--sidebar-string)]"
-				/>
-				<span
-					aria-hidden
-					className="relative mb-2 h-3 w-3 rotate-45 border border-[color:var(--sidebar-tag-stroke)] bg-[var(--sidebar-tag-fill)]"
-				/>
-				<ul ref={listRef} className="relative flex flex-col items-center gap-1.5">
-					{items.map((item, i) => {
-						const Icon = item.icon
-						const isActive = active === item.href
-						return (
-							<li key={item.href} data-flip-key={item.href}>
-								<a
-									href={item.href}
-									title={item.label}
-									aria-current={isActive ? 'page' : undefined}
-									className="rv-ribbon-tag relative flex h-[62px] w-[54px] flex-col items-center outline-none"
-									style={{ transform: `rotate(${TILTS[i % TILTS.length]}deg)` }}
+				<div className="rv-ribbon-rail absolute inset-y-0 left-0 flex w-[4.75rem] flex-col items-center pt-2">
+					<span
+						aria-hidden
+						className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[var(--sidebar-string)]"
+					/>
+					<span
+						aria-hidden
+						className="relative mb-1 h-2.5 w-2.5 rotate-45 border border-[color:var(--sidebar-tag-stroke)] bg-[var(--sidebar-tag-fill)]"
+					/>
+					<ul ref={listRef} className="relative flex flex-col items-center gap-0.5">
+						{items.map((item, i) => {
+							const Tag = RIBBON_TAG_BY_KIND[item.kind]
+							const isActive = active === item.href
+							const jitter = RIBBON_JITTER[i % RIBBON_JITTER.length]
+							return (
+								<li
+									key={item.href}
+									data-flip-key={item.href}
+									className="rv-ribbon-item"
+									style={{ ['--rv-ribbon-i' as string]: i }}
 								>
-									<svg
-										viewBox="0 0 48 62"
-										preserveAspectRatio="none"
-										className="absolute inset-0 h-full w-full drop-shadow-[0_2px_3px_rgba(80,50,45,0.14)]"
-										aria-hidden
+									<a
+										href={item.href}
+										title={item.label}
+										aria-current={isActive ? 'page' : undefined}
+										className={cn(
+											'rv-ribbon-tag relative flex h-[70px] w-[58px] flex-col items-center outline-none',
+											isActive && 'is-active',
+										)}
+										style={{
+											transform: `translateX(${jitter.x}px) rotate(${jitter.rotate}deg)`,
+										}}
 									>
-										<path d="M24 0v8" stroke="var(--sidebar-string)" strokeWidth="1" />
-										<path
-											className="rv-tag-shape"
-											strokeWidth="1"
-											d="M14 8h20l10 10v40a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V18Z"
-										/>
-										<path
-											className="rv-tag-inner-dash"
-											d="M14 11h20l7 7.4V56a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V18.4Z"
-											fill="none"
-											strokeWidth="1.15"
-											strokeDasharray="1.6 2.2"
-										/>
-										<circle
-											cx="24"
-											cy="15"
-											r="2.2"
-											fill="none"
-											stroke="var(--sidebar-tag-stroke)"
-										/>
-									</svg>
-									<Icon className="rv-tag-icon relative mt-[21px] h-[22px] w-[22px]" />
-									<span className="rv-tag-label relative mt-0.5 font-label text-[7px] uppercase tracking-[0.04em] text-[color:var(--sidebar-icon)]">
-										{item.caption}
-									</span>
-									<span className="sr-only">{item.label}</span>
-								</a>
-							</li>
-						)
-					})}
-				</ul>
+										<Tag active={isActive} />
+										<span className="sr-only">
+											{item.label} · {item.caption}
+										</span>
+									</a>
+								</li>
+							)
+						})}
+					</ul>
+				</div>
 			</nav>
-			{/* 移动端：底部吊牌栏（窄屏可横滑，边缘渐隐提示） */}
 			<MobileRibbonNav items={items} active={active} />
 		</>
 	)
@@ -208,25 +186,7 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 		const el = trackRef.current
 		if (!el) return
 		const max = el.scrollWidth - el.clientWidth
-		if (max <= 1) {
-			setEdge({ left: false, right: false })
-			return
-		}
-		// 用首末项相对轨道的裁切判断，避免 padding / 亚像素把「起点」误判成可左滑
-		const trackRect = el.getBoundingClientRect()
-		const nodes = el.querySelectorAll<HTMLElement>('.rv-ribbon-mobile-item')
-		const first = nodes[0]
-		const last = nodes[nodes.length - 1]
-		if (!first || !last) {
-			setEdge({ left: el.scrollLeft > 2, right: el.scrollLeft < max - 2 })
-			return
-		}
-		const firstLeft = first.getBoundingClientRect().left
-		const lastRight = last.getBoundingClientRect().right
-		setEdge({
-			left: firstLeft < trackRect.left - 1,
-			right: lastRight > trackRect.right + 1,
-		})
+		setEdge({ left: el.scrollLeft > 4, right: max - el.scrollLeft > 4 })
 	}, [])
 
 	useEffect(() => {
@@ -236,39 +196,20 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 		el.addEventListener('scroll', updateEdge, { passive: true })
 		const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateEdge) : null
 		ro?.observe(el)
-		window.addEventListener('resize', updateEdge)
 		return () => {
 			el.removeEventListener('scroll', updateEdge)
 			ro?.disconnect()
-			window.removeEventListener('resize', updateEdge)
 		}
 	}, [updateEdge, items.length])
 
-	// 把当前激活项滚进视野（居中偏左）
 	useEffect(() => {
-		const el = trackRef.current
-		if (!el || !active) return
-		const link = Array.from(el.querySelectorAll<HTMLAnchorElement>('a[href]')).find(
-			(a) => a.getAttribute('href') === active,
-		)
-		if (!link) return
-		const li = link.closest('li')
-		if (!li) return
-		const left = li.offsetLeft - (el.clientWidth - li.offsetWidth) / 2
-		el.scrollLeft = Math.max(0, left)
-		requestAnimationFrame(updateEdge)
-	}, [active, items.length, updateEdge])
-
-	// 首次访问轻点头：向右滑 ~10px 再回弹，提示可横滑
-	useEffect(() => {
-		const el = trackRef.current
-		if (!el || nudgedRef.current) return
-		nudgedRef.current = true
+		if (nudgedRef.current) return
 		try {
-			if (sessionStorage.getItem(NUDGE_KEY) === '1') return
+			if (sessionStorage.getItem(NUDGE_KEY)) return
 		} catch {
-			/* private mode */
+			/* ignore */
 		}
+		nudgedRef.current = true
 		const reduce =
 			typeof window.matchMedia === 'function' &&
 			window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -301,17 +242,18 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 	return (
 		<nav
 			aria-label="全局导航"
-			className="rv-ribbon-mobile fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--rv-line)] bg-background pb-[env(safe-area-inset-bottom)] shadow-[0_-6px_18px_-12px_hsl(var(--foreground)/0.35)] [background-image:var(--sidebar-bg)] backdrop-blur-md md:hidden"
+			className="rv-ribbon-mobile fixed inset-x-0 bottom-0 z-[60] border-t border-[color:var(--rv-line)] bg-background pb-[env(safe-area-inset-bottom)] shadow-[0_-6px_18px_-12px_hsl(var(--foreground)/0.35)] [background-image:var(--sidebar-bg)] backdrop-blur-md md:hidden"
 		>
 			<span aria-hidden className="absolute inset-x-0 top-2 h-px bg-[var(--sidebar-string)]" />
 			<div className="relative">
 				<ul
 					ref={trackRef}
-					className="rv-ribbon-mobile-track relative flex h-16 items-start gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain px-3 scroll-smooth"
+					className="rv-ribbon-mobile-track relative flex h-[4.5rem] items-start gap-0.5 overflow-x-auto overflow-y-hidden overscroll-x-contain px-2 scroll-smooth"
 				>
 					{items.map((item, i) => {
-						const Icon = item.icon
+						const Tag = RIBBON_TAG_BY_KIND[item.kind]
 						const isActive = active === item.href
+						const jitter = RIBBON_JITTER[i % RIBBON_JITTER.length]
 						return (
 							<li
 								key={item.href}
@@ -321,31 +263,25 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 								<a
 									href={item.href}
 									aria-current={isActive ? 'page' : undefined}
-									className="rv-ribbon-tag group flex h-16 w-20 min-w-11 flex-col items-center outline-none"
+									className={cn(
+										'rv-ribbon-tag group flex h-[4.25rem] w-[3.4rem] min-w-11 flex-col items-center outline-none',
+										isActive && 'is-active',
+									)}
+									style={{
+										transform: `rotate(${jitter.rotate / 2}deg)`,
+									}}
 								>
-									<span aria-hidden className="h-2 w-px bg-[var(--sidebar-string)]" />
-									<span
-										className="rv-tag-chip relative flex h-[46px] w-14 flex-col items-center justify-center rounded-[6px_6px_8px_8px] border shadow-[0_2px_3px_rgba(28,43,75,0.14)]"
-										style={{ transform: `rotate(${TILTS[i % TILTS.length] / 2}deg)` }}
-									>
-										<span
-											aria-hidden
-											className="absolute top-1 h-1.5 w-1.5 rounded-full border border-[color:var(--sidebar-tag-stroke)]"
-										/>
-										<Icon className="rv-tag-icon mt-1.5 h-5 w-5" />
-										<span className="rv-tag-label mt-0.5 max-w-[3rem] truncate text-[10px] leading-none text-[color:var(--sidebar-icon)]">
-											{item.label}
-										</span>
+									<span aria-hidden className="h-1.5 w-px bg-[var(--sidebar-string)]" />
+									<span className="relative h-[58px] w-[48px]">
+										<Tag active={isActive} />
 									</span>
+									<span className="sr-only">{item.label}</span>
 								</a>
 							</li>
 						)
 					})}
-					{/* 右侧留白，让末项不完全贴边，方便「偷看」下一枚 */}
 					<li aria-hidden className="w-6 shrink-0" />
 				</ul>
-
-				{/* 左右边缘渐隐：有更多内容时才显示 */}
 				<span aria-hidden className={cn('rv-ribbon-fade rv-ribbon-fade-l', edge.left && 'is-on')} />
 				<span
 					aria-hidden
@@ -357,3 +293,6 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 }
 
 export default RibbonSidebar
+
+// re-export tag components in case ornaments/tests referenced old icons via sidebar
+export { TagAdmin, TagFiles, TagHome, TagMarkets, TagProfile, TagThoughts, TagTools }

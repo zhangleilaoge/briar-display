@@ -516,8 +516,6 @@ export function WidgetDesktop() {
 				<p className="text-center text-[11px] text-muted-foreground">
 					拖动卡片吸附到网格 · 左上角 − 移除 · 右下角切换尺寸
 				</p>
-			) : layout.length > 0 ? (
-				<p className="text-center text-[11px] text-muted-foreground">长按组件进入编辑</p>
 			) : null}
 		</section>
 	)

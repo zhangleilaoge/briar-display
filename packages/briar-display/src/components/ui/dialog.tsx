@@ -18,7 +18,7 @@ const DialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<DialogPrimitive.Overlay
 		ref={ref}
-		className={cn('rv-paper-overlay rv-motion-overlay fixed inset-0 z-50', className)}
+		className={cn('rv-paper-overlay rv-motion-overlay fixed inset-0 z-[100]', className)}
 		{...props}
 	/>
 ))
@@ -46,7 +46,7 @@ const DialogContent = React.forwardRef<
 			<DialogPrimitive.Content
 				ref={ref}
 				className={cn(
-					'rv-paper-dialog fixed left-[50%] top-[50%] z-50 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col translate-x-[-50%] translate-y-[-50%] gap-4 overflow-visible p-6 rv-motion-dialog',
+					'rv-paper-dialog fixed left-[50%] top-[50%] z-[100] flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col translate-x-[-50%] translate-y-[-50%] gap-4 overflow-visible p-6 rv-motion-dialog',
 					variant === 'terminal' && 'rv-terminal',
 					className,
 				)}
