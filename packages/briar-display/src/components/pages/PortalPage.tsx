@@ -210,11 +210,16 @@ function SubRouteRow({
 			className="group relative block outline-none transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1 data-[active]:-translate-y-1.5 animate-[rv-rise_var(--motion-base)_var(--ease-paper)_both]"
 			style={{ rotate: `${tilt}deg`, animationDelay: `${Math.min(index, 10) * 35}ms` }}
 		>
-			{/* 叠纸底片：与问候区同款，体量更轻，保持「次级」 */}
-			<div
+			{/* 叠纸底片：同款 binder，孔洞略露 */}
+			<PaperSheet
+				variant="binder"
+				holes={5}
 				aria-hidden
-				className="rv-paper-back absolute inset-x-1 -bottom-0.5 top-2 -rotate-[1.2deg] rounded-md opacity-80"
-			/>
+				className="pointer-events-none !absolute inset-x-1 -bottom-0.5 top-2 -rotate-[1.2deg] opacity-80"
+				bodyClassName="!p-0 min-h-[100%]"
+			>
+				{'\u00a0'}
+			</PaperSheet>
 			<Card
 				className={cn(
 					'relative z-[1] rv-tile glass-interactive overflow-hidden transition-[box-shadow,border-color,background-color] duration-200 group-focus-visible:shadow-focus',
@@ -332,14 +337,25 @@ function PortalPageInner() {
 				<div className="w-full max-w-3xl space-y-8 sm:max-w-4xl">
 					{/* 问候区：活页纸（binder），与想法页撕边/邮票错开 */}
 					<div className="relative mx-auto max-w-xl overflow-visible px-5 pb-7 pt-9 sm:px-9 sm:pb-10 sm:pt-12">
-						<div
+						{/* 底层也用 binder 活页纸，孔洞随偏移露出来 */}
+						<PaperSheet
+							variant="binder"
+							holes={7}
 							aria-hidden
-							className="rv-paper-back absolute inset-x-4 -bottom-1 top-10 -rotate-[3.5deg] rounded-sm sm:inset-x-8"
-						/>
-						<div
+							className="pointer-events-none !absolute inset-x-4 -bottom-1 top-10 -rotate-[3.5deg] sm:inset-x-8"
+							bodyClassName="!p-0 min-h-[100%]"
+						>
+							{'\u00a0'}
+						</PaperSheet>
+						<PaperSheet
+							variant="binder"
+							holes={6}
 							aria-hidden
-							className="rv-paper-back absolute inset-x-6 -bottom-2 top-8 rotate-[2.5deg] rounded-sm bg-[var(--rv-pink)]/55 sm:inset-x-10"
-						/>
+							className="pointer-events-none !absolute inset-x-6 -bottom-2 top-8 rotate-[2.5deg] sm:inset-x-10 [--rv-ps-fill:color-mix(in_srgb,var(--rv-pink)_42%,var(--rv-cream))]"
+							bodyClassName="!p-0 min-h-[100%]"
+						>
+							{'\u00a0'}
+						</PaperSheet>
 						<PaperSheet
 							variant="binder"
 							holes={7}
