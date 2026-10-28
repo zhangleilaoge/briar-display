@@ -21,8 +21,6 @@ export interface ThemeShellProps {
 	currentPath?: string
 	/** 大号水印数字，如 09；不传则用主题默认 */
 	watermark?: string
-	/** 大号中文水印字，如 寻 / 阅 */
-	glyph?: string
 	/** 页面专属平面角饰（全站每种素材只用一次） */
 	accent?: ReactNode
 }
@@ -35,7 +33,6 @@ export function ThemeShell({
 	decor = true,
 	currentPath,
 	watermark,
-	glyph,
 	accent,
 }: ThemeShellProps) {
 	return (
@@ -43,9 +40,9 @@ export function ThemeShell({
 			{sidebar && <RibbonSidebar currentPath={currentPath} />}
 			{decor &&
 				(variant === 'arcane' ? (
-					<ArcaneDecor watermark={watermark} glyph={glyph} />
+					<ArcaneDecor watermark={watermark} />
 				) : (
-					<ScrapbookDecor watermark={watermark} glyph={glyph} />
+					<ScrapbookDecor watermark={watermark} />
 				))}
 			{accent ? (
 				<div
@@ -60,17 +57,12 @@ export function ThemeShell({
 	)
 }
 
-function ArcaneDecor({ watermark, glyph }: { watermark?: string; glyph?: string }) {
+function ArcaneDecor({ watermark }: { watermark?: string }) {
 	return (
 		<div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
 			<span className="rv-watermark-num absolute -left-4 top-6 text-[11rem] opacity-60 md:left-16 md:text-[14rem]">
 				{watermark ?? '09'}
 			</span>
-			{glyph && (
-				<span className="rv-watermark-glyph absolute right-6 top-10 hidden text-[9rem] opacity-40 xl:block">
-					{glyph}
-				</span>
-			)}
 			{/* 星盘为 Arcane HUD 系统件，各 Arcane 页共享；具象贴纸走 ThemeShell.accent */}
 			<Astrolabe
 				className="absolute -bottom-40 -right-32 h-[560px] w-[560px] opacity-[0.2]"
@@ -86,17 +78,12 @@ function ArcaneDecor({ watermark, glyph }: { watermark?: string; glyph?: string 
 	)
 }
 
-function ScrapbookDecor({ watermark, glyph }: { watermark?: string; glyph?: string }) {
+function ScrapbookDecor({ watermark }: { watermark?: string }) {
 	return (
 		<div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
 			<span className="rv-watermark-num absolute -left-6 top-4 text-[10rem] opacity-35 md:left-14 md:text-[12rem]">
 				{watermark ?? '01'}
 			</span>
-			{glyph && (
-				<span className="rv-watermark-glyph absolute right-8 top-16 hidden text-[8rem] opacity-28 xl:block">
-					{glyph}
-				</span>
-			)}
 			{/* 无具象贴纸：邮戳/怀表/花饰改由各页单点挂载 */}
 			<div className="absolute -left-24 top-1/3 h-80 w-80 rounded-full bg-[var(--rv-pink)] opacity-45 blur-3xl" />
 			<div className="absolute -right-24 top-10 h-80 w-80 rounded-full bg-[var(--rv-sky)] opacity-45 blur-3xl" />

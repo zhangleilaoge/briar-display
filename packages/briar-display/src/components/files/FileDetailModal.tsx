@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Check, Clipboard, Download, X } from 'lucide-react'
 import { Suspense, lazy, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import DocxPreview from './DocxPreview'
 import ExcelPreview from './ExcelPreview'
 import FileTypeIcon from './FileTypeIcon'
@@ -162,7 +163,8 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 
 	const label = previewLabel(kind)
 
-	return (
+	// 通过 portal 挂到 body：外层面板有 backdrop-filter，会成为 fixed 的包含块，导致弹窗不居中、顶部被裁
+	return createPortal(
 		<div
 			className="rv-paper-overlay fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4"
 			onClick={onClose}
@@ -185,7 +187,7 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 			)}
 
 			<div
-				className="rv-paper-dialog relative max-h-[90vh] w-full max-w-3xl overflow-visible"
+				className="rv-paper-dialog relative flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col overflow-visible"
 				onClick={(e) => e.stopPropagation()}
 			>
 				<span className="rv-crop-marks" aria-hidden>
@@ -194,7 +196,7 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 				<span className="rv-paper-index">{label.index}</span>
 
 				{/* 藏青顶栏 */}
-				<div className="rv-paper-header sticky top-0 z-10 !mx-0 !mt-0 mb-0 rounded-none">
+				<div className="rv-paper-header z-10 !mx-0 !mt-0 mb-0 shrink-0 rounded-none">
 					<h2 className="rv-paper-title max-w-[85%] truncate px-2">
 						{label.fr} · {label.zh}
 					</h2>
@@ -212,7 +214,7 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 					</button>
 				</div>
 
-				<div className="max-h-[calc(90vh-4.5rem)] overflow-auto p-5 sm:p-6">
+				<div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pt-5 sm:px-6 sm:pt-6">
 					{/* Preview */}
 					<div className="mb-5">
 						{kind === 'image' && (
@@ -286,7 +288,7 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 					</div>
 
 					{/* Metadata — 纸片分行 */}
-					<div className="mb-5 grid grid-cols-2 gap-0 border border-[color:var(--rv-navy)]/20 sm:grid-cols-4">
+					<div className="mb-5 grid min-w-0 grid-cols-2 gap-0 border border-[color:var(--rv-navy)]/20 sm:grid-cols-4">
 						<div className="rv-paper-row min-w-0 !border-b-0 border-r border-[color:var(--rv-navy)]/15">
 							<div>
 								<p className="rv-label text-[10px] text-muted-foreground">TAILLE · 大小</p>
@@ -332,31 +334,32 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 							</div>
 						</div>
 					</div>
+				</div>
 
-					{/* Actions */}
-					<div className="flex flex-wrap items-center gap-2 border-t border-[color:var(--rv-navy)]/15 pt-4">
-						<Button variant="outline" size="sm" className="gap-1.5" onClick={copyLink}>
-							{copied ? (
-								<Check className="h-4 w-4 text-success" />
-							) : (
-								<Clipboard className="h-4 w-4" />
-							)}
-							复制链接
-						</Button>
-						<Button variant="outline" size="sm" className="gap-1.5" onClick={download}>
-							<Download className="h-4 w-4" /> 下载
-						</Button>
-						<Button
-							variant="destructive"
-							size="sm"
-							className={cn('ml-auto gap-1.5')}
-							onClick={() => onDelete(file.id)}
-						>
-							<X className="h-4 w-4" /> 删除
-						</Button>
-					</div>
+				{/* Actions：固定在底部，不随内容滚动 */}
+				<div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-[color:var(--rv-navy)]/15 px-5 py-4 sm:px-6">
+					<Button variant="outline" size="sm" className="gap-1.5" onClick={copyLink}>
+						{copied ? (
+							<Check className="h-4 w-4 text-success" />
+						) : (
+							<Clipboard className="h-4 w-4" />
+						)}
+						复制链接
+					</Button>
+					<Button variant="outline" size="sm" className="gap-1.5" onClick={download}>
+						<Download className="h-4 w-4" /> 下载
+					</Button>
+					<Button
+						variant="destructive"
+						size="sm"
+						className={cn('ml-auto gap-1.5')}
+						onClick={() => onDelete(file.id)}
+					>
+						<X className="h-4 w-4" /> 删除
+					</Button>
 				</div>
 			</div>
-		</div>
+		</div>,
+		document.body,
 	)
 }

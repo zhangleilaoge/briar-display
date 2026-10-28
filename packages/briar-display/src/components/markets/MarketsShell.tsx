@@ -10,6 +10,7 @@ import {
 	BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { CompassRose } from '@/components/ui/ornaments'
+import { PageHeader } from '@/components/ui/page-header'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { HudTitle, PaperPanel, ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider } from '@/contexts/PermissionContext'
@@ -46,51 +47,17 @@ export default function MarketsShell({ children, market }: MarketsShellProps) {
 			<ThemeShell
 				variant="arcane"
 				watermark="05"
-				glyph="市"
 				className="flex flex-col"
 				accent={<CompassRose className="h-36 w-36" />}
 			>
-				<header className="glass-header sticky top-0 z-50">
-					<div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
-						<div className="flex min-w-0 items-center gap-6">
-							<HudTitle
-								index="05"
-								label="Étoiles"
-								title="行情"
-								script="Bourse"
-								className="hidden shrink-0 2xl:flex"
-							/>
-							<Breadcrumb className="shrink-0 whitespace-nowrap">
-								<BreadcrumbList>
-									<BreadcrumbItem>
-										<BreadcrumbLink href="/briar/">xiaobuzi</BreadcrumbLink>
-									</BreadcrumbItem>
-									<BreadcrumbSeparator />
-									<BreadcrumbItem>
-										{market ? (
-											<BreadcrumbLink href="/briar/markets">行情</BreadcrumbLink>
-										) : (
-											<BreadcrumbPage>行情</BreadcrumbPage>
-										)}
-									</BreadcrumbItem>
-									{market && (
-										<>
-											<BreadcrumbSeparator />
-											<BreadcrumbItem>
-												<BreadcrumbPage>{MARKET_LABELS[market]}</BreadcrumbPage>
-											</BreadcrumbItem>
-										</>
-									)}
-								</BreadcrumbList>
-							</Breadcrumb>
-							{tabs && <div className="hidden md:block">{tabs}</div>}
-						</div>
-						<div className="shrink-0">
-							<UserMenu />
-						</div>
-					</div>
-					{tabs && <div className="overflow-x-auto px-3 pb-2 md:hidden">{tabs}</div>}
-				</header>
+				<PageHeader
+					crumbs={[
+						{ label: '行情', href: '/briar/markets' },
+						...(market ? [{ label: MARKET_LABELS[market] }] : []),
+					]}
+					tabs={tabs ?? undefined}
+					inlineAt="md"
+				/>
 				<main className="flex-1 p-4 sm:p-6">
 					<div className="mx-auto w-full max-w-6xl">
 						<PaperPanel index="05" title="MARCHÉ · 星图">

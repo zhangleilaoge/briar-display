@@ -13,6 +13,7 @@ import {
 	Postmark,
 	ToolsIcon,
 } from '@/components/ui/ornaments'
+import { PageHeader } from '@/components/ui/page-header'
 import { StampInputBar } from '@/components/ui/stamp-input-bar'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
@@ -122,23 +123,13 @@ function PortalPageInner() {
 	const tilts = [-1.2, 0.8, 1, -0.8, -1]
 
 	return (
-		<ThemeShell
-			variant="scrapbook"
-			watermark="01"
-			glyph="旅"
-			className="flex flex-col overflow-hidden"
-		>
+		<ThemeShell variant="scrapbook" watermark="01" className="flex flex-col overflow-hidden">
 			{/* Top bar */}
-			<header className="glass-header sticky top-0 z-30 flex h-14 items-center justify-between px-4 sm:px-6">
-				<span className="rv-script text-2xl leading-none text-foreground">xiaobuzi</span>
-				<div className="flex items-center gap-3">
-					{loading ? (
-						<div className="h-4 w-16 animate-pulse rounded-control bg-muted" />
-					) : (
-						<UserMenu />
-					)}
-				</div>
-			</header>
+			<PageHeader
+				user={
+					loading ? <div className="h-4 w-16 animate-pulse rounded-control bg-muted" /> : undefined
+				}
+			/>
 
 			{/* Main */}
 			<main className="flex flex-1 items-center justify-center p-4 sm:p-6">

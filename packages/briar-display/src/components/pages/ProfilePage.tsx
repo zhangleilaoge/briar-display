@@ -7,6 +7,7 @@ import MergeHistoryCard from '@/components/profile/MergeHistoryCard'
 import MessagesPanel from '@/components/profile/MessagesPanel'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { DoveOlive } from '@/components/ui/ornaments'
+import { PageHeader } from '@/components/ui/page-header'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, syncUserToStorage, usePermissions } from '@/contexts/PermissionContext'
@@ -103,19 +104,9 @@ function ProfilePageInner() {
 	const initial = user?.name?.charAt(0)?.toUpperCase() || 'U'
 
 	return (
-		<ThemeShell
-			variant="scrapbook"
-			watermark="07"
-			glyph="我"
-			accent={<DoveOlive className="h-28 w-28" />}
-		>
+		<ThemeShell variant="scrapbook" watermark="07" accent={<DoveOlive className="h-28 w-28" />}>
 			{/* 顶部导航 */}
-			<header className="glass-header sticky top-0 z-30 flex h-14 items-center justify-between px-6">
-				<a href="/briar/" className="rv-script text-2xl leading-none text-foreground">
-					xiaobuzi
-				</a>
-				<UserMenu />
-			</header>
+			<PageHeader crumbs={[{ label: '个人中心' }]} />
 
 			<main className="mx-auto max-w-5xl p-4 sm:p-6">
 				<div>
