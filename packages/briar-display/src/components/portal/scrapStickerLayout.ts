@@ -1,11 +1,11 @@
 /**
- * 门户 / 想法页共用：受限随机贴纸布局。
+ * 门户 / 想法 / 个人中心共用：受限随机贴纸布局。
  * - 只落空白区（避开中部卡片/文字）
  * - 贴纸 AABB 互不重叠
  * - 尺寸随 kind
  */
 
-export type ScrapPage = 'portal' | 'thoughts'
+export type ScrapPage = 'portal' | 'thoughts' | 'profile'
 
 export type ScrapZone = {
 	id: string
@@ -38,8 +38,24 @@ export const THOUGHTS_ZONES: ScrapZone[] = [
 	{ id: 'below', x: 20, y: 88, w: 60, h: 10 },
 ]
 
+/**
+ * 个人中心：避开 max-w-5xl 内左侧竖签 + 右侧资料卡。
+ * 主要落在视口左右 gutter（大屏空白），以及内容区下方。
+ */
+export const PROFILE_ZONES: ScrapZone[] = [
+	{ id: 'top-L', x: 0.4, y: 10, w: 11, h: 22 },
+	{ id: 'top-R', x: 88.5, y: 10, w: 11, h: 22 },
+	{ id: 'mid-L', x: 0.4, y: 34, w: 10, h: 26 },
+	{ id: 'mid-R', x: 89, y: 34, w: 10.5, h: 26 },
+	{ id: 'low-L', x: 0.4, y: 62, w: 11, h: 20 },
+	{ id: 'low-R', x: 88.5, y: 62, w: 11, h: 20 },
+	{ id: 'below', x: 22, y: 88, w: 56, h: 10 },
+]
+
 export function zonesFor(page: ScrapPage): ScrapZone[] {
-	return page === 'thoughts' ? THOUGHTS_ZONES : PORTAL_ZONES
+	if (page === 'thoughts') return THOUGHTS_ZONES
+	if (page === 'profile') return PROFILE_ZONES
+	return PORTAL_ZONES
 }
 
 export type ScrapBox = { x: number; y: number; w: number; h: number }
