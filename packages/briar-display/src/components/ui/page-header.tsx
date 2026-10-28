@@ -81,7 +81,9 @@ export function PageHeader({
 		xl: `hidden ${scroll} xl:block`,
 		'2xl': `hidden ${scroll} 2xl:block`,
 	}[inlineAt]
-	const stackCls = { md: 'md:hidden', lg: 'lg:hidden', xl: 'xl:hidden', '2xl': '2xl:hidden' }[inlineAt]
+	const stackCls = { md: 'md:hidden', lg: 'lg:hidden', xl: 'xl:hidden', '2xl': '2xl:hidden' }[
+		inlineAt
+	]
 
 	return (
 		<header className={`glass-header sticky top-0 z-50 ${className ?? ''}`}>

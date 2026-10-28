@@ -81,7 +81,12 @@ export default function AdminLayout({ children, currentPath, fullWidth }: AdminL
 				accent={<AntiqueKey className="h-28 w-28 rotate-12" />}
 			>
 				<div className="flex min-w-0 flex-1 flex-col">
-					<PageHeader crumbs={[{ label: '管理后台' }]} nav={NAV_ITEMS} currentPath={currentPath} inlineAt="xl" />
+					<PageHeader
+						crumbs={[{ label: '管理后台' }]}
+						nav={NAV_ITEMS}
+						currentPath={currentPath}
+						inlineAt="xl"
+					/>
 
 					<main className="flex-1 p-4 sm:p-6">
 						<div className={fullWidth ? 'w-full' : 'mx-auto w-full max-w-[1200px]'}>
