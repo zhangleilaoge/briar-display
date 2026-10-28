@@ -140,7 +140,9 @@ export function BinderPeel({ contentKey, ready = true, className, style, childre
 			resetting.current = false
 			if (measure) {
 				restHeight.current = measure.offsetHeight
-				setBookSize({ width: measure.offsetWidth, height: measure.offsetHeight })
+				if (shown.current.height === undefined) {
+					setBookSize({ width: measure.offsetWidth, height: measure.offsetHeight })
+				}
 			}
 			const height = styleRef.current?.height
 			root.style.height = typeof height === 'number' ? `${height}px` : (height ?? '')
@@ -190,7 +192,7 @@ export function BinderPeel({ contentKey, ready = true, className, style, childre
 						const next = pending.current
 						pending.current = null
 						if (next) beginTurn(next.content, next.key)
-						else showInstant(paper.content, finished.key)
+						else showInstant(paper.content, finished.key, finished.toHeight)
 					}}
 					onFlipProgress={({ to, progress }) => {
 						const active = turn.current
