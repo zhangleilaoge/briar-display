@@ -27,6 +27,45 @@ const POLL_INTERVAL = 5000
  * 发布日志弹窗：伪命令行界面展示 GitHub CI 日志
  * 运行中的部署每 5s 轮询追加
  */
+const TS_RE = /^(\d{4}-\d{2}-\d{2}T[\d:.]+Z)\s?(.*)$/
+
+/** GitHub Actions 日志：时间戳单独弱化色；##[warning]/##[error] 保持语义色；其余交给 Ansi 解析颜色 */
+function LogLines({ logs }: { logs: string }) {
+	return (
+		<>
+			{logs.split('\n').map((raw, i) => {
+				const m = TS_RE.exec(raw)
+				const ts = m?.[1]
+				const rest = m ? m[2] : raw
+				let tone = ''
+				let body = rest
+				if (rest.startsWith('##[warning]')) {
+					tone = 'text-amber-300'
+					body = rest.slice(11)
+				} else if (rest.startsWith('##[error]')) {
+					tone = 'text-red-400'
+					body = rest.slice(9)
+				} else if (rest.startsWith('##[group]') || rest.startsWith('##[endgroup]')) {
+					tone = 'rv-term-muted'
+				} else if (rest.startsWith('[command]')) {
+					tone = 'text-sky-300'
+				}
+				return (
+					// 日志行可能重复，用索引兜底
+					<div key={i}>
+						{ts && <span className="rv-term-dim">{ts} </span>}
+						<span className={tone}>
+							{tone.startsWith('text-amber') && <b className="font-semibold">warning: </b>}
+							{tone.startsWith('text-red') && <b className="font-semibold">error: </b>}
+							<Ansi linkify={false}>{body}</Ansi>
+						</span>
+					</div>
+				)
+			})}
+		</>
+	)
+}
+
 export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLogDialogProps) {
 	const [data, setData] = useState<DeployRunLogs | null>(null)
 	const [progress, setProgress] = useState<DeployRunProgress | null>(null)
@@ -160,15 +199,14 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			{/* [&>button]:hidden 隐藏 Dialog 自带的右上角关闭按钮（与终端标题栏风格冲突），仍可 Esc/点击遮罩关闭 */}
 			<DialogContent
-				index="08"
-				ornament
+				variant="terminal"
 				className={cn(
-					'flex flex-col gap-0 overflow-hidden border-zinc-700 bg-zinc-950 p-0 text-zinc-100 [&>button]:hidden',
+					'flex flex-col gap-0 overflow-hidden p-0 [&>button]:hidden',
 					fullscreen ? 'h-screen max-w-none w-screen rounded-none' : 'max-w-4xl',
 				)}
 			>
 				{/* 终端标题栏（红点可点击关闭） */}
-				<div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-4 py-2.5">
+				<div className="flex items-center gap-2 rv-term-raised border-b px-4 py-2.5">
 					<button
 						type="button"
 						onClick={() => onOpenChange(false)}
@@ -177,18 +215,16 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 					/>
 					<span className="h-3 w-3 rounded-full bg-yellow-500" />
 					<span className="h-3 w-3 rounded-full bg-green-500" />
-					<DialogTitle className="ml-2 font-mono text-xs text-zinc-400">
-						github-actions — run #{runId}
-					</DialogTitle>
+					<DialogTitle className="ml-2">github-actions — run #{runId}</DialogTitle>
 					<div className="ml-auto flex items-center gap-2">
 						{(data ?? progress) && (
 							<span
 								className={`rounded px-1.5 py-0.5 font-mono text-[10px] ${
 									(data ?? progress)!.runStatus === 'completed'
 										? (data ?? progress)!.conclusion === 'success'
-											? 'bg-green-500/15 text-green-400'
-											: 'bg-red-500/15 text-red-400'
-										: 'bg-blue-500/15 text-blue-400'
+											? 'bg-green-500/15 text-green-300'
+											: 'bg-red-500/15 text-red-300'
+										: 'bg-sky-500/15 text-sky-300'
 								}`}
 							>
 								{(data ?? progress)!.runStatus === 'completed'
@@ -200,7 +236,7 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 							type="button"
 							onClick={handleCopy}
 							disabled={!data}
-							className="text-zinc-500 transition-colors hover:text-zinc-200 disabled:opacity-40"
+							className="rv-term-btn disabled:opacity-40"
 							title="复制日志（纯文本）"
 						>
 							{copied ? (
@@ -209,18 +245,13 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 								<Copy className="h-3.5 w-3.5" />
 							)}
 						</button>
-						<button
-							type="button"
-							onClick={handleRefresh}
-							className="text-zinc-500 transition-colors hover:text-zinc-200"
-							title="刷新"
-						>
+						<button type="button" onClick={handleRefresh} className="rv-term-btn" title="刷新">
 							<RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
 						</button>
 						<button
 							type="button"
 							onClick={() => setFullscreen((v) => !v)}
-							className="text-zinc-500 transition-colors hover:text-zinc-200"
+							className="rv-term-btn"
 							title={fullscreen ? '退出全屏' : '全屏'}
 						>
 							{fullscreen ? (
@@ -236,12 +267,12 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 				<div
 					ref={bodyRef}
 					className={cn(
-						'overflow-auto bg-zinc-950 p-4 font-mono text-xs leading-relaxed',
+						'rv-terminal overflow-auto p-4 font-mono text-xs leading-relaxed',
 						fullscreen ? 'min-h-0 flex-1' : 'h-[65vh]',
 					)}
 				>
 					{loading && !progress && !data ? (
-						<div className="flex items-center gap-2 text-zinc-500">
+						<div className="flex items-center gap-2 rv-term-muted">
 							<Loader2 className="h-4 w-4 animate-spin" />
 							正在拉取部署状态...
 						</div>
@@ -250,12 +281,12 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 					) : inProgress && progress ? (
 						<>
 							<DeployProgressView progress={progress} liveLines={liveLines} />
-							<p className="mt-3 animate-pulse text-blue-400">▊ 部署进行中，每 5s 自动刷新...</p>
+							<p className="mt-3 animate-pulse text-sky-300">▊ 部署进行中，每 5s 自动刷新...</p>
 						</>
 					) : data ? (
 						// whitespace-pre 保持等宽对齐（如 PM2 表格），长行横向滚动而非折行错位
 						<pre className="whitespace-pre">
-							<Ansi linkify={false}>{data.logs}</Ansi>
+							<LogLines logs={data.logs} />
 						</pre>
 					) : null}
 				</div>

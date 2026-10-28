@@ -22,11 +22,11 @@ function StepIcon({ status, conclusion }: { status: string; conclusion: string |
 		return status === 'in_progress' ? (
 			<Loader2 className="h-4 w-4 animate-spin text-blue-400" />
 		) : (
-			<Circle className="h-4 w-4 text-zinc-600" />
+			<Circle className="h-4 w-4 text-[var(--term-dim)]" />
 		)
 	}
 	if (conclusion === 'success') return <CheckCircle2 className="h-4 w-4 text-green-400" />
-	if (conclusion === 'skipped') return <MinusCircle className="h-4 w-4 text-zinc-500" />
+	if (conclusion === 'skipped') return <MinusCircle className="h-4 w-4 text-[var(--term-muted)]" />
 	return <XCircle className="h-4 w-4 text-red-400" />
 }
 
@@ -42,13 +42,13 @@ export default function DeployProgressView({ progress, liveLines }: DeployProgre
 		<div className="space-y-4">
 			{/* 总进度条 */}
 			<div className="space-y-1.5">
-				<div className="flex items-center justify-between text-[11px] text-zinc-400">
+				<div className="flex items-center justify-between text-[11px] text-[var(--term-muted)]">
 					<span>
 						{totalCount > 0 ? `步骤 ${doneCount}/${totalCount}` : '排队中，等待 runner...'}
 					</span>
 					<span>{totalCount > 0 ? `${percent}%` : ''}</span>
 				</div>
-				<div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
+				<div className="h-1.5 overflow-hidden rounded-full bg-white/10">
 					<div
 						className="h-full rounded-full bg-blue-500 transition-all duration-500"
 						style={{ width: `${percent}%` }}
@@ -82,16 +82,16 @@ export default function DeployProgressView({ progress, liveLines }: DeployProgre
 									className={cn(
 										'flex-1',
 										step.status === 'completed'
-											? 'text-zinc-300'
+											? 'text-[var(--term-fg)]'
 											: step.status === 'in_progress'
 												? 'text-blue-300'
-												: 'text-zinc-600',
+												: 'text-[var(--term-dim)]',
 									)}
 								>
 									{step.name}
 								</span>
 								{duration && (
-									<span className="text-[11px] text-zinc-500">
+									<span className="text-[11px] text-[var(--term-muted)]">
 										{duration}
 										{step.status === 'in_progress' && ' ...'}
 									</span>
@@ -105,11 +105,11 @@ export default function DeployProgressView({ progress, liveLines }: DeployProgre
 			{/* 服务器 deploy.sh 行级实时输出 */}
 			{liveLines && liveLines.length > 0 && (
 				<div className="space-y-1.5">
-					<p className="text-[11px] text-zinc-500">服务器实时输出（deploy.sh）</p>
-					<div className="max-h-48 overflow-auto rounded border border-zinc-800 bg-zinc-900/60 p-2.5">
+					<p className="text-[11px] text-[var(--term-muted)]">服务器实时输出（deploy.sh）</p>
+					<div className="max-h-48 overflow-auto rounded border border-[var(--term-border)] bg-[var(--term-bg-raised)] p-2.5">
 						{liveLines.map((line, i) => (
 							// 行内容可能重复（重试场景），用索引兜底
-							<p key={i} className="whitespace-pre-wrap text-zinc-300">
+							<p key={i} className="whitespace-pre-wrap text-[var(--term-fg)]">
 								{line}
 							</p>
 						))}

@@ -29,18 +29,21 @@ export type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPri
 	index?: string
 	/** @deprecated 弹窗不再挂小天使贴纸；保留 prop 以免旧调用报错 */
 	ornament?: boolean
+	/** terminal：深色终端面（不显示粉签、不铺纸纹，文字用 --term-* 高对比色） */
+	variant?: 'paper' | 'terminal'
 }
 
 const DialogContent = React.forwardRef<
 	React.ElementRef<typeof DialogPrimitive.Content>,
 	DialogContentProps
->(({ className, children, index, ornament: _ornament, ...props }, ref) => (
+>(({ className, children, index, ornament: _ornament, variant = 'paper', ...props }, ref) => (
 	<DialogPortal>
 		<DialogOverlay />
 		<DialogPrimitive.Content
 			ref={ref}
 			className={cn(
 				'rv-paper-dialog fixed left-[50%] top-[50%] z-50 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col translate-x-[-50%] translate-y-[-50%] gap-4 overflow-visible p-6 rv-motion-dialog',
+				variant === 'terminal' && 'rv-terminal',
 				className,
 			)}
 			{...props}
@@ -48,7 +51,7 @@ const DialogContent = React.forwardRef<
 			<span className="rv-crop-marks" aria-hidden>
 				<span />
 			</span>
-			{index ? <span className="rv-paper-index">{index}</span> : null}
+			{index && variant !== 'terminal' ? <span className="rv-paper-index">{index}</span> : null}
 			{children}
 			<DialogPrimitive.Close
 				data-rv-dialog-close=""
