@@ -6,6 +6,9 @@
 import { cn } from '@/lib/utils'
 import { useEffect, useId, useState } from 'react'
 
+/** 服务端与浏览器三角函数末位精度不同，取两位小数避免 hydration 属性不一致 */
+const r2 = (n: number) => Math.round(n * 100) / 100
+
 const DEFAULT_RING = '01 TOUT · 02 SÉANCES · 03 MESSAGES · 04 DATES · 05 ARCHIVES · '
 const DEFAULT_WORDS = ['Souvenir', 'Archive', 'Miroir', 'Flux']
 
@@ -61,10 +64,10 @@ export function Astrolabe({
 					return (
 						<line
 							key={i}
-							x1={160 + Math.sin(a) * 148}
-							y1={160 - Math.cos(a) * 148}
-							x2={160 + Math.sin(a) * (long ? 136 : 142)}
-							y2={160 - Math.cos(a) * (long ? 136 : 142)}
+							x1={r2(160 + Math.sin(a) * 148)}
+							y1={r2(160 - Math.cos(a) * 148)}
+							x2={r2(160 + Math.sin(a) * (long ? 136 : 142))}
+							y2={r2(160 - Math.cos(a) * (long ? 136 : 142))}
 							stroke="var(--rv-navy)"
 							strokeOpacity={long ? 0.7 : 0.35}
 							strokeWidth={long ? 1.2 : 0.7}

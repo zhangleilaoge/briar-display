@@ -97,7 +97,12 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 
 				{/* 内容区 */}
 				<main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
-					<PaperPanel index="02" title="ATELIER · 工作台" className="flex flex-[1_0_auto] flex-col">
+					<PaperPanel
+						index="02"
+						title="ATELIER · 工作台"
+						autoHeight={false}
+						className="flex flex-[1_0_auto] flex-col"
+					>
 						<div className="flex min-h-0 w-full flex-1 flex-col">{children}</div>
 					</PaperPanel>
 				</main>

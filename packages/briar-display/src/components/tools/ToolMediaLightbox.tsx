@@ -1,5 +1,6 @@
 'use client'
 
+import { useExitAnimation } from '@/components/ui/motion'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
@@ -17,9 +18,10 @@ interface ToolMediaLightboxProps {
 export default function ToolMediaLightbox({
 	images,
 	index,
-	onClose,
+	onClose: closeNow,
 	onNavigate,
 }: ToolMediaLightboxProps) {
+	const { requestClose: onClose, state } = useExitAnimation(closeNow)
 	const hasPrev = index !== null && index > 0
 	const hasNext = index !== null && index < images.length - 1
 
@@ -47,7 +49,8 @@ export default function ToolMediaLightbox({
 	// portal 到 body，避免祖先 backdrop-filter 成为 fixed 包含块
 	return createPortal(
 		<div
-			className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90"
+			data-state={state}
+			className="rv-motion-overlay fixed inset-0 z-[110] flex items-center justify-center bg-black/90"
 			onClick={onClose}
 		>
 			<button
@@ -88,7 +91,8 @@ export default function ToolMediaLightbox({
 				src={current.url}
 				alt={current.label}
 				referrerPolicy="no-referrer"
-				className="max-h-full max-w-full object-contain"
+				data-state={state}
+				className="rv-motion-dialog max-h-full max-w-full object-contain"
 				onClick={(e) => e.stopPropagation()}
 			/>
 			<div className="absolute bottom-4 left-1/2 max-w-[calc(100vw-4rem)] -translate-x-1/2 truncate rounded-full bg-white/10 px-3 py-1 text-sm text-white">

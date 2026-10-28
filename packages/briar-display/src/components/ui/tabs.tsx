@@ -5,19 +5,72 @@ import { cn } from '@/lib/utils'
 
 const Tabs = TabsPrimitive.Root
 
+/** 选中项底色由一枚滑块承担：切换时滑块平滑移到新 tab（仅 transform/尺寸过渡，尊重减弱动效） */
 const TabsList = React.forwardRef<
 	React.ElementRef<typeof TabsPrimitive.List>,
 	React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => (
-	<TabsPrimitive.List
-		ref={ref}
-		className={cn(
-			'inline-flex h-10 items-center justify-center rounded-control bg-[var(--tabs-list-bg)] p-1 text-muted-foreground',
-			className,
-		)}
-		{...props}
-	/>
-))
+>(({ className, children, ...props }, ref) => {
+	const localRef = React.useRef<HTMLDivElement | null>(null)
+	const indicatorRef = React.useRef<HTMLSpanElement | null>(null)
+	const [ready, setReady] = React.useState(false)
+	const setRefs = React.useCallback(
+		(node: HTMLDivElement | null) => {
+			localRef.current = node
+			if (typeof ref === 'function') ref(node)
+			else if (ref) ref.current = node
+		},
+		[ref],
+	)
+
+	React.useEffect(() => {
+		const list = localRef.current
+		const ind = indicatorRef.current
+		if (!list || !ind) return
+		let first = true
+		const place = () => {
+			const active = list.querySelector<HTMLElement>(':scope > [role="tab"][data-state="active"]')
+			if (!active) {
+				ind.style.opacity = '0'
+				return
+			}
+			if (first) ind.style.transition = 'none'
+			ind.style.opacity = '1'
+			ind.style.width = `${active.offsetWidth}px`
+			ind.style.height = `${active.offsetHeight}px`
+			ind.style.translate = `${active.offsetLeft}px ${active.offsetTop}px`
+			if (first) {
+				void ind.offsetWidth
+				ind.style.transition = ''
+				first = false
+			}
+		}
+		place()
+		setReady(true)
+		const mo = new MutationObserver(place)
+		mo.observe(list, { subtree: true, attributes: true, attributeFilter: ['data-state'] })
+		const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(place) : null
+		ro?.observe(list)
+		return () => {
+			mo.disconnect()
+			ro?.disconnect()
+		}
+	}, [])
+
+	return (
+		<TabsPrimitive.List
+			ref={setRefs}
+			data-tab-indicator={ready ? 'ready' : undefined}
+			className={cn(
+				'relative inline-flex h-10 items-center justify-center rounded-control bg-[var(--tabs-list-bg)] p-1 text-muted-foreground',
+				className,
+			)}
+			{...props}
+		>
+			<span ref={indicatorRef} aria-hidden className="rv-tab-indicator" style={{ opacity: 0 }} />
+			{children}
+		</TabsPrimitive.List>
+	)
+})
 TabsList.displayName = TabsPrimitive.List.displayName
 
 const TabsTrigger = React.forwardRef<

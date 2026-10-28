@@ -2,6 +2,7 @@
 
 import { type FileItem, getFileContent } from '@/api/files'
 import { Button } from '@/components/ui/button'
+import { useExitAnimation } from '@/components/ui/motion'
 import { cn } from '@/lib/utils'
 import { Check, Clipboard, Download, X } from 'lucide-react'
 import { Suspense, lazy, useEffect, useState } from 'react'
@@ -115,9 +116,18 @@ interface Props {
 	onDelete: (id: string) => void
 }
 
-export default function FileDetailModal({ file, onClose, onDelete }: Props) {
+export default function FileDetailModal({ file, onClose: closeNow, onDelete }: Props) {
+	// 先播放「电视关机」退场，再真正卸载
+	const { requestClose: onClose, state } = useExitAnimation(closeNow)
 	const [copied, setCopied] = useState(false)
 	const [previewOpen, setPreviewOpen] = useState(false)
+	useEffect(() => {
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === 'Escape' && !previewOpen) onClose()
+		}
+		window.addEventListener('keydown', onKey)
+		return () => window.removeEventListener('keydown', onKey)
+	}, [onClose, previewOpen])
 	const [textContent, setTextContent] = useState<string | null>(null)
 	const [textError, setTextError] = useState<string | null>(null)
 
@@ -166,7 +176,8 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 	// 通过 portal 挂到 body：外层面板有 backdrop-filter，会成为 fixed 的包含块，导致弹窗不居中、顶部被裁
 	return createPortal(
 		<div
-			className="rv-paper-overlay fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4"
+			data-state={state}
+			className="rv-paper-overlay rv-motion-overlay fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4"
 			onClick={onClose}
 		>
 			{/* 全屏图片预览（仅图片类型可用，点击任意处关闭） */}
@@ -187,7 +198,8 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 			)}
 
 			<div
-				className="rv-paper-dialog relative flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col overflow-visible"
+				data-state={state}
+				className="rv-paper-dialog rv-motion-dialog relative flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col overflow-visible"
 				onClick={(e) => e.stopPropagation()}
 			>
 				<span className="rv-crop-marks" aria-hidden>
