@@ -1101,6 +1101,20 @@ progress {
 	animation-delay: 330ms;
 }
 
+/* 3b. 编辑桌面时小组件轻晃（iOS 风格） */
+@keyframes rv-jiggle {
+	0%,
+	100% {
+		rotate: -0.6deg;
+	}
+	50% {
+		rotate: 0.6deg;
+	}
+}
+.rv-jiggle {
+	animation: rv-jiggle 0.35s ease-in-out infinite;
+}
+
 /* 4. 页面入场：内容面板像纸张轻放到桌面 */
 @keyframes rv-page-enter {
 	from {
@@ -1194,7 +1208,8 @@ progress {
 	.rv-motion-overlay,
 	.rv-stagger > *,
 	.rv-page-enter,
-	.rv-fade-in {
+	.rv-fade-in,
+	.rv-jiggle {
 		animation: none !important;
 	}
 	.rv-tab-indicator,
@@ -1256,4 +1271,20 @@ progress {
 	font-size: 0.8rem;
 	letter-spacing: 0.01em;
 	color: var(--term-title);
+}
+
+/* 问候明信片分类贴纸：软印章 / 剪纸感，统一压平，避免立体 Fluent 贴纸感 */
+.rv-greet-sticker {
+	box-shadow: 0 1px 0 hsl(0 0% 100% / 0.65) inset, 0 2px 6px -2px hsl(221 46% 20% / 0.18), 0 0 0 1px
+		hsl(221 30% 30% / 0.08);
+	filter: saturate(0.85) contrast(1.02);
+}
+.rv-greet-sticker-glyph {
+	filter: grayscale(0.12) contrast(1.05);
+	transform: translateY(0.5px);
+}
+@media (prefers-reduced-motion: reduce) {
+	.rv-greet-sticker {
+		transition: none;
+	}
 }

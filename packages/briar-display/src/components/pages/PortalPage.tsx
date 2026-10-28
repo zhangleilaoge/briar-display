@@ -1,6 +1,8 @@
 'use client'
 
 import UserMenu from '@/components/common/UserMenu'
+import { GreetingStickers } from '@/components/portal/GreetingStickers'
+import { WidgetDesktop } from '@/components/portal/WidgetDesktop'
 import { Card, CardContent } from '@/components/ui/card'
 import { ChatBubble } from '@/components/ui/chat-bubble'
 import {
@@ -17,8 +19,15 @@ import { StampInputBar } from '@/components/ui/stamp-input-bar'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { SITE_SECTIONS, type SectionMeta, type SubRouteMeta } from '@/config/site-routes'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
-import { pickDailyGreeting } from '@/data/daily-greetings'
+import {
+	type GreetingKind,
+	dailyGreetingIndex,
+	pickDailyGreeting,
+	pickRandomGreeting,
+	pickTimeOfDayGreeting,
+} from '@/data/daily-greetings'
 import { cn } from '@/lib/utils'
+import { RefreshCw } from 'lucide-react'
 import {
 	type ComponentType,
 	type KeyboardEvent,
@@ -246,19 +255,51 @@ function SubRouteRow({
 	)
 }
 
-/** 按 Asia/Shanghai 日历日抽取问候+谚语；effect 内赋值避免 SSR/CSR 不一致 */
+/** 顶栏按时段问候；大字+谚语按日种子，可「换一句」随机换 */
 function useGreeting() {
-	const [state, setState] = useState({ greet: '', line: '', date: '' })
+	const [state, setState] = useState({
+		tod: '',
+		greet: '',
+		line: '',
+		date: '',
+		index: -1,
+		kind: '' as '' | GreetingKind,
+		decorSeed: 0,
+	})
+	const [spinning, setSpinning] = useState(false)
 	useEffect(() => {
 		const g = pickDailyGreeting()
-		setState({ greet: g.greet, line: g.line, date: g.dateLabel })
+		const index = dailyGreetingIndex()
+		setState({
+			tod: pickTimeOfDayGreeting(),
+			greet: g.greet,
+			line: g.line,
+			date: g.dateLabel,
+			index,
+			kind: g.kind,
+			decorSeed: (index + 1) * 9973,
+		})
 	}, [])
-	return state
+	const shuffle = () => {
+		const next = pickRandomGreeting([state.index])
+		setState((s) => ({
+			...s,
+			tod: pickTimeOfDayGreeting(),
+			greet: next.greet,
+			line: next.line,
+			index: next.index,
+			kind: next.kind,
+			decorSeed: (next.index + 1) * 9973 + (s.decorSeed % 9973) + 17,
+		}))
+		setSpinning(true)
+		window.setTimeout(() => setSpinning(false), 480)
+	}
+	return { ...state, spinning, shuffle }
 }
 
 function PortalPageInner() {
 	const { isAdmin, loading } = usePermissions()
-	const { greet, line, date } = useGreeting()
+	const { tod, greet, line, date, kind, decorSeed, spinning, shuffle } = useGreeting()
 	const [query, setQuery] = useState('')
 
 	const visible = useMemo(() => {
@@ -311,7 +352,7 @@ function PortalPageInner() {
 
 			{/* Main */}
 			<main className="flex flex-1 items-center justify-center p-4 sm:p-6">
-				<div className="w-full max-w-3xl space-y-8">
+				<div className="w-full max-w-3xl space-y-8 sm:max-w-4xl">
 					{/* 参考帧：多层剪纸拼贴问候区 */}
 					<div className="relative mx-auto max-w-xl px-2 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-8">
 						{/* 底层倾斜纸片 */}
@@ -324,20 +365,35 @@ function PortalPageInner() {
 							className="rv-paper-back absolute inset-x-6 -bottom-2 top-8 rotate-[2.5deg] rounded-md bg-[var(--rv-pink)]/55 sm:inset-x-10"
 						/>
 						<Card className="relative z-[1] overflow-visible border-[color:var(--rv-navy)]/25 shadow-raised">
-							<CardContent className="relative flex flex-col gap-2 p-6 sm:p-8">
-								<span className="rv-label text-muted-foreground">
-									今日一句 · {date || '\u00a0'}
+							<CardContent className="relative flex flex-col gap-2 p-6 pb-10 sm:p-8 sm:pb-11">
+								<GreetingStickers kind={kind} seed={decorSeed} />
+								<span className="relative z-[1] rv-label text-muted-foreground">
+									{tod || '\u00a0'} · {date || '\u00a0'}
 								</span>
-								<h1 className="font-display text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
+								<h1 className="relative z-[1] font-display text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
 									<span className="rv-script font-normal text-[color:var(--rv-rose-deep)]">
 										{greet || '\u00a0'}
 									</span>
 								</h1>
-								<p className="font-display text-lg text-muted-foreground">{line || '\u00a0'}</p>
+								<p className="relative z-[1] font-display text-lg text-muted-foreground">
+									{line || '\u00a0'}
+								</p>
 								<Postmark
 									className="absolute -top-6 right-4 h-24 w-24 rotate-12 sm:right-8"
 									date={date.slice(-2) || '27'}
 								/>
+								<button
+									type="button"
+									onClick={shuffle}
+									aria-label="换一句"
+									title="换一句"
+									className="absolute bottom-3 right-3 z-[2] inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--rv-navy)]/20 bg-[var(--rv-cream)]/90 text-[color:var(--rv-navy)]/70 shadow-sm transition hover:border-[color:var(--rv-rose)]/50 hover:text-[color:var(--rv-rose-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose)]/40 sm:bottom-4 sm:right-4"
+								>
+									<RefreshCw
+										className={cn('h-3.5 w-3.5', spinning && 'animate-spin')}
+										aria-hidden
+									/>
+								</button>
 							</CardContent>
 						</Card>
 					</div>
@@ -358,62 +414,66 @@ function PortalPageInner() {
 						)}
 					</div>
 
-					{/* 入口卡片 + 搜索时才出现的子路由结果 */}
-					<div ref={listRef} className="space-y-6">
-						{visible.length > 0 && (
-							<div className="rv-stagger grid gap-5 sm:grid-cols-2">
-								{visible.map((entry, i) => (
-									<EntryCard
-										key={entry.href}
-										entry={entry}
-										tilt={tilts[i % tilts.length]}
-										active={active === i}
-										query={query}
-									/>
-								))}
-							</div>
-						)}
-						{subHits.length > 0 && (
-							<section aria-label="子页面" className="space-y-3">
-								<p className="flex items-center gap-3 px-1">
-									<span aria-hidden className="h-px flex-1 bg-[color:var(--rv-navy)]/15" />
-									<span className="inline-flex items-baseline gap-1.5">
-										<span className="rv-label text-muted-foreground">子页面</span>
-										<span className="rv-script text-sm text-[color:var(--rv-rose-deep)]">
-											sous-pages
-										</span>
-										<span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full border border-[color:var(--rv-rose)]/40 bg-[var(--rv-pink)] px-1.5 font-label text-[10px] font-semibold text-[color:var(--rv-ink)]">
-											{subHits.length}
-										</span>
-									</span>
-									<span aria-hidden className="h-px flex-1 bg-[color:var(--rv-navy)]/15" />
-								</p>
-								<div className="rv-stagger grid gap-3 sm:grid-cols-2">
-									{subHits.map((hit, i) => (
-										<SubRouteRow
-											key={hit.sub.path}
-											hit={hit}
+					{/* 空搜索：自定义桌面小组件；有关键词：一级入口 + 子路由筛选 */}
+					{!query.trim() ? (
+						<WidgetDesktop />
+					) : (
+						<div ref={listRef} className="space-y-6">
+							{visible.length > 0 && (
+								<div className="rv-stagger grid gap-5 sm:grid-cols-2">
+									{visible.map((entry, i) => (
+										<EntryCard
+											key={entry.href}
+											entry={entry}
+											tilt={tilts[i % tilts.length]}
+											active={active === i}
 											query={query}
-											index={i}
-											tilt={tilts[(i + 2) % tilts.length] * 0.6}
-											active={active === visible.length + i}
 										/>
 									))}
 								</div>
-							</section>
-						)}
-						{results.length === 0 && (
-							<ChatBubble from="bot">
-								没有找到「{query.trim()}
-								」相关的入口或子页面，换个词试试？比如「json」「日志」「美股」。
-							</ChatBubble>
-						)}
-						{query.trim() && results.length > 0 && (
-							<p className="hidden text-center text-xs text-muted-foreground sm:block">
-								↑↓ 选择 · Enter 打开 · Esc 清空
-							</p>
-						)}
-					</div>
+							)}
+							{subHits.length > 0 && (
+								<section aria-label="子页面" className="space-y-3">
+									<p className="flex items-center gap-3 px-1">
+										<span aria-hidden className="h-px flex-1 bg-[color:var(--rv-navy)]/15" />
+										<span className="inline-flex items-baseline gap-1.5">
+											<span className="rv-label text-muted-foreground">子页面</span>
+											<span className="rv-script text-sm text-[color:var(--rv-rose-deep)]">
+												sous-pages
+											</span>
+											<span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full border border-[color:var(--rv-rose)]/40 bg-[var(--rv-pink)] px-1.5 font-label text-[10px] font-semibold text-[color:var(--rv-ink)]">
+												{subHits.length}
+											</span>
+										</span>
+										<span aria-hidden className="h-px flex-1 bg-[color:var(--rv-navy)]/15" />
+									</p>
+									<div className="rv-stagger grid gap-3 sm:grid-cols-2">
+										{subHits.map((hit, i) => (
+											<SubRouteRow
+												key={hit.sub.path}
+												hit={hit}
+												query={query}
+												index={i}
+												tilt={tilts[(i + 2) % tilts.length] * 0.6}
+												active={active === visible.length + i}
+											/>
+										))}
+									</div>
+								</section>
+							)}
+							{results.length === 0 && (
+								<ChatBubble from="bot">
+									没有找到「{query.trim()}
+									」相关的入口或子页面，换个词试试？比如「json」「日志」「美股」。
+								</ChatBubble>
+							)}
+							{results.length > 0 && (
+								<p className="hidden text-center text-xs text-muted-foreground sm:block">
+									↑↓ 选择 · Enter 打开 · Esc 清空
+								</p>
+							)}
+						</div>
+					)}
 				</div>
 			</main>
 
