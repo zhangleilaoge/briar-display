@@ -1768,7 +1768,6 @@ progress {
 	right: 0.5rem;
 }
 
-
 /* —— index：索引卡圆角孔 + 顶栏红线 + 淡横线（个人中心统一款） —— */
 .rv-paper-sheet--index {
 	border: 1px solid color-mix(in srgb, var(--rv-navy) 20%, transparent);
