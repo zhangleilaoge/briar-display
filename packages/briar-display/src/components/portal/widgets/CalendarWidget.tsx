@@ -67,6 +67,7 @@ export function CalendarWidget({
 	}, [today])
 
 	const lunar = today ? lunarLabel(today.year, today.month, today.day) : ''
+	const compact = size === '1x1'
 
 	return (
 		<WidgetChrome
@@ -81,29 +82,44 @@ export function CalendarWidget({
 				</div>
 			) : (
 				<>
-					<div className="mb-2 flex items-baseline gap-2 px-0.5">
-						<span className="font-heading text-lg font-semibold text-[color:var(--rv-rose-deep)] sm:text-xl">
+					<div className={`flex items-baseline gap-2 px-0.5 ${compact ? 'mb-1' : 'mb-2'}`}>
+						<span
+							className={
+								compact
+									? 'font-heading text-base font-semibold text-[color:var(--rv-rose-deep)]'
+									: 'font-heading text-lg font-semibold text-[color:var(--rv-rose-deep)] sm:text-xl'
+							}
+						>
 							{today.month}月
 						</span>
-						{lunar && <span className="truncate text-xs text-muted-foreground">{lunar}</span>}
+						{lunar && !compact && (
+							<span className="truncate text-xs text-muted-foreground">{lunar}</span>
+						)}
 					</div>
-					<div className="grid grid-cols-7 gap-y-0.5 text-center">
+					<div className={`grid grid-cols-7 text-center ${compact ? 'gap-y-0' : 'gap-y-0.5'}`}>
 						{WEEK.map((w) => (
-							<span key={w} className="text-[10px] text-muted-foreground sm:text-[11px]">
+							<span
+								key={w}
+								className={
+									compact
+										? 'text-[9px] text-muted-foreground'
+										: 'text-[10px] text-muted-foreground sm:text-[11px]'
+								}
+							>
 								{w}
 							</span>
 						))}
 						{cells.map((c, i) => {
 							const isToday = !!c && c.day === today.day
+							const cell = compact
+								? isToday
+									? 'mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-[color:var(--rv-rose-deep)] text-[10px] font-semibold text-[var(--rv-cream)]'
+									: 'mx-auto flex h-5 w-5 items-center justify-center text-[10px] tabular-nums text-foreground/85'
+								: isToday
+									? 'mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--rv-rose-deep)] text-[11px] font-semibold text-[var(--rv-cream)] sm:h-7 sm:w-7 sm:text-xs'
+									: 'mx-auto flex h-6 w-6 items-center justify-center text-[11px] tabular-nums text-foreground/85 sm:h-7 sm:w-7 sm:text-xs'
 							return (
-								<span
-									key={i}
-									className={
-										isToday
-											? 'mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--rv-rose-deep)] text-[11px] font-semibold text-[var(--rv-cream)] sm:h-7 sm:w-7 sm:text-xs'
-											: 'mx-auto flex h-6 w-6 items-center justify-center text-[11px] tabular-nums text-foreground/85 sm:h-7 sm:w-7 sm:text-xs'
-									}
-								>
+								<span key={i} className={cell}>
 									{c?.day ?? ''}
 								</span>
 							)

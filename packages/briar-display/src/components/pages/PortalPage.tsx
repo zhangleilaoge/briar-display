@@ -377,7 +377,7 @@ function PortalPageInner() {
 			<main className="flex flex-1 items-center justify-center p-4 sm:p-6">
 				<div className="w-full max-w-3xl space-y-8 sm:max-w-4xl">
 					{/* 参考帧：多层剪纸拼贴问候区；贴纸挂在外框光环，不进白卡 */}
-					<div className="relative mx-auto max-w-xl overflow-visible px-5 pb-7 pt-9 sm:px-12 sm:pb-10 sm:pt-12">
+					<div className="relative mx-auto max-w-xl overflow-visible px-5 pb-7 pt-9 sm:px-9 sm:pb-10 sm:pt-12">
 						{/* 底层倾斜纸片 */}
 						<div
 							aria-hidden
@@ -389,7 +389,7 @@ function PortalPageInner() {
 						/>
 						<GreetingStickers kind={kind} seed={decorSeed} />
 						<Card className="relative z-[1] overflow-visible border-[color:var(--rv-navy)]/25 shadow-raised">
-							<CardContent className="relative flex flex-col gap-2 p-6 pb-10 sm:p-8 sm:pb-11">
+							<CardContent className="relative flex flex-col gap-2 p-6 sm:p-8">
 								<span className="relative z-[1] rv-label text-muted-foreground">
 									{tod || '\u00a0'} · {date || '\u00a0'}
 								</span>
@@ -398,25 +398,27 @@ function PortalPageInner() {
 										{greet || '\u00a0'}
 									</span>
 								</h1>
-								<p className="relative z-[1] font-display text-lg text-muted-foreground">
-									{line || '\u00a0'}
-								</p>
+								<div className="relative z-[1] flex items-center gap-2">
+									<p className="min-w-0 flex-1 font-display text-lg text-muted-foreground">
+										{line || '\u00a0'}
+									</p>
+									<button
+										type="button"
+										onClick={shuffle}
+										aria-label="换一句"
+										title="换一句"
+										className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--rv-navy)]/55 transition hover:bg-[color:var(--rv-navy)]/5 hover:text-[color:var(--rv-rose-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose)]/40"
+									>
+										<RefreshCw
+											className={cn('h-3.5 w-3.5', spinning && 'animate-spin')}
+											aria-hidden
+										/>
+									</button>
+								</div>
 								<Postmark
 									className="absolute -top-6 right-4 h-24 w-24 rotate-12 sm:right-8"
 									date={date.slice(-2) || '27'}
 								/>
-								<button
-									type="button"
-									onClick={shuffle}
-									aria-label="换一句"
-									title="换一句"
-									className="absolute bottom-3 right-3 z-[2] inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--rv-navy)]/20 bg-[var(--rv-cream)]/90 text-[color:var(--rv-navy)]/70 shadow-sm transition hover:border-[color:var(--rv-rose)]/50 hover:text-[color:var(--rv-rose-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose)]/40 sm:bottom-4 sm:right-4"
-								>
-									<RefreshCw
-										className={cn('h-3.5 w-3.5', spinning && 'animate-spin')}
-										aria-hidden
-									/>
-								</button>
 							</CardContent>
 						</Card>
 					</div>

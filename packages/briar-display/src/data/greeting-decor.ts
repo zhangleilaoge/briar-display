@@ -87,22 +87,21 @@ export function mulberry32(seed: number): () => number {
 
 /**
  * 外圈光环落点（相对明信片堆叠容器）：
- * 避开白卡正文区、右上邮戳、右下「换一句」。
- * 坐标可略出 0–100，让贴纸贴在卡片外缘。
+ * 避开白卡正文区、右上邮戳；贴着外缘光环，勿漂远。
  */
 const RING_ZONES: { left: [number, number]; top: [number, number]; size: [number, number] }[] = [
-	// 左缘光环（落在加大后的左右 padding 里，不压正文）
-	{ left: [1, 8], top: [22, 44], size: [2.5, 3.3] },
-	{ left: [1, 9], top: [52, 76], size: [2.4, 3.2] },
-	// 顶缘光环（pt 区，避开右上邮戳）
-	{ left: [14, 42], top: [1, 10], size: [2.6, 3.4] },
-	{ left: [44, 68], top: [2, 11], size: [2.4, 3.1] },
-	// 右缘光环（邮戳下方）
-	{ left: [91, 99], top: [34, 56], size: [2.5, 3.3] },
-	{ left: [90, 98], top: [58, 78], size: [2.4, 3.1] },
-	// 底缘光环（避开右下换一句）
-	{ left: [14, 48], top: [90, 99], size: [2.6, 3.4] },
-	{ left: [50, 78], top: [91, 99], size: [2.4, 3.2] },
+	// 贴白卡外缘（约在左右 padding 内侧略压边），勿漂到远处、勿进正文/邮戳
+	{ left: [10, 16], top: [24, 46], size: [2.1, 2.8] },
+	{ left: [10, 16], top: [52, 74], size: [2.1, 2.7] },
+	// 顶缘（pt 区，避开右上邮戳）
+	{ left: [18, 42], top: [8, 16], size: [2.2, 2.8] },
+	{ left: [44, 68], top: [8, 15], size: [2.1, 2.7] },
+	// 右缘（邮戳下方）
+	{ left: [84, 92], top: [34, 56], size: [2.1, 2.8] },
+	{ left: [84, 92], top: [58, 76], size: [2.1, 2.7] },
+	// 底缘
+	{ left: [18, 48], top: [84, 92], size: [2.2, 2.8] },
+	{ left: [50, 78], top: [84, 92], size: [2.1, 2.7] },
 ]
 
 function dist(a: { left: number; top: number }, b: { left: number; top: number }) {

@@ -47,16 +47,16 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
 		title: '今日问候',
 		caption: 'Bonjour',
 		description: '按上海日历日轮换的一句问候',
-		sizes: ['2x2'],
-		defaultSize: '2x2',
+		sizes: ['1x1', '2x2'],
+		defaultSize: '1x1',
 	},
 	{
 		id: 'calendar',
 		title: '日历',
 		caption: 'Calendrier',
 		description: '本月视图，高亮今天（上海时区）',
-		sizes: ['2x2'],
-		defaultSize: '2x2',
+		sizes: ['1x1', '2x2'],
+		defaultSize: '1x1',
 	},
 	{
 		id: 'clock',
@@ -90,33 +90,35 @@ export const WIDGET_META: Record<WidgetId, WidgetMeta> = Object.fromEntries(
 
 /**
  * 默认桌面（4 列；问候由明信片承担，不在默认布局）：
- *  [日历 2×2] [天气 1×1] [钟 1×1]
- *             [自选 1×1] …
- *  实际装箱：calendar(0,0) weather(2,0) clock(3,0) stocks(2,1)
+ *  全部 1×1：日历 / 天气 / 时钟 / 自选
+ *  编辑模式仍可选 2×1 / 2×2
  */
 export const DEFAULT_LAYOUT_DESKTOP: WidgetPlacement[] = [
-	{ id: 'calendar', size: '2x2', col: 0, row: 0 },
-	{ id: 'weather', size: '1x1', col: 2, row: 0 },
-	{ id: 'clock', size: '1x1', col: 3, row: 0 },
-	{ id: 'stocks', size: '1x1', col: 2, row: 1 },
+	{ id: 'calendar', size: '1x1', col: 0, row: 0 },
+	{ id: 'weather', size: '1x1', col: 1, row: 0 },
+	{ id: 'clock', size: '1x1', col: 2, row: 0 },
+	{ id: 'stocks', size: '1x1', col: 3, row: 0 },
 ]
 
-/** 默认手机（2 列） */
+/** 默认手机（2 列）：全 1×1 */
 export const DEFAULT_LAYOUT_MOBILE: WidgetPlacement[] = [
-	{ id: 'calendar', size: '2x2', col: 0, row: 0 },
-	{ id: 'weather', size: '1x1', col: 0, row: 2 },
-	{ id: 'clock', size: '1x1', col: 1, row: 2 },
-	{ id: 'stocks', size: '1x1', col: 0, row: 3 },
+	{ id: 'calendar', size: '1x1', col: 0, row: 0 },
+	{ id: 'weather', size: '1x1', col: 1, row: 0 },
+	{ id: 'clock', size: '1x1', col: 0, row: 1 },
+	{ id: 'stocks', size: '1x1', col: 1, row: 1 },
 ]
 
 /** @deprecated 兼容旧引用 */
 export const DEFAULT_LAYOUT = DEFAULT_LAYOUT_DESKTOP
 
 /** 桌面 / 手机分存，互不覆盖 */
-export const LAYOUT_STORAGE_KEY_DESKTOP = 'briar_portal_widgets_desktop_v2'
-export const LAYOUT_STORAGE_KEY_MOBILE = 'briar_portal_widgets_mobile_v2'
-/** 旧版单 key，仅作首次迁移读取 */
+/** v3：默认全 1×1； bump 以丢弃 v2 里偏大的出厂布局 */
+export const LAYOUT_STORAGE_KEY_DESKTOP = 'briar_portal_widgets_desktop_v3'
+export const LAYOUT_STORAGE_KEY_MOBILE = 'briar_portal_widgets_mobile_v3'
+/** 旧版 key，仅作首次迁移读取（v2 / 更早） */
 export const LAYOUT_STORAGE_KEY_LEGACY = 'briar_portal_widgets_v1'
+export const LAYOUT_STORAGE_KEY_DESKTOP_V2 = 'briar_portal_widgets_desktop_v2'
+export const LAYOUT_STORAGE_KEY_MOBILE_V2 = 'briar_portal_widgets_mobile_v2'
 export const LAYOUT_STORAGE_KEY = LAYOUT_STORAGE_KEY_DESKTOP
 
 export const GRID_COLS_DESKTOP = 4
