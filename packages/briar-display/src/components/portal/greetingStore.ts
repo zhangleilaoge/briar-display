@@ -22,6 +22,7 @@ export interface PortalGreetingPref {
 export interface GreetingView {
 	tod: string
 	greet: string
+	author: string
 	line: string
 	date: string
 	index: number
@@ -31,6 +32,7 @@ export interface GreetingView {
 const EMPTY: GreetingView = {
 	tod: '',
 	greet: '',
+	author: '',
 	line: '',
 	date: '',
 	index: -1,
@@ -59,6 +61,7 @@ function fromPref(pref: PortalGreetingPref): GreetingView {
 	return {
 		tod: pickTimeOfDayGreeting(),
 		greet: g.greet,
+		author: g.author || '',
 		line: g.line,
 		date: g.dateLabel,
 		index: g.index,
@@ -72,6 +75,7 @@ function dailyView(): GreetingView {
 	return {
 		tod: pickTimeOfDayGreeting(),
 		greet: g.greet,
+		author: g.author || '',
 		line: g.line,
 		date: g.dateLabel,
 		index: g.index,
@@ -160,6 +164,7 @@ export async function shuffleGreeting() {
 	emit({
 		tod: pickTimeOfDayGreeting(),
 		greet: next.greet,
+		author: next.author || '',
 		line: next.line,
 		date: next.dateLabel,
 		index: next.index,

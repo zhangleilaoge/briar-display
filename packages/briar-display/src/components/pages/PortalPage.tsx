@@ -1,18 +1,15 @@
 'use client'
 
 import UserMenu from '@/components/common/UserMenu'
+import { PortalScrapDecor } from '@/components/portal/PortalScrapDecor'
 import { WidgetDesktop } from '@/components/portal/WidgetDesktop'
 import { useGreeting } from '@/components/portal/greetingStore'
 import { Card, CardContent } from '@/components/ui/card'
 import { ChatBubble } from '@/components/ui/chat-bubble'
 import {
 	FilesIcon,
-	FloralStamp,
-	GothicArch,
-	GreekColumn,
 	JournalIcon,
 	KeyIcon,
-	Lantern,
 	MarketsIcon,
 	type OrnamentIconProps,
 	Postmark,
@@ -265,7 +262,7 @@ function SubRouteRow({
 
 function PortalPageInner() {
 	const { isAdmin, loading } = usePermissions()
-	const { tod, greet, line, date, spinning, shuffle } = useGreeting()
+	const { tod, greet, author, line, date, index, spinning, shuffle } = useGreeting()
 	const [query, setQuery] = useState('')
 
 	const visible = useMemo(() => {
@@ -319,14 +316,8 @@ function PortalPageInner() {
 
 	return (
 		<ThemeShell variant="scrapbook" className="flex flex-col overflow-hidden">
-			{/* 首页背景剪纸：柱子/尖拱/花饰/提灯，贴边稀疏，不挡问候/搜索/小组件 */}
-			<div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-				<GreekColumn className="absolute bottom-0 -right-1 hidden h-[56vh] w-auto opacity-[0.14] xl:block" />
-				<GreekColumn className="absolute bottom-0 left-[calc(4rem+0.25rem)] hidden h-[42vh] w-auto -scale-x-100 opacity-[0.1] 2xl:block" />
-				<GothicArch className="absolute left-[calc(4rem+1.25rem)] top-24 hidden h-36 w-auto -rotate-6 opacity-[0.15] lg:block" />
-				<FloralStamp className="absolute -left-8 bottom-10 hidden h-32 w-32 opacity-[0.12] lg:block" />
-				<Lantern className="absolute right-10 top-28 hidden h-24 w-auto rotate-6 opacity-[0.14] xl:block" />
-			</div>
+			{/* 首页背景剪纸：按日种子 + 问候 index 稀疏随机落边 */}
+			<PortalScrapDecor greetingIndex={Math.max(index, 0)} />
 			{/* Top bar */}
 			<PageHeader
 				hideBrand
@@ -354,11 +345,16 @@ function PortalPageInner() {
 								<span className="relative z-[1] rv-label text-muted-foreground">
 									{tod || '\u00a0'} · {date || '\u00a0'}
 								</span>
-								<h1 className="relative z-[1] font-display text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
+								<h1 className="relative z-[1] font-display text-3xl font-semibold leading-snug text-foreground sm:text-4xl">
 									<span className="rv-script font-normal text-[color:var(--rv-rose-deep)]">
 										{greet || '\u00a0'}
 									</span>
 								</h1>
+								{author ? (
+									<p className="relative z-[1] -mt-0.5 font-display text-sm italic text-muted-foreground/80">
+										— {author}
+									</p>
+								) : null}
 								<div className="relative z-[1] flex items-center gap-2">
 									<p className="min-w-0 flex-1 font-display text-lg text-muted-foreground">
 										{line || '\u00a0'}
