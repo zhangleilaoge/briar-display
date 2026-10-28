@@ -176,7 +176,7 @@ export function BrandCollage({
 	)
 }
 
-/** 内容面板：HUD 直角纸片 / 剪贴簿圆角纸，带裁切角标 */
+/** 内容面板：HUD 直角纸片 / 剪贴簿圆角纸（单层框线） */
 export function PaperPanel({
 	children,
 	className,
@@ -190,9 +190,7 @@ export function PaperPanel({
 }) {
 	return (
 		<section className={cn('rv-panel relative', className)}>
-			<span className="rv-crop-marks" aria-hidden>
-				<span />
-			</span>
+			{/* 不再叠加外层裁切角标：面板自身描边 + 纹理已构成唯一框线，避免双层框 */}
 			{(index || title) && (
 				<header className="mb-3 flex items-end gap-3 border-b border-[color:var(--rv-navy)]/15 pb-2">
 					{index && <span className="rv-index-box">{index}</span>}

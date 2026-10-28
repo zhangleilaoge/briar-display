@@ -3,7 +3,15 @@
 import { getMyPermissions } from '@/api/admin'
 import { Toaster } from '@/components/ui/sonner'
 import type { Role, UserWithRoles } from '@briar/shared'
-import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from 'react'
+import {
+	type ReactNode,
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useLayoutEffect,
+	useState,
+} from 'react'
 
 interface PermissionContextValue {
 	permissions: string[]
@@ -20,6 +28,7 @@ interface PermissionContextValue {
 const PermissionContext = createContext<PermissionContextValue | null>(null)
 
 const isBrowser = () => typeof window !== 'undefined'
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
 export function syncUserToStorage(user: UserWithRoles | null) {
 	if (!isBrowser()) return
@@ -55,7 +64,12 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
 	const [user, setUser] = useState<UserWithRoles | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [isLoggedIn, setIsLoggedIn] = useState(false)
-	const [cachedIsAdmin] = useState(readCachedIsAdmin)
+	// 首帧必须与 SSR 一致（false），否则会触发 hydration mismatch；
+	// 在 layout effect（绘制前）读取缓存，仍可避免入口卡片“弹出”闪烁
+	const [cachedIsAdmin, setCachedIsAdmin] = useState(false)
+	useIsomorphicLayoutEffect(() => {
+		setCachedIsAdmin(readCachedIsAdmin())
+	}, [])
 
 	const fetchPermissions = useCallback(async () => {
 		if (!isBrowser()) {
