@@ -19,7 +19,7 @@ const PopoverContent = React.forwardRef<
 			align={align}
 			sideOffset={sideOffset}
 			className={cn(
-				'rv-paper-float z-50 w-72 overflow-visible p-3 text-popover-foreground outline-none rv-float-motion',
+				'rv-paper-float z-[200] w-72 overflow-visible p-3 text-popover-foreground outline-none rv-float-motion',
 				className,
 			)}
 			{...props}

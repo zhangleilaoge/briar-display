@@ -5,6 +5,7 @@ import { Hono } from 'hono'
 import { authController } from '../controllers/authController'
 import { userDal } from '../dal/userDal'
 import { userMergeLogDal } from '../dal/userMergeLogDal'
+import { userPreferenceDal } from '../dal/userPreferenceDal'
 import { cosService } from '../services/cosService'
 import { permissionService } from '../services/permissionService'
 
@@ -173,6 +174,43 @@ userRoutes.get('/me/merge-logs', async (c) => {
 		})),
 	}
 	return c.json<ApiResponse>({ success: true, data })
+})
+
+
+const PREF_KEY_RE = /^[a-z][a-z0-9-]{0,63}$/
+
+/** GET /me/preferences/:key — 读当前用户偏好 */
+userRoutes.get('/me/preferences/:key', async (c) => {
+	const user = (c as any).get('user') as { id: string } | undefined
+	if (!user) {
+		return c.json<ApiResponse>({ success: false, message: '请先登录' }, HTTP_STATUS.UNAUTHORIZED)
+	}
+	const key = c.req.param('key')
+	if (!PREF_KEY_RE.test(key)) {
+		return c.json<ApiResponse>({ success: false, message: '无效的偏好键' }, HTTP_STATUS.BAD_REQUEST)
+	}
+	const value = await userPreferenceDal.get(user.id, key)
+	return c.json<ApiResponse>({ success: true, data: { key, value } })
+})
+
+/** PUT /me/preferences/:key — 写当前用户偏好（body 即 JSON 值） */
+userRoutes.put('/me/preferences/:key', async (c) => {
+	const user = (c as any).get('user') as { id: string } | undefined
+	if (!user) {
+		return c.json<ApiResponse>({ success: false, message: '请先登录' }, HTTP_STATUS.UNAUTHORIZED)
+	}
+	const key = c.req.param('key')
+	if (!PREF_KEY_RE.test(key)) {
+		return c.json<ApiResponse>({ success: false, message: '无效的偏好键' }, HTTP_STATUS.BAD_REQUEST)
+	}
+	let value: unknown
+	try {
+		value = await c.req.json()
+	} catch {
+		return c.json<ApiResponse>({ success: false, message: '请求体须为 JSON' }, HTTP_STATUS.BAD_REQUEST)
+	}
+	await userPreferenceDal.set(user.id, key, value)
+	return c.json<ApiResponse>({ success: true, data: { key, value } })
 })
 
 export default userRoutes

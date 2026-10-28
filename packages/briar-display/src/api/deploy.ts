@@ -130,6 +130,20 @@ export const triggerNginxDeploy = async () => {
 	return response.data
 }
 
+export interface DeployRerunResult {
+	runId: string
+	url: string
+	cancelled: boolean
+}
+
+/** 重试指定 GitHub Actions run（进行中会先取消再 rerun） */
+export const rerunDeployRun = async (runId: string) => {
+	const response = await apiClient.post<ApiResponse<DeployRerunResult>>(
+		`/deployment/${encodeURIComponent(runId)}/rerun`,
+	)
+	return response.data
+}
+
 // ==================== 定时任务 ====================
 
 export const getSchedulerTasks = async () => {

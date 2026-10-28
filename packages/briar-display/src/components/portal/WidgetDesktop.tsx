@@ -93,10 +93,15 @@ export function WidgetDesktop() {
 		originCol: number
 		originRow: number
 		pointerId: number
-		startX: number
-		startY: number
+		gx: number
+		gy: number
+		w: number
+		h: number
 	} | null>(null)
 	const [draggingId, setDraggingId] = useState<WidgetId | null>(null)
+	const [floatPos, setFloatPos] = useState<{ x: number; y: number; w: number; h: number } | null>(
+		null,
+	)
 	const colsRef = useRef(cols)
 	colsRef.current = cols
 
@@ -144,24 +149,31 @@ export function WidgetDesktop() {
 
 	const onPointerDown = (e: ReactPointerEvent, id: WidgetId) => {
 		if (!editing) return
-		if ((e.target as HTMLElement).closest('button,a,input')) return
+		/* 只放过真正的控件；链接不再 early-return，否则股票卡会触发浏览器「拖链接」 */
+		if ((e.target as HTMLElement).closest('button,input,textarea,select,[data-no-drag]')) return
 		const item = layout.find((p) => p.id === id)
 		if (!item) return
+		const rect = e.currentTarget.getBoundingClientRect()
+		e.preventDefault()
 		e.currentTarget.setPointerCapture(e.pointerId)
 		dragRef.current = {
 			id,
 			originCol: item.col,
 			originRow: item.row,
 			pointerId: e.pointerId,
-			startX: e.clientX,
-			startY: e.clientY,
+			gx: e.clientX - rect.left,
+			gy: e.clientY - rect.top,
+			w: rect.width,
+			h: rect.height,
 		}
 		setDraggingId(id)
+		setFloatPos({ x: rect.left, y: rect.top, w: rect.width, h: rect.height })
 	}
 
 	const onPointerMove = (e: ReactPointerEvent) => {
 		const drag = dragRef.current
 		if (!drag || drag.pointerId !== e.pointerId || !gridRef.current) return
+		setFloatPos({ x: e.clientX - drag.gx, y: e.clientY - drag.gy, w: drag.w, h: drag.h })
 		const rect = gridRef.current.getBoundingClientRect()
 		const styles = getComputedStyle(gridRef.current)
 		const gap = Number.parseFloat(styles.columnGap || styles.gap || '12') || 12
@@ -187,6 +199,7 @@ export function WidgetDesktop() {
 		if (!drag || drag.pointerId !== e.pointerId) return
 		dragRef.current = null
 		setDraggingId(null)
+		setFloatPos(null)
 		persist(cols, layout)
 	}
 
@@ -242,44 +255,78 @@ export function WidgetDesktop() {
 					onPointerUp={onPointerUp}
 					onPointerCancel={onPointerUp}
 				>
-					{layout.map((p) => (
-						<div
-							key={p.id}
-							data-widget={p.id}
-							style={gridItemStyle(p)}
-							className={cn(
-								'touch-none select-none',
-								editing && 'cursor-grab active:cursor-grabbing',
-								draggingId === p.id && 'z-10 opacity-90 scale-[1.02] shadow-lg',
-							)}
-							onPointerDown={(e) => onPointerDown(e, p.id)}
-						>
-							{renderWidget(p.id, p.size, editing, () => remove(p.id))}
-							{editing && WIDGET_META[p.id].sizes.length > 1 && (
-								<div className="absolute bottom-2 right-2 z-[2] flex gap-1">
-									{WIDGET_META[p.id].sizes.map((s) => (
-										<button
-											key={s}
-											type="button"
-											onClick={(e) => {
-												e.stopPropagation()
-												resize(p.id, s)
-											}}
-											className={cn(
-												'rounded-full border px-1.5 py-0.5 text-[10px] font-medium',
-												p.size === s
-													? 'border-[color:var(--rv-rose)] bg-[var(--rv-pink)] text-[color:var(--rv-ink)]'
-													: 'border-[color:var(--rv-navy)]/20 bg-[var(--rv-cream)]/90 text-muted-foreground',
-											)}
-											aria-label={`尺寸 ${SIZE_SPECS[s].label}`}
-										>
-											{SIZE_SPECS[s].label}
-										</button>
-									))}
+					{layout.map((p) => {
+						const isDragging = draggingId === p.id
+						const floating = isDragging && floatPos
+						return (
+							<div
+								key={p.id}
+								data-widget={p.id}
+								data-dragging={isDragging ? 'true' : undefined}
+								style={gridItemStyle(p)}
+								className="relative"
+							>
+								{/* 拖动时格位留虚线占位；卡片本体用 fixed 跟手，避免卸载重挂 */}
+								{isDragging && (
+									<div
+										aria-hidden
+										className="pointer-events-none absolute inset-0 rounded-[1.35rem] border-2 border-dashed border-[color:var(--rv-navy)]/30 bg-[color:var(--rv-navy)]/[0.05]"
+									/>
+								)}
+								<div
+									data-widget-drag-overlay={floating ? p.id : undefined}
+									draggable={false}
+									onDragStart={(e) => {
+										if (editing) e.preventDefault()
+									}}
+									className={cn(
+										'touch-none select-none',
+										editing &&
+											'cursor-grab active:cursor-grabbing [&_a]:pointer-events-none [&_a]:[-webkit-user-drag:none]',
+										floating &&
+											'pointer-events-none z-[80] rotate-[-1.5deg] scale-[1.04] opacity-95 shadow-[0_22px_48px_-18px_hsl(221_46%_20%/0.5)]',
+									)}
+									style={
+										floating
+											? {
+													position: 'fixed',
+													left: floatPos.x,
+													top: floatPos.y,
+													width: floatPos.w,
+													height: floatPos.h,
+												}
+											: { height: '100%' }
+									}
+									onPointerDown={(e) => onPointerDown(e, p.id)}
+								>
+									{renderWidget(p.id, p.size, editing, () => remove(p.id))}
+									{editing && !isDragging && WIDGET_META[p.id].sizes.length > 1 && (
+										<div className="absolute bottom-2 right-2 z-[2] flex gap-1" data-no-drag>
+											{WIDGET_META[p.id].sizes.map((s) => (
+												<button
+													key={s}
+													type="button"
+													onClick={(e) => {
+														e.stopPropagation()
+														resize(p.id, s)
+													}}
+													className={cn(
+														'rounded-full border px-1.5 py-0.5 text-[10px] font-medium',
+														p.size === s
+															? 'border-[color:var(--rv-rose)] bg-[var(--rv-pink)] text-[color:var(--rv-ink)]'
+															: 'border-[color:var(--rv-navy)]/20 bg-[var(--rv-cream)]/90 text-muted-foreground',
+													)}
+													aria-label={`尺寸 ${SIZE_SPECS[s].label}`}
+												>
+													{SIZE_SPECS[s].label}
+												</button>
+											))}
+										</div>
+									)}
 								</div>
-							)}
-						</div>
-					))}
+							</div>
+						)
+					})}
 				</div>
 			)}
 

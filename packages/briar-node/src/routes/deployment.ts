@@ -111,6 +111,34 @@ deploymentRoutes.get('/live', requirePermission(PERMISSIONS.ADMIN_DEPLOY_MANAGE)
 /**
  * 触发远程 Nginx 配置部署
  */
+
+/**
+ * 重试某次 GitHub Actions 部署 run（卡住先 cancel 再 rerun）
+ */
+deploymentRoutes.post(
+	'/:runId/rerun',
+	requirePermission(PERMISSIONS.ADMIN_DEPLOY_MANAGE),
+	async (c) => {
+		try {
+			const result = await deploymentService.rerunDeployRun(c.req.param('runId'))
+			return c.json({
+				success: true,
+				data: result,
+				code: HTTP_STATUS.OK,
+			})
+		} catch (error) {
+			return c.json(
+				{
+					success: false,
+					message: error instanceof Error ? error.message : String(error),
+					code: HTTP_STATUS.BAD_REQUEST,
+				},
+				HTTP_STATUS.BAD_REQUEST,
+			)
+		}
+	},
+)
+
 deploymentRoutes.post(
 	'/nginx/deploy',
 	requirePermission(PERMISSIONS.ADMIN_DEPLOY_MANAGE),

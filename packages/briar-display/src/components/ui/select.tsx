@@ -66,7 +66,7 @@ const SelectContent = React.forwardRef<
 		<SelectPrimitive.Content
 			ref={ref}
 			className={cn(
-				'rv-paper-float relative z-50 max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden text-popover-foreground rv-float-motion',
+				'rv-paper-float relative z-[200] max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden text-popover-foreground rv-float-motion',
 				position === 'popper' &&
 					'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
 				className,
@@ -109,7 +109,7 @@ const SelectItem = React.forwardRef<
 	<SelectPrimitive.Item
 		ref={ref}
 		className={cn(
-			'relative flex w-full cursor-pointer select-none items-center rounded-[calc(var(--radius-field)-4px)] py-1.5 pl-2 pr-8 text-sm outline-none hover:bg-[var(--row-hover)] focus:bg-[var(--row-selected)] focus:text-[color:var(--row-selected-fg)] data-[highlighted]:bg-[var(--row-selected)] data-[highlighted]:text-[color:var(--row-selected-fg)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+			'relative flex w-full cursor-pointer select-none items-center rounded-lg py-1.5 pl-2 pr-8 text-sm outline-none hover:bg-[hsl(214_55%_92%/0.55)] focus:bg-[hsl(214_55%_92%/0.85)] focus:text-[color:var(--rv-ink)] data-[highlighted]:bg-[hsl(214_55%_92%/0.85)] data-[highlighted]:text-[color:var(--rv-ink)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
 			className,
 		)}
 		{...props}

@@ -49,12 +49,20 @@ export default function StockDetailView({ market, stock }: { market: MarketId; s
 	const current = data && data.quote.code === stock.code ? data : null
 	const q = current?.quote ?? null
 
+	const watchBtnClass = cn(
+		'shrink-0 gap-1.5 border transition-colors',
+		inList
+			? 'border-warning/45 bg-warning/10 text-foreground hover:border-warning hover:bg-warning/25 hover:text-foreground'
+			: 'hover:border-primary/60 hover:bg-primary/10 hover:text-primary',
+	)
+
 	return (
 		<div className="space-y-3">
-			<div className="flex flex-wrap items-start justify-between gap-3">
-				<div className="min-w-0 space-y-1">
+			<div className="space-y-1.5">
+				{/* 自选按钮与大价位行垂直居中对齐，不跟下面徽章行顶对齐 */}
+				<div className="flex flex-wrap items-center justify-between gap-3">
 					{q ? (
-						<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 tabular-nums">
+						<div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 tabular-nums">
 							<span className={cn('text-2xl font-semibold', changeColorClass(q.changePct))}>
 								{formatPrice(q.price)}
 							</span>
@@ -64,7 +72,7 @@ export default function StockDetailView({ market, stock }: { market: MarketId; s
 							</span>
 						</div>
 					) : (
-						<div className="flex h-8 items-center text-sm text-muted-foreground">
+						<div className="flex h-8 min-w-0 items-center text-sm text-muted-foreground">
 							{loading || data ? (
 								<>
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -75,39 +83,40 @@ export default function StockDetailView({ market, stock }: { market: MarketId; s
 							)}
 						</div>
 					)}
-					<div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-						<Badge variant="outline" className="border-transparent bg-muted">
-							{MARKET_LABELS[market]} · {displayCode(stock.code)}
-						</Badge>
-						{current && <SessionBadge session={current.session} />}
-						{q &&
-							(q.delayMinutes > 0 ? (
-								<Badge variant="outline" className="border-transparent bg-warning/10 text-warning">
-									延迟 {q.delayMinutes} 分钟
-								</Badge>
-							) : (
-								<Badge variant="outline" className="border-transparent bg-info/10 text-info">
-									实时
-								</Badge>
-							))}
-						{current?.stale && <StaleBadge error={current.error} />}
-						{q?.quoteTime && <span>行情 {formatShanghaiTime(q.quoteTime)}</span>}
-					</div>
+					<Button
+						variant={inList ? 'secondary' : 'outline'}
+						size="sm"
+						className={watchBtnClass}
+						disabled={!watchlist.ready}
+						onClick={() =>
+							inList
+								? watchlist.remove(stock)
+								: watchlist.add({ market, code: stock.code, name: q?.name || stock.name })
+						}
+						title={inList ? '移出自选' : '加入自选'}
+					>
+						<Star className={cn('h-4 w-4', inList && 'fill-warning text-warning')} />
+						{inList ? '已自选' : '加自选'}
+					</Button>
 				</div>
-				<Button
-					variant={inList ? 'secondary' : 'outline'}
-					size="sm"
-					disabled={!watchlist.ready}
-					onClick={() =>
-						inList
-							? watchlist.remove(stock)
-							: watchlist.add({ market, code: stock.code, name: q?.name || stock.name })
-					}
-					title={inList ? '移出自选' : '加入自选'}
-				>
-					<Star className={cn('h-4 w-4', inList && 'fill-warning text-warning')} />
-					{inList ? '已自选' : '加自选'}
-				</Button>
+				<div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+					<Badge variant="outline" className="border-transparent bg-muted">
+						{MARKET_LABELS[market]} · {displayCode(stock.code)}
+					</Badge>
+					{current && <SessionBadge session={current.session} />}
+					{q &&
+						(q.delayMinutes > 0 ? (
+							<Badge variant="outline" className="border-transparent bg-warning/10 text-warning">
+								延迟 {q.delayMinutes} 分钟
+							</Badge>
+						) : (
+							<Badge variant="outline" className="border-transparent bg-info/10 text-info">
+								实时
+							</Badge>
+						))}
+					{current?.stale && <StaleBadge error={current.error} />}
+					{q?.quoteTime && <span>行情 {formatShanghaiTime(q.quoteTime)}</span>}
+				</div>
 			</div>
 
 			{q && (

@@ -15,7 +15,8 @@ import {
 	WATCHLIST_LIMIT,
 } from '@briar/shared'
 import { Loader2, Plus, Search, Star, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import FearGreedBadge from './FearGreedBadge'
 import { StaleBadge } from './MarketStatusBar'
 import { displayCode } from './constituents'
@@ -55,8 +56,12 @@ function StockSearch({ onOpen }: { onOpen: (s: StockRef) => void }) {
 	const [results, setResults] = useState<StockSearchItem[] | null>(null)
 	const [error, setError] = useState<string | null>(null)
 	const [searching, setSearching] = useState(false)
+	const [panelPos, setPanelPos] = useState<{ top: number; left: number; width: number } | null>(
+		null,
+	)
 	const query = useDebounced(input.trim(), SEARCH_DEBOUNCE_MS)
 	const boxRef = useRef<HTMLDivElement>(null)
+	const panelRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
 		if (!query) {
@@ -82,36 +87,50 @@ function StockSearch({ onOpen }: { onOpen: (s: StockRef) => void }) {
 		return () => ctrl.abort()
 	}, [query])
 
-	// 点外面收起
+	const showPanel = open && input.trim().length > 0
+
+	const syncPanelPos = () => {
+		const el = boxRef.current
+		if (!el) return
+		const r = el.getBoundingClientRect()
+		setPanelPos({ top: r.bottom + 4, left: r.left, width: r.width })
+	}
+
+	useLayoutEffect(() => {
+		if (!showPanel) {
+			setPanelPos(null)
+			return
+		}
+		syncPanelPos()
+		const onScroll = () => syncPanelPos()
+		window.addEventListener('resize', onScroll)
+		window.addEventListener('scroll', onScroll, true)
+		return () => {
+			window.removeEventListener('resize', onScroll)
+			window.removeEventListener('scroll', onScroll, true)
+		}
+	}, [showPanel, input, results, searching, error])
+
+	// 点外面收起（输入框 + Portal 面板都算内部）
 	useEffect(() => {
 		const onDown = (e: MouseEvent) => {
-			if (!boxRef.current?.contains(e.target as Node)) setOpen(false)
+			const t = e.target as Node
+			if (boxRef.current?.contains(t) || panelRef.current?.contains(t)) return
+			setOpen(false)
 		}
 		document.addEventListener('mousedown', onDown)
 		return () => document.removeEventListener('mousedown', onDown)
 	}, [])
 
-	const showPanel = open && input.trim().length > 0
+	const panel =
+		showPanel && panelPos
+			? createPortal(
+					<div
+						ref={panelRef}
+						style={{ top: panelPos.top, left: panelPos.left, width: panelPos.width }}
+						className="rv-paper-float fixed z-[200] max-h-80 overflow-y-auto p-1"
+					>
 
-	return (
-		<div ref={boxRef} className="relative">
-			<Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-			<Input
-				value={input}
-				onChange={(e) => {
-					setInput(e.target.value)
-					setOpen(true)
-				}}
-				onFocus={() => setOpen(true)}
-				onKeyDown={(e) => {
-					if (e.key === 'Escape') setOpen(false)
-				}}
-				placeholder="搜索全部市场个股：代码 / 名称 / 拼音首字母（如 gzmt、AAPL、00700、삼성）"
-				className="bg-card/70 pl-9"
-				aria-label="搜索个股"
-			/>
-			{showPanel && (
-				<div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-80 overflow-y-auto rounded-xl border bg-background p-1 shadow-lg">
 					{searching && !results ? (
 						<div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
 							<Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -127,31 +146,36 @@ function StockSearch({ onOpen }: { onOpen: (s: StockRef) => void }) {
 							return (
 								<div
 									key={stockId(r)}
-									className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted"
+									className="flex min-h-10 items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 transition-colors hover:border-foreground/15 hover:bg-accent/80"
 								>
 									<button
 										type="button"
-										className="flex min-w-0 flex-1 items-center gap-2 text-left"
+										className="flex min-h-7 min-w-0 flex-1 items-center gap-2 text-left"
 										onClick={() => {
 											setOpen(false)
 											onOpen(r)
 										}}
 									>
 										<MarketTag market={r.market} />
-										<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+										<span className="shrink-0 text-xs leading-none text-muted-foreground tabular-nums">
 											{displayCode(r.code)}
 										</span>
-										<span className="truncate text-sm">{r.name}</span>
+										<span className="truncate text-sm leading-none">{r.name}</span>
 										{(r.type === 'etf' || r.exchange) && (
-											<span className="hidden shrink-0 text-[11px] text-muted-foreground/80 sm:inline">
+											<span className="hidden shrink-0 text-[11px] leading-none text-muted-foreground/80 sm:inline">
 												{[r.exchange, r.type === 'etf' ? 'ETF' : ''].filter(Boolean).join(' · ')}
 											</span>
 										)}
 									</button>
 									<Button
-										variant={inList ? 'ghost' : 'outline'}
+										variant={inList ? 'secondary' : 'outline'}
 										size="sm"
-										className="h-7 shrink-0 px-2 text-xs"
+										className={cn(
+											'h-7 shrink-0 gap-1 border px-2 text-xs transition-colors',
+											inList
+												? 'border-warning/45 bg-warning/10 hover:border-warning hover:bg-warning/25'
+												: 'hover:border-primary/60 hover:bg-primary/10 hover:text-primary',
+										)}
 										disabled={!watchlist.ready}
 										onClick={() => (inList ? watchlist.remove(r) : watchlist.add(r))}
 										title={inList ? '移出自选' : '加入自选'}
@@ -172,8 +196,30 @@ function StockSearch({ onOpen }: { onOpen: (s: StockRef) => void }) {
 							)
 						})
 					)}
-				</div>
-			)}
+
+					</div>,
+					document.body,
+				)
+			: null
+
+	return (
+		<div ref={boxRef} className="relative">
+			<Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+			<Input
+				value={input}
+				onChange={(e) => {
+					setInput(e.target.value)
+					setOpen(true)
+				}}
+				onFocus={() => setOpen(true)}
+				onKeyDown={(e) => {
+					if (e.key === 'Escape') setOpen(false)
+				}}
+				placeholder="搜索全部市场个股：代码 / 名称 / 拼音首字母（如 gzmt、AAPL、00700、삼성）"
+				className="bg-card/70 pl-9"
+				aria-label="搜索个股"
+			/>
+			{panel}
 		</div>
 	)
 }

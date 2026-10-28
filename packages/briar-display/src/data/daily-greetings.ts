@@ -1127,3 +1127,16 @@ export function pickRandomGreeting(
 export function dailyGreetingIndex(d = new Date()): number {
 	return dailyIndex(shanghaiDateKey(d), DAILY_GREETINGS.length)
 }
+
+/** 按池下标取问候（越界回落到日种子） */
+export function pickGreetingAt(
+	index: number,
+	d = new Date(),
+): DailyGreeting & { index: number; dateKey: string; dateLabel: string } {
+	const dateKey = shanghaiDateKey(d)
+	const [y, m, day] = dateKey.split('-')
+	const dateLabel = `${y}/${m}/${day}`
+	const n = DAILY_GREETINGS.length
+	const i = Number.isInteger(index) && index >= 0 && index < n ? index : dailyIndex(dateKey, n)
+	return { ...DAILY_GREETINGS[i], index: i, dateKey, dateLabel }
+}
