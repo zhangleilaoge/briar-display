@@ -104,7 +104,7 @@ export function DoveOlive({ className, ...props }: ImgProps) {
 	)
 }
 
-/** 1913 花饰 — 预留/备用 */
+/** 1913 花饰 — 仅门户首页背景 */
 export function FloralStamp({ className, ...props }: ImgProps) {
 	return <Sticker src={srcOf(floral1913Img)} className={cn('opacity-90', className)} {...props} />
 }
@@ -131,12 +131,12 @@ export function FlowerPsf({ className, ...props }: ImgProps) {
 	return <Sticker src={srcOf(flowerPsfImg)} className={className} {...props} />
 }
 
-/** 哥特尖拱 — 仅门户问候卡旁 */
+/** 哥特尖拱 — 仅门户首页背景 */
 export function GothicArch({ className, ...props }: ImgProps) {
 	return <Sticker src={srcOf(gothicArchImg)} className={className} {...props} />
 }
 
-/** 爱奥尼柱 — 仅文件页 */
+/** 爱奥尼柱 — 仅门户首页背景 */
 export function GreekColumn({ className, ...props }: ImgProps) {
 	return <Sticker src={srcOf(columnImg)} className={className} {...props} />
 }
@@ -166,7 +166,7 @@ export function WaxSeal({ className, ...props }: ImgProps) {
 	return <Sticker src={srcOf(waxSealImg)} className={className} {...props} />
 }
 
-/** 提灯剪影 — 预留 */
+/** 提灯剪影 — 仅门户首页背景 */
 export function Lantern({ className, ...props }: ImgProps) {
 	return <Sticker src={srcOf(lanternImg)} className={className} {...props} />
 }

@@ -1,14 +1,18 @@
 'use client'
 
 import UserMenu from '@/components/common/UserMenu'
-import { GreetingStickers } from '@/components/portal/GreetingStickers'
 import { WidgetDesktop } from '@/components/portal/WidgetDesktop'
+import { useGreeting } from '@/components/portal/greetingStore'
 import { Card, CardContent } from '@/components/ui/card'
 import { ChatBubble } from '@/components/ui/chat-bubble'
 import {
 	FilesIcon,
+	FloralStamp,
+	GothicArch,
+	GreekColumn,
 	JournalIcon,
 	KeyIcon,
+	Lantern,
 	MarketsIcon,
 	type OrnamentIconProps,
 	Postmark,
@@ -19,7 +23,6 @@ import { StampInputBar } from '@/components/ui/stamp-input-bar'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { SITE_SECTIONS, type SectionMeta, type SubRouteMeta } from '@/config/site-routes'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
-import { useGreeting } from '@/components/portal/greetingStore'
 import { fieldsMatchQuery, normalizePortalQuery, textMatchesQuery } from '@/lib/portalSearch'
 import { cn } from '@/lib/utils'
 import { RefreshCw } from 'lucide-react'
@@ -260,10 +263,9 @@ function SubRouteRow({
 	)
 }
 
-
 function PortalPageInner() {
 	const { isAdmin, loading } = usePermissions()
-	const { tod, greet, line, date, kind, decorSeed, spinning, shuffle } = useGreeting()
+	const { tod, greet, line, date, spinning, shuffle } = useGreeting()
 	const [query, setQuery] = useState('')
 
 	const visible = useMemo(() => {
@@ -317,6 +319,14 @@ function PortalPageInner() {
 
 	return (
 		<ThemeShell variant="scrapbook" className="flex flex-col overflow-hidden">
+			{/* 首页背景剪纸：柱子/尖拱/花饰/提灯，贴边稀疏，不挡问候/搜索/小组件 */}
+			<div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+				<GreekColumn className="absolute bottom-0 -right-1 hidden h-[56vh] w-auto opacity-[0.14] xl:block" />
+				<GreekColumn className="absolute bottom-0 left-[calc(4rem+0.25rem)] hidden h-[42vh] w-auto -scale-x-100 opacity-[0.1] 2xl:block" />
+				<GothicArch className="absolute left-[calc(4rem+1.25rem)] top-24 hidden h-36 w-auto -rotate-6 opacity-[0.15] lg:block" />
+				<FloralStamp className="absolute -left-8 bottom-10 hidden h-32 w-32 opacity-[0.12] lg:block" />
+				<Lantern className="absolute right-10 top-28 hidden h-24 w-auto rotate-6 opacity-[0.14] xl:block" />
+			</div>
 			{/* Top bar */}
 			<PageHeader
 				hideBrand
@@ -328,7 +338,7 @@ function PortalPageInner() {
 			{/* Main */}
 			<main className="flex flex-1 items-center justify-center p-4 sm:p-6">
 				<div className="w-full max-w-3xl space-y-8 sm:max-w-4xl">
-					{/* 参考帧：多层剪纸拼贴问候区；贴纸挂在外框光环，不进白卡 */}
+					{/* 参考帧：多层剪纸拼贴问候区 */}
 					<div className="relative mx-auto max-w-xl overflow-visible px-5 pb-7 pt-9 sm:px-9 sm:pb-10 sm:pt-12">
 						{/* 底层倾斜纸片 */}
 						<div
@@ -339,7 +349,6 @@ function PortalPageInner() {
 							aria-hidden
 							className="rv-paper-back absolute inset-x-6 -bottom-2 top-8 rotate-[2.5deg] rounded-md bg-[var(--rv-pink)]/55 sm:inset-x-10"
 						/>
-						<GreetingStickers kind={kind} seed={decorSeed} />
 						<Card className="relative z-[1] overflow-visible border-[color:var(--rv-navy)]/25 shadow-raised">
 							<CardContent className="relative flex flex-col gap-2 p-6 sm:p-8">
 								<span className="relative z-[1] rv-label text-muted-foreground">

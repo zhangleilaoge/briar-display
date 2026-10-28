@@ -3,7 +3,6 @@
 import { isTokenUsable } from '@/api/auth'
 import { getPreference, putPreference } from '@/api/users'
 import {
-	type GreetingKind,
 	dailyGreetingIndex,
 	pickGreetingAt,
 	pickRandomGreeting,
@@ -18,7 +17,6 @@ const LOCAL_KEY = 'briar:portal-greeting'
 export interface PortalGreetingPref {
 	day: string
 	index: number
-	decorSeed: number
 }
 
 export interface GreetingView {
@@ -27,8 +25,6 @@ export interface GreetingView {
 	line: string
 	date: string
 	index: number
-	kind: '' | GreetingKind
-	decorSeed: number
 	ready: boolean
 }
 
@@ -38,13 +34,12 @@ const EMPTY: GreetingView = {
 	line: '',
 	date: '',
 	index: -1,
-	kind: '',
-	decorSeed: 0,
 	ready: false,
 }
 
 let view: GreetingView = EMPTY
 const listeners = new Set<() => void>()
+
 let initPromise: Promise<void> | null = null
 let spinning = false
 const spinListeners = new Set<() => void>()
@@ -67,8 +62,6 @@ function fromPref(pref: PortalGreetingPref): GreetingView {
 		line: g.line,
 		date: g.dateLabel,
 		index: g.index,
-		kind: g.kind,
-		decorSeed: pref.decorSeed,
 		ready: true,
 	}
 }
@@ -82,8 +75,6 @@ function dailyView(): GreetingView {
 		line: g.line,
 		date: g.dateLabel,
 		index: g.index,
-		kind: g.kind,
-		decorSeed: (index + 1) * 9973,
 		ready: true,
 	}
 }
@@ -93,14 +84,10 @@ function readLocal(): PortalGreetingPref | null {
 		const raw = window.localStorage.getItem(LOCAL_KEY)
 		if (!raw) return null
 		const parsed = JSON.parse(raw) as PortalGreetingPref
-		if (
-			typeof parsed?.day !== 'string' ||
-			typeof parsed?.index !== 'number' ||
-			typeof parsed?.decorSeed !== 'number'
-		) {
+		if (typeof parsed?.day !== 'string' || typeof parsed?.index !== 'number') {
 			return null
 		}
-		return parsed
+		return { day: parsed.day, index: parsed.index }
 	} catch {
 		return null
 	}
@@ -143,7 +130,11 @@ function initGreeting(): Promise<void> {
 
 		try {
 			const res = await getPreference(PREF_KEY)
-			const value = res.success ? (res.data?.value as PortalGreetingPref | null) : null
+			const raw = res.success ? (res.data?.value as PortalGreetingPref | null) : null
+			const value =
+				raw && typeof raw.day === 'string' && typeof raw.index === 'number'
+					? { day: raw.day, index: raw.index }
+					: null
 			if (isValidToday(value)) {
 				applyPref(value)
 				return
@@ -162,11 +153,9 @@ function initGreeting(): Promise<void> {
 export async function shuffleGreeting() {
 	await initGreeting()
 	const next = pickRandomGreeting([view.index])
-	const decorSeed = (next.index + 1) * 9973 + (view.decorSeed % 9973) + 17
 	const pref: PortalGreetingPref = {
 		day: shanghaiDateKey(),
 		index: next.index,
-		decorSeed,
 	}
 	emit({
 		tod: pickTimeOfDayGreeting(),
@@ -174,8 +163,6 @@ export async function shuffleGreeting() {
 		line: next.line,
 		date: next.dateLabel,
 		index: next.index,
-		kind: next.kind,
-		decorSeed,
 		ready: true,
 	})
 	emitSpin(true)
