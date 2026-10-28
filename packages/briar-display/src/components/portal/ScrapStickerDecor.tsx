@@ -2,9 +2,8 @@
 
 /**
  * 门户 / 想法页共用黑白古典贴纸：
- * 从 SCRAP_STICKER_CATALOG 抽几枚，受限落空白区、互不重叠。
- * 淡溶进渐变背景（低透明度）；仅用不规则白描边（.rv-cutout drop-shadow），禁止矩形白底垫。
- * 同屏 id 与视觉族（花/柱/卷轴等）不重复；库内已剔纯黑剪影与重复副本。
+ * 每屏最多 3 枚，仅黑白（可白描边），空白区互不重叠。
+ * seedKey 变化（如问候掀页换一句）时：淡出 → 换一批 → 淡入。
  */
 import { SCRAP_STICKER_CATALOG, type ScrapSticker } from '@/components/portal/scrapStickerCatalog'
 import {
@@ -18,7 +17,7 @@ import {
 } from '@/components/portal/scrapStickerLayout'
 import { shanghaiDateKey } from '@/data/daily-greetings'
 import { cn } from '@/lib/utils'
-import { type CSSProperties, useMemo } from 'react'
+import { type CSSProperties, useEffect, useMemo, useState } from 'react'
 
 type Placed = {
 	key: string
@@ -27,10 +26,11 @@ type Placed = {
 	imgStyle: CSSProperties
 }
 
+const FADE_MS = 320
+
 function layout(page: ScrapPage, seed: number, count: number): Placed[] {
 	const rand = mulberry32(seed ^ 0xa11ce)
 	const zones = [...zonesFor(page)]
-	// shuffle zones
 	for (let i = zones.length - 1; i > 0; i--) {
 		const j = Math.floor(rand() * (i + 1))
 		;[zones[i], zones[j]] = [zones[j], zones[i]]
@@ -45,7 +45,7 @@ function layout(page: ScrapPage, seed: number, count: number): Placed[] {
 	const boxes: ScrapBox[] = []
 	const usedIds = new Set<string>()
 	const usedFamilies = new Set<string>()
-	const n = Math.min(count, pool.length, zones.length)
+	const n = Math.min(3, count, pool.length, zones.length)
 
 	for (let i = 0; i < pool.length && placed.length < n; i++) {
 		const sticker = pool[i]
@@ -72,9 +72,9 @@ function layout(page: ScrapPage, seed: number, count: number): Placed[] {
 		usedIds.add(sticker.id)
 		usedFamilies.add(sticker.family)
 		const rot = (rand() - 0.5) * 14
-		const opacity = 0.12 + rand() * 0.1 // 淡溶背景，约 0.12–0.22
+		const opacity = 0.12 + rand() * 0.1
 		placed.push({
-			key: `${sticker.id}-${i}`,
+			key: `${sticker.id}-${i}-${seed}`,
 			sticker,
 			style: {
 				left: `${box.x.toFixed(2)}%`,
@@ -100,17 +100,42 @@ export function ScrapStickerDecor({
 	className,
 }: {
 	page: ScrapPage
-	/** 换一句 / 日更等额外熵 */
 	seedKey?: number | string
 	count?: number
 	className?: string
 }) {
-	const slots = useMemo(() => {
+	const targetSeed = useMemo(() => {
 		const day = shanghaiDateKey()
-		const seed = hashStr(`${day}:scrap-${page}:${seedKey}`)
-		const n = count ?? (page === 'thoughts' ? 4 + (seed % 2) : 5 + (seed % 2))
-		return layout(page, seed || 1, n)
-	}, [page, seedKey, count])
+		return hashStr(`${day}:scrap-${page}:${seedKey}`) || 1
+	}, [page, seedKey])
+
+	const [activeSeed, setActiveSeed] = useState(targetSeed)
+	const [fading, setFading] = useState(false)
+
+	useEffect(() => {
+		if (targetSeed === activeSeed) return
+		// 等问候掀页（角部卷曲 ~1.2s）结束再淡出换一批，再淡入
+		let fadeTimer: number | null = null
+		const wait = window.setTimeout(() => {
+			setFading(true)
+			fadeTimer = window.setTimeout(() => {
+				setActiveSeed(targetSeed)
+				requestAnimationFrame(() => {
+					requestAnimationFrame(() => setFading(false))
+				})
+			}, FADE_MS)
+		}, 1100)
+		return () => {
+			window.clearTimeout(wait)
+			if (fadeTimer != null) window.clearTimeout(fadeTimer)
+		}
+	}, [targetSeed, activeSeed])
+
+	const slots = useMemo(() => {
+		const raw = count ?? 2 + (activeSeed % 2)
+		const n = Math.min(3, Math.max(1, raw))
+		return layout(page, activeSeed, n)
+	}, [page, activeSeed, count])
 
 	return (
 		<div
@@ -118,6 +143,8 @@ export function ScrapStickerDecor({
 			className={cn(
 				'pointer-events-none fixed inset-0 -z-10 overflow-hidden',
 				'hidden lg:block',
+				'rv-scrap-decor',
+				fading && 'is-fading',
 				className,
 			)}
 		>

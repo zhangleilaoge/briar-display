@@ -1,20 +1,18 @@
 'use client'
 
 /**
- * 活页掀页：顶页沿左缘（打孔侧）用嵌套铰链柔性卷曲掀开，露出下一张。
- * 三段 rotateY 叠加成纸卷，配卷边高光与投射阴影；避免单片刚性门扇/渐隐。
- * 尊重 prefers-reduced-motion：直接切内容、不播动画。
+ * 活页掀页：参考 StPageFlip 右下角 soft 卷曲（不迁入整库）。
+ * clip 切面 + 纸背三角瓣 + 折线阴影 + 轻微 3D，读成柔性纸角而非整卡 rotateY。
+ * prefers-reduced-motion：直接切内容。
  */
 import { prefersReducedMotion } from '@/components/ui/motion'
 import { cn } from '@/lib/utils'
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 
-const PEEL_MS = 1100
+const PEEL_MS = 1200
 
 type Props = {
-	/** 内容身份：变化时触发掀页（换一句 / 初次就绪） */
 	contentKey: string | number
-	/** 是否已就绪；首次 ready 时播入场掀页 */
 	ready?: boolean
 	className?: string
 	style?: CSSProperties
@@ -40,10 +38,8 @@ export function BinderPeel({ contentKey, ready = true, className, style, childre
 
 	useEffect(() => {
 		if (!ready) return
-
 		const reduce = reduceRef.current || prefersReducedMotion()
 
-		// 初次进入：空白顶页掀开露出问候
 		if (!entered.current) {
 			entered.current = true
 			prevKey.current = contentKey
@@ -69,7 +65,6 @@ export function BinderPeel({ contentKey, ready = true, className, style, childre
 		const outgoing = prevChild.current
 		prevKey.current = contentKey
 		prevChild.current = children
-
 		if (reduce || !outgoing) return
 
 		setOverlay(outgoing)
@@ -86,16 +81,14 @@ export function BinderPeel({ contentKey, ready = true, className, style, childre
 			<div className="rv-binder-peel__base">{children}</div>
 			{overlay && (
 				<div className={cn('rv-binder-peel__sheet', peeling && 'is-peeled')} aria-hidden>
-					{/* 三段嵌套铰链：近书脊弯得少，自由边弯得多 → 柔性纸卷 */}
-					<div className="rv-binder-peel__h rv-binder-peel__h--1">
-						<div className="rv-binder-peel__h rv-binder-peel__h--2">
-							<div className="rv-binder-peel__h rv-binder-peel__h--3">
-								<div className="rv-binder-peel__face">{overlay}</div>
-								<span className="rv-binder-peel__curl" aria-hidden />
-							</div>
-						</div>
-					</div>
-					<span className="rv-binder-peel__shade" aria-hidden />
+					{/* 桌面残留纸面：右下角对角被 clip 掉（StPageFlip bottom 折线） */}
+					<div className="rv-binder-peel__face">{overlay}</div>
+					{/* 掀起的纸角：纸背灰面 + 圆柱明暗，绕折线略 3D */}
+					<span className="rv-binder-peel__flap" aria-hidden>
+						<span className="rv-binder-peel__flap-back" />
+					</span>
+					{/* 折线落在底页上的接触影 */}
+					<span className="rv-binder-peel__cast" aria-hidden />
 				</div>
 			)}
 		</div>
