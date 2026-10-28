@@ -16,6 +16,7 @@ import {
 	ToolsIcon,
 } from '@/components/ui/ornaments'
 import { PageHeader } from '@/components/ui/page-header'
+import { PaperSheet } from '@/components/ui/paper-sheet'
 import { StampInputBar } from '@/components/ui/stamp-input-bar'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { SITE_SECTIONS, type SectionMeta, type SubRouteMeta } from '@/config/site-routes'
@@ -329,55 +330,57 @@ function PortalPageInner() {
 			{/* Main */}
 			<main className="flex flex-1 items-center justify-center p-4 sm:p-6">
 				<div className="w-full max-w-3xl space-y-8 sm:max-w-4xl">
-					{/* 参考帧：多层剪纸拼贴问候区 */}
+					{/* 问候区：活页纸（binder），与想法页撕边/邮票错开 */}
 					<div className="relative mx-auto max-w-xl overflow-visible px-5 pb-7 pt-9 sm:px-9 sm:pb-10 sm:pt-12">
-						{/* 底层倾斜纸片 */}
 						<div
 							aria-hidden
-							className="rv-paper-back absolute inset-x-4 -bottom-1 top-10 -rotate-[3.5deg] rounded-md sm:inset-x-8"
+							className="rv-paper-back absolute inset-x-4 -bottom-1 top-10 -rotate-[3.5deg] rounded-sm sm:inset-x-8"
 						/>
 						<div
 							aria-hidden
-							className="rv-paper-back absolute inset-x-6 -bottom-2 top-8 rotate-[2.5deg] rounded-md bg-[var(--rv-pink)]/55 sm:inset-x-10"
+							className="rv-paper-back absolute inset-x-6 -bottom-2 top-8 rotate-[2.5deg] rounded-sm bg-[var(--rv-pink)]/55 sm:inset-x-10"
 						/>
-						<Card className="relative z-[1] overflow-visible border-[color:var(--rv-navy)]/25 shadow-raised">
-							<CardContent className="relative flex flex-col gap-2 p-6 sm:p-8">
-								<span className="relative z-[1] rv-label text-muted-foreground">
-									{tod || '\u00a0'} · {date || '\u00a0'}
+						<PaperSheet
+							variant="binder"
+							holes={7}
+							className="relative z-[1] overflow-visible"
+							bodyClassName="relative flex flex-col gap-2 !px-5 !py-6 sm:!px-7 sm:!py-8"
+						>
+							<span className="relative z-[1] rv-label text-muted-foreground">
+								{tod || '\u00a0'} · {date || '\u00a0'}
+							</span>
+							<h1 className="relative z-[1] font-display text-3xl font-semibold leading-snug text-foreground sm:text-4xl">
+								<span className="rv-script font-normal text-[color:var(--rv-rose-deep)]">
+									{greet || '\u00a0'}
 								</span>
-								<h1 className="relative z-[1] font-display text-3xl font-semibold leading-snug text-foreground sm:text-4xl">
-									<span className="rv-script font-normal text-[color:var(--rv-rose-deep)]">
-										{greet || '\u00a0'}
-									</span>
-								</h1>
-								{author ? (
-									<p className="relative z-[1] -mt-0.5 font-display text-sm italic text-muted-foreground/80">
-										— {author}
-									</p>
-								) : null}
-								<div className="relative z-[1] flex items-center gap-2">
-									<p className="min-w-0 flex-1 font-display text-lg text-muted-foreground">
-										{line || '\u00a0'}
-									</p>
-									<button
-										type="button"
-										onClick={shuffle}
-										aria-label="换一句"
-										title="换一句"
-										className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--rv-navy)]/55 transition hover:bg-[color:var(--rv-navy)]/5 hover:text-[color:var(--rv-rose-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose)]/40"
-									>
-										<RefreshCw
-											className={cn('h-3.5 w-3.5', spinning && 'animate-spin')}
-											aria-hidden
-										/>
-									</button>
-								</div>
-								<Postmark
-									className="absolute -top-6 right-4 h-24 w-24 rotate-12 sm:right-8"
-									date={date.slice(-2) || '27'}
-								/>
-							</CardContent>
-						</Card>
+							</h1>
+							{author ? (
+								<p className="relative z-[1] -mt-0.5 font-display text-sm italic text-muted-foreground/80">
+									— {author}
+								</p>
+							) : null}
+							<div className="relative z-[1] flex items-center gap-2">
+								<p className="min-w-0 flex-1 font-display text-lg text-muted-foreground">
+									{line || '\u00a0'}
+								</p>
+								<button
+									type="button"
+									onClick={shuffle}
+									aria-label="换一句"
+									title="换一句"
+									className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--rv-navy)]/55 transition hover:bg-[color:var(--rv-navy)]/5 hover:text-[color:var(--rv-rose-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose)]/40"
+								>
+									<RefreshCw
+										className={cn('h-3.5 w-3.5', spinning && 'animate-spin')}
+										aria-hidden
+									/>
+								</button>
+							</div>
+							<Postmark
+								className="absolute -top-6 right-2 h-24 w-24 rotate-12 sm:right-4"
+								date={date.slice(-2) || '27'}
+							/>
+						</PaperSheet>
 					</div>
 
 					{/* 邮票输入条：筛选下方入口 */}

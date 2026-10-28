@@ -2,9 +2,9 @@
 
 import { useGreeting } from '@/components/portal/greetingStore'
 import { Postmark } from '@/components/ui/ornaments'
+import { PaperSheet } from '@/components/ui/paper-sheet'
 import { cn } from '@/lib/utils'
 import { RefreshCw } from 'lucide-react'
-import { WidgetChrome } from '../WidgetChrome'
 import type { WidgetSize } from '../widgetTypes'
 
 export function GreetingWidget({
@@ -19,8 +19,20 @@ export function GreetingWidget({
 	const state = useGreeting()
 
 	return (
-		<div className="relative h-full min-h-0 overflow-visible">
-			<WidgetChrome editing={editing} onRemove={onRemove} bodyClassName="relative !pt-3" tilt={-1}>
+		<div
+			className={cn('relative h-full min-h-0 overflow-visible', editing && 'rv-jiggle')}
+			style={{ rotate: '-1deg' }}
+		>
+			<div
+				aria-hidden
+				className="rv-paper-back pointer-events-none absolute inset-x-1 -bottom-1 top-2 -rotate-[1.4deg] rounded-sm opacity-70"
+			/>
+			<PaperSheet
+				variant="binder"
+				holes={5}
+				className="relative z-[1] h-full min-h-0"
+				bodyClassName="relative flex h-full min-h-0 flex-col !pt-3"
+			>
 				<span className="relative z-[1] rv-label text-muted-foreground">
 					{state.tod || '\u00a0'} · {state.date || '\u00a0'}
 				</span>
@@ -54,7 +66,20 @@ export function GreetingWidget({
 					className="pointer-events-none absolute -right-1 -top-1 z-[1] h-16 w-16 rotate-12 opacity-90 sm:h-20 sm:w-20"
 					date={state.date.slice(-2) || '28'}
 				/>
-			</WidgetChrome>
+			</PaperSheet>
+			{editing && onRemove && (
+				<button
+					type="button"
+					onClick={(e) => {
+						e.stopPropagation()
+						onRemove()
+					}}
+					aria-label="移除问候"
+					className="absolute -left-1.5 -top-1.5 z-[2] flex h-6 w-6 items-center justify-center rounded-full border border-[color:var(--rv-navy)]/25 bg-[color-mix(in_srgb,var(--rv-ink)_88%,black)] text-[11px] font-semibold text-[var(--rv-cream)] shadow-md transition hover:scale-105"
+				>
+					−
+				</button>
+			)}
 		</div>
 	)
 }

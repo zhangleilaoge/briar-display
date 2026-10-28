@@ -1,17 +1,26 @@
 'use client'
 
-import { createThought, deleteThought, listThoughts, type Thought } from '@/api/thoughts'
+import {
+	type Thought,
+	createThought,
+	deleteThought,
+	likeThought,
+	listThoughts,
+	unlikeThought,
+	updateThought,
+} from '@/api/thoughts'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
+import { PaperSheet } from '@/components/ui/paper-sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { Loader2, Send, Trash2 } from 'lucide-react'
+import { Heart, Loader2, Pencil, Send, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const MAX_BODY = 2000
+
 export default function ThoughtsPage() {
 	return (
 		<PermissionProvider>
@@ -21,7 +30,7 @@ export default function ThoughtsPage() {
 }
 
 function ThoughtsPageInner() {
-	const { user, isAdmin, loading: permsLoading } = usePermissions()
+	const { user, isAdmin, isLoggedIn, loading: permsLoading } = usePermissions()
 	const [items, setItems] = useState<Thought[]>([])
 	const [total, setTotal] = useState(0)
 	const [loading, setLoading] = useState(true)
@@ -86,6 +95,14 @@ function ThoughtsPageInner() {
 		}
 	}
 
+	const handleUpdated = (updated: Thought) => {
+		setItems((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+	}
+
+	const handleLikeState = (id: string, likeCount: number, likedByMe: boolean) => {
+		setItems((prev) => prev.map((t) => (t.id === id ? { ...t, likeCount, likedByMe } : t)))
+	}
+
 	return (
 		<ThemeShell variant="scrapbook">
 			<PageHeader crumbs={[{ label: '想法' }]} />
@@ -100,40 +117,38 @@ function ThoughtsPageInner() {
 				</header>
 
 				{isAdmin && (
-					<Card className="mb-6 overflow-hidden border-2 border-dashed border-[color:var(--rv-rose)]/40 bg-[color:var(--rv-paper)] shadow-none">
-						<CardContent className="space-y-3 p-4 sm:p-5">
-							<div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-								<span className="inline-block h-2 w-2 rotate-45 bg-[color:var(--rv-rose)]" />
-								记一笔
-							</div>
-							<Textarea
-								value={draft}
-								onChange={(e) => setDraft(e.target.value.slice(0, MAX_BODY))}
-								placeholder="写点什么… 支持 emoji 😊"
-								rows={4}
-								className="min-h-[96px] resize-y rounded-none border-border/60 bg-background/60 font-normal"
-							/>
-							<div className="flex items-center justify-between gap-3">
-								<span className="text-xs text-muted-foreground">
-									{draft.trim().length}/{MAX_BODY}
-								</span>
-								<Button
-									type="button"
-									onClick={() => void handlePublish()}
-									disabled={!draft.trim() || publishing}
-									className="gap-1.5 rounded-none"
-								>
-									{publishing ? (
-										<Loader2 className="h-4 w-4 animate-spin" />
-									) : (
-										<Send className="h-4 w-4" />
-									)}
-									发布
-								</Button>
-							</div>
-							{publishError && <p className="text-xs text-destructive">{publishError}</p>}
-						</CardContent>
-					</Card>
+					<PaperSheet variant="torn" className="mb-6" bodyClassName="space-y-3">
+						<div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+							<span className="inline-block h-2 w-2 rotate-45 bg-[color:var(--rv-rose)]" />
+							记一笔
+						</div>
+						<Textarea
+							value={draft}
+							onChange={(e) => setDraft(e.target.value.slice(0, MAX_BODY))}
+							placeholder="写点什么… 支持 emoji 😊"
+							rows={4}
+							className="min-h-[96px] resize-y rounded-none border-border/60 bg-[var(--rv-beige)]/80 font-normal"
+						/>
+						<div className="flex items-center justify-between gap-3">
+							<span className="text-xs text-muted-foreground">
+								{draft.trim().length}/{MAX_BODY}
+							</span>
+							<Button
+								type="button"
+								onClick={() => void handlePublish()}
+								disabled={!draft.trim() || publishing}
+								className="gap-1.5 rounded-none"
+							>
+								{publishing ? (
+									<Loader2 className="h-4 w-4 animate-spin" />
+								) : (
+									<Send className="h-4 w-4" />
+								)}
+								发布
+							</Button>
+						</div>
+						{publishError && <p className="text-xs text-destructive">{publishError}</p>}
+					</PaperSheet>
 				)}
 
 				{(loading || permsLoading) && (
@@ -149,11 +164,12 @@ function ThoughtsPageInner() {
 				)}
 
 				{!loading && !error && items.length === 0 && (
-					<Card className="rounded-none border-dashed">
-						<CardContent className="py-12 text-center text-sm text-muted-foreground">
-							还没有想法，{isAdmin ? '在上面写一条吧。' : '等管理员记一笔。'}
-						</CardContent>
-					</Card>
+					<PaperSheet
+						variant="torn"
+						bodyClassName="py-12 text-center text-sm text-muted-foreground"
+					>
+						还没有想法，{isAdmin ? '在上面写一条吧。' : '等管理员记一笔。'}
+					</PaperSheet>
 				)}
 
 				<ul className="space-y-4">
@@ -161,8 +177,12 @@ function ThoughtsPageInner() {
 						<li key={t.id} style={{ rotate: `${((i % 5) - 2) * 0.35}deg` }}>
 							<ThoughtCard
 								thought={t}
-								canDelete={isAdmin && user?.id === t.userId}
+								canEdit={!!isAdmin && user?.id === t.userId}
+								canDelete={!!isAdmin && user?.id === t.userId}
+								isLoggedIn={isLoggedIn}
 								onDelete={() => void handleDelete(t.id)}
+								onUpdated={handleUpdated}
+								onLikeState={handleLikeState}
 							/>
 						</li>
 					))}
@@ -174,16 +194,33 @@ function ThoughtsPageInner() {
 
 function ThoughtCard({
 	thought,
+	canEdit,
 	canDelete,
+	isLoggedIn,
 	onDelete,
+	onUpdated,
+	onLikeState,
 }: {
 	thought: Thought
+	canEdit: boolean
 	canDelete: boolean
+	isLoggedIn: boolean
 	onDelete: () => void
+	onUpdated: (t: Thought) => void
+	onLikeState: (id: string, likeCount: number, likedByMe: boolean) => void
 }) {
 	const [expanded, setExpanded] = useState(false)
 	const [overflows, setOverflows] = useState(false)
+	const [editing, setEditing] = useState(false)
+	const [editDraft, setEditDraft] = useState(thought.body)
+	const [saving, setSaving] = useState(false)
+	const [editError, setEditError] = useState<string | null>(null)
+	const [liking, setLiking] = useState(false)
 	const bodyRef = useRef<HTMLParagraphElement>(null)
+
+	useEffect(() => {
+		if (!editing) setEditDraft(thought.body)
+	}, [thought.body, editing])
 
 	useEffect(() => {
 		const el = bodyRef.current
@@ -196,7 +233,7 @@ function ThoughtCard({
 		const ro = new ResizeObserver(check)
 		ro.observe(el)
 		return () => ro.disconnect()
-	}, [thought.body, expanded])
+	}, [thought.body, expanded, editing])
 
 	const timeLabel = useMemo(() => {
 		const d = new Date(thought.createdAt)
@@ -211,60 +248,191 @@ function ThoughtCard({
 	}, [thought.createdAt])
 
 	const initial = thought.author?.name?.charAt(0)?.toUpperCase() || '?'
+	const likeCount = thought.likeCount ?? 0
+	const likedByMe = !!thought.likedByMe
+
+	const handleSave = async () => {
+		const text = editDraft.trim()
+		if (!text || saving) return
+		setSaving(true)
+		setEditError(null)
+		try {
+			const res = await updateThought(thought.id, text)
+			if (res.success && res.data) {
+				onUpdated(res.data)
+				setEditing(false)
+			} else {
+				setEditError(res.message || '保存失败')
+			}
+		} catch (e: any) {
+			setEditError(e?.response?.data?.message || e?.message || '保存失败')
+		} finally {
+			setSaving(false)
+		}
+	}
+
+	const handleToggleLike = async () => {
+		if (!isLoggedIn) {
+			window.location.href = `/briar/login?redirect=${encodeURIComponent('/briar/thoughts')}`
+			return
+		}
+		if (liking) return
+		setLiking(true)
+		const prevCount = likeCount
+		const prevLiked = likedByMe
+		// 乐观更新
+		onLikeState(thought.id, prevLiked ? Math.max(0, prevCount - 1) : prevCount + 1, !prevLiked)
+		try {
+			const res = prevLiked ? await unlikeThought(thought.id) : await likeThought(thought.id)
+			if (res.success && res.data) {
+				onLikeState(thought.id, res.data.likeCount, res.data.likedByMe)
+			} else {
+				onLikeState(thought.id, prevCount, prevLiked)
+			}
+		} catch {
+			onLikeState(thought.id, prevCount, prevLiked)
+		} finally {
+			setLiking(false)
+		}
+	}
 
 	return (
-		<Card className="rounded-none border border-border/70 bg-[color:var(--rv-paper)] shadow-sm">
-			<CardContent className="p-4 sm:p-5">
-				<div className="mb-3 flex items-start justify-between gap-3">
-					<div className="flex min-w-0 items-center gap-2.5">
-						<div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-muted">
-							{thought.author?.avatar ? (
-								<img
-									src={thought.author.avatar}
-									alt=""
-									className="h-full w-full object-cover"
-								/>
-							) : (
-								<span className="text-sm font-medium text-muted-foreground">{initial}</span>
-							)}
-						</div>
-						<div className="min-w-0">
-							<p className="truncate text-sm font-medium">{thought.author?.name || '匿名'}</p>
-							<p className="text-xs text-muted-foreground">{timeLabel}</p>
+		<PaperSheet variant="stamp" bodyClassName="!px-4 !py-4 sm:!px-5 sm:!py-5">
+			<div className="mb-3 flex items-start justify-between gap-3">
+				<div className="flex min-w-0 items-center gap-2.5">
+					<div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-[var(--rv-beige)]">
+						{thought.author?.avatar ? (
+							<img src={thought.author.avatar} alt="" className="h-full w-full object-cover" />
+						) : (
+							<span className="text-sm font-medium text-muted-foreground">{initial}</span>
+						)}
+					</div>
+					<div className="min-w-0">
+						<p className="truncate text-sm font-medium">{thought.author?.name || '匿名'}</p>
+						<p className="text-xs text-muted-foreground">{timeLabel}</p>
+					</div>
+				</div>
+				{(canEdit || canDelete) && !editing && (
+					<div className="flex shrink-0 items-center gap-0.5">
+						{canEdit && (
+							<button
+								type="button"
+								onClick={() => {
+									setEditDraft(thought.body)
+									setEditError(null)
+									setEditing(true)
+								}}
+								className="rounded-none p-1.5 text-muted-foreground transition-colors hover:bg-[var(--rv-pink)]/50 hover:text-foreground"
+								aria-label="编辑"
+							>
+								<Pencil className="h-3.5 w-3.5" />
+							</button>
+						)}
+						{canDelete && (
+							<button
+								type="button"
+								onClick={onDelete}
+								className="rounded-none p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+								aria-label="删除"
+							>
+								<Trash2 className="h-3.5 w-3.5" />
+							</button>
+						)}
+					</div>
+				)}
+			</div>
+
+			{editing ? (
+				<div className="space-y-3">
+					<Textarea
+						value={editDraft}
+						onChange={(e) => setEditDraft(e.target.value.slice(0, MAX_BODY))}
+						rows={4}
+						className="min-h-[96px] resize-y rounded-none border-border/60 bg-[var(--rv-beige)]/80 font-normal"
+						autoFocus
+					/>
+					<div className="flex items-center justify-between gap-3">
+						<span className="text-xs text-muted-foreground">
+							{editDraft.trim().length}/{MAX_BODY}
+						</span>
+						<div className="flex items-center gap-2">
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="gap-1 rounded-none"
+								onClick={() => {
+									setEditing(false)
+									setEditError(null)
+								}}
+								disabled={saving}
+							>
+								<X className="h-3.5 w-3.5" />
+								取消
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								className="gap-1 rounded-none"
+								onClick={() => void handleSave()}
+								disabled={!editDraft.trim() || saving}
+							>
+								{saving ? (
+									<Loader2 className="h-3.5 w-3.5 animate-spin" />
+								) : (
+									<Send className="h-3.5 w-3.5" />
+								)}
+								保存
+							</Button>
 						</div>
 					</div>
-					{canDelete && (
+					{editError && <p className="text-xs text-destructive">{editError}</p>}
+				</div>
+			) : (
+				<>
+					<p
+						ref={bodyRef}
+						className={cn(
+							'whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground',
+							!expanded && 'line-clamp-5',
+						)}
+					>
+						{thought.body}
+					</p>
+
+					{(overflows || expanded) && (
 						<button
 							type="button"
-							onClick={onDelete}
-							className="rounded-none p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-							aria-label="删除"
+							onClick={() => setExpanded((v) => !v)}
+							className="mt-2 text-xs font-medium text-[color:var(--rv-rose-deep)] underline-offset-2 hover:underline"
 						>
-							<Trash2 className="h-3.5 w-3.5" />
+							{expanded ? '收起' : '展开全部'}
 						</button>
 					)}
-				</div>
+				</>
+			)}
 
-				<p
-					ref={bodyRef}
-					className={cn(
-						'whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground',
-						!expanded && 'line-clamp-5',
-					)}
-				>
-					{thought.body}
-				</p>
-
-				{(overflows || expanded) && (
+			{!editing && (
+				<div className="mt-3 flex items-center border-t border-[color:var(--rv-navy)]/10 pt-3">
 					<button
 						type="button"
-						onClick={() => setExpanded((v) => !v)}
-						className="mt-2 text-xs font-medium text-[color:var(--rv-rose-deep)] underline-offset-2 hover:underline"
+						onClick={() => void handleToggleLike()}
+						disabled={liking}
+						className={cn(
+							'inline-flex items-center gap-1.5 rounded-none px-2 py-1 text-xs transition-colors',
+							likedByMe
+								? 'text-[color:var(--rv-rose-deep)]'
+								: 'text-muted-foreground hover:text-[color:var(--rv-rose-deep)]',
+						)}
+						aria-label={likedByMe ? '取消点赞' : '点赞'}
+						aria-pressed={likedByMe}
+						title={isLoggedIn ? undefined : '登录后点赞'}
 					>
-						{expanded ? '收起' : '展开全部'}
+						<Heart className={cn('h-3.5 w-3.5', likedByMe && 'fill-current')} />
+						<span>{likeCount}</span>
 					</button>
-				)}
-			</CardContent>
-		</Card>
+				</div>
+			)}
+		</PaperSheet>
 	)
 }
