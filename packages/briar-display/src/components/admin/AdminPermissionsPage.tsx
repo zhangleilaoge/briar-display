@@ -278,6 +278,7 @@ function AdminPermissionsPageInner() {
 
 						<div className="space-y-1">
 							{roles.map((role) => (
+								// biome-ignore lint/a11y/useSemanticElements: 行内含编辑/删除 <button>，外层用 <button> 会嵌套非法
 								<div
 									role="button"
 									tabIndex={0}
