@@ -10,8 +10,8 @@ import {
 	updateThought,
 } from '@/api/thoughts'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
+import { PaperSheet } from '@/components/ui/paper-sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
@@ -20,10 +20,6 @@ import { Heart, Loader2, Pencil, Send, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const MAX_BODY = 2000
-
-/** 不透明奶油纸卡：覆盖 Card 默认 bg-card，避免未定义的 --rv-paper 透出毛玻璃感 */
-const PAPER_CARD =
-	'rounded-none border border-[color:var(--rv-navy)]/20 bg-[var(--rv-cream)] shadow-[0_0_0_2px_hsl(0_0%_100%/0.95),0_8px_20px_-10px_hsl(221_46%_20%/0.22)]'
 
 export default function ThoughtsPage() {
 	return (
@@ -121,45 +117,38 @@ function ThoughtsPageInner() {
 				</header>
 
 				{isAdmin && (
-					<Card
-						className={cn(
-							'mb-6 overflow-hidden border-2 border-dashed border-[color:var(--rv-rose)]/40 shadow-none',
-							'bg-[var(--rv-cream)]',
-						)}
-					>
-						<CardContent className="space-y-3 p-4 sm:p-5">
-							<div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-								<span className="inline-block h-2 w-2 rotate-45 bg-[color:var(--rv-rose)]" />
-								记一笔
-							</div>
-							<Textarea
-								value={draft}
-								onChange={(e) => setDraft(e.target.value.slice(0, MAX_BODY))}
-								placeholder="写点什么… 支持 emoji 😊"
-								rows={4}
-								className="min-h-[96px] resize-y rounded-none border-border/60 bg-[var(--rv-beige)]/80 font-normal"
-							/>
-							<div className="flex items-center justify-between gap-3">
-								<span className="text-xs text-muted-foreground">
-									{draft.trim().length}/{MAX_BODY}
-								</span>
-								<Button
-									type="button"
-									onClick={() => void handlePublish()}
-									disabled={!draft.trim() || publishing}
-									className="gap-1.5 rounded-none"
-								>
-									{publishing ? (
-										<Loader2 className="h-4 w-4 animate-spin" />
-									) : (
-										<Send className="h-4 w-4" />
-									)}
-									发布
-								</Button>
-							</div>
-							{publishError && <p className="text-xs text-destructive">{publishError}</p>}
-						</CardContent>
-					</Card>
+					<PaperSheet variant="torn" className="mb-6" bodyClassName="space-y-3">
+						<div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+							<span className="inline-block h-2 w-2 rotate-45 bg-[color:var(--rv-rose)]" />
+							记一笔
+						</div>
+						<Textarea
+							value={draft}
+							onChange={(e) => setDraft(e.target.value.slice(0, MAX_BODY))}
+							placeholder="写点什么… 支持 emoji 😊"
+							rows={4}
+							className="min-h-[96px] resize-y rounded-none border-border/60 bg-[var(--rv-beige)]/80 font-normal"
+						/>
+						<div className="flex items-center justify-between gap-3">
+							<span className="text-xs text-muted-foreground">
+								{draft.trim().length}/{MAX_BODY}
+							</span>
+							<Button
+								type="button"
+								onClick={() => void handlePublish()}
+								disabled={!draft.trim() || publishing}
+								className="gap-1.5 rounded-none"
+							>
+								{publishing ? (
+									<Loader2 className="h-4 w-4 animate-spin" />
+								) : (
+									<Send className="h-4 w-4" />
+								)}
+								发布
+							</Button>
+						</div>
+						{publishError && <p className="text-xs text-destructive">{publishError}</p>}
+					</PaperSheet>
 				)}
 
 				{(loading || permsLoading) && (
@@ -175,11 +164,12 @@ function ThoughtsPageInner() {
 				)}
 
 				{!loading && !error && items.length === 0 && (
-					<Card className={cn(PAPER_CARD, 'border-dashed')}>
-						<CardContent className="py-12 text-center text-sm text-muted-foreground">
-							还没有想法，{isAdmin ? '在上面写一条吧。' : '等管理员记一笔。'}
-						</CardContent>
-					</Card>
+					<PaperSheet
+						variant="torn"
+						bodyClassName="py-12 text-center text-sm text-muted-foreground"
+					>
+						还没有想法，{isAdmin ? '在上面写一条吧。' : '等管理员记一笔。'}
+					</PaperSheet>
 				)}
 
 				<ul className="space-y-4">
@@ -307,144 +297,142 @@ function ThoughtCard({
 	}
 
 	return (
-		<Card className={PAPER_CARD}>
-			<CardContent className="p-4 sm:p-5">
-				<div className="mb-3 flex items-start justify-between gap-3">
-					<div className="flex min-w-0 items-center gap-2.5">
-						<div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-[var(--rv-beige)]">
-							{thought.author?.avatar ? (
-								<img src={thought.author.avatar} alt="" className="h-full w-full object-cover" />
-							) : (
-								<span className="text-sm font-medium text-muted-foreground">{initial}</span>
-							)}
-						</div>
-						<div className="min-w-0">
-							<p className="truncate text-sm font-medium">{thought.author?.name || '匿名'}</p>
-							<p className="text-xs text-muted-foreground">{timeLabel}</p>
-						</div>
+		<PaperSheet variant="stamp" bodyClassName="!px-4 !py-4 sm:!px-5 sm:!py-5">
+			<div className="mb-3 flex items-start justify-between gap-3">
+				<div className="flex min-w-0 items-center gap-2.5">
+					<div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-[var(--rv-beige)]">
+						{thought.author?.avatar ? (
+							<img src={thought.author.avatar} alt="" className="h-full w-full object-cover" />
+						) : (
+							<span className="text-sm font-medium text-muted-foreground">{initial}</span>
+						)}
 					</div>
-					{(canEdit || canDelete) && !editing && (
-						<div className="flex shrink-0 items-center gap-0.5">
-							{canEdit && (
-								<button
-									type="button"
-									onClick={() => {
-										setEditDraft(thought.body)
-										setEditError(null)
-										setEditing(true)
-									}}
-									className="rounded-none p-1.5 text-muted-foreground transition-colors hover:bg-[var(--rv-pink)]/50 hover:text-foreground"
-									aria-label="编辑"
-								>
-									<Pencil className="h-3.5 w-3.5" />
-								</button>
-							)}
-							{canDelete && (
-								<button
-									type="button"
-									onClick={onDelete}
-									className="rounded-none p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-									aria-label="删除"
-								>
-									<Trash2 className="h-3.5 w-3.5" />
-								</button>
-							)}
-						</div>
-					)}
+					<div className="min-w-0">
+						<p className="truncate text-sm font-medium">{thought.author?.name || '匿名'}</p>
+						<p className="text-xs text-muted-foreground">{timeLabel}</p>
+					</div>
 				</div>
-
-				{editing ? (
-					<div className="space-y-3">
-						<Textarea
-							value={editDraft}
-							onChange={(e) => setEditDraft(e.target.value.slice(0, MAX_BODY))}
-							rows={4}
-							className="min-h-[96px] resize-y rounded-none border-border/60 bg-[var(--rv-beige)]/80 font-normal"
-							autoFocus
-						/>
-						<div className="flex items-center justify-between gap-3">
-							<span className="text-xs text-muted-foreground">
-								{editDraft.trim().length}/{MAX_BODY}
-							</span>
-							<div className="flex items-center gap-2">
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									className="gap-1 rounded-none"
-									onClick={() => {
-										setEditing(false)
-										setEditError(null)
-									}}
-									disabled={saving}
-								>
-									<X className="h-3.5 w-3.5" />
-									取消
-								</Button>
-								<Button
-									type="button"
-									size="sm"
-									className="gap-1 rounded-none"
-									onClick={() => void handleSave()}
-									disabled={!editDraft.trim() || saving}
-								>
-									{saving ? (
-										<Loader2 className="h-3.5 w-3.5 animate-spin" />
-									) : (
-										<Send className="h-3.5 w-3.5" />
-									)}
-									保存
-								</Button>
-							</div>
-						</div>
-						{editError && <p className="text-xs text-destructive">{editError}</p>}
-					</div>
-				) : (
-					<>
-						<p
-							ref={bodyRef}
-							className={cn(
-								'whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground',
-								!expanded && 'line-clamp-5',
-							)}
-						>
-							{thought.body}
-						</p>
-
-						{(overflows || expanded) && (
+				{(canEdit || canDelete) && !editing && (
+					<div className="flex shrink-0 items-center gap-0.5">
+						{canEdit && (
 							<button
 								type="button"
-								onClick={() => setExpanded((v) => !v)}
-								className="mt-2 text-xs font-medium text-[color:var(--rv-rose-deep)] underline-offset-2 hover:underline"
+								onClick={() => {
+									setEditDraft(thought.body)
+									setEditError(null)
+									setEditing(true)
+								}}
+								className="rounded-none p-1.5 text-muted-foreground transition-colors hover:bg-[var(--rv-pink)]/50 hover:text-foreground"
+								aria-label="编辑"
 							>
-								{expanded ? '收起' : '展开全部'}
+								<Pencil className="h-3.5 w-3.5" />
 							</button>
 						)}
-					</>
-				)}
-
-				{!editing && (
-					<div className="mt-3 flex items-center border-t border-[color:var(--rv-navy)]/10 pt-3">
-						<button
-							type="button"
-							onClick={() => void handleToggleLike()}
-							disabled={liking}
-							className={cn(
-								'inline-flex items-center gap-1.5 rounded-none px-2 py-1 text-xs transition-colors',
-								likedByMe
-									? 'text-[color:var(--rv-rose-deep)]'
-									: 'text-muted-foreground hover:text-[color:var(--rv-rose-deep)]',
-							)}
-							aria-label={likedByMe ? '取消点赞' : '点赞'}
-							aria-pressed={likedByMe}
-							title={isLoggedIn ? undefined : '登录后点赞'}
-						>
-							<Heart className={cn('h-3.5 w-3.5', likedByMe && 'fill-current')} />
-							<span>{likeCount}</span>
-						</button>
+						{canDelete && (
+							<button
+								type="button"
+								onClick={onDelete}
+								className="rounded-none p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+								aria-label="删除"
+							>
+								<Trash2 className="h-3.5 w-3.5" />
+							</button>
+						)}
 					</div>
 				)}
-			</CardContent>
-		</Card>
+			</div>
+
+			{editing ? (
+				<div className="space-y-3">
+					<Textarea
+						value={editDraft}
+						onChange={(e) => setEditDraft(e.target.value.slice(0, MAX_BODY))}
+						rows={4}
+						className="min-h-[96px] resize-y rounded-none border-border/60 bg-[var(--rv-beige)]/80 font-normal"
+						autoFocus
+					/>
+					<div className="flex items-center justify-between gap-3">
+						<span className="text-xs text-muted-foreground">
+							{editDraft.trim().length}/{MAX_BODY}
+						</span>
+						<div className="flex items-center gap-2">
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="gap-1 rounded-none"
+								onClick={() => {
+									setEditing(false)
+									setEditError(null)
+								}}
+								disabled={saving}
+							>
+								<X className="h-3.5 w-3.5" />
+								取消
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								className="gap-1 rounded-none"
+								onClick={() => void handleSave()}
+								disabled={!editDraft.trim() || saving}
+							>
+								{saving ? (
+									<Loader2 className="h-3.5 w-3.5 animate-spin" />
+								) : (
+									<Send className="h-3.5 w-3.5" />
+								)}
+								保存
+							</Button>
+						</div>
+					</div>
+					{editError && <p className="text-xs text-destructive">{editError}</p>}
+				</div>
+			) : (
+				<>
+					<p
+						ref={bodyRef}
+						className={cn(
+							'whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground',
+							!expanded && 'line-clamp-5',
+						)}
+					>
+						{thought.body}
+					</p>
+
+					{(overflows || expanded) && (
+						<button
+							type="button"
+							onClick={() => setExpanded((v) => !v)}
+							className="mt-2 text-xs font-medium text-[color:var(--rv-rose-deep)] underline-offset-2 hover:underline"
+						>
+							{expanded ? '收起' : '展开全部'}
+						</button>
+					)}
+				</>
+			)}
+
+			{!editing && (
+				<div className="mt-3 flex items-center border-t border-[color:var(--rv-navy)]/10 pt-3">
+					<button
+						type="button"
+						onClick={() => void handleToggleLike()}
+						disabled={liking}
+						className={cn(
+							'inline-flex items-center gap-1.5 rounded-none px-2 py-1 text-xs transition-colors',
+							likedByMe
+								? 'text-[color:var(--rv-rose-deep)]'
+								: 'text-muted-foreground hover:text-[color:var(--rv-rose-deep)]',
+						)}
+						aria-label={likedByMe ? '取消点赞' : '点赞'}
+						aria-pressed={likedByMe}
+						title={isLoggedIn ? undefined : '登录后点赞'}
+					>
+						<Heart className={cn('h-3.5 w-3.5', likedByMe && 'fill-current')} />
+						<span>{likeCount}</span>
+					</button>
+				</div>
+			)}
+		</PaperSheet>
 	)
 }
