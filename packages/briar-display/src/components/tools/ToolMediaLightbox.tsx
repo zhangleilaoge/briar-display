@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useCallback, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import type { MediaItem } from './toolMediaUtils'
 
 interface ToolMediaLightboxProps {
@@ -43,7 +44,8 @@ export default function ToolMediaLightbox({
 	if (index === null) return null
 	const current = images[index]
 
-	return (
+	// portal 到 body，避免祖先 backdrop-filter 成为 fixed 包含块
+	return createPortal(
 		<div
 			className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90"
 			onClick={onClose}
@@ -92,6 +94,7 @@ export default function ToolMediaLightbox({
 			<div className="absolute bottom-4 left-1/2 max-w-[calc(100vw-4rem)] -translate-x-1/2 truncate rounded-full bg-white/10 px-3 py-1 text-sm text-white">
 				{current.label} · {index + 1}/{images.length}
 			</div>
-		</div>
+		</div>,
+		document.body,
 	)
 }

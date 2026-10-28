@@ -464,11 +464,21 @@ function AdminLogsPageInner() {
 						<thead>
 							<tr className="border-b bg-muted/50">
 								<th className="w-8 px-2 py-2" />
-								<th className="px-3 py-2 text-left font-medium text-muted-foreground">时间</th>
-								<th className="px-3 py-2 text-left font-medium text-muted-foreground">方法</th>
-								<th className="px-3 py-2 text-left font-medium text-muted-foreground">路径</th>
-								<th className="px-3 py-2 text-left font-medium text-muted-foreground">状态</th>
-								<th className="px-3 py-2 text-right font-medium text-muted-foreground">耗时</th>
+								<th className="px-3 py-2 text-left rv-label text-[10px] text-muted-foreground">
+									时间
+								</th>
+								<th className="px-3 py-2 text-left rv-label text-[10px] text-muted-foreground">
+									方法
+								</th>
+								<th className="px-3 py-2 text-left rv-label text-[10px] text-muted-foreground">
+									路径
+								</th>
+								<th className="px-3 py-2 text-left rv-label text-[10px] text-muted-foreground">
+									状态
+								</th>
+								<th className="px-3 py-2 text-right rv-label text-[10px] text-muted-foreground">
+									耗时
+								</th>
 								<th className="hidden px-3 py-2 text-left font-medium text-muted-foreground lg:table-cell">
 									用户
 								</th>
@@ -540,10 +550,15 @@ function AdminLogsPageInner() {
 										</tr>
 										{isExpanded && (
 											<tr key={`${log.id}-detail`}>
-												<td colSpan={7} className="border-b bg-muted/10 px-6 py-3">
+												<td
+													colSpan={7}
+													className="border-b-2 border-b-[color:var(--rv-navy)]/25 bg-white/90 px-6 py-4 shadow-[inset_3px_0_0_var(--rv-navy)]"
+												>
 													<div className="grid grid-cols-1 gap-4 text-xs md:grid-cols-2">
 														<div>
-															<p className="mb-1 font-medium text-muted-foreground">Trace ID</p>
+															<p className="mb-1 rv-label text-[10px] text-muted-foreground">
+																Trace ID
+															</p>
 															<div className="flex items-center gap-2">
 																<code className="rounded bg-muted px-2 py-0.5 font-mono">
 																	{log.traceId}
@@ -565,23 +580,27 @@ function AdminLogsPageInner() {
 															</div>
 															{log.ip && (
 																<div className="mt-2">
-																	<p className="mb-0.5 font-medium text-muted-foreground">IP</p>
+																	<p className="mb-0.5 rv-label text-[10px] text-muted-foreground">
+																		IP
+																	</p>
 																	<code className="font-mono">{log.ip}</code>
 																</div>
 															)}
 															{log.userAgent && (
 																<div className="mt-2">
-																	<p className="mb-0.5 font-medium text-muted-foreground">
+																	<p className="mb-0.5 rv-label text-[10px] text-muted-foreground">
 																		User-Agent
 																	</p>
-																	<p className="break-all text-muted-foreground">{log.userAgent}</p>
+																	<p className="break-all text-foreground">{log.userAgent}</p>
 																</div>
 															)}
 														</div>
 														<div>
 															{log.requestParams && Object.keys(log.requestParams).length > 0 && (
 																<div>
-																	<p className="mb-1 font-medium text-muted-foreground">请求参数</p>
+																	<p className="mb-1 rv-label text-[10px] text-muted-foreground">
+																		请求参数
+																	</p>
 																	<pre className="max-h-40 overflow-auto rounded bg-muted p-2 font-mono">
 																		{JSON.stringify(log.requestParams, null, 2)}
 																	</pre>
@@ -589,7 +608,7 @@ function AdminLogsPageInner() {
 															)}
 															{log.responseBody && (
 																<div className="mt-2">
-																	<p className="mb-0.5 font-medium text-muted-foreground">
+																	<p className="mb-0.5 rv-label text-[10px] text-muted-foreground">
 																		响应体（截断 2000 字符）
 																	</p>
 																	<pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-2 font-mono">

@@ -215,7 +215,9 @@
 		var(--hud-tick), var(--hud-tick), var(--hud-tick), var(--hud-tick);
 	--surface-texture-size: 9px 1px, 1px 9px, 9px 1px, 1px 9px, 9px 1px, 1px 9px, 9px 1px, 1px 9px;
 	--surface-texture-pos: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
-	--surface-texture-repeat: no-repeat;
+	/* 必须与 --surface-texture 的 8 层一一对应：单值在多层组合里会循环错位，导致角标层平铺成整块藏青 */
+	--surface-texture-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat,
+		no-repeat, no-repeat;
 
 	--page-bg: var(--paper-grain),
 		radial-gradient(ellipse 42% 24% at 18% 16%, hsl(0 0% 100% / 0.82), transparent 70%),
@@ -846,16 +848,6 @@ progress {
    全站华丽度加固：纸片面板 / 文件瓷砖 / 水印汉字 / 条码装饰
    ============================================================ */
 
-.rv-watermark-glyph {
-	font-family: var(--font-display);
-	font-weight: 600;
-	line-height: 0.9;
-	color: transparent;
-	-webkit-text-stroke: 1.5px color-mix(in srgb, var(--rv-navy) 22%, transparent);
-	pointer-events: none;
-	user-select: none;
-}
-
 /* 内容面板：白底贴纸感 + 藏青细边 + 柔影 */
 .rv-panel {
 	position: relative;
@@ -935,4 +927,24 @@ progress {
 .theme-scrapbook .glass,
 .theme-scrapbook .glass-soft {
 	box-shadow: 0 0 0 2px hsl(0 0% 100% / 0.92), var(--shadow-surface);
+}
+
+/* 弹窗纵向布局：顶栏 / 底栏固定，中间内容区滚动（基础 Dialog 为 flex column + max-h 100dvh-2rem） */
+.rv-paper-dialog > * {
+	flex-shrink: 0;
+}
+.rv-paper-dialog
+	> :not(.rv-paper-header):not(.rv-paper-footer):not(.rv-crop-marks):not(.rv-paper-index):not(
+		[data-rv-dialog-close]
+	) {
+	min-height: 0;
+	min-width: 0;
+	flex-shrink: 1;
+}
+.rv-paper-dialog[role="dialog"]
+	> :not(.rv-paper-header):not(.rv-paper-footer):not(.rv-crop-marks):not(.rv-paper-index):not(
+		[data-rv-dialog-close]
+	) {
+	overflow-y: auto;
+	overflow-x: hidden;
 }

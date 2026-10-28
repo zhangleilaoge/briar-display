@@ -52,13 +52,7 @@ export default function RegisterPage() {
 	}
 
 	return (
-		<ThemeShell
-			variant="scrapbook"
-			sidebar={false}
-			watermark="00"
-			glyph="门"
-			className="flex overflow-hidden"
-		>
+		<ThemeShell variant="scrapbook" sidebar={false} watermark="00" className="flex overflow-hidden">
 			{/* Two-column layout — reversed order */}
 			<div className="grid w-full lg:grid-cols-2">
 				{/* Left: Form side */}
