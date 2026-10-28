@@ -3,7 +3,13 @@
 import type { RunHistoryQuery } from '@/api/deploy'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import type { ApiResponse, RunHistoryPage, RunRecord, RunRecordStatus } from '@briar/shared'
 import { ChevronDown, ChevronRight, ExternalLink, Loader2, RefreshCw } from 'lucide-react'
@@ -168,16 +174,15 @@ export default function RunHistoryDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
 				index="11"
-				ornament
-				className="flex max-h-[85vh] max-w-3xl flex-col gap-3 overflow-hidden"
+				className="flex max-h-[85vh] max-w-3xl flex-col gap-3 overflow-visible"
 			>
-				<div className="flex items-start justify-between gap-2 pr-6">
-					<div>
-						<DialogTitle className="text-base">{title}</DialogTitle>
-						<DialogDescription className="text-xs">
-							{description ?? '所有运行记录均已落库，保留 180 天'}
-						</DialogDescription>
-					</div>
+				<DialogHeader>
+					<DialogTitle>{title}</DialogTitle>
+					<DialogDescription className="text-xs text-white/75">
+						{description ?? '所有运行记录均已落库，保留 180 天'}
+					</DialogDescription>
+				</DialogHeader>
+				<div className="flex justify-end">
 					<Button
 						size="sm"
 						variant="ghost"

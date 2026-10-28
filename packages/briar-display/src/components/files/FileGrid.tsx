@@ -181,7 +181,7 @@ export default function FileGrid({
 						onDragOver={(e) => onFolderDragOver(e, folder.id)}
 						onDragLeave={onFolderDragLeave}
 						onDrop={(e) => onFolderDrop(e, folder.id)}
-						className={`flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-lg border bg-muted/50 transition-all hover:border-primary hover:shadow-md ${
+						className={`rv-tile flex aspect-square w-full flex-col items-center justify-center gap-2 transition-all ${
 							dropFolderId === folder.id ? 'border-primary bg-primary/10 shadow-md' : ''
 						}`}
 					>
@@ -221,7 +221,7 @@ export default function FileGrid({
 						draggable
 						onDragStart={(e) => onFileDragStart(e, file)}
 						onClick={() => onFileClick(file)}
-						className="relative aspect-square w-full cursor-grab overflow-hidden rounded-lg border bg-muted transition-all hover:border-primary hover:shadow-md active:cursor-grabbing"
+						className="rv-tile relative aspect-square w-full cursor-grab overflow-hidden transition-all active:cursor-grabbing"
 					>
 						{file.mimeType.startsWith('image/') ? (
 							<img

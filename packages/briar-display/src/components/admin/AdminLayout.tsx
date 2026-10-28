@@ -9,8 +9,9 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { AntiqueKey } from '@/components/ui/ornaments'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { HudTitle, ThemeShell } from '@/components/ui/theme-shell'
+import { HudTitle, PaperPanel, ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
 import { Database, Radio, Rocket, Shield, TerminalSquare, Users } from 'lucide-react'
@@ -72,7 +73,13 @@ export default function AdminLayout({ children, currentPath, fullWidth }: AdminL
 
 	return (
 		<PermissionProvider>
-			<ThemeShell variant="arcane" className="flex">
+			<ThemeShell
+				variant="arcane"
+				watermark="06"
+				glyph="钥"
+				className="flex"
+				accent={<AntiqueKey className="h-28 w-28 rotate-12" />}
+			>
 				{/* HUD 玻璃侧栏：1px 藏青线 + 选中项藏青反白 */}
 				<aside className="glass-soft sticky top-0 hidden h-screen w-[220px] shrink-0 flex-col border-r border-[color:var(--rv-line)] p-4 md:flex">
 					<HudTitle index="06" label="Clef" title="管理后台" className="mb-4 px-2" />
@@ -140,7 +147,11 @@ export default function AdminLayout({ children, currentPath, fullWidth }: AdminL
 					</div>
 
 					<main className="flex-1 p-4 sm:p-6">
-						<div className={fullWidth ? 'w-full' : 'mx-auto w-full max-w-[1200px]'}>{children}</div>
+						<div className={fullWidth ? 'w-full' : 'mx-auto w-full max-w-[1200px]'}>
+							<PaperPanel index="06" title="CLEF · 机要室">
+								{children}
+							</PaperPanel>
+						</div>
 					</main>
 				</div>
 			</ThemeShell>
