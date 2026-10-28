@@ -448,11 +448,11 @@ function FileManagerPageInner() {
 				)}
 
 				{loading ? (
-					<div className="flex items-center justify-center py-20">
+					<div className="rv-fade-in flex items-center justify-center py-20">
 						<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 					</div>
 				) : files.length === 0 && subFolders.length === 0 ? (
-					<div className="py-20 text-center text-muted-foreground">
+					<div className="rv-fade-in py-20 text-center text-muted-foreground">
 						{keyword || typeFilter ? '没有匹配的文件' : '这里还是空的，上传文件或新建文件夹吧'}
 					</div>
 				) : (

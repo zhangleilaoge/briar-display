@@ -449,17 +449,17 @@ function AdminLogsPageInner() {
 
 			{/* Log table */}
 			{loading ? (
-				<div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+				<div className="rv-fade-in flex items-center justify-center gap-2 py-16 text-muted-foreground">
 					<Loader2 className="h-5 w-5 animate-spin" />
 					加载中...
 				</div>
 			) : logs.length === 0 ? (
-				<div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
+				<div className="rv-fade-in flex flex-col items-center gap-2 py-16 text-muted-foreground">
 					<Radio className="h-10 w-10 opacity-30" />
 					<p className="text-sm">暂无日志记录</p>
 				</div>
 			) : (
-				<div className="overflow-x-auto rounded-md border">
+				<div className="rv-fade-in overflow-x-auto rounded-md border">
 					<table className="w-full text-sm">
 						<thead>
 							<tr className="border-b bg-muted/50">

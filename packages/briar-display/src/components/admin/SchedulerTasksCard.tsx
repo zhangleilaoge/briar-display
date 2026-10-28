@@ -102,15 +102,15 @@ export default function SchedulerTasksCard() {
 			</div>
 
 			{loading ? (
-				<div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+				<div className="rv-fade-in flex items-center justify-center gap-2 py-8 text-muted-foreground">
 					<Loader2 className="h-4 w-4 animate-spin" />
 					加载中...
 				</div>
 			) : tasks.length === 0 ? (
-				<p className="py-8 text-center text-xs text-muted-foreground">暂无定时任务</p>
+				<p className="rv-fade-in py-8 text-center text-xs text-muted-foreground">暂无定时任务</p>
 			) : (
 				<>
-					<div className="divide-y rounded-md border">
+					<div className="rv-fade-in divide-y rounded-md border">
 						{(expanded ? tasks : tasks.slice(0, COLLAPSED_COUNT)).map((task) => {
 							const lastRun = task.lastRun
 							const running = lastRun?.status === 'running'
