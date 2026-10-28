@@ -352,13 +352,18 @@ function PortalPageInner() {
 						>
 							{'\u00a0'}
 						</PaperSheet>
-						<PaperSheet
-							variant="binder"
-							holes={7}
-							className="relative z-[1] overflow-visible"
-							bodyClassName="relative flex flex-col gap-2 !px-5 !py-6 sm:!px-7 sm:!py-8"
+						{/* 掀整张顶层便签（孔、邮戳、纸面），底层叠纸不动 */}
+						<BinderPeel
+							contentKey={index}
+							ready={Boolean(greet || line)}
+							className="relative z-[1]"
 						>
-							<BinderPeel contentKey={index} ready={Boolean(greet || line)}>
+							<PaperSheet
+								variant="binder"
+								holes={7}
+								className="relative overflow-visible"
+								bodyClassName="relative flex flex-col gap-2 !px-5 !py-6 sm:!px-7 sm:!py-8"
+							>
 								<div className="relative z-[1] flex flex-col gap-2">
 									<span className="rv-label text-muted-foreground">
 										{tod || '\u00a0'} · {date || '\u00a0'}
@@ -391,12 +396,12 @@ function PortalPageInner() {
 										</button>
 									</div>
 								</div>
-							</BinderPeel>
-							<Postmark
-								className="absolute -top-6 right-2 h-24 w-24 rotate-12 sm:right-4"
-								date={date.slice(-2) || '27'}
-							/>
-						</PaperSheet>
+								<Postmark
+									className="absolute -top-6 right-2 h-24 w-24 rotate-12 sm:right-4"
+									date={date.slice(-2) || '27'}
+								/>
+							</PaperSheet>
+						</BinderPeel>
 					</div>
 
 					{/* 邮票输入条：筛选下方入口 */}

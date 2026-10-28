@@ -2,16 +2,16 @@
 
 /**
  * 活页掀页：右下角 soft corner curl（参考 StPageFlip / Bilibili Paper，不迁入整库）。
- * - 折线锚在右下角，最大揭起约短边 35–45%，非整页从腰切开
- * - face 与 flap 同带 outgoing 文案：字跟着被掀的纸走
- * - 容器 overflow:hidden，瓣尖不得窜出纸顶
- * prefers-reduced-motion：直接切内容
+ * - 挂载在整张 PaperSheet 外：掀的是整张便签（孔/邮戳/纸面），不是内文框
+ * - 折线锚右下角；揭起幅度肉眼可读（约短边 50–60% 高、宽向 ~30%），不窜纸顶
+ * - face/flap 克隆整张 outgoing 纸；旧字/孔/戳跟掀起页走
+ * - 掀页层 inset clip（容器不裁，邮戳可探出）；prefers-reduced-motion 直接切
  */
 import { prefersReducedMotion } from '@/components/ui/motion'
 import { cn } from '@/lib/utils'
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 
-const PEEL_MS = 1100
+const PEEL_MS = 1200
 
 type Props = {
 	contentKey: string | number

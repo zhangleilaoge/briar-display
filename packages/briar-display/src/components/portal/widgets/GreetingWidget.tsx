@@ -24,6 +24,7 @@ export function GreetingWidget({
 			className={cn('relative h-full min-h-0 overflow-visible', editing && 'rv-jiggle')}
 			style={{ rotate: '-1deg' }}
 		>
+			{/* 底层叠纸不动 */}
 			<PaperSheet
 				variant="binder"
 				holes={5}
@@ -33,16 +34,17 @@ export function GreetingWidget({
 			>
 				{'\u00a0'}
 			</PaperSheet>
-			<PaperSheet
-				variant="binder"
-				holes={5}
+			{/* 掀整张顶层便签（孔、邮戳、纸面），不是内文框 */}
+			<BinderPeel
+				contentKey={state.index}
+				ready={Boolean(state.greet || state.line)}
 				className="relative z-[1] h-full min-h-0"
-				bodyClassName="relative flex h-full min-h-0 flex-col !pt-3"
 			>
-				<BinderPeel
-					contentKey={state.index}
-					ready={Boolean(state.greet || state.line)}
-					className="relative z-[1] min-h-0 flex-1"
+				<PaperSheet
+					variant="binder"
+					holes={5}
+					className="relative h-full min-h-0"
+					bodyClassName="relative flex h-full min-h-0 flex-col !pt-3"
 				>
 					<div className="flex h-full min-h-0 flex-col">
 						<span className="rv-label text-muted-foreground">
@@ -78,12 +80,12 @@ export function GreetingWidget({
 							)}
 						</div>
 					</div>
-				</BinderPeel>
-				<Postmark
-					className="pointer-events-none !absolute -right-1 -top-1 z-[1] h-16 w-16 rotate-12 opacity-90 sm:h-20 sm:w-20"
-					date={state.date.slice(-2) || '28'}
-				/>
-			</PaperSheet>
+					<Postmark
+						className="pointer-events-none !absolute -right-1 -top-1 z-[1] h-16 w-16 rotate-12 opacity-90 sm:h-20 sm:w-20"
+						date={state.date.slice(-2) || '28'}
+					/>
+				</PaperSheet>
+			</BinderPeel>
 			{editing && onRemove && (
 				<button
 					type="button"

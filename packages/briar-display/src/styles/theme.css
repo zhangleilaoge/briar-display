@@ -1695,16 +1695,16 @@ progress {
 
 
 
-/* ---------------- 活页掀页（BinderPeel）— 右下角 soft curl（参考 StPageFlip，不迁库） ---------------- */
-/* 折线锚右下角；最大揭起 ~短边 35–40%；overflow+inset clip 防窜顶；flap 带旧文 */
+/* ---------------- 活页掀页（BinderPeel）— 整张便签右下角 soft curl ---------------- */
+/* 挂在 PaperSheet 外；face/flap 透明让整张纸（孔/戳/线）可见；幅度加大但仍裁在纸内 */
 /* 注意：裁切祖先不要 preserve-3d，否则 overflow:hidden 无法裁 3D 子层 */
 .rv-binder-peel {
 	position: relative;
 	isolation: isolate;
-	overflow: hidden;
-	clip-path: inset(0);
-	perspective: 900px;
-	perspective-origin: 92% 92%;
+	/* 容器不裁，邮戳可略探出纸顶；掀页层自己 inset 裁，防瓣窜顶 */
+	overflow: visible;
+	perspective: 1100px;
+	perspective-origin: 100% 100%;
 }
 .rv-binder-peel__base {
 	position: relative;
@@ -1725,28 +1725,32 @@ progress {
 	width: 100%;
 	height: 100%;
 	min-height: 8rem;
-	background: linear-gradient(165deg, #fffef9 0%, var(--rv-cream) 52%, #f0e6dc 100%);
+	border-radius: 2px;
+	border: 1px solid color-mix(in srgb, var(--rv-navy) 18%, transparent);
+	background:
+		repeating-linear-gradient(
+			transparent 0,
+			transparent 27px,
+			color-mix(in srgb, var(--rv-sky) 45%, transparent) 27px,
+			color-mix(in srgb, var(--rv-sky) 45%, transparent) 28px
+		),
+		linear-gradient(165deg, #fffef9 0%, var(--rv-cream) 52%, #f0e6dc 100%);
 }
-/* 残留纸面：右下角小缺口（横卡用非等比例，避免腰切观感） */
+/* 残留纸面：透明壳，露出克隆的整张 PaperSheet；右下角缺口扩大 */
 .rv-binder-peel__face {
 	position: absolute;
 	inset: 0;
 	z-index: 2;
 	box-sizing: border-box;
-	background: linear-gradient(165deg, #fffef9 0%, var(--rv-cream) 55%, #f3ebe3 100%);
-	border: 1px solid color-mix(in srgb, var(--rv-navy) 12%, transparent);
-	border-radius: 2px 6px 6px 2px;
-	box-shadow:
-		2px 0 0 color-mix(in srgb, var(--rv-navy) 4%, transparent),
-		6px 10px 24px -12px hsl(221 30% 18% / 0.22);
+	background: transparent;
 	overflow: hidden;
 	clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 100% 100%, 0% 100%);
 	transform-origin: 100% 100%;
 }
 .rv-binder-peel__sheet.is-peeled .rv-binder-peel__face {
-	animation: rv-corner-face 1.1s cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
+	animation: rv-corner-face 1.2s cubic-bezier(0.22, 0.65, 0.2, 1) forwards;
 }
-/* 掀起角：整页对齐旧文 + 轻纸背；clip 只露右下三角；绕右下角 soft curl（无大位移） */
+/* 掀起角：整张纸克隆 + 纸背明暗；绕右下角 soft curl，幅度可读 */
 .rv-binder-peel__flap {
 	position: absolute;
 	inset: 0;
@@ -1754,34 +1758,34 @@ progress {
 	pointer-events: none;
 	overflow: hidden;
 	transform-origin: 100% 100%;
-	filter: drop-shadow(-3px -4px 6px hsl(30 20% 12% / 0.26));
+	filter: drop-shadow(-6px -8px 10px hsl(30 22% 10% / 0.34));
 	opacity: 0;
 	clip-path: polygon(100% 100%, 100% 100%, 100% 100%);
 	will-change: transform, opacity, clip-path;
 }
 .rv-binder-peel__sheet.is-peeled .rv-binder-peel__flap {
-	animation: rv-corner-flap 1.1s cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
+	animation: rv-corner-flap 1.2s cubic-bezier(0.22, 0.65, 0.2, 1) forwards;
 }
 .rv-binder-peel__flap-face {
 	position: absolute;
 	inset: 0;
 	overflow: hidden;
-	background: linear-gradient(165deg, #fffef9 0%, var(--rv-cream) 55%, #f3ebe3 100%);
+	background: transparent;
 }
-/* 纸背明暗：半透明叠层，旧字仍可读 */
+/* 纸背明暗：半透明叠层，旧字/纸纹仍可读 */
 .rv-binder-peel__flap-back {
 	position: absolute;
 	inset: 0;
 	pointer-events: none;
 	background: linear-gradient(
 		135deg,
-		hsl(40 28% 96% / 0.05) 0%,
-		hsl(35 16% 70% / 0.22) 30%,
-		hsl(28 12% 38% / 0.38) 48%,
-		hsl(35 14% 68% / 0.22) 62%,
+		hsl(40 28% 96% / 0.04) 0%,
+		hsl(35 16% 62% / 0.28) 28%,
+		hsl(28 14% 32% / 0.48) 48%,
+		hsl(35 14% 58% / 0.28) 64%,
 		hsl(40 28% 96% / 0.08) 100%
 	);
-	opacity: 0.9;
+	opacity: 0.95;
 }
 .rv-binder-peel__cast {
 	position: absolute;
@@ -1789,81 +1793,80 @@ progress {
 	z-index: 1;
 	pointer-events: none;
 	background: radial-gradient(
-		70% 70% at 100% 100%,
-		hsl(30 22% 10% / 0.26) 0%,
-		hsl(30 22% 12% / 0.1) 36%,
-		transparent 64%
+		75% 75% at 100% 100%,
+		hsl(30 22% 8% / 0.34) 0%,
+		hsl(30 22% 12% / 0.14) 38%,
+		transparent 68%
 	);
 	clip-path: polygon(100% 100%, 100% 100%, 100% 100%);
 	opacity: 0;
-	filter: blur(3px);
+	filter: blur(4px);
 }
 .rv-binder-peel__sheet.is-peeled .rv-binder-peel__cast {
-	animation: rv-corner-cast 1.1s cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
+	animation: rv-corner-cast 1.2s cubic-bezier(0.22, 0.65, 0.2, 1) forwards;
 }
 
 /*
- * 右下角：高度最大揭约 38%（短边），宽度约 14–18%（横卡），
- * 折线始终贴 BR，不像从纸腰斜穿。末段 face 淡出交出新页。
+ * 右下角 soft curl：高向揭起约 70%（短边），宽向约 50%，肉眼必见，
+ * 折线贴 BR，肉眼一眼可见在翻纸；末段 face 淡出交出新页。不窜纸顶。
  */
 @keyframes rv-corner-face {
 	0% {
 		clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 100% 100%, 0% 100%);
 		opacity: 1;
 	}
-	20% {
-		clip-path: polygon(0% 0%, 100% 0%, 100% 92%, 96% 100%, 0% 100%);
+	15% {
+		clip-path: polygon(0% 0%, 100% 0%, 100% 75%, 85% 100%, 0% 100%);
 		opacity: 1;
 	}
-	45% {
-		clip-path: polygon(0% 0%, 100% 0%, 100% 78%, 90% 100%, 0% 100%);
+	35% {
+		clip-path: polygon(0% 0%, 100% 0%, 100% 52%, 70% 100%, 0% 100%);
 		opacity: 1;
 	}
-	70% {
-		clip-path: polygon(0% 0%, 100% 0%, 100% 66%, 84% 100%, 0% 100%);
-		opacity: 0.95;
+	58% {
+		clip-path: polygon(0% 0%, 100% 0%, 100% 38%, 58% 100%, 0% 100%);
+		opacity: 0.97;
 	}
-	90% {
-		clip-path: polygon(0% 0%, 100% 0%, 100% 62%, 82% 100%, 0% 100%);
-		opacity: 0.3;
+	82% {
+		clip-path: polygon(0% 0%, 100% 0%, 100% 30%, 50% 100%, 0% 100%);
+		opacity: 0.32;
 	}
 	100% {
-		clip-path: polygon(0% 0%, 100% 0%, 100% 62%, 82% 100%, 0% 100%);
+		clip-path: polygon(0% 0%, 100% 0%, 100% 28%, 48% 100%, 0% 100%);
 		opacity: 0;
 	}
 }
 
-/* 轻量 curl：小角度 + 微缩放，不向卡外 translate */
 @keyframes rv-corner-flap {
 	0% {
 		clip-path: polygon(100% 100%, 100% 100%, 100% 100%);
 		opacity: 0;
-		transform: rotate(-2deg) scale(1);
+		transform: rotate(-3deg) scale(1);
 	}
-	16% {
-		clip-path: polygon(100% 92%, 96% 100%, 100% 100%);
+	12% {
+		clip-path: polygon(100% 75%, 85% 100%, 100% 100%);
 		opacity: 1;
-		transform: rotate(-4deg) scale(1.01);
+		transform: rotate(-14deg) scale(1.03);
 	}
-	42% {
-		clip-path: polygon(100% 78%, 90% 100%, 100% 100%);
+	32% {
+		clip-path: polygon(100% 52%, 70% 100%, 100% 100%);
 		opacity: 1;
-		transform: rotate(-7deg) scale(1.02);
+		transform: rotate(-26deg) scale(1.05);
 	}
-	68% {
-		clip-path: polygon(100% 66%, 84% 100%, 100% 100%);
+	55% {
+		clip-path: polygon(100% 38%, 58% 100%, 100% 100%);
 		opacity: 1;
-		transform: rotate(-10deg) scale(1.03);
+		transform: rotate(-36deg) scale(1.07);
 	}
-	88% {
-		clip-path: polygon(100% 62%, 82% 100%, 100% 100%);
-		opacity: 0.65;
-		transform: rotate(-12deg) scale(1.035);
+	78% {
+		clip-path: polygon(100% 30%, 50% 100%, 100% 100%);
+		opacity: 0.78;
+		transform: rotate(-46deg) scale(1.09);
 	}
 	100% {
-		clip-path: polygon(100% 60%, 80% 100%, 100% 100%);
+		clip-path: polygon(100% 26%, 46% 100%, 100% 100%);
 		opacity: 0;
-		transform: rotate(-14deg) scale(1.04);
+		transform: rotate(-52deg) scale(1.1);
 	}
 }
 
@@ -1872,20 +1875,20 @@ progress {
 		clip-path: polygon(100% 100%, 100% 100%, 100% 100%);
 		opacity: 0;
 	}
-	18% {
-		clip-path: polygon(100% 92%, 96% 100%, 100% 100%);
-		opacity: 0.65;
+	14% {
+		clip-path: polygon(100% 75%, 85% 100%, 100% 100%);
+		opacity: 0.75;
 	}
-	48% {
-		clip-path: polygon(100% 78%, 90% 100%, 100% 100%);
-		opacity: 0.8;
+	38% {
+		clip-path: polygon(100% 52%, 70% 100%, 100% 100%);
+		opacity: 0.92;
 	}
-	75% {
-		clip-path: polygon(100% 66%, 84% 100%, 100% 100%);
-		opacity: 0.4;
+	62% {
+		clip-path: polygon(100% 38%, 58% 100%, 100% 100%);
+		opacity: 0.55;
 	}
 	100% {
-		clip-path: polygon(100% 62%, 82% 100%, 100% 100%);
+		clip-path: polygon(100% 28%, 48% 100%, 100% 100%);
 		opacity: 0;
 	}
 }

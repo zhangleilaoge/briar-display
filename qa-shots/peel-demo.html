@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BinderPeel whole-sheet curl QA</title>
+<style>
+  :root {
+    --rv-cream: #f6efe6;
+    --rv-navy: #2a3348;
+    --rv-rose-deep: #b84a5a;
+    --rv-sky: #6a8caf;
+    --rv-beige: #d9d0c4;
+    --rv-ink: #1e2430;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 16px;
+    background: linear-gradient(165deg, #e8eef6 0%, #efe8f2 50%, #f3e6ea 100%);
+    font-family: "Songti SC", "Noto Serif SC", Georgia, serif;
+  }
+  .label {
+    font-family: system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #445;
+  }
+  .stage {
+    position: relative; width: 560px; height: 250px;
+  }
+  /* 底层叠纸 —— 不动 */
+  .back {
+    position: absolute; inset: 0; border-radius: 2px;
+    border: 1px solid color-mix(in srgb, var(--rv-navy) 18%, transparent);
+    background:
+      repeating-linear-gradient(transparent 0 27px, color-mix(in srgb, var(--rv-sky) 40%, transparent) 27px 28px),
+      linear-gradient(165deg, #fffef9 0%, var(--rv-cream) 55%, #f3ebe3 100%);
+    padding-left: 2.35rem;
+    pointer-events: none;
+  }
+  .back.b1 { inset: 6px 8px -6px 8px; transform: rotate(-2.8deg); opacity: 0.75; z-index: 0; }
+  .back.b2 { inset: 4px 14px -10px 14px; transform: rotate(2.2deg); opacity: 0.85;
+    background-color: color-mix(in srgb, #f2c4cb 42%, var(--rv-cream)); z-index: 0; }
+  .holes {
+    position: absolute; left: 0.55rem; top: 0.85rem; bottom: 0.85rem; width: 0.85rem;
+    display: flex; flex-direction: column; justify-content: space-evenly; align-items: center;
+    pointer-events: none; z-index: 2;
+  }
+  .holes i {
+    display: block; width: 0.72rem; height: 0.72rem; border-radius: 9999px;
+    background:
+      radial-gradient(circle at 35% 30%, hsl(0 0% 100% / 0.55), transparent 55%),
+      radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--rv-beige) 70%, #c9c0b4) 0 62%, transparent 63%);
+    box-shadow: inset 0 1px 2px hsl(221 30% 20% / 0.35), 0 0 0 1px hsl(221 20% 30% / 0.25);
+  }
+  .sheet-look {
+    position: relative; width: 100%; height: 100%; border-radius: 2px;
+    border: 1px solid color-mix(in srgb, var(--rv-navy) 22%, transparent);
+    padding-left: 2.35rem;
+    background-image:
+      repeating-linear-gradient(transparent 0 27px, color-mix(in srgb, var(--rv-sky) 55%, transparent) 27px 28px),
+      linear-gradient(90deg, transparent 2rem, color-mix(in srgb, var(--rv-rose-deep) 35%, transparent) 2rem, color-mix(in srgb, var(--rv-rose-deep) 35%, transparent) calc(2rem + 1px), transparent calc(2rem + 1px));
+    background-color: var(--rv-cream);
+    filter: drop-shadow(0 10px 22px hsl(221 46% 20% / 0.18));
+  }
+  .body { position: relative; z-index: 1; padding: 28px 40px 28px 20px; height: 100%; }
+  .meta { font-size: 13px; color: #6a7388; letter-spacing: 0.04em; }
+  .quote {
+    margin-top: 14px; font-family: "Segoe Script", "Pinyon Script", "Brush Script MT", cursive;
+    font-size: 26px; line-height: 1.35; color: var(--rv-rose-deep);
+  }
+  .quote.new { color: #2f6f6a; }
+  .caption { margin-top: 12px; font-size: 14px; color: #5a6478; }
+  .stamp {
+    position: absolute; right: 10px; top: -18px; width: 72px; height: 72px; border-radius: 50%;
+    border: 2px dashed #3a4a6a88; display: grid; place-items: center; background: #dfe7f288;
+    font-size: 22px; font-weight: 700; color: #2a3a5aaa; transform: rotate(12deg); z-index: 3;
+  }
+  .stamp small { display: block; font-size: 8px; font-weight: 600; letter-spacing: 0.06em; }
+
+  /* --- peel CSS (mirrors theme.css) --- */
+.rv-binder-peel {
+	position: relative;
+	isolation: isolate;
+	overflow: hidden;
+	clip-path: inset(0);
+	perspective: 1100px;
+	perspective-origin: 100% 100%;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+.rv-binder-peel__base { position: relative; z-index: 1; height: 100%; }
+.rv-binder-peel__sheet {
+	position: absolute; inset: 0; z-index: 2; pointer-events: none;
+	overflow: hidden; clip-path: inset(0);
+}
+.rv-binder-peel__face {
+	position: absolute; inset: 0; z-index: 2; box-sizing: border-box;
+	background: transparent; overflow: hidden;
+	clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 100% 100%, 0% 100%);
+	transform-origin: 100% 100%;
+}
+.rv-binder-peel__sheet.is-peeled .rv-binder-peel__face {
+	animation: rv-corner-face 1.2s cubic-bezier(0.22, 0.65, 0.2, 1) forwards;
+}
+.rv-binder-peel__flap {
+	position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden;
+	transform-origin: 100% 100%;
+	filter: drop-shadow(-6px -8px 10px hsl(30 22% 10% / 0.34));
+	opacity: 0;
+	clip-path: polygon(100% 100%, 100% 100%, 100% 100%);
+	will-change: transform, opacity, clip-path;
+}
+.rv-binder-peel__sheet.is-peeled .rv-binder-peel__flap {
+	animation: rv-corner-flap 1.2s cubic-bezier(0.22, 0.65, 0.2, 1) forwards;
+}
+.rv-binder-peel__flap-face { position: absolute; inset: 0; overflow: hidden; background: transparent; }
+.rv-binder-peel__flap-back {
+	position: absolute; inset: 0; pointer-events: none;
+	background: linear-gradient(135deg,
+		hsl(40 28% 96% / 0.04) 0%, hsl(35 16% 62% / 0.28) 28%,
+		hsl(28 14% 32% / 0.48) 48%, hsl(35 14% 58% / 0.28) 64%,
+		hsl(40 28% 96% / 0.08) 100%);
+	opacity: 0.95;
+}
+.rv-binder-peel__cast {
+	position: absolute; inset: 0; z-index: 1; pointer-events: none;
+	background: radial-gradient(75% 75% at 100% 100%,
+		hsl(30 22% 8% / 0.34) 0%, hsl(30 22% 12% / 0.14) 38%, transparent 68%);
+	clip-path: polygon(100% 100%, 100% 100%, 100% 100%);
+	opacity: 0; filter: blur(4px);
+}
+.rv-binder-peel__sheet.is-peeled .rv-binder-peel__cast {
+	animation: rv-corner-cast 1.2s cubic-bezier(0.22, 0.65, 0.2, 1) forwards;
+}
+@keyframes rv-corner-face {
+	0% { clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 100% 100%, 0% 100%); opacity: 1; }
+	15% { clip-path: polygon(0% 0%, 100% 0%, 100% 75%, 85% 100%, 0% 100%); opacity: 1; }
+	35% { clip-path: polygon(0% 0%, 100% 0%, 100% 52%, 70% 100%, 0% 100%); opacity: 1; }
+	58% { clip-path: polygon(0% 0%, 100% 0%, 100% 38%, 58% 100%, 0% 100%); opacity: 0.97; }
+	82% { clip-path: polygon(0% 0%, 100% 0%, 100% 30%, 50% 100%, 0% 100%); opacity: 0.32; }
+	100% { clip-path: polygon(0% 0%, 100% 0%, 100% 28%, 48% 100%, 0% 100%); opacity: 0; }
+}
+@keyframes rv-corner-flap {
+	0% { clip-path: polygon(100% 100%, 100% 100%, 100% 100%); opacity: 0; transform: rotate(-3deg) scale(1); }
+	12% { clip-path: polygon(100% 75%, 85% 100%, 100% 100%); opacity: 1; transform: rotate(-14deg) scale(1.03); }
+	32% { clip-path: polygon(100% 52%, 70% 100%, 100% 100%); opacity: 1; transform: rotate(-26deg) scale(1.05); }
+	55% { clip-path: polygon(100% 38%, 58% 100%, 100% 100%); opacity: 1; transform: rotate(-36deg) scale(1.07); }
+	78% { clip-path: polygon(100% 30%, 50% 100%, 100% 100%); opacity: 0.78; transform: rotate(-46deg) scale(1.09); }
+	100% { clip-path: polygon(100% 26%, 46% 100%, 100% 100%); opacity: 0; transform: rotate(-52deg) scale(1.1); }
+}
+@keyframes rv-corner-cast {
+	0% { clip-path: polygon(100% 100%, 100% 100%, 100% 100%); opacity: 0; }
+	16% { clip-path: polygon(100% 82%, 90% 100%, 100% 100%); opacity: 0.7; }
+	42% { clip-path: polygon(100% 62%, 78% 100%, 100% 100%); opacity: 0.88; }
+	70% { clip-path: polygon(100% 48%, 68% 100%, 100% 100%); opacity: 0.5; }
+	100% { clip-path: polygon(100% 40%, 60% 100%, 100% 100%); opacity: 0; }
+}
+
+  /* freeze helpers */
+  .freeze .rv-binder-peel__sheet.is-peeled .rv-binder-peel__face,
+  .freeze .rv-binder-peel__sheet.is-peeled .rv-binder-peel__flap,
+  .freeze .rv-binder-peel__sheet.is-peeled .rv-binder-peel__cast {
+    animation: none !important;
+  }
+  .freeze.f30 .rv-binder-peel__face {
+    clip-path: polygon(0% 0%, 100% 0%, 100% 58%, 74% 100%, 0% 100%) !important; opacity: 1 !important;
+  }
+  .freeze.f30 .rv-binder-peel__flap {
+    clip-path: polygon(100% 58%, 74% 100%, 100% 100%) !important; opacity: 1 !important;
+    transform: rotate(-22deg) scale(1.04) !important;
+  }
+  .freeze.f30 .rv-binder-peel__cast {
+    clip-path: polygon(100% 58%, 74% 100%, 100% 100%) !important; opacity: 0.85 !important;
+  }
+  .freeze.f50 .rv-binder-peel__face {
+    clip-path: polygon(0% 0%, 100% 0%, 100% 42%, 60% 100%, 0% 100%) !important; opacity: 1 !important;
+  }
+  .freeze.f50 .rv-binder-peel__flap {
+    clip-path: polygon(100% 42%, 60% 100%, 100% 100%) !important; opacity: 1 !important;
+    transform: rotate(-34deg) scale(1.07) !important;
+  }
+  .freeze.f50 .rv-binder-peel__cast {
+    clip-path: polygon(100% 42%, 60% 100%, 100% 100%) !important; opacity: 0.9 !important;
+  }
+  .freeze.f70 .rv-binder-peel__face {
+    clip-path: polygon(0% 0%, 100% 0%, 100% 32%, 52% 100%, 0% 100%) !important; opacity: 0.85 !important;
+  }
+  .freeze.f70 .rv-binder-peel__flap {
+    clip-path: polygon(100% 32%, 52% 100%, 100% 100%) !important; opacity: 1 !important;
+    transform: rotate(-44deg) scale(1.09) !important;
+  }
+  .freeze.f70 .rv-binder-peel__cast {
+    clip-path: polygon(100% 32%, 52% 100%, 100% 100%) !important; opacity: 0.5 !important;
+  }
+  .bbox {
+    position: absolute; inset: 0; border: 2px solid #e2555588; pointer-events: none; z-index: 40;
+  }
+</style>
+</head>
+<body>
+  <div class="label" id="tag">WHOLE SHEET · BR SOFT CURL</div>
+  <div class="stage" id="stage">
+    <div class="back b1"><div class="holes"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+    <div class="back b2"><div class="holes"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+    <div class="rv-binder-peel" id="peel">
+      <div class="rv-binder-peel__base">
+        <div class="sheet-look">
+          <div class="holes"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="stamp">28<small>XIAOBUZI</small></div>
+          <div class="body">
+            <div class="meta">晚上好 · 2026/10/28</div>
+            <div class="quote new">*Le bonheur se cueille.*</div>
+            <div class="caption">新页 — 底层露出</div>
+          </div>
+        </div>
+      </div>
+      <div class="rv-binder-peel__sheet is-peeled" id="sheet">
+        <div class="rv-binder-peel__face">
+          <div class="sheet-look">
+            <div class="holes"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="stamp">28<small>XIAOBUZI</small></div>
+            <div class="body">
+              <div class="meta">晚上好 · 2026/10/28</div>
+              <div class="quote">*Rire, c'est déjà se soigner.*</div>
+              <div class="caption">旧页 — 应留在掀起的整张纸上</div>
+            </div>
+          </div>
+        </div>
+        <span class="rv-binder-peel__flap">
+          <span class="rv-binder-peel__flap-face">
+            <div class="sheet-look">
+              <div class="holes"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="stamp">28<small>XIAOBUZI</small></div>
+              <div class="body">
+                <div class="meta">晚上好 · 2026/10/28</div>
+                <div class="quote">*Rire, c'est déjà se soigner.*</div>
+                <div class="caption">旧页 — 应留在掀起的整张纸上</div>
+              </div>
+            </div>
+          </span>
+          <span class="rv-binder-peel__flap-back"></span>
+        </span>
+        <span class="rv-binder-peel__cast" aria-hidden></span>
+      </div>
+    </div>
+    <div class="bbox" id="bbox" hidden></div>
+  </div>
+<script>
+  const params = new URLSearchParams(location.search);
+  const f = params.get('f'); // 30|50|70|play
+  const tag = document.getElementById('tag');
+  const stage = document.getElementById('stage');
+  const sheet = document.getElementById('sheet');
+
+  const p = params.get('p');
+  if (p != null) {
+    const pct = Math.max(0, Math.min(100, Number(p)));
+    tag.textContent = 'PROG ' + pct + '% · WHOLE SHEET';
+    // interpolate keyframes roughly
+    const t = pct / 100;
+    // face top-of-peel: 100% -> 40%, left-of-peel: 100% -> 60%
+    const top = 100 - 72 * (0.12 + 0.88 * t); // ~91 .. 28
+    const left = 100 - 52 * (0.1 + 0.9 * t);  // ~95 .. 48
+    const rot = -3 - 49 * t;
+    const sc = 1 + 0.1 * t;
+    const face = document.querySelector('.rv-binder-peel__face');
+    const flap = document.querySelector('.rv-binder-peel__flap');
+    const cast = document.querySelector('.rv-binder-peel__cast');
+    sheet.classList.add('is-peeled');
+    stage.classList.add('freeze');
+    face.style.clipPath = `polygon(0% 0%, 100% 0%, 100% ${top}%, ${left}% 100%, 0% 100%)`;
+    face.style.opacity = String(t < 0.85 ? 1 : Math.max(0, 1 - (t-0.85)/0.15));
+    flap.style.clipPath = `polygon(100% ${top}%, ${left}% 100%, 100% 100%)`;
+    flap.style.opacity = String(t <= 0.05 ? 0 : (t < 0.85 ? 1 : Math.max(0, 1 - (t-0.85)/0.15)));
+    flap.style.transform = `rotate(${rot}deg) scale(${sc})`;
+    cast.style.clipPath = flap.style.clipPath;
+    cast.style.opacity = String(0.85 * (t < 0.7 ? t/0.7 : Math.max(0, 1 - (t-0.7)/0.3)));
+  } else  if (f === 'play') {
+    tag.textContent = 'PLAY · WHOLE SHEET PEEL 1.2s';
+    // restart animation
+    sheet.classList.remove('is-peeled');
+    void sheet.offsetWidth;
+    sheet.classList.add('is-peeled');
+  } else if (f) {
+    stage.classList.add('freeze', 'f' + f);
+    tag.textContent = 'FREEZE ' + f + '% · WHOLE SHEET · BR CORNER · NO TOP OVERFLOW';
+    document.getElementById('bbox').hidden = false;
+  } else {
+    stage.classList.add('freeze', 'f50');
+    tag.textContent = 'FREEZE 50% · WHOLE SHEET · BR CORNER';
+    document.getElementById('bbox').hidden = false;
+  }
+</script>
+</body>
+</html>
