@@ -21,6 +21,11 @@ pre-commit:
       glob: "packages/briar-node/**/*.{ts,tsx}"
       run: bun run --filter @briar/node typecheck
 
+    # 软删除约定：业务表禁止硬 DELETE（仅白名单例外）
+    soft-delete-guard:
+      glob: "packages/briar-node/**/*.{ts,tsx,sql}"
+      run: bun test packages/briar-node/src/db/softDelete.guard.test.ts
+
 # 提交信息检查
 # commit-msg:
 #   commands:
