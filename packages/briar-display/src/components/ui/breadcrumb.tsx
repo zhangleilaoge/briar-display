@@ -17,7 +17,7 @@ const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWi
 		<ol
 			ref={ref}
 			className={cn(
-				'flex flex-wrap items-center gap-1.5 break-words font-control text-sm tracking-control text-muted-foreground sm:gap-2.5',
+				'flex flex-wrap items-center gap-1.5 break-words font-control text-sm leading-none tracking-control text-muted-foreground sm:gap-2.5',
 				className,
 			)}
 			{...props}
@@ -51,6 +51,7 @@ const BreadcrumbLink = React.forwardRef<
 })
 BreadcrumbLink.displayName = 'BreadcrumbLink'
 
+/** 当前段：继承 List 的 font-control（PingFang），不用 font-heading（Songti），避免中文与正文/文件夹名错位 */
 const BreadcrumbPage = React.forwardRef<HTMLSpanElement, React.ComponentPropsWithoutRef<'span'>>(
 	({ className, ...props }, ref) => (
 		<span
@@ -59,7 +60,7 @@ const BreadcrumbPage = React.forwardRef<HTMLSpanElement, React.ComponentPropsWit
 			tabIndex={0}
 			aria-disabled="true"
 			aria-current="page"
-			className={cn('font-heading font-semibold text-foreground', className)}
+			className={cn('font-medium text-foreground', className)}
 			{...props}
 		/>
 	),
@@ -70,7 +71,7 @@ const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentP
 	<li
 		role="presentation"
 		aria-hidden="true"
-		className={cn('[&>svg]:w-3.5 [&>svg]:h-3.5', className)}
+		className={cn('inline-flex items-center [&>svg]:size-3.5', className)}
 		{...props}
 	>
 		{children ?? <ChevronRight />}

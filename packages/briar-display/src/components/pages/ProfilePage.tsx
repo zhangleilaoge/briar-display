@@ -6,7 +6,6 @@ import LoginMethodsCard from '@/components/profile/LoginMethodsCard'
 import MergeHistoryCard from '@/components/profile/MergeHistoryCard'
 import MessagesPanel from '@/components/profile/MessagesPanel'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { DoveOlive } from '@/components/ui/ornaments'
 import { PageHeader } from '@/components/ui/page-header'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ThemeShell } from '@/components/ui/theme-shell'
@@ -64,7 +63,6 @@ function ProfilePageInner() {
 			<ThemeShell
 				variant="scrapbook"
 				className="flex items-center justify-center gap-2 text-muted-foreground"
-				accent={<DoveOlive className="h-28 w-28" />}
 			>
 				<AlertCircle className="h-5 w-5" />
 				<span>你没有权限访问此页面</span>
@@ -104,14 +102,14 @@ function ProfilePageInner() {
 	const initial = user?.name?.charAt(0)?.toUpperCase() || 'U'
 
 	return (
-		<ThemeShell variant="scrapbook" watermark="07" accent={<DoveOlive className="h-28 w-28" />}>
+		<ThemeShell variant="scrapbook" watermark="07">
 			{/* 顶部导航 */}
 			<PageHeader crumbs={[{ label: '个人中心' }]} />
 
 			<main className="mx-auto max-w-5xl p-4 sm:p-6">
 				<div>
 					<span className="rv-script text-2xl text-[color:var(--rv-rose-deep)]">Mon carnet</span>
-					<h1 className="font-heading text-3xl font-semibold tracking-tight">个人中心</h1>
+					<h1 className="text-3xl font-semibold tracking-tight">个人中心</h1>
 					<p className="mt-1 text-sm text-muted-foreground">管理你的账号信息、角色与权限</p>
 				</div>
 

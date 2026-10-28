@@ -2,7 +2,7 @@
 
 /**
  * 页面外壳：挂载全局吊牌侧栏 + 主题背景装饰。
- * 背景层只保留水印 / 星盘系统件；具象贴纸由各页 accent 单点挂载，避免全站复用同一素材。
+ * 背景层只保留水印数字与共享星盘（Astrolabe）；不再挂载页面专属角饰。
  */
 import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
@@ -22,8 +22,6 @@ export interface ThemeShellProps {
 	currentPath?: string
 	/** 大号水印数字，如 09；不传则用主题默认 */
 	watermark?: string
-	/** 页面专属平面角饰（全站每种素材只用一次） */
-	accent?: ReactNode
 }
 
 export function ThemeShell({
@@ -34,7 +32,6 @@ export function ThemeShell({
 	decor = true,
 	currentPath,
 	watermark,
-	accent,
 }: ThemeShellProps) {
 	return (
 		<div className={cn('relative isolate min-h-screen', sidebar && 'md:pl-16', className)}>
@@ -45,14 +42,6 @@ export function ThemeShell({
 				) : (
 					<ScrapbookDecor watermark={watermark} />
 				))}
-			{accent ? (
-				<div
-					aria-hidden
-					className="pointer-events-none fixed bottom-10 right-6 z-0 hidden opacity-[0.16] xl:block"
-				>
-					{accent}
-				</div>
-			) : null}
 			{children}
 		</div>
 	)
@@ -64,7 +53,7 @@ function ArcaneDecor({ watermark }: { watermark?: string }) {
 			<span className="rv-watermark-num absolute -left-4 top-6 text-[11rem] opacity-60 md:left-16 md:text-[14rem]">
 				{watermark ?? '09'}
 			</span>
-			{/* 星盘为 Arcane HUD 系统件，各 Arcane 页共享；具象贴纸走 ThemeShell.accent */}
+			{/* 星盘为 Arcane HUD 系统件，各 Arcane 页共享 */}
 			<Astrolabe
 				className="absolute -bottom-40 -right-32 h-[560px] w-[560px] opacity-[0.2]"
 				showWord={false}
@@ -85,7 +74,7 @@ function ScrapbookDecor({ watermark }: { watermark?: string }) {
 			<span className="rv-watermark-num absolute -left-6 top-4 text-[10rem] opacity-35 md:left-14 md:text-[12rem]">
 				{watermark ?? '01'}
 			</span>
-			{/* 无具象贴纸：邮戳/怀表/花饰改由各页单点挂载 */}
+			{/* 色块氛围，无页面专属贴纸 */}
 			<div className="absolute -left-24 top-1/3 h-80 w-80 rounded-full bg-[var(--rv-pink)] opacity-45 blur-3xl" />
 			<div className="absolute -right-24 top-10 h-80 w-80 rounded-full bg-[var(--rv-sky)] opacity-45 blur-3xl" />
 		</div>
@@ -181,13 +170,11 @@ export function BrandCollage({
 export function PaperPanel({
 	children,
 	className,
-	index,
 	title,
 	autoHeight = true,
 }: {
 	children: ReactNode
 	className?: string
-	index?: string
 	title?: string
 	/** 内容高度变化时平滑过渡；需撑满父级 flex 的面板（如工具箱）传 false */
 	autoHeight?: boolean
@@ -195,14 +182,11 @@ export function PaperPanel({
 	return (
 		<section className={cn('rv-panel rv-page-enter relative', className)}>
 			{/* 不再叠加外层裁切角标：面板自身描边 + 纹理已构成唯一框线，避免双层框 */}
-			{(index || title) && (
+			{title && (
 				<header className="mb-3 flex items-end gap-3 border-b border-[color:var(--rv-navy)]/15 pb-2">
-					{index && <span className="rv-index-box">{index}</span>}
-					{title && (
-						<span className="font-label text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
-							{title}
-						</span>
-					)}
+					<span className="font-label text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+						{title}
+					</span>
 				</header>
 			)}
 			{autoHeight ? <AutoHeight>{children}</AutoHeight> : children}

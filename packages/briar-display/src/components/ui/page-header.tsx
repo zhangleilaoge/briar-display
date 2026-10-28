@@ -38,6 +38,8 @@ interface PageHeaderProps {
 	user?: ReactNode
 	/** 子导航同行显示的断点，默认 lg */
 	inlineAt?: 'md' | 'lg' | 'xl' | '2xl'
+	/** 隐藏首项品牌「xiaobuzi」（首页顶栏用） */
+	hideBrand?: boolean
 	className?: string
 }
 
@@ -53,6 +55,7 @@ export function PageHeader({
 	right,
 	user,
 	inlineAt = 'lg',
+	hideBrand = false,
 	className,
 }: PageHeaderProps) {
 	const navigate = useNavigate()
@@ -86,29 +89,33 @@ export function PageHeader({
 		<header className={`glass-header sticky top-0 z-50 ${className ?? ''}`}>
 			<div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
 				<div className="flex min-w-0 items-center gap-6">
-					<Breadcrumb className="shrink-0 whitespace-nowrap">
-						<BreadcrumbList>
-							<BreadcrumbItem>
-								{crumbs.length === 0 ? (
-									<BreadcrumbPage>xiaobuzi</BreadcrumbPage>
-								) : (
-									<BreadcrumbLink href="/briar/">xiaobuzi</BreadcrumbLink>
-								)}
-							</BreadcrumbItem>
-							{crumbs.map((c, i) => (
-								<Fragment key={`${c.label}-${i}`}>
-									<BreadcrumbSeparator />
+					{(!hideBrand || crumbs.length > 0) && (
+						<Breadcrumb className="shrink-0 whitespace-nowrap">
+							<BreadcrumbList>
+								{!hideBrand && (
 									<BreadcrumbItem>
-										{c.href && i < crumbs.length - 1 ? (
-											<BreadcrumbLink href={c.href}>{c.label}</BreadcrumbLink>
+										{crumbs.length === 0 ? (
+											<BreadcrumbPage>xiaobuzi</BreadcrumbPage>
 										) : (
-											<BreadcrumbPage>{c.label}</BreadcrumbPage>
+											<BreadcrumbLink href="/briar/">xiaobuzi</BreadcrumbLink>
 										)}
 									</BreadcrumbItem>
-								</Fragment>
-							))}
-						</BreadcrumbList>
-					</Breadcrumb>
+								)}
+								{crumbs.map((c, i) => (
+									<Fragment key={`${c.label}-${i}`}>
+										{(!hideBrand || i > 0) && <BreadcrumbSeparator />}
+										<BreadcrumbItem>
+											{c.href && i < crumbs.length - 1 ? (
+												<BreadcrumbLink href={c.href}>{c.label}</BreadcrumbLink>
+											) : (
+												<BreadcrumbPage>{c.label}</BreadcrumbPage>
+											)}
+										</BreadcrumbItem>
+									</Fragment>
+								))}
+							</BreadcrumbList>
+						</Breadcrumb>
+					)}
 					{navNode && <div className={inlineCls}>{navNode}</div>}
 				</div>
 				<div className="flex shrink-0 items-center gap-3">
