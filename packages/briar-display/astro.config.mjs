@@ -53,6 +53,13 @@ export default defineConfig({
 								if (!file.startsWith('src/')) return
 								// R3F 会把 data-* 解释为三维对象的属性路径，不能注入 DOM 定位元数据。
 								if (isR3FElement(path)) return
+								// Fragment 只接受 key/children，注入 data-* 会触发 React 警告
+								const n = path.node.name
+								if (
+									(n.type === 'JSXIdentifier' && n.name === 'Fragment') ||
+									(n.type === 'JSXMemberExpression' && n.property?.name === 'Fragment')
+								)
+									return
 								// 避免 HMR 时重复添加
 								const hasDataFile = path.node.attributes.some(
 									(a) => a.type === 'JSXAttribute' && a.name?.name === 'data-file',
