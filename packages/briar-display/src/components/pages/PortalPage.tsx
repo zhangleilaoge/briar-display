@@ -4,17 +4,13 @@ import UserMenu from '@/components/common/UserMenu'
 import { Card, CardContent } from '@/components/ui/card'
 import { ChatBubble } from '@/components/ui/chat-bubble'
 import {
-	Cherub,
-	Dove,
 	FilesIcon,
+	GothicArch,
 	JournalIcon,
 	KeyIcon,
 	MarketsIcon,
 	type OrnamentIconProps,
 	Postmark,
-	Ribbon,
-	Strawberry,
-	Teapot,
 	ToolsIcon,
 } from '@/components/ui/ornaments'
 import { StampInputBar } from '@/components/ui/stamp-input-bar'
@@ -78,7 +74,7 @@ function EntryCard({ entry, tilt }: { entry: Entry; tilt: number }) {
 			className="group block outline-none transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1"
 			style={{ rotate: `${tilt}deg` }}
 		>
-			<Card className="glass-interactive overflow-hidden group-focus-visible:shadow-focus">
+			<Card className="rv-tile glass-interactive overflow-hidden group-focus-visible:shadow-focus">
 				<CardContent className="flex items-center gap-4 p-5">
 					<div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[color:var(--rv-rose)] bg-[var(--rv-pink)] shadow-[inset_0_2px_4px_rgb(255_255_255/0.9),inset_0_-2px_4px_rgb(185_84_95/0.18)]">
 						<Icon className="h-7 w-7 text-[color:var(--rv-ink)]" />
@@ -126,7 +122,12 @@ function PortalPageInner() {
 	const tilts = [-1.2, 0.8, 1, -0.8, -1]
 
 	return (
-		<ThemeShell variant="scrapbook" className="flex flex-col overflow-hidden">
+		<ThemeShell
+			variant="scrapbook"
+			watermark="01"
+			glyph="旅"
+			className="flex flex-col overflow-hidden"
+		>
 			{/* Top bar */}
 			<header className="glass-header sticky top-0 z-30 flex h-14 items-center justify-between px-4 sm:px-6">
 				<span className="rv-script text-2xl leading-none text-foreground">xiaobuzi</span>
@@ -142,35 +143,47 @@ function PortalPageInner() {
 			{/* Main */}
 			<main className="flex flex-1 items-center justify-center p-4 sm:p-6">
 				<div className="w-full max-w-3xl space-y-8">
-					{/* 拼贴问候卡 */}
-					<Card className="relative overflow-visible">
-						<CardContent className="relative flex flex-col gap-2 p-6 sm:p-8">
-							<span className="rv-label text-muted-foreground">
-								Carnet de voyage · {date || '\u00a0'}
-							</span>
-							<h1 className="font-display text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
-								<span className="rv-script mr-2 font-normal text-[color:var(--rv-rose-deep)]">
-									{greet},
+					{/* 参考帧：多层剪纸拼贴问候区 */}
+					<div className="relative mx-auto max-w-xl px-2 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-8">
+						{/* 底层倾斜纸片 */}
+						<div
+							aria-hidden
+							className="rv-paper-back absolute inset-x-4 -bottom-1 top-10 -rotate-[3.5deg] rounded-md sm:inset-x-8"
+						/>
+						<div
+							aria-hidden
+							className="rv-paper-back absolute inset-x-6 -bottom-2 top-8 rotate-[2.5deg] rounded-md bg-[var(--rv-pink)]/55 sm:inset-x-10"
+						/>
+						{/* 旁侧：只留一处尖拱，留白 */}
+						<GothicArch className="absolute -left-2 top-2 hidden h-32 w-auto -rotate-6 opacity-80 sm:-left-8 sm:block" />
+
+						<Card className="relative z-[1] overflow-visible border-[color:var(--rv-navy)]/25 shadow-raised">
+							<CardContent className="relative flex flex-col gap-2 p-6 sm:p-8">
+								<span className="rv-label text-muted-foreground">
+									Carnet de voyage · {date || '\u00a0'}
 								</span>
-								xiaobuzi
-							</h1>
-							<p className="font-display text-lg italic text-muted-foreground">
-								今天想去哪里看看？
-							</p>
-							<Postmark
-								className="absolute -top-6 right-4 h-24 w-24 rotate-12 sm:right-8"
-								date={date.slice(-2) || '27'}
-							/>
-							<Strawberry className="absolute -bottom-6 right-24 h-14 w-14 -rotate-12 sm:right-32" />
-							<Ribbon className="absolute -left-5 -top-6 h-14 w-14 -rotate-[18deg]" />
-							<Cherub className="absolute -right-3 bottom-10 hidden h-12 w-12 rotate-6 sm:block" />
-							<Dove className="absolute -left-4 bottom-16 hidden h-12 w-12 -rotate-6 opacity-90 sm:block" />
-							<Teapot className="absolute right-40 -bottom-5 hidden h-11 w-11 rotate-3 sm:block" />
-						</CardContent>
-					</Card>
+								<h1 className="font-display text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
+									<span className="rv-script mr-2 font-normal text-[color:var(--rv-rose-deep)]">
+										{greet},
+									</span>
+									xiaobuzi
+								</h1>
+								<p className="font-display text-lg italic text-muted-foreground">
+									le salon du code est ouvert · 今天想去哪里看看？
+								</p>
+								<Postmark
+									className="absolute -top-6 right-4 h-24 w-24 rotate-12 sm:right-8"
+									date={date.slice(-2) || '27'}
+								/>
+							</CardContent>
+						</Card>
+					</div>
 
 					{/* 邮票输入条：筛选下方入口 */}
 					<div className="space-y-3">
+						<p className="text-center font-display text-sm italic text-muted-foreground">
+							或者，从这里开始 · ou commencez ici
+						</p>
 						<StampInputBar
 							value={query}
 							onChange={(e) => setQuery(e.target.value)}

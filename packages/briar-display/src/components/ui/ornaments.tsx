@@ -1,27 +1,25 @@
 /**
  * Reverie 主题装饰与图标。
- * - 小图标：Phosphor Icons（MIT），统一 duotone 字重，颜色走 currentColor。
- * - 剪贴簿贴纸：Microsoft Fluent Emoji 3D（MIT）；怀表 / 小天使 / 鸽子 / 花饰 / 尖拱：
- *   Wikimedia Commons（CC0 / Public Domain / CC BY-SA 3.0，见 ASSETS_LICENSES.md）。
- * - 邮戳为本仓库自绘的简单几何 SVG。
+ * - 小图标：Phosphor Icons（MIT），统一 duotone，颜色走 currentColor。
+ * - 背景/角饰：仅平面线稿 / 剪影 SVG（Wikimedia PD/CC0/CC BY），各素材全站至多出现一次；
+ *   禁止 Fluent Emoji 3D / 茶壶 / 小天使。
  */
-import cherubImg from '@/assets/decor/cherub-postscript.svg'
+import antiqueKeyImg from '@/assets/decor/antique-key.svg'
+import compassImg from '@/assets/decor/compass-rose.svg'
 import doveOliveImg from '@/assets/decor/dove-olive.svg'
+import fleurImg from '@/assets/decor/fleur-de-lis.svg'
 import floral1913Img from '@/assets/decor/floral-1913.svg'
+import floralLilienImg from '@/assets/decor/floral-lilien.svg'
 import floralRoundImg from '@/assets/decor/floral-round.svg'
-import classicalImg from '@/assets/decor/fluent-classical.png'
-import doveImg from '@/assets/decor/fluent-dove.png'
-import envelopeImg from '@/assets/decor/fluent-envelope.png'
-import penImg from '@/assets/decor/fluent-fountain-pen.png'
-import ladderImg from '@/assets/decor/fluent-ladder.png'
-import ribbonImg from '@/assets/decor/fluent-ribbon.png'
-import roseImg from '@/assets/decor/fluent-rose.png'
-import sparklesImg from '@/assets/decor/fluent-sparkles.png'
-import strawberryImg from '@/assets/decor/fluent-strawberry.png'
-import teapotImg from '@/assets/decor/fluent-teapot.png'
+import floralSecessionImg from '@/assets/decor/floral-secession.svg'
+import flowerPsfImg from '@/assets/decor/flower-psf.svg'
 import gothicArchImg from '@/assets/decor/gothic-arch.svg'
+import inkwellImg from '@/assets/decor/inkwell-pen.svg'
 import columnImg from '@/assets/decor/ionic-column.svg'
+import lanternImg from '@/assets/decor/lantern.svg'
 import watchImg from '@/assets/decor/pocket-watch.svg'
+import scissorsImg from '@/assets/decor/scissors-psf.svg'
+import waxSealImg from '@/assets/decor/wax-seal.svg'
 import { cn } from '@/lib/utils'
 import {
 	BookOpenText,
@@ -57,7 +55,7 @@ export const MarketsIcon = duo(ChartLineUp)
 export const KeyIcon = duo(Key)
 export const ProfileIcon = duo(UserCircle)
 
-/* ---------------- 剪纸贴纸（白描边 + 柔影） ---------------- */
+/* ---------------- 平面剪纸 / 线稿（各组件全站单点使用） ---------------- */
 
 function Sticker({
 	src,
@@ -84,47 +82,17 @@ function Sticker({
 	)
 }
 
-/** 草莓贴纸：用户气泡 / 便签角饰 */
-export function Strawberry({ className, ...props }: ImgProps) {
-	return <Sticker src={srcOf(strawberryImg)} className={className} {...props} />
-}
-
-/** 蝴蝶结贴纸 */
-export function Ribbon({ className, ...props }: ImgProps) {
-	return <Sticker src={srcOf(ribbonImg)} className={className} {...props} />
-}
-
-/** 信封贴纸 */
-export function Envelope({ className, ...props }: ImgProps) {
-	return <Sticker src={srcOf(envelopeImg)} className={className} {...props} />
-}
-
-/** 闪光贴纸 */
-export function Sparkles({ className, ...props }: ImgProps) {
-	return <Sticker src={srcOf(sparklesImg)} className={className} {...props} />
-}
-
-/** 怀表（复古线稿插画） */
+/** 怀表线稿 — 仅 stamp-input */
 export function PocketWatch({ className, ...props }: ImgProps) {
 	return <Sticker src={srcOf(watchImg)} className={className} {...props} />
 }
 
-/** 钢笔贴纸 */
-export function FountainPen({ className, ...props }: ImgProps) {
-	return <Sticker src={srcOf(penImg)} className={className} {...props} />
+/** 墨水瓶钢笔剪影 — 仅 stamp-input */
+export function InkwellPen({ className, ...props }: ImgProps) {
+	return <Sticker src={srcOf(inkwellImg)} className={className} {...props} />
 }
 
-/** 小天使剪纸（公有领域雕版，弹窗角饰） */
-export function Cherub({ className, ...props }: ImgProps) {
-	return <Sticker src={srcOf(cherubImg)} className={className} {...props} />
-}
-
-/** 白鸽（Fluent 3D） */
-export function Dove({ className, ...props }: ImgProps) {
-	return <Sticker src={srcOf(doveImg)} className={className} {...props} />
-}
-
-/** 白鸽线稿（CC0） */
+/** 白鸽线稿 — 仅个人页 */
 export function DoveOlive({ className, ...props }: ImgProps) {
 	return (
 		<Sticker
@@ -136,42 +104,74 @@ export function DoveOlive({ className, ...props }: ImgProps) {
 	)
 }
 
-/** 茶壶贴纸 */
-export function Teapot({ className, ...props }: ImgProps) {
-	return <Sticker src={srcOf(teapotImg)} className={className} {...props} />
-}
-
-/** 玫瑰贴纸 */
-export function Rose({ className, ...props }: ImgProps) {
-	return <Sticker src={srcOf(roseImg)} className={className} {...props} />
-}
-
-/** 古典建筑贴纸 */
-export function ClassicalBuilding({ className, ...props }: ImgProps) {
-	return <Sticker src={srcOf(classicalImg)} className={className} {...props} />
-}
-
-/** 梯子贴纸 */
-export function Ladder({ className, ...props }: ImgProps) {
-	return <Sticker src={srcOf(ladderImg)} className={className} {...props} />
-}
-
-/** 1913 花饰线稿（公有领域） */
+/** 1913 花饰 — 预留/备用 */
 export function FloralStamp({ className, ...props }: ImgProps) {
 	return <Sticker src={srcOf(floral1913Img)} className={cn('opacity-90', className)} {...props} />
 }
 
-/** 圆形花饰（公有领域） */
+/** 圆形花饰 — 仅注册页 BrandCollage */
 export function FloralRound({ className, ...props }: ImgProps) {
 	return <Sticker src={srcOf(floralRoundImg)} className={cn('opacity-90', className)} {...props} />
 }
 
-/** 哥特尖拱（CC BY-SA 3.0） */
+/** 分离派花饰 1899 — 仅博客 */
+export function FloralSecession({ className, ...props }: ImgProps) {
+	return (
+		<Sticker src={srcOf(floralSecessionImg)} className={cn('opacity-90', className)} {...props} />
+	)
+}
+
+/** 利林新艺术花饰 — 预留 */
+export function FloralLilien({ className, ...props }: ImgProps) {
+	return <Sticker src={srcOf(floralLilienImg)} className={cn('opacity-90', className)} {...props} />
+}
+
+/** PSF 合瓣花线稿 — 预留 */
+export function FlowerPsf({ className, ...props }: ImgProps) {
+	return <Sticker src={srcOf(flowerPsfImg)} className={className} {...props} />
+}
+
+/** 哥特尖拱 — 仅门户问候卡旁 */
 export function GothicArch({ className, ...props }: ImgProps) {
 	return <Sticker src={srcOf(gothicArchImg)} className={className} {...props} />
 }
 
-/** 邮戳（圆形 + 波浪线），用于明信片拼贴 */
+/** 爱奥尼柱 — 仅文件页 */
+export function GreekColumn({ className, ...props }: ImgProps) {
+	return <Sticker src={srcOf(columnImg)} className={className} {...props} />
+}
+
+/** PSF 剪刀线稿 — 仅工具箱 */
+export function ScissorsCut({ className, ...props }: ImgProps) {
+	return <Sticker src={srcOf(scissorsImg)} className={className} {...props} />
+}
+
+/** 扁平底纹鸢尾 — 仅登录 BrandCollage */
+export function FleurDeLis({ className, ...props }: ImgProps) {
+	return <Sticker src={srcOf(fleurImg)} className={className} {...props} />
+}
+
+/** 古董钥匙 — 仅管理后台 */
+export function AntiqueKey({ className, ...props }: ImgProps) {
+	return <Sticker src={srcOf(antiqueKeyImg)} className={className} {...props} />
+}
+
+/** 简易罗盘玫瑰 — 仅行情页 */
+export function CompassRose({ className, ...props }: ImgProps) {
+	return <Sticker src={srcOf(compassImg)} className={className} {...props} />
+}
+
+/** 蜡封印剪影 — 预留（登录用 Fleur） */
+export function WaxSeal({ className, ...props }: ImgProps) {
+	return <Sticker src={srcOf(waxSealImg)} className={className} {...props} />
+}
+
+/** 提灯剪影 — 预留 */
+export function Lantern({ className, ...props }: ImgProps) {
+	return <Sticker src={srcOf(lanternImg)} className={className} {...props} />
+}
+
+/** 邮戳（自绘）— 仅门户问候卡 */
 export function Postmark({
 	className,
 	text = 'XIAOBUZI · PARIS · 1999',
@@ -209,11 +209,4 @@ export function Postmark({
 			</text>
 		</svg>
 	)
-}
-
-/* ---------------- HUD 插画 ---------------- */
-
-/** 希腊爱奥尼柱（公有领域建筑立面线稿，已着色为藏青） */
-export function GreekColumn({ className, ...props }: ImgProps) {
-	return <Sticker src={srcOf(columnImg)} className={className} {...props} />
 }

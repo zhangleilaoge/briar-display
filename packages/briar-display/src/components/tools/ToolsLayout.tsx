@@ -9,8 +9,9 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { ScissorsCut } from '@/components/ui/ornaments'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { HudTitle, ThemeShell } from '@/components/ui/theme-shell'
+import { HudTitle, PaperPanel, ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import {
 	Braces,
@@ -110,7 +111,10 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 			<ThemeShell
 				variant="arcane"
 				currentPath={currentPath}
+				watermark="02"
+				glyph="工"
 				className="flex h-screen flex-col overflow-hidden"
+				accent={<ScissorsCut className="h-28 w-auto -rotate-12" />}
 			>
 				{/* 顶部导航栏 */}
 				<header className="glass-header sticky top-0 z-50">
@@ -120,6 +124,7 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 								index="02"
 								label="Outils"
 								title="工具箱"
+								script="Atelier"
 								className="hidden shrink-0 2xl:flex"
 							/>
 							<Breadcrumb className="shrink-0 whitespace-nowrap">
@@ -146,7 +151,9 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 
 				{/* 内容区 */}
 				<main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
-					<div className="flex w-full flex-1 flex-col min-h-0">{children}</div>
+					<PaperPanel index="02" title="ATELIER · 工作台" className="flex min-h-0 flex-1 flex-col">
+						<div className="flex min-h-0 w-full flex-1 flex-col">{children}</div>
+					</PaperPanel>
 				</main>
 			</ThemeShell>
 		</PermissionProvider>

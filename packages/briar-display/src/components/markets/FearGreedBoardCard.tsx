@@ -43,7 +43,7 @@ export default function FearGreedBoardCard() {
 	const scored = sectors.filter((s) => s.score != null)
 
 	return (
-		<Card className="glass rounded-2xl">
+		<Card className="rv-tile glass rounded-2xl">
 			<CardContent className="space-y-3 p-4 sm:p-5">
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<div className="flex items-center gap-2">

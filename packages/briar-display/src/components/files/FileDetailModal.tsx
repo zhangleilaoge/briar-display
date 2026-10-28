@@ -2,7 +2,6 @@
 
 import { type FileItem, getFileContent } from '@/api/files'
 import { Button } from '@/components/ui/button'
-import { Cherub } from '@/components/ui/ornaments'
 import { cn } from '@/lib/utils'
 import { Check, Clipboard, Download, X } from 'lucide-react'
 import { Suspense, lazy, useEffect, useState } from 'react'
@@ -192,7 +191,6 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 				<span className="rv-crop-marks" aria-hidden>
 					<span />
 				</span>
-				<Cherub className="rv-dialog-ornament absolute -left-5 -top-9 z-[3] hidden h-14 w-14 -rotate-[16deg] sm:block" />
 				<span className="rv-paper-index">{label.index}</span>
 
 				{/* 藏青顶栏 */}

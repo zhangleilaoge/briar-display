@@ -3,7 +3,13 @@
 import { type UserMergeLog, getUserMergeLogs } from '@/api/admin'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { ChevronDown, ChevronRight, Loader2, RefreshCw } from 'lucide-react'
 import { Fragment, useCallback, useEffect, useState } from 'react'
@@ -111,17 +117,16 @@ export default function MergeLogsDialog({ open, onOpenChange }: Props) {
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
 				index="13"
-				ornament
-				className="flex max-h-[85vh] max-w-4xl flex-col gap-3 overflow-hidden"
+				className="flex max-h-[85vh] max-w-4xl flex-col gap-3 overflow-visible"
 				data-testid="merge-logs-dialog"
 			>
-				<div className="flex items-start justify-between gap-2 pr-6">
-					<div>
-						<DialogTitle className="text-base">合并记录</DialogTitle>
-						<DialogDescription className="text-xs">
-							每次用户合并（含失败）都会落库；源用户合并后已删除，名字与邮箱为当时快照
-						</DialogDescription>
-					</div>
+				<DialogHeader>
+					<DialogTitle>合并记录</DialogTitle>
+					<DialogDescription className="text-xs text-white/75">
+						每次用户合并（含失败）都会落库；源用户合并后已删除，名字与邮箱为当时快照
+					</DialogDescription>
+				</DialogHeader>
+				<div className="flex justify-end">
 					<Button
 						size="sm"
 						variant="ghost"

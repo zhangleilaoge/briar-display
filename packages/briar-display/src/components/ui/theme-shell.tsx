@@ -2,24 +2,12 @@
 
 /**
  * 页面外壳：挂载全局吊牌侧栏 + 主题背景装饰。
- * 主题 token 本身由 Layout.astro 在 <body> 上加 theme-scrapbook / theme-arcane 类切换，
- * 这里只负责结构与装饰层（装饰全部 pointer-events-none，不影响交互）。
+ * 背景层只保留水印 / 星盘系统件；具象贴纸由各页 accent 单点挂载，避免全站复用同一素材。
  */
 import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
 import { Astrolabe } from './astrolabe'
-import {
-	Cherub,
-	Dove,
-	FloralRound,
-	FloralStamp,
-	GreekColumn,
-	PocketWatch,
-	Postmark,
-	Rose,
-	Strawberry,
-	Teapot,
-} from './ornaments'
+import { FleurDeLis, FloralRound } from './ornaments'
 import { RibbonSidebar } from './ribbon-sidebar'
 
 export interface ThemeShellProps {
@@ -31,6 +19,12 @@ export interface ThemeShellProps {
 	/** 是否显示背景装饰 */
 	decor?: boolean
 	currentPath?: string
+	/** 大号水印数字，如 09；不传则用主题默认 */
+	watermark?: string
+	/** 大号中文水印字，如 寻 / 阅 */
+	glyph?: string
+	/** 页面专属平面角饰（全站每种素材只用一次） */
+	accent?: ReactNode
 }
 
 export function ThemeShell({
@@ -40,44 +34,72 @@ export function ThemeShell({
 	sidebar = true,
 	decor = true,
 	currentPath,
+	watermark,
+	glyph,
+	accent,
 }: ThemeShellProps) {
 	return (
 		<div className={cn('relative isolate min-h-screen', sidebar && 'md:pl-16', className)}>
 			{sidebar && <RibbonSidebar currentPath={currentPath} />}
-			{decor && (variant === 'arcane' ? <ArcaneDecor /> : <ScrapbookDecor />)}
+			{decor &&
+				(variant === 'arcane' ? (
+					<ArcaneDecor watermark={watermark} glyph={glyph} />
+				) : (
+					<ScrapbookDecor watermark={watermark} glyph={glyph} />
+				))}
+			{accent ? (
+				<div
+					aria-hidden
+					className="pointer-events-none fixed bottom-10 right-6 z-0 hidden opacity-[0.16] xl:block"
+				>
+					{accent}
+				</div>
+			) : null}
 			{children}
 		</div>
 	)
 }
 
-function ArcaneDecor() {
+function ArcaneDecor({ watermark, glyph }: { watermark?: string; glyph?: string }) {
 	return (
 		<div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+			<span className="rv-watermark-num absolute -left-4 top-6 text-[11rem] opacity-60 md:left-16 md:text-[14rem]">
+				{watermark ?? '09'}
+			</span>
+			{glyph && (
+				<span className="rv-watermark-glyph absolute right-6 top-10 hidden text-[9rem] opacity-40 xl:block">
+					{glyph}
+				</span>
+			)}
+			{/* 星盘为 Arcane HUD 系统件，各 Arcane 页共享；具象贴纸走 ThemeShell.accent */}
 			<Astrolabe
-				className="absolute -bottom-40 -right-32 h-[560px] w-[560px] opacity-[0.22]"
+				className="absolute -bottom-40 -right-32 h-[560px] w-[560px] opacity-[0.2]"
 				showWord={false}
 			/>
-			<GreekColumn className="absolute bottom-0 right-4 hidden h-[68vh] w-auto opacity-[0.16] xl:block" />
-			<GreekColumn className="absolute bottom-0 left-20 hidden h-[52vh] w-auto -scale-x-100 opacity-[0.1] 2xl:block" />
-			<Dove className="absolute right-16 top-20 hidden h-16 w-16 opacity-[0.18] xl:block" />
-			<FloralRound className="absolute left-[calc(4rem+2rem)] top-28 hidden h-24 w-24 opacity-[0.14] lg:block" />
-			{/* HUD 角标线 */}
 			<div className="absolute left-[calc(4rem+12px)] right-3 top-3 hidden h-px bg-[var(--rv-line)] opacity-40 md:block" />
+			<div className="absolute bottom-4 left-[calc(4rem+12px)] right-3 hidden h-px bg-[var(--rv-line)] opacity-25 md:block" />
+			<div className="absolute bottom-5 right-6 hidden items-center gap-2 font-label text-[9px] uppercase tracking-[0.22em] text-[color:var(--rv-navy)]/55 xl:flex">
+				<span className="rv-barcode" />
+				<span>XIAOBUZI · ARCHIVE</span>
+			</div>
 		</div>
 	)
 }
 
-function ScrapbookDecor() {
+function ScrapbookDecor({ watermark, glyph }: { watermark?: string; glyph?: string }) {
 	return (
 		<div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-			<Postmark className="absolute right-10 top-16 hidden h-28 w-28 rotate-12 opacity-30 lg:block" />
-			<PocketWatch className="absolute -bottom-10 -right-6 hidden h-48 w-auto -rotate-12 opacity-[0.18] lg:block" />
-			<Cherub className="absolute left-[calc(4rem+1rem)] top-24 hidden h-20 w-20 -rotate-[14deg] opacity-[0.22] xl:block" />
-			<Teapot className="absolute bottom-24 left-[calc(4rem+2rem)] hidden h-16 w-16 rotate-6 opacity-[0.2] lg:block" />
-			<Rose className="absolute right-24 top-1/3 hidden h-14 w-14 -rotate-12 opacity-[0.22] xl:block" />
-			<FloralStamp className="absolute -left-8 bottom-10 hidden h-36 w-36 opacity-[0.12] lg:block" />
-			<div className="absolute -left-24 top-1/3 h-72 w-72 rounded-full bg-[var(--rv-pink)] opacity-50 blur-3xl" />
-			<div className="absolute -right-24 top-10 h-72 w-72 rounded-full bg-[var(--rv-sky)] opacity-50 blur-3xl" />
+			<span className="rv-watermark-num absolute -left-6 top-4 text-[10rem] opacity-35 md:left-14 md:text-[12rem]">
+				{watermark ?? '01'}
+			</span>
+			{glyph && (
+				<span className="rv-watermark-glyph absolute right-8 top-16 hidden text-[8rem] opacity-28 xl:block">
+					{glyph}
+				</span>
+			)}
+			{/* 无具象贴纸：邮戳/怀表/花饰改由各页单点挂载 */}
+			<div className="absolute -left-24 top-1/3 h-80 w-80 rounded-full bg-[var(--rv-pink)] opacity-45 blur-3xl" />
+			<div className="absolute -right-24 top-10 h-80 w-80 rounded-full bg-[var(--rv-sky)] opacity-45 blur-3xl" />
 		</div>
 	)
 }
@@ -97,8 +119,8 @@ export interface HudTitleProps {
 /** Arcane HUD 标题块：「09 搜索 RECHERCHE」+ 花体副题 */
 export function HudTitle({ index, label, title, script, className }: HudTitleProps) {
 	return (
-		<div className={cn('flex items-end gap-3 leading-none', className)}>
-			<span className="font-display text-3xl font-semibold text-transparent [-webkit-text-stroke:1px_var(--rv-navy)]">
+		<div className={cn('relative flex items-end gap-3 leading-none', className)}>
+			<span className="font-display text-3xl font-semibold text-transparent [-webkit-text-stroke:1.25px_var(--rv-navy)]">
 				{index}
 			</span>
 			<div className="flex flex-col gap-1">
@@ -132,27 +154,69 @@ export function ScrapTitle({
 	)
 }
 
-/** 登录/注册页品牌拼贴：花体问候 + 衬线品牌名 + 邮戳 + 草莓 */
+/** 登录/注册页品牌拼贴：花体问候 + 衬线品牌名 + 单枚平面角饰（登录鸢尾 / 注册圆花） */
 export function BrandCollage({
 	script,
 	subtitle,
 	className,
-}: { script: string; subtitle: string; className?: string }) {
+	motif = 'fleur',
+}: {
+	script: string
+	subtitle: string
+	className?: string
+	motif?: 'fleur' | 'floral' | 'none'
+}) {
 	return (
 		<div
 			className={cn('relative flex flex-col items-center gap-3 px-10 py-12 text-center', className)}
 		>
 			<div className="rv-surface absolute inset-0 -rotate-2 rounded-surface border border-border/60 bg-card shadow-raised" />
 			<div className="absolute inset-3 -rotate-2 rounded-[calc(var(--radius-surface)-6px)] border border-dashed border-[color:var(--rv-rose)]" />
+			<div className="absolute -left-10 top-6 hidden h-28 w-20 -rotate-[14deg] rounded-sm border border-[color:var(--rv-navy)]/20 bg-[var(--rv-beige)] shadow-surface sm:block" />
+			<div className="absolute -right-8 bottom-8 hidden h-24 w-28 rotate-[8deg] rounded-sm border border-[color:var(--rv-navy)]/15 bg-[var(--rv-pink)]/70 shadow-surface sm:block" />
 			<span className="rv-script relative text-4xl text-[color:var(--rv-rose-deep)]">{script}</span>
 			<h1 className="relative font-display text-6xl font-semibold tracking-tight text-foreground">
 				xiaobuzi
 			</h1>
 			<p className="relative font-display text-xl italic text-muted-foreground">{subtitle}</p>
-			<Postmark className="absolute -right-10 -top-10 h-28 w-28 rotate-12" />
-			<Strawberry className="absolute -bottom-7 -left-5 h-16 w-16 -rotate-12" />
-			<Cherub className="absolute -left-8 top-4 h-14 w-14 -rotate-[18deg]" />
-			<Rose className="absolute -bottom-5 -right-4 h-12 w-12 rotate-12" />
+			{motif === 'fleur' ? (
+				<FleurDeLis className="absolute -right-8 -top-8 h-16 w-16 rotate-12 opacity-90" />
+			) : null}
+			{motif === 'floral' ? (
+				<FloralRound className="absolute -bottom-8 -left-6 h-20 w-20 -rotate-12 opacity-80" />
+			) : null}
 		</div>
+	)
+}
+
+/** 内容面板：HUD 直角纸片 / 剪贴簿圆角纸，带裁切角标 */
+export function PaperPanel({
+	children,
+	className,
+	index,
+	title,
+}: {
+	children: ReactNode
+	className?: string
+	index?: string
+	title?: string
+}) {
+	return (
+		<section className={cn('rv-panel relative', className)}>
+			<span className="rv-crop-marks" aria-hidden>
+				<span />
+			</span>
+			{(index || title) && (
+				<header className="mb-3 flex items-end gap-3 border-b border-[color:var(--rv-navy)]/15 pb-2">
+					{index && <span className="rv-index-box">{index}</span>}
+					{title && (
+						<span className="font-label text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+							{title}
+						</span>
+					)}
+				</header>
+			)}
+			{children}
+		</section>
 	)
 }

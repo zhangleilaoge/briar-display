@@ -91,7 +91,7 @@ export default function FileToolbar({
 	}
 
 	return (
-		<div className="flex flex-wrap items-center justify-between gap-3">
+		<div className="rv-toolbar flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color:var(--rv-ink)]/10 bg-[color:var(--rv-cream)]/70 px-3 py-2 shadow-[2px_3px_0_rgba(45,42,38,0.06)]">
 			<div className="flex flex-wrap items-center gap-3">
 				<div className="relative w-full sm:w-64">
 					<Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

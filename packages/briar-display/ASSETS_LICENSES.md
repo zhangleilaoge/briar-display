@@ -22,37 +22,40 @@ OFL 1.1 允许商用、嵌入与再分发，不得单独售卖字体文件本身
 
 ## 贴纸 / 插画（`src/assets/decor/`）
 
-| 文件 | 用途 | 来源 | 作者 | 授权 | 改动 |
+背景与角饰只用平面线稿 / 剪影；**禁止** Fluent Emoji 3D、茶壶、小天使。每种具象素材全站至多出现一次（见下表「使用处」）；Arcane 星盘为 HUD 系统件，各 Arcane 页共享。
+
+| 文件 | 组件 | 使用处（单点） | 来源 | 授权 | 改动 |
 | --- | --- | --- | --- | --- | --- |
-| `fluent-strawberry.png` | 草莓贴纸（`Strawberry`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Strawberry/3D | Microsoft | MIT，Copyright (c) Microsoft Corporation | 256px 缩放 |
-| `fluent-ribbon.png` | 蝴蝶结贴纸（`Ribbon`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Ribbon/3D | Microsoft | MIT | 256px 缩放 |
-| `fluent-fountain-pen.png` | 钢笔（`FountainPen`，输入栏） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Fountain%20pen/3D | Microsoft | MIT | 256px 缩放 |
-| `fluent-envelope.png` | 信封贴纸（`Envelope`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Envelope/3D | Microsoft | MIT | 256px 缩放 |
-| `fluent-sparkles.png` | 闪光贴纸（`Sparkles`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Sparkles/3D | Microsoft | MIT | 256px 缩放 |
-| `pocket-watch.svg` | 怀表（`PocketWatch`，背景与输入栏） | https://commons.wikimedia.org/wiki/File:Pocket_watch_gold.svg | Mrmw | CC0 1.0（公有领域贡献） | 补 viewBox，svgo 压缩 |
+| `pocket-watch.svg` | `PocketWatch` | 邮票输入条左侧 | https://commons.wikimedia.org/wiki/File:Pocket_watch_gold.svg | CC0 1.0 | viewBox、svgo |
+| `inkwell-pen.svg` | `InkwellPen` | 邮票输入条右侧 | https://commons.wikimedia.org/wiki/File:Inkwell_with_pen_(black-version).svg | CC0 | 无 |
+| `gothic-arch.svg` | `GothicArch` | 门户问候卡旁 | Wikimedia Commons | CC BY-SA 3.0 | 改色、svgo |
+| `dove-olive.svg` | `DoveOlive` | 个人页 accent | Wikimedia Commons | CC0 / PD | 改色、svgo |
+| `floral-round.svg` | `FloralRound` | 注册页 BrandCollage | Wikimedia Commons（Everybody’s floral ornament） | Public Domain | 改色、svgo |
+| `fleur-de-lis.svg` | `FleurDeLis` | 登录页 BrandCollage | https://commons.wikimedia.org/wiki/File:Fleur_de_lis_flat.svg | CC0 | 无 |
+| `scissors-psf.svg` | `ScissorsCut` | 工具箱 accent | https://commons.wikimedia.org/wiki/File:Scissors_(PSF).svg | Public Domain（Pearson Scott Foresman） | 无 |
+| `ionic-column.svg` | `GreekColumn` | 文件页 accent | https://commons.wikimedia.org/wiki/File:Ionic_order.svg | Public Domain | 裁切单柱、改色、svgo |
+| `compass-rose.svg` | `CompassRose` | 行情页 accent | https://commons.wikimedia.org/wiki/File:Simple_compass_rose.svg | CC BY 3.0（Brosen / Howcheng） | 无 |
+| `antique-key.svg` | `AntiqueKey` | 管理后台 accent | https://commons.wikimedia.org/wiki/File:PPKey01.svg | CC0 | 无 |
+| `floral-secession.svg` | （BlogLayout `<img>`） | 博客背景角饰 | https://commons.wikimedia.org/wiki/File:Secessionistische_Zeitung_floral_ornament,_1899.svg | Public Domain | 无 |
+| `floral-1913.svg` | `FloralStamp` | 库内备用（未挂 UI） | Wikimedia Commons | Public Domain | 改色、svgo |
+| `floral-lilien.svg` | `FloralLilien` | 库内备用（未挂 UI） | https://commons.wikimedia.org/wiki/File:Art_Nouveau_floral_ornament_by_E._M._Lilien.svg | Public Domain | 无 |
+| `flower-psf.svg` | `FlowerPsf` | 库内备用（未挂 UI） | https://commons.wikimedia.org/wiki/File:GAMOPETALOUS_(PSF).svg | Public Domain（PSF） | 无 |
+| `wax-seal.svg` | `WaxSeal` | 库内备用（未挂 UI） | https://commons.wikimedia.org/wiki/File:Wax-seal_-_Lorc_-_game-icons.svg | CC BY 3.0（Lorc / game-icons.net） | 无 |
+| `lantern.svg` | `Lantern` | 库内备用（未挂 UI） | https://commons.wikimedia.org/wiki/File:Lantern.svg | CC0 | 无 |
 
-| `fluent-dove.png` | 白鸽贴纸（`Dove`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Dove/3D | Microsoft | MIT | 256px 缩放 |
-| `fluent-teapot.png` | 茶壶贴纸（`Teapot`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Teapot/3D | Microsoft | MIT | 256px 缩放 |
-| `fluent-rose.png` | 玫瑰贴纸（`Rose`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Rose/3D | Microsoft | MIT | 256px 缩放 |
-| `fluent-classical.png` | 古典建筑贴纸（`ClassicalBuilding`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Classical%20building/3D | Microsoft | MIT | 256px 缩放 |
-| `fluent-ladder.png` | 梯子贴纸（`Ladder`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Ladder/3D | Microsoft | MIT | 256px 缩放 |
-| `cherub-postscript.svg` | 小天使剪纸（`Cherub`，弹窗角饰） | Wikimedia Commons（PostScript 雕版公有领域图） | Public Domain | Public Domain | 裁切、改藏青描边、svgo |
-| `dove-olive.svg` | 白鸽线稿（`DoveOlive`） | Wikimedia Commons | Public Domain / CC0 | CC0 | 改色、svgo |
-| `floral-1913.svg` | 1913 花饰（`FloralStamp`） | Wikimedia Commons | Public Domain | Public Domain | 改色、svgo |
-| `floral-round.svg` | 圆形花饰（`FloralRound`） | Wikimedia Commons | Public Domain | Public Domain | 改色、svgo |
-| `gothic-arch.svg` | 哥特尖拱（`GothicArch`） | Wikimedia Commons | 贡献者 | CC BY-SA 3.0 | 改色、svgo |
-| `ionic-column.svg` | 爱奥尼柱（`GreekColumn`，Arcane 背景） | https://commons.wikimedia.org/wiki/File:Ionic_order.svg | F l a n k e r | Public Domain | 裁切为单柱、删除辅助线、改为主题蓝色描边/填充，svgo 压缩 |
+自绘邮戳 `Postmark`（`ornaments.tsx`）仅用于门户问候卡。
 
-Fluent Emoji 的 MIT 许可要求在副本中保留版权与许可声明，声明全文见文末。
+CC BY / CC BY-SA 素材须保留署名；Fluent Emoji 已自本主题移除，MIT 声明块仍保留供 Phosphor 使用。
 
 ## 自绘部分（随本仓库授权）
 
 只有简单几何图形是手写 SVG / CSS：
 
 - `src/components/ui/ornaments.tsx`：`Postmark` 邮戳（同心圆 + 波浪线）
+- `src/components/ui/stamp-input-bar.tsx`：钢笔平面剪影（自绘 SVG）
 - `src/components/ui/astrolabe.tsx`：旋转星盘（圆环、刻度）
 - `src/components/ui/ribbon-sidebar.tsx`：行李吊牌形状
-- `src/styles/theme.css`：纸纹噪点（SVG `feTurbulence` data URI）、HUD 四角角标（CSS 渐变）、邮票齿边（CSS mask）、背景渐变
+- `src/styles/theme.css`：纸纹噪点（SVG `feTurbulence` data URI）、HUD 四角角标（CSS 渐变）、邮票齿边（CSS mask）、背景渐变、`.rv-panel` / `.rv-tile` / `.rv-barcode` / 水印汉字
 - 配色：`src/styles/theme.css` 中的语义 token、文件夹色、`src/lib/chartPalette.ts` 图表色板，以及工具页（section / quiz）画布配色均为本主题自定
 
 未使用任何游戏《重返未来:1999》的原始美术资源、截图、Logo 或字体；只参考其整体配色与版式气质。

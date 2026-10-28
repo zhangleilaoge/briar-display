@@ -60,12 +60,23 @@ export default function LoginPage() {
 	}
 
 	return (
-		<ThemeShell variant="scrapbook" sidebar={false} className="flex overflow-hidden">
+		<ThemeShell
+			variant="scrapbook"
+			sidebar={false}
+			watermark="00"
+			glyph="门"
+			className="flex overflow-hidden"
+		>
 			{/* Two-column layout */}
 			<div className="grid w-full lg:grid-cols-2">
 				{/* Left: Brand side */}
 				<div className="relative hidden flex-col items-center justify-center overflow-hidden p-12 lg:flex">
-					<BrandCollage script="Bon retour" subtitle="欢迎回来" className="relative z-10" />
+					<BrandCollage
+						script="Bon retour"
+						subtitle="欢迎回来"
+						className="relative z-10"
+						motif="fleur"
+					/>
 				</div>
 
 				{/* Right: Form side */}

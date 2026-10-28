@@ -9,8 +9,9 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { CompassRose } from '@/components/ui/ornaments'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { HudTitle, ThemeShell } from '@/components/ui/theme-shell'
+import { HudTitle, PaperPanel, ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { MARKET_IDS, MARKET_LABELS, type MarketId } from '@briar/shared'
 import type { ReactNode } from 'react'
@@ -42,7 +43,13 @@ export default function MarketsShell({ children, market }: MarketsShellProps) {
 
 	return (
 		<PermissionProvider>
-			<ThemeShell variant="arcane" className="flex flex-col">
+			<ThemeShell
+				variant="arcane"
+				watermark="05"
+				glyph="市"
+				className="flex flex-col"
+				accent={<CompassRose className="h-36 w-36" />}
+			>
 				<header className="glass-header sticky top-0 z-50">
 					<div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
 						<div className="flex min-w-0 items-center gap-6">
@@ -50,6 +57,7 @@ export default function MarketsShell({ children, market }: MarketsShellProps) {
 								index="05"
 								label="Étoiles"
 								title="行情"
+								script="Bourse"
 								className="hidden shrink-0 2xl:flex"
 							/>
 							<Breadcrumb className="shrink-0 whitespace-nowrap">
@@ -84,7 +92,11 @@ export default function MarketsShell({ children, market }: MarketsShellProps) {
 					{tabs && <div className="overflow-x-auto px-3 pb-2 md:hidden">{tabs}</div>}
 				</header>
 				<main className="flex-1 p-4 sm:p-6">
-					<div className="mx-auto w-full max-w-6xl">{children}</div>
+					<div className="mx-auto w-full max-w-6xl">
+						<PaperPanel index="05" title="MARCHÉ · 星图">
+							{children}
+						</PaperPanel>
+					</div>
 				</main>
 			</ThemeShell>
 		</PermissionProvider>

@@ -3,7 +3,6 @@ import { X } from 'lucide-react'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
-import { Cherub } from './ornaments'
 
 const Dialog = DialogPrimitive.Root
 
@@ -31,14 +30,14 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 export type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
 	/** 顶栏左侧粉签编号，如 "01"；不传则不显示 */
 	index?: string
-	/** 是否在左上角探出小天使剪纸（默认 true） */
+	/** @deprecated 弹窗不再挂小天使贴纸；保留 prop 以免旧调用报错 */
 	ornament?: boolean
 }
 
 const DialogContent = React.forwardRef<
 	React.ElementRef<typeof DialogPrimitive.Content>,
 	DialogContentProps
->(({ className, children, index, ornament = true, ...props }, ref) => (
+>(({ className, children, index, ornament: _ornament, ...props }, ref) => (
 	<DialogPortal>
 		<DialogOverlay />
 		<DialogPrimitive.Content
@@ -52,9 +51,6 @@ const DialogContent = React.forwardRef<
 			<span className="rv-crop-marks" aria-hidden>
 				<span />
 			</span>
-			{ornament && (
-				<Cherub className="rv-dialog-ornament absolute -left-6 -top-10 z-[3] hidden h-16 w-16 -rotate-[18deg] sm:block" />
-			)}
 			{index ? <span className="rv-paper-index">{index}</span> : null}
 			{children}
 			<DialogPrimitive.Close

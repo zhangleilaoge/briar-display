@@ -129,7 +129,7 @@ export default function SectorConstituents({
 				{current.stale && <StaleBadge error={current.error} />}
 				<span className="ml-auto">数据源 {current.source}</span>
 			</div>
-			<div className="rounded-lg border">
+			<div className="rv-tile rounded-lg">
 				<Table>
 					<TableHeader>
 						<TableRow>

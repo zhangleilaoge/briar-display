@@ -52,7 +52,13 @@ export default function RegisterPage() {
 	}
 
 	return (
-		<ThemeShell variant="scrapbook" sidebar={false} className="flex overflow-hidden">
+		<ThemeShell
+			variant="scrapbook"
+			sidebar={false}
+			watermark="00"
+			glyph="门"
+			className="flex overflow-hidden"
+		>
 			{/* Two-column layout — reversed order */}
 			<div className="grid w-full lg:grid-cols-2">
 				{/* Left: Form side */}
@@ -160,7 +166,12 @@ export default function RegisterPage() {
 
 				{/* Right: Brand side */}
 				<div className="relative hidden flex-col items-center justify-center overflow-hidden p-12 lg:flex">
-					<BrandCollage script="Bienvenue" subtitle="开始使用" className="relative z-10" />
+					<BrandCollage
+						script="Bienvenue"
+						subtitle="开始使用"
+						className="relative z-10"
+						motif="floral"
+					/>
 				</div>
 			</div>
 		</ThemeShell>

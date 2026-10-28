@@ -115,10 +115,11 @@
 	--surface-texture-repeat: repeat;
 
 	--page-bg: var(--paper-grain),
-		radial-gradient(ellipse 70% 45% at 85% 8%, hsl(345 50% 92% / 0.8), transparent 70%),
-		radial-gradient(ellipse 60% 50% at 10% 95%, hsl(214 40% 88% / 0.7), transparent 70%),
-		linear-gradient(180deg, #d5dbec 0%, #e9e8f0 38%, #f6f1ec 100%);
-	--page-bg-size: 180px 180px, auto, auto, auto;
+		radial-gradient(ellipse 55% 35% at 70% 0%, hsl(214 48% 82% / 0.85), transparent 72%),
+		radial-gradient(ellipse 70% 45% at 90% 12%, hsl(345 50% 90% / 0.75), transparent 70%),
+		radial-gradient(ellipse 60% 50% at 8% 92%, hsl(214 40% 88% / 0.75), transparent 70%),
+		linear-gradient(180deg, #c9d3e8 0%, #dde2ef 28%, #efe9e4 62%, #f7f2ec 100%);
+	--page-bg-size: 160px 160px, auto, auto, auto, auto;
 
 	--sidebar-bg: linear-gradient(180deg, hsl(222 30% 86% / 0.55), hsl(222 30% 90% / 0.35));
 	--sidebar-tag-fill: #f3f4fa;
@@ -216,11 +217,12 @@
 	--surface-texture-pos: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
 	--surface-texture-repeat: no-repeat;
 
-	--page-bg: radial-gradient(ellipse 40% 22% at 18% 18%, hsl(0 0% 100% / 0.75), transparent 70%),
-		radial-gradient(ellipse 45% 25% at 80% 70%, hsl(0 0% 100% / 0.65), transparent 70%),
-		radial-gradient(ellipse 30% 18% at 55% 40%, hsl(0 0% 100% / 0.5), transparent 70%),
-		linear-gradient(180deg, #a9c3df 0%, #c5d7e8 38%, #e3ecf5 100%);
-	--page-bg-size: auto;
+	--page-bg: var(--paper-grain),
+		radial-gradient(ellipse 42% 24% at 18% 16%, hsl(0 0% 100% / 0.82), transparent 70%),
+		radial-gradient(ellipse 48% 28% at 82% 68%, hsl(0 0% 100% / 0.7), transparent 70%),
+		radial-gradient(ellipse 34% 20% at 55% 40%, hsl(0 0% 100% / 0.55), transparent 70%),
+		linear-gradient(180deg, #9db9d8 0%, #b7cce3 32%, #d2e0ef 62%, #e8f0f7 100%);
+	--page-bg-size: 160px 160px, auto, auto, auto, auto;
 
 	--sidebar-bg: linear-gradient(180deg, hsl(210 50% 96% / 0.45), hsl(210 50% 92% / 0.25));
 	--sidebar-tag-fill: #f1f5fb;
@@ -580,6 +582,7 @@ progress {
 .rv-paper-dialog,
 .rv-paper-float {
 	--rv-paper-border: color-mix(in srgb, var(--rv-navy) 88%, transparent);
+	overflow: visible !important;
 	border: 1.5px solid var(--rv-navy) !important;
 	border-radius: 2px !important;
 	background-color: var(--rv-cream) !important;
@@ -642,8 +645,11 @@ progress {
 	font-weight: 600;
 	font-size: 1.05rem;
 	letter-spacing: 0.04em;
-	color: #fff;
+	color: var(--rv-ink);
 	line-height: 1.2;
+}
+.rv-paper-header .rv-paper-title {
+	color: #fff;
 }
 
 .rv-paper-header.sr-only .rv-paper-title {
@@ -655,7 +661,7 @@ progress {
 	position: absolute;
 	left: 0.65rem;
 	top: 0.55rem;
-	z-index: 5;
+	z-index: 6;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -669,14 +675,22 @@ progress {
 	font-weight: 700;
 	border: 1px solid color-mix(in srgb, var(--rv-navy) 35%, transparent);
 	box-shadow: 0 1px 2px hsl(221 46% 20% / 0.18);
-	z-index: 1;
+}
+/* 有藏青顶栏时，粉签叠在顶栏内 */
+.rv-paper-dialog:has(.rv-paper-header:not(.sr-only)) .rv-paper-index {
+	top: 0.55rem;
+}
+/* 无顶栏时给内容让出粉签位置，避免标题被挡 */
+.rv-paper-dialog:has(.rv-paper-index):not(:has(.rv-paper-header:not(.sr-only))) {
+	padding-top: 2.35rem !important;
 }
 
 /* L 形裁切角标 */
 .rv-crop-marks {
 	pointer-events: none;
 	position: absolute;
-	inset: -7px;
+	/* 略探出纸边；父级必须 overflow:visible（见 .rv-paper-dialog） */
+	inset: -8px;
 	z-index: 2;
 }
 .rv-crop-marks::before,
@@ -823,9 +837,102 @@ progress {
 		width: calc(100vw - 1.5rem) !important;
 		max-width: calc(100vw - 1.5rem) !important;
 		max-height: calc(100dvh - 2rem);
-		overflow-y: auto;
+		/* 保持 visible，避免裁切角标；滚动交给内部 .rv-dialog-scroll */
+		overflow: visible !important;
 	}
-	.rv-paper-dialog .rv-dialog-ornament {
-		display: none;
-	}
+}
+
+/* ============================================================
+   全站华丽度加固：纸片面板 / 文件瓷砖 / 水印汉字 / 条码装饰
+   ============================================================ */
+
+.rv-watermark-glyph {
+	font-family: var(--font-display);
+	font-weight: 600;
+	line-height: 0.9;
+	color: transparent;
+	-webkit-text-stroke: 1.5px color-mix(in srgb, var(--rv-navy) 22%, transparent);
+	pointer-events: none;
+	user-select: none;
+}
+
+/* 内容面板：白底贴纸感 + 藏青细边 + 柔影 */
+.rv-panel {
+	position: relative;
+	border: 1.5px solid color-mix(in srgb, var(--rv-navy) 55%, transparent);
+	background-color: color-mix(in srgb, var(--rv-cream) 92%, white);
+	background-image: var(--paper-grain),
+		linear-gradient(180deg, #fffdf9 0%, var(--rv-cream) 60%, #f2ebe4 100%);
+	background-size: 180px 180px, auto;
+	box-shadow: 0 0 0 3px hsl(0 0% 100% / 0.85), 0 1px 0 hsl(0 0% 100% / 0.9) inset, 0 14px 36px -14px
+		hsl(221 46% 20% / 0.22);
+	border-radius: var(--radius-surface);
+	padding: 1rem 1.1rem;
+}
+
+.theme-arcane .rv-panel {
+	border-radius: 2px;
+	background-color: hsl(210 60% 98% / 0.78);
+	background-image: var(--surface-texture), var(--paper-grain),
+		linear-gradient(180deg, hsl(0 0% 100% / 0.92), hsl(210 50% 96% / 0.78));
+	background-size: var(--surface-texture-size), 180px 180px, auto;
+	background-position: var(--surface-texture-pos), 0 0, 0 0;
+	background-repeat: var(--surface-texture-repeat), repeat, no-repeat;
+	backdrop-filter: blur(10px) saturate(1.15);
+	-webkit-backdrop-filter: blur(10px) saturate(1.15);
+	box-shadow: 0 0 0 3px hsl(0 0% 100% / 0.9), 0 0 28px hsl(0 0% 100% / 0.45), 0 16px 40px -18px
+		hsl(221 46% 20% / 0.28);
+}
+
+/* 文件/行情瓷砖：贴纸白描边 */
+.rv-tile {
+	border: 1.5px solid color-mix(in srgb, var(--rv-navy) 28%, transparent) !important;
+	background-color: hsl(var(--card) / 0.92) !important;
+	background-image: var(--paper-grain);
+	background-size: 180px 180px;
+	box-shadow: 0 0 0 2px hsl(0 0% 100% / 0.95), 0 6px 16px -8px hsl(221 46% 20% / 0.22);
+	border-radius: 6px;
+	transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.rv-tile:hover {
+	transform: translateY(-2px);
+	border-color: color-mix(in srgb, var(--rv-navy) 55%, transparent) !important;
+	box-shadow: 0 0 0 2px hsl(0 0% 100% / 0.98), 0 12px 24px -10px hsl(221 46% 20% / 0.3);
+}
+
+.theme-arcane .rv-tile {
+	border-radius: 2px;
+	backdrop-filter: blur(6px);
+}
+
+/* 条码装饰（纯 CSS） */
+.rv-barcode {
+	display: inline-block;
+	width: 72px;
+	height: 14px;
+	background: repeating-linear-gradient(
+		90deg,
+		var(--rv-navy) 0 1.5px,
+		transparent 1.5px 3px,
+		var(--rv-navy) 3px 4px,
+		transparent 4px 6.5px,
+		var(--rv-navy) 6.5px 7.5px,
+		transparent 7.5px 9px
+	);
+	opacity: 0.55;
+}
+
+/* 拼贴底层纸片 */
+.rv-paper-back {
+	background: linear-gradient(180deg, #fffdf8, var(--rv-beige));
+	border: 1px solid color-mix(in srgb, var(--rv-navy) 18%, transparent);
+	box-shadow: 0 8px 20px -12px hsl(221 46% 20% / 0.28);
+}
+
+/* 剪贴簿卡片加厚白描边感 */
+.theme-scrapbook .rv-surface,
+.theme-scrapbook .glass,
+.theme-scrapbook .glass-soft {
+	box-shadow: 0 0 0 2px hsl(0 0% 100% / 0.92), var(--shadow-surface);
 }

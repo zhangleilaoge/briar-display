@@ -6,6 +6,7 @@ import LoginMethodsCard from '@/components/profile/LoginMethodsCard'
 import MergeHistoryCard from '@/components/profile/MergeHistoryCard'
 import MessagesPanel from '@/components/profile/MessagesPanel'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { DoveOlive } from '@/components/ui/ornaments'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, syncUserToStorage, usePermissions } from '@/contexts/PermissionContext'
@@ -62,6 +63,7 @@ function ProfilePageInner() {
 			<ThemeShell
 				variant="scrapbook"
 				className="flex items-center justify-center gap-2 text-muted-foreground"
+				accent={<DoveOlive className="h-28 w-28" />}
 			>
 				<AlertCircle className="h-5 w-5" />
 				<span>你没有权限访问此页面</span>
@@ -101,7 +103,12 @@ function ProfilePageInner() {
 	const initial = user?.name?.charAt(0)?.toUpperCase() || 'U'
 
 	return (
-		<ThemeShell variant="scrapbook">
+		<ThemeShell
+			variant="scrapbook"
+			watermark="07"
+			glyph="我"
+			accent={<DoveOlive className="h-28 w-28" />}
+		>
 			{/* 顶部导航 */}
 			<header className="glass-header sticky top-0 z-30 flex h-14 items-center justify-between px-6">
 				<a href="/briar/" className="rv-script text-2xl leading-none text-foreground">
