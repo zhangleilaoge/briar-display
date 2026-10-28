@@ -50,7 +50,7 @@ export default function PrivacySettingsDialog({
 
 	return (
 		<Dialog open={!!folder} onOpenChange={(open) => !open && onClose()}>
-			<DialogContent index="04" ornament className="sm:max-w-sm">
+			<DialogContent ornament className="sm:max-w-sm">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2 break-all">
 						{isPrivate ? (

@@ -88,25 +88,25 @@ function getPreviewKind(file: FileItem): PreviewKind {
 	return 'none'
 }
 
-function previewLabel(kind: PreviewKind): { fr: string; zh: string; index: string } {
+function previewLabel(kind: PreviewKind): { fr: string; zh: string } {
 	switch (kind) {
 		case 'video':
-			return { fr: 'VIDÉO', zh: '视频预览', index: '01' }
+			return { fr: 'VIDÉO', zh: '视频预览' }
 		case 'image':
-			return { fr: 'IMAGE', zh: '图片预览', index: '01' }
+			return { fr: 'IMAGE', zh: '图片预览' }
 		case 'audio':
-			return { fr: 'AUDIO', zh: '音频预览', index: '01' }
+			return { fr: 'AUDIO', zh: '音频预览' }
 		case 'pdf':
-			return { fr: 'DOCUMENT', zh: '文档预览', index: '02' }
+			return { fr: 'DOCUMENT', zh: '文档预览' }
 		case 'markdown':
 		case 'text':
-			return { fr: 'TEXTE', zh: '文本预览', index: '02' }
+			return { fr: 'TEXTE', zh: '文本预览' }
 		case 'excel':
-			return { fr: 'TABLEAU', zh: '表格预览', index: '02' }
+			return { fr: 'TABLEAU', zh: '表格预览' }
 		case 'docx':
-			return { fr: 'DOCUMENT', zh: '文稿预览', index: '02' }
+			return { fr: 'DOCUMENT', zh: '文稿预览' }
 		default:
-			return { fr: 'APERÇU', zh: '文件详情', index: '01' }
+			return { fr: 'APERÇU', zh: '文件详情' }
 	}
 }
 
@@ -205,8 +205,6 @@ export default function FileDetailModal({ file, onClose: closeNow, onDelete }: P
 				<span className="rv-crop-marks" aria-hidden>
 					<span />
 				</span>
-				<span className="rv-paper-index">{label.index}</span>
-
 				{/* 藏青顶栏 */}
 				<div className="rv-paper-header z-10 !mx-0 !mt-0 mb-0 shrink-0 rounded-none">
 					<h2 className="rv-paper-title max-w-[85%] truncate px-2">

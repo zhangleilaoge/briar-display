@@ -102,7 +102,7 @@ function ProfilePageInner() {
 	const initial = user?.name?.charAt(0)?.toUpperCase() || 'U'
 
 	return (
-		<ThemeShell variant="scrapbook" watermark="07">
+		<ThemeShell variant="scrapbook">
 			{/* 顶部导航 */}
 			<PageHeader crumbs={[{ label: '个人中心' }]} />
 

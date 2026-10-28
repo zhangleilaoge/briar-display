@@ -43,7 +43,7 @@ export default function MarketsShell({ children, market }: MarketsShellProps) {
 
 	return (
 		<PermissionProvider>
-			<ThemeShell variant="arcane" watermark="05" className="flex flex-col">
+			<ThemeShell variant="arcane" className="flex flex-col">
 				<PageHeader
 					crumbs={[
 						{ label: '行情', href: '/briar/markets' },

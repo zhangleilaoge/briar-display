@@ -300,7 +300,7 @@ function PortalPageInner() {
 	const tilts = [-1.2, 0.8, 1, -0.8, -1]
 
 	return (
-		<ThemeShell variant="scrapbook" watermark="01" className="flex flex-col overflow-hidden">
+		<ThemeShell variant="scrapbook" className="flex flex-col overflow-hidden">
 			{/* Top bar */}
 			<PageHeader
 				hideBrand

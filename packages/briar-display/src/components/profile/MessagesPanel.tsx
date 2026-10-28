@@ -282,7 +282,7 @@ export default function MessagesPanel() {
 
 			{/* 详情弹窗 */}
 			<Dialog open={detail !== null} onOpenChange={(open) => !open && setDetail(null)}>
-				<DialogContent index="07" ornament>
+				<DialogContent ornament>
 					<DialogHeader>
 						<DialogTitle>{detail?.title}</DialogTitle>
 						<DialogDescription>{detail ? formatTime(detail.createdAt) : ''}</DialogDescription>

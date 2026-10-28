@@ -2,7 +2,7 @@
 
 /**
  * 页面外壳：挂载全局吊牌侧栏 + 主题背景装饰。
- * 背景层只保留水印数字与共享星盘（Astrolabe）；不再挂载页面专属角饰。
+ * Arcane 背景保留共享星盘（Astrolabe）；不再挂载水印数字或页面专属角饰。
  */
 import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
@@ -20,8 +20,6 @@ export interface ThemeShellProps {
 	/** 是否显示背景装饰 */
 	decor?: boolean
 	currentPath?: string
-	/** 大号水印数字，如 09；不传则用主题默认 */
-	watermark?: string
 }
 
 export function ThemeShell({
@@ -31,28 +29,19 @@ export function ThemeShell({
 	sidebar = true,
 	decor = true,
 	currentPath,
-	watermark,
 }: ThemeShellProps) {
 	return (
 		<div className={cn('relative isolate min-h-screen', sidebar && 'md:pl-16', className)}>
 			{sidebar && <RibbonSidebar currentPath={currentPath} />}
-			{decor &&
-				(variant === 'arcane' ? (
-					<ArcaneDecor watermark={watermark} />
-				) : (
-					<ScrapbookDecor watermark={watermark} />
-				))}
+			{decor && (variant === 'arcane' ? <ArcaneDecor /> : <ScrapbookDecor />)}
 			{children}
 		</div>
 	)
 }
 
-function ArcaneDecor({ watermark }: { watermark?: string }) {
+function ArcaneDecor() {
 	return (
 		<div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-			<span className="rv-watermark-num absolute -left-4 top-6 text-[11rem] opacity-60 md:left-16 md:text-[14rem]">
-				{watermark ?? '09'}
-			</span>
 			{/* 星盘为 Arcane HUD 系统件，各 Arcane 页共享 */}
 			<Astrolabe
 				className="absolute -bottom-40 -right-32 h-[560px] w-[560px] opacity-[0.2]"
@@ -68,12 +57,9 @@ function ArcaneDecor({ watermark }: { watermark?: string }) {
 	)
 }
 
-function ScrapbookDecor({ watermark }: { watermark?: string }) {
+function ScrapbookDecor() {
 	return (
 		<div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-			<span className="rv-watermark-num absolute -left-6 top-4 text-[10rem] opacity-35 md:left-14 md:text-[12rem]">
-				{watermark ?? '01'}
-			</span>
 			{/* 色块氛围，无页面专属贴纸 */}
 			<div className="absolute -left-24 top-1/3 h-80 w-80 rounded-full bg-[var(--rv-pink)] opacity-45 blur-3xl" />
 			<div className="absolute -right-24 top-10 h-80 w-80 rounded-full bg-[var(--rv-sky)] opacity-45 blur-3xl" />

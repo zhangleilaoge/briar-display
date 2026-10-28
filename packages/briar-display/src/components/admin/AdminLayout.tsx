@@ -64,7 +64,7 @@ export function AdminShell({ children, currentPath, fullWidth }: AdminLayoutProp
 
 	return (
 		<PermissionProvider>
-			<ThemeShell variant="arcane" watermark="06" className="flex flex-col">
+			<ThemeShell variant="arcane" className="flex flex-col">
 				<div className="flex min-w-0 flex-1 flex-col">
 					<PageHeader
 						crumbs={[{ label: '管理后台' }]}
