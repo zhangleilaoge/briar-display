@@ -19,7 +19,6 @@ import { ThemeShell } from '@/components/ui/theme-shell'
 import { SITE_SECTIONS, type SectionMeta, type SubRouteMeta } from '@/config/site-routes'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { ChevronRight, CornerDownLeft } from 'lucide-react'
 import {
 	type ComponentType,
 	type KeyboardEvent,
@@ -125,12 +124,22 @@ function Highlight({ text, query }: { text: string; query: string }): ReactNode 
 	return (
 		<>
 			{text.slice(0, idx)}
-			<mark className="rounded-sm bg-[var(--rv-pink)] px-0.5 text-[color:var(--rv-rose-deep)]">
+			<mark className="rounded-[2px] bg-[color-mix(in_srgb,var(--rv-pink)_92%,var(--rv-cream))] px-0.5 text-[color:var(--rv-ink)] [box-decoration-break:clone]">
 				{text.slice(idx, idx + q.length)}
 			</mark>
 			{text.slice(idx + q.length)}
 		</>
 	)
+}
+
+/** 分区在首页一级卡片上的视觉元数据（图标 / 法文 caption），子路由结果复用 */
+const SECTION_LOOK: Record<
+	SectionMeta['key'],
+	{ icon: ComponentType<OrnamentIconProps>; caption: string }
+> = {
+	tools: { icon: ToolsIcon, caption: 'Outils' },
+	admin: { icon: KeyIcon, caption: 'Clef' },
+	markets: { icon: MarketsIcon, caption: 'Étoiles' },
 }
 
 interface SubHit {
@@ -174,48 +183,65 @@ function SubRouteRow({
 	query,
 	active,
 	index,
-}: { hit: SubHit; query: string; active: boolean; index: number }) {
+	tilt,
+}: {
+	hit: SubHit
+	query: string
+	active: boolean
+	index: number
+	tilt: number
+}) {
+	const look = SECTION_LOOK[hit.section.key]
+	const Icon = look.icon
+	const caption = hit.sub.alias || look.caption
 	return (
 		<a
 			href={hit.sub.path}
 			data-active={active || undefined}
-			className="group block outline-none animate-[rv-rise_var(--motion-base)_var(--ease-paper)_both]"
-			style={{ animationDelay: `${Math.min(index, 10) * 35}ms` }}
+			className="group relative block outline-none data-[active]:-translate-y-1 transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1 animate-[rv-rise_var(--motion-base)_var(--ease-paper)_both]"
+			style={{ rotate: `${tilt}deg`, animationDelay: `${Math.min(index, 10) * 35}ms` }}
 		>
+			{/* 叠纸底片：与问候区同款，体量更轻，保持「次级」 */}
 			<div
+				aria-hidden
+				className="rv-paper-back absolute inset-x-1 -bottom-0.5 top-2 -rotate-[1.2deg] rounded-md opacity-80"
+			/>
+			<Card
 				className={cn(
-					'rv-tile glass-interactive flex items-center gap-3 rounded-lg border px-4 py-2.5 transition-transform duration-200 group-hover:translate-x-1 group-focus-visible:shadow-focus',
-					active && 'translate-x-1 shadow-focus',
+					'relative z-[1] rv-tile glass-interactive overflow-hidden group-focus-visible:shadow-focus',
+					active && 'shadow-focus',
 				)}
 			>
-				<div className="min-w-0 flex-1">
-					<div className="flex items-center gap-1 text-xs text-muted-foreground">
-						<span>{hit.section.title}</span>
-						<ChevronRight aria-hidden className="h-3 w-3" />
+				<CardContent className="flex items-center gap-3 p-3.5 sm:p-4">
+					<div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[color:var(--rv-rose)] bg-[var(--rv-pink)] shadow-[inset_0_2px_4px_rgb(255_255_255/0.9),inset_0_-2px_4px_rgb(185_84_95/0.18)]">
+						<Icon className="h-5 w-5 text-[color:var(--rv-ink)]" />
 					</div>
-					<div className="truncate font-heading text-sm font-semibold transition-colors group-hover:text-[color:var(--rv-rose-deep)]">
-						<Highlight text={hit.sub.label} query={query} />
-						{hit.sub.alias && (
-							<span className="rv-script ml-2 font-normal text-[color:var(--rv-rose-deep)]">
-								<Highlight text={hit.sub.alias} query={query} />
+					<div className="min-w-0 flex-1">
+						<span className="rv-script block truncate text-sm leading-none text-[color:var(--rv-rose-deep)]">
+							<Highlight text={caption} query={query} />
+						</span>
+						<h3 className="truncate font-heading text-base font-semibold transition-colors group-hover:text-[color:var(--rv-rose-deep)]">
+							<Highlight text={hit.sub.label} query={query} />
+						</h3>
+						<div className="mt-1 flex min-w-0 items-center gap-2">
+							{/* 父分区：小邮票标签，替代「工具箱 ›」纯文本面包屑 */}
+							<span className="rv-label inline-flex shrink-0 items-center gap-1.5 rounded-[4px] border border-dashed border-[color:var(--rv-navy)]/35 bg-[color-mix(in_srgb,var(--rv-pink)_55%,white)] px-1.5 py-[3px] text-[10px] tracking-[0.1em] text-[color:var(--rv-ink)] shadow-[0_1px_0_hsl(0_0%_100%/0.9)_inset,0_1px_2px_hsl(221_46%_20%/0.08)]">
+								<span
+									aria-hidden
+									className="h-1.5 w-1.5 rounded-full border border-[color:var(--rv-rose)] bg-[var(--rv-cream)] shadow-[inset_0_0_0_1px_hsl(0_0%_100%/0.6)]"
+								/>
+								{hit.section.title}
 							</span>
-						)}
+							{hit.hint && hit.hint !== hit.sub.alias && (
+								<p className="truncate text-xs text-muted-foreground">
+									匹配：
+									<Highlight text={hit.hint} query={query} />
+								</p>
+							)}
+						</div>
 					</div>
-					{hit.hint && hit.hint !== hit.sub.alias && (
-						<p className="truncate text-xs text-muted-foreground">
-							匹配：
-							<Highlight text={hit.hint} query={query} />
-						</p>
-					)}
-				</div>
-				<CornerDownLeft
-					aria-hidden
-					className={cn(
-						'h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity',
-						active && 'opacity-100',
-					)}
-				/>
-			</div>
+				</CardContent>
+			</Card>
 		</a>
 	)
 }
@@ -359,17 +385,28 @@ function PortalPageInner() {
 							</div>
 						)}
 						{subHits.length > 0 && (
-							<section aria-label="子页面" className="space-y-2">
-								<p className="rv-label px-1 text-muted-foreground">
-									子页面 · sous-pages <span className="ml-1">{subHits.length}</span>
+							<section aria-label="子页面" className="space-y-3">
+								<p className="flex items-center gap-3 px-1">
+									<span aria-hidden className="h-px flex-1 bg-[color:var(--rv-navy)]/15" />
+									<span className="inline-flex items-baseline gap-1.5">
+										<span className="rv-label text-muted-foreground">子页面</span>
+										<span className="rv-script text-sm text-[color:var(--rv-rose-deep)]">
+											sous-pages
+										</span>
+										<span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full border border-[color:var(--rv-rose)]/40 bg-[var(--rv-pink)] px-1.5 font-label text-[10px] font-semibold text-[color:var(--rv-ink)]">
+											{subHits.length}
+										</span>
+									</span>
+									<span aria-hidden className="h-px flex-1 bg-[color:var(--rv-navy)]/15" />
 								</p>
-								<div className="grid gap-2 sm:grid-cols-2">
+								<div className="rv-stagger grid gap-3 sm:grid-cols-2">
 									{subHits.map((hit, i) => (
 										<SubRouteRow
 											key={hit.sub.path}
 											hit={hit}
 											query={query}
 											index={i}
+											tilt={tilts[(i + 2) % tilts.length] * 0.6}
 											active={active === visible.length + i}
 										/>
 									))}
