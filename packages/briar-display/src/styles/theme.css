@@ -1141,8 +1141,54 @@ progress {
 	animation: rv-fade-in var(--motion-base) ease-out both;
 }
 
+/* 7. 浮层（Popover / Select / HoverCard / 右键菜单）：从触发点方向轻轻「翻出」，收起时反向缩回 */
+@keyframes rv-float-in {
+	from {
+		opacity: 0;
+		scale: 0.96;
+		translate: var(--rv-float-dx, 0) var(--rv-float-dy, -4px);
+	}
+}
+@keyframes rv-float-out {
+	to {
+		opacity: 0;
+		scale: 0.97;
+		translate: var(--rv-float-dx, 0) var(--rv-float-dy, -4px);
+	}
+}
+.rv-float-motion {
+	transform-origin: var(
+		--radix-popper-transform-origin,
+		var(--radix-select-content-transform-origin, top center)
+	);
+}
+.rv-float-motion[data-side="top"] {
+	--rv-float-dy: 4px;
+}
+.rv-float-motion[data-side="left"] {
+	--rv-float-dx: 4px;
+	--rv-float-dy: 0;
+}
+.rv-float-motion[data-side="right"] {
+	--rv-float-dx: -4px;
+	--rv-float-dy: 0;
+}
+.rv-float-motion[data-state="open"] {
+	animation: rv-float-in var(--motion-fast) var(--ease-paper) both;
+}
+.rv-float-motion[data-state="closed"] {
+	animation: rv-float-out 140ms ease-in forwards;
+}
+
+/* 8. Toast（sonner）：沿用其进出场，统一时长与纸艺缓动 */
+[data-sonner-toaster] [data-sonner-toast] {
+	transition-duration: var(--motion-slow) !important;
+	transition-timing-function: var(--ease-paper) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	[data-flip-enter],
+	.rv-float-motion,
 	.rv-motion-dialog,
 	.rv-motion-dialog > *,
 	.rv-motion-overlay,
@@ -1151,7 +1197,8 @@ progress {
 	.rv-fade-in {
 		animation: none !important;
 	}
-	.rv-tab-indicator {
+	.rv-tab-indicator,
+	[data-sonner-toaster] [data-sonner-toast] {
 		transition: none !important;
 	}
 }

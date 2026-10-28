@@ -168,15 +168,15 @@ export default function MessagesPanel() {
 			</CardHeader>
 			<CardContent>
 				{loading ? (
-					<div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
+					<div className="rv-fade-in flex items-center justify-center gap-2 py-10 text-muted-foreground">
 						<Loader2 className="h-4 w-4 animate-spin" />
 						加载中...
 					</div>
 				) : items.length === 0 ? (
-					<p className="py-10 text-center text-sm text-muted-foreground">暂无消息</p>
+					<p className="rv-fade-in py-10 text-center text-sm text-muted-foreground">暂无消息</p>
 				) : (
 					<>
-						<div className="divide-y rounded-md border">
+						<div className="rv-fade-in divide-y rounded-md border">
 							{items.map((msg) => (
 								<div
 									key={msg.id}

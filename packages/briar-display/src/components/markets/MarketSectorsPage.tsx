@@ -313,12 +313,12 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 				{/* 主体 */}
 				{!sectors ? (
 					loading ? (
-						<div className="flex items-center justify-center py-24 text-muted-foreground">
+						<div className="rv-fade-in flex items-center justify-center py-24 text-muted-foreground">
 							<Loader2 className="mr-2 h-5 w-5 animate-spin" />
 							加载板块中…
 						</div>
 					) : (
-						<div className="py-24 text-center text-sm text-muted-foreground">
+						<div className="rv-fade-in py-24 text-center text-sm text-muted-foreground">
 							{error || '加载失败'}，稍后会自动重试
 						</div>
 					)

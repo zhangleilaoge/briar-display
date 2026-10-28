@@ -228,12 +228,12 @@ function AdminUsersPageInner() {
 					)}
 
 					{loading ? (
-						<div className="flex items-center justify-center py-20">
+						<div className="rv-fade-in flex items-center justify-center py-20">
 							<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 						</div>
 					) : (
 						<>
-							<Table>
+							<Table className="rv-fade-in">
 								<TableHeader>
 									<TableRow>
 										<TableHead>用户</TableHead>

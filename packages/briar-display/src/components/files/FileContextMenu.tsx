@@ -50,7 +50,8 @@ export default function FileContextMenu({ x, y, items, onClose }: FileContextMen
 		<div
 			ref={ref}
 			style={{ left, top }}
-			className="rv-paper-float fixed z-[200] w-48 overflow-visible p-1"
+			data-state="open"
+			className="rv-paper-float rv-float-motion fixed z-[200] w-48 overflow-visible p-1"
 		>
 			{items.map((item) => (
 				<button
