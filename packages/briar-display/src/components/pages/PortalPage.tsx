@@ -59,10 +59,10 @@ const ENTRIES: Entry[] = [
 	},
 	{
 		icon: JournalIcon,
-		title: '博客',
-		caption: 'Journal',
-		description: '个人随笔与文章',
-		href: '/briar/blog/',
+		title: '想法',
+		caption: 'Pensées',
+		description: '一小段话，纯文本与 emoji',
+		href: '/briar/thoughts/',
 	},
 	{
 		icon: KeyIcon,

@@ -66,11 +66,27 @@ userRoutes.put('/me', async (c) => {
 
 	const body = await c.req.json<{ name?: string; avatar?: string }>()
 
-	if (body.name !== undefined && (typeof body.name !== 'string' || body.name.trim().length === 0)) {
-		return c.json<ApiResponse>(
-			{ success: false, message: '用户名不能为空' },
-			HTTP_STATUS.BAD_REQUEST,
-		)
+	if (body.name !== undefined) {
+		if (typeof body.name !== 'string' || body.name.trim().length === 0) {
+			return c.json<ApiResponse>(
+				{ success: false, message: '用户名不能为空' },
+				HTTP_STATUS.BAD_REQUEST,
+			)
+		}
+		const trimmed = body.name.trim()
+		if (trimmed.length > 32) {
+			return c.json<ApiResponse>(
+				{ success: false, message: '用户名最多 32 个字符' },
+				HTTP_STATUS.BAD_REQUEST,
+			)
+		}
+		const existing = await userDal.findByName(trimmed)
+		if (existing && existing.id !== user.id) {
+			return c.json<ApiResponse>(
+				{ success: false, message: '用户名已被占用' },
+				HTTP_STATUS.CONFLICT,
+			)
+		}
 	}
 
 	const updateData: Partial<{ name: string; avatar: string }> = {}

@@ -1,18 +1,2 @@
-import { defineCollection, z } from 'astro:content'
-import { glob } from 'astro/loaders'
-
-/** 个人博客：纯静态 Markdown，构建期生成页面，无需登录 */
-const blogCollection = defineCollection({
-	loader: glob({ pattern: '**/*.md', base: './src/content/blog' }),
-	schema: z.object({
-		title: z.string(),
-		date: z.coerce.date(),
-		description: z.string().optional(),
-		tags: z.array(z.string()).default([]),
-		draft: z.boolean().default(false),
-	}),
-})
-
-export const collections = {
-	blog: blogCollection,
-}
+/** 内容集合占位：原博客 Markdown 已由「想法」短帖流替代 */
+export const collections = {}

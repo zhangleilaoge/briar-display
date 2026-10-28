@@ -101,6 +101,14 @@ export const userDal = {
 		return row ? mapRowToRecord(row) : null
 	},
 
+	async findByName(name: string): Promise<UserRecord | null> {
+		const row = await queryOne<UserRow>(
+			`SELECT ${USER_COLUMNS} FROM users WHERE name = ? AND deleted_at IS NULL`,
+			[name],
+		)
+		return row ? mapRowToRecord(row) : null
+	},
+
 	async create(
 		data: Omit<
 			UserRecord,

@@ -87,6 +87,10 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	// GET-only, no write routes needed
 
 	// ==================== Users ====================
+	// ==================== Thoughts（想法短帖：写操作仅管理员，路由内再校验） ====================
+	'POST /api/thoughts': null,
+	'DELETE /api/thoughts/:id': null,
+
 	'PUT /api/users/me': null,
 	'PUT /api/users/me/preferences/:key': null,
 	'POST /api/users/me/avatar': null,

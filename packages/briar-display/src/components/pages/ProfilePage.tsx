@@ -1,11 +1,13 @@
 'use client'
 
-import { uploadAvatar } from '@/api/users'
+import { updateMe, uploadAvatar } from '@/api/users'
 import UserMenu from '@/components/common/UserMenu'
 import LoginMethodsCard from '@/components/profile/LoginMethodsCard'
 import MergeHistoryCard from '@/components/profile/MergeHistoryCard'
 import MessagesPanel from '@/components/profile/MessagesPanel'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ThemeShell } from '@/components/ui/theme-shell'
@@ -18,8 +20,11 @@ import {
 	Calendar,
 	Camera,
 	KeyRound,
+	Check,
 	Loader2,
 	Mail,
+	Pencil,
+	X,
 	Shield,
 	User as UserIcon,
 } from 'lucide-react'
@@ -41,6 +46,10 @@ function ProfilePageInner() {
 	const { unread } = useUnreadMessages()
 	const [uploading, setUploading] = useState(false)
 	const [uploadError, setUploadError] = useState<string | null>(null)
+	const [editingName, setEditingName] = useState(false)
+	const [nameDraft, setNameDraft] = useState('')
+	const [savingName, setSavingName] = useState(false)
+	const [nameError, setNameError] = useState<string | null>(null)
 	const fileInputRef = useRef<HTMLInputElement>(null)
 	// 支持 ?tab=messages 直达站内信页签
 	const [tab, setTab] = useState(() => {
@@ -95,6 +104,50 @@ function ProfilePageInner() {
 		} finally {
 			setUploading(false)
 			if (fileInputRef.current) fileInputRef.current.value = ''
+		}
+	}
+
+
+	const startEditName = () => {
+		setNameDraft(user?.name || '')
+		setNameError(null)
+		setEditingName(true)
+	}
+
+	const cancelEditName = () => {
+		setEditingName(false)
+		setNameError(null)
+	}
+
+	const saveName = async () => {
+		const trimmed = nameDraft.trim()
+		if (!trimmed) {
+			setNameError('用户名不能为空')
+			return
+		}
+		if (trimmed.length > 32) {
+			setNameError('用户名最多 32 个字符')
+			return
+		}
+		if (trimmed === user?.name) {
+			setEditingName(false)
+			return
+		}
+		setSavingName(true)
+		setNameError(null)
+		try {
+			const res = await updateMe({ name: trimmed })
+			if (res.success && res.data) {
+				await refresh()
+				syncUserToStorage({ ...user!, ...res.data, roles, permissions })
+				setEditingName(false)
+			} else {
+				setNameError(res.message || '保存失败')
+			}
+		} catch (err: any) {
+			setNameError(err?.response?.data?.message || err?.message || '保存失败')
+		} finally {
+			setSavingName(false)
 		}
 	}
 
@@ -203,11 +256,69 @@ function ProfilePageInner() {
 									<CardDescription>你的账号资料</CardDescription>
 								</CardHeader>
 								<CardContent className="space-y-3">
-									<InfoRow
-										icon={<UserIcon className="h-4 w-4" />}
-										label="用户名"
-										value={user?.name}
-									/>
+									<div className="flex items-start justify-between gap-3 border-b border-border/40 py-2">
+										<div className="flex shrink-0 items-center gap-2 pt-1.5 text-sm text-muted-foreground">
+											<UserIcon className="h-4 w-4" />
+											<span>用户名</span>
+										</div>
+										<div className="min-w-0 flex-1">
+											{editingName ? (
+												<div className="space-y-2">
+													<Input
+														value={nameDraft}
+														onChange={(e) => setNameDraft(e.target.value.slice(0, 32))}
+														disabled={savingName}
+														className="h-9 rounded-none text-right"
+														autoFocus
+														onKeyDown={(e) => {
+															if (e.key === 'Enter') void saveName()
+															if (e.key === 'Escape') cancelEditName()
+														}}
+													/>
+													<div className="flex justify-end gap-2">
+														<Button
+															type="button"
+															variant="ghost"
+															size="sm"
+															className="h-8 rounded-none px-2"
+															onClick={cancelEditName}
+															disabled={savingName}
+														>
+															<X className="mr-1 h-3.5 w-3.5" />
+															取消
+														</Button>
+														<Button
+															type="button"
+															size="sm"
+															className="h-8 rounded-none px-3"
+															onClick={() => void saveName()}
+															disabled={savingName}
+														>
+															{savingName ? (
+																<Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+															) : (
+																<Check className="mr-1 h-3.5 w-3.5" />
+															)}
+															保存
+														</Button>
+													</div>
+													{nameError && <p className="text-right text-xs text-destructive">{nameError}</p>}
+												</div>
+											) : (
+												<div className="flex items-center justify-end gap-2">
+													<span className="truncate text-sm font-medium">{user?.name || '—'}</span>
+													<button
+														type="button"
+														onClick={startEditName}
+														className="inline-flex items-center gap-1 rounded-none px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+													>
+															<Pencil className="h-3 w-3" />
+															编辑
+														</button>
+												</div>
+											)}
+										</div>
+									</div>
 									<InfoRow icon={<Mail className="h-4 w-4" />} label="邮箱" value={user?.email} />
 									<InfoRow
 										icon={<Calendar className="h-4 w-4" />}
