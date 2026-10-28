@@ -2,7 +2,9 @@
 
 /**
  * 门户 / 想法页共用黑白古典贴纸：
- * 从 SCRAP_STICKER_CATALOG 抽几枚，受限落空白区、互不重叠；CSS 白底圆角垫，SVG 素材须透明底。
+ * 从 SCRAP_STICKER_CATALOG 抽几枚，受限落空白区、互不重叠。
+ * 淡溶进渐变背景（低透明度）；仅用不规则白描边（.rv-cutout drop-shadow），禁止矩形白底垫。
+ * 同屏 id 与视觉族（花/柱/卷轴等）不重复；库内已剔纯黑剪影与重复副本。
  */
 import { SCRAP_STICKER_CATALOG, type ScrapSticker } from '@/components/portal/scrapStickerCatalog'
 import {
@@ -41,11 +43,14 @@ function layout(page: ScrapPage, seed: number, count: number): Placed[] {
 
 	const placed: Placed[] = []
 	const boxes: ScrapBox[] = []
+	const usedIds = new Set<string>()
+	const usedFamilies = new Set<string>()
 	const n = Math.min(count, pool.length, zones.length)
 
-	for (let i = 0; i < n; i++) {
+	for (let i = 0; i < pool.length && placed.length < n; i++) {
 		const sticker = pool[i]
-		const zone = zones[i % zones.length]
+		if (usedIds.has(sticker.id) || usedFamilies.has(sticker.family)) continue
+		const zone = zones[placed.length % zones.length]
 		const sz = sizeForKind(sticker.kind, rand)
 		let box: ScrapBox | null = null
 		for (let attempt = 0; attempt < 14; attempt++) {
@@ -64,7 +69,10 @@ function layout(page: ScrapPage, seed: number, count: number): Placed[] {
 		}
 		if (!box) continue
 		boxes.push(box)
+		usedIds.add(sticker.id)
+		usedFamilies.add(sticker.family)
 		const rot = (rand() - 0.5) * 14
+		const opacity = 0.12 + rand() * 0.1 // 淡溶背景，约 0.12–0.22
 		placed.push({
 			key: `${sticker.id}-${i}`,
 			sticker,
@@ -72,13 +80,13 @@ function layout(page: ScrapPage, seed: number, count: number): Placed[] {
 				left: `${box.x.toFixed(2)}%`,
 				top: `${box.y.toFixed(2)}%`,
 				width: `${box.w.toFixed(2)}%`,
+				opacity,
 				transform: `rotate(${rot.toFixed(1)}deg)`,
 			},
 			imgStyle: {
 				width: '100%',
 				height: 'auto',
 				maxHeight: sticker.kind === 'tall' ? '11rem' : sticker.kind === 'wide' ? '5.5rem' : '7rem',
-				filter: 'grayscale(1) contrast(1.05)',
 			},
 		})
 	}
@@ -114,14 +122,14 @@ export function ScrapStickerDecor({
 			)}
 		>
 			{slots.map((s) => (
-				<div key={s.key} className="rv-sticker-pad absolute" style={s.style}>
+				<div key={s.key} className="absolute" style={s.style}>
 					<img
 						src={s.sticker.src}
 						alt=""
 						draggable={false}
 						decoding="async"
 						loading="lazy"
-						className="pointer-events-none select-none object-contain"
+						className="rv-cutout pointer-events-none select-none object-contain"
 						style={s.imgStyle}
 					/>
 				</div>

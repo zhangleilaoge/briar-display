@@ -49,7 +49,7 @@ CC BY / CC BY-SA 素材须保留署名；Fluent Emoji 已自本主题移除，MI
 
 ## 门户 / 想法页随机贴纸池（`src/assets/decor/portal/`）
 
-`ScrapStickerDecor` 从 `SCRAP_STICKER_CATALOG`（≥30）随机抽几枚，叠在门户与想法页空白区；CSS `.rv-sticker-pad` 提供圆角白垫，**SVG 文件本身背景必须透明**（禁止全画布不透明白底矩形 / 嵌入白底栅格）。不进池示例：曾剔除的 `entablature-doric`（嵌入 PNG 白底）、`envelope`（纯白剪影）。
+`ScrapStickerDecor` 从 `SCRAP_STICKER_CATALOG`（≥30）随机抽几枚，淡溶叠在门户与想法页空白区；仅用 `.rv-cutout` 不规则白描边（多重 drop-shadow），**禁止矩形白底垫 / bg-white 包装**；池内仅 HermesAgent 级繁复线稿，已剔 butterfly-black / papillon / fleur-de-lis / ankh / wax-seal / retro-flower 等剪影与 MD5 重复副本；同屏按 id+family 去重；**SVG 文件本身背景必须透明**（禁止全画布不透明白底矩形 / 嵌入白底栅格）。不进池示例：曾剔除的 `entablature-doric`（嵌入 PNG 白底）、`envelope`（纯白剪影）。
 
 | 文件（节选） | 用途 | 来源概况 | 授权 | 改动 |
 | --- | --- | --- | --- | --- |
