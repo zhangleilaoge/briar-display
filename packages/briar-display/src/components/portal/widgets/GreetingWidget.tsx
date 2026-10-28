@@ -1,6 +1,5 @@
 'use client'
 
-import { GreetingStickers } from '@/components/portal/GreetingStickers'
 import { useGreeting } from '@/components/portal/greetingStore'
 import { Postmark } from '@/components/ui/ornaments'
 import { cn } from '@/lib/utils'
@@ -21,8 +20,6 @@ export function GreetingWidget({
 
 	return (
 		<div className="relative h-full min-h-0 overflow-visible">
-			{/* 贴纸挂在外壳光环，躲开 overflow-hidden 的白卡 */}
-			<GreetingStickers kind={state.kind} seed={state.decorSeed} />
 			<WidgetChrome editing={editing} onRemove={onRemove} bodyClassName="relative !pt-3" tilt={-1}>
 				<span className="relative z-[1] rv-label text-muted-foreground">
 					{state.tod || ' '} · {state.date || ' '}

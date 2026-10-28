@@ -609,9 +609,7 @@ progress {
 	background-image: linear-gradient(180deg, #ffffff 0%, #f3f7fb 100%);
 	background-size: auto;
 	background-repeat: no-repeat;
-	box-shadow:
-		0 10px 28px -10px hsl(221 46% 20% / 0.28),
-		0 4px 12px -6px hsl(221 46% 20% / 0.14) !important;
+	box-shadow: 0 10px 28px -10px hsl(221 46% 20% / 0.28), 0 4px 12px -6px hsl(221 46% 20% / 0.14) !important;
 	color: var(--rv-ink);
 }
 
@@ -625,9 +623,7 @@ progress {
 .theme-arcane .rv-paper-float {
 	background-color: #f7fafc !important;
 	background-image: linear-gradient(180deg, #ffffff 0%, #f3f7fb 100%);
-	box-shadow:
-		0 10px 28px -10px hsl(221 46% 20% / 0.28),
-		0 4px 12px -6px hsl(221 46% 20% / 0.14) !important;
+	box-shadow: 0 10px 28px -10px hsl(221 46% 20% / 0.28), 0 4px 12px -6px hsl(221 46% 20% / 0.14) !important;
 }
 
 /* 遮罩：柔和天空纸纹，不要纯黑 */
@@ -1293,15 +1289,4 @@ progress {
 	font-size: 0.8rem;
 	letter-spacing: 0.01em;
 	color: var(--term-title);
-}
-
-/* 问候明信片外圈贴纸：裸 emoji，无白底圆章、无软印章阴影 */
-.rv-greet-sticker {
-	filter: saturate(0.92) contrast(1.04);
-	text-shadow: 0 1px 0 hsl(0 0% 100% / 0.35);
-}
-@media (prefers-reduced-motion: reduce) {
-	.rv-greet-sticker {
-		transition: none;
-	}
 }
