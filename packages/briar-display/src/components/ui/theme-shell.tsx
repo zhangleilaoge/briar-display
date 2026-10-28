@@ -7,6 +7,7 @@
 import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
 import { Astrolabe } from './astrolabe'
+import { AutoHeight } from './motion'
 import { FleurDeLis, FloralRound } from './ornaments'
 import { RibbonSidebar } from './ribbon-sidebar'
 
@@ -182,14 +183,17 @@ export function PaperPanel({
 	className,
 	index,
 	title,
+	autoHeight = true,
 }: {
 	children: ReactNode
 	className?: string
 	index?: string
 	title?: string
+	/** 内容高度变化时平滑过渡；需撑满父级 flex 的面板（如工具箱）传 false */
+	autoHeight?: boolean
 }) {
 	return (
-		<section className={cn('rv-panel relative', className)}>
+		<section className={cn('rv-panel rv-page-enter relative', className)}>
 			{/* 不再叠加外层裁切角标：面板自身描边 + 纹理已构成唯一框线，避免双层框 */}
 			{(index || title) && (
 				<header className="mb-3 flex items-end gap-3 border-b border-[color:var(--rv-navy)]/15 pb-2">
@@ -201,7 +205,7 @@ export function PaperPanel({
 					)}
 				</header>
 			)}
-			{children}
+			{autoHeight ? <AutoHeight>{children}</AutoHeight> : children}
 		</section>
 	)
 }

@@ -948,3 +948,210 @@ progress {
 	overflow-y: auto;
 	overflow-x: hidden;
 }
+
+/* ==========================================================================
+ * 动效 token 与基础动画（纸艺 / 1999 风）：只动 transform / opacity，统一缓动
+ * ========================================================================== */
+:root {
+	--motion-fast: 180ms;
+	--motion-base: 260ms;
+	--motion-slow: 400ms;
+	--motion-crt: 380ms;
+	--ease-paper: cubic-bezier(0.22, 1, 0.36, 1); /* 纸片落定：快出慢收 */
+	--ease-swing: cubic-bezier(0.34, 1.4, 0.64, 1); /* 吊牌轻摆回弹 */
+	--ease-crt: cubic-bezier(0.55, 0, 0.75, 0.2); /* 显像管收束：先慢后快 */
+}
+
+/* 1. 吊牌入列：从绳上垂落 + 轻摆（FLIP 负责其余吊牌下移） */
+@keyframes rv-tag-drop {
+	0% {
+		opacity: 0;
+		translate: 0 -18px;
+		rotate: -10deg;
+	}
+	55% {
+		opacity: 1;
+		translate: 0 3px;
+		rotate: 5deg;
+	}
+	80% {
+		translate: 0 -1px;
+		rotate: -2deg;
+	}
+	100% {
+		opacity: 1;
+		translate: 0 0;
+		rotate: 0deg;
+	}
+}
+[data-flip-enter] {
+	transform-origin: 50% 0;
+	animation: rv-tag-drop var(--motion-slow) var(--ease-paper) both;
+}
+
+/* 2. 弹窗：打开为纸片展开（先横向铺开成一条线再纵向展开），关闭为老电视关机 */
+@keyframes rv-unfold {
+	0% {
+		opacity: 0;
+		scale: 0.4 0.012;
+	}
+	40% {
+		opacity: 1;
+		scale: 1 0.012;
+	}
+	100% {
+		opacity: 1;
+		scale: 1 1;
+	}
+}
+@keyframes rv-crt-off {
+	0% {
+		scale: 1 1;
+		filter: brightness(1);
+	}
+	45% {
+		scale: 1 0.012;
+		filter: brightness(1.5);
+	}
+	80% {
+		opacity: 1;
+		scale: 0.015 0.012;
+		filter: brightness(2);
+	}
+	100% {
+		opacity: 0;
+		scale: 0 0;
+	}
+}
+@keyframes rv-content-collapse {
+	to {
+		opacity: 0;
+		scale: 1 0.92;
+	}
+}
+@keyframes rv-fade-in {
+	from {
+		opacity: 0;
+	}
+}
+@keyframes rv-fade-out {
+	to {
+		opacity: 0;
+	}
+}
+.rv-motion-dialog[data-state="open"] {
+	animation: rv-unfold var(--motion-slow) var(--ease-paper) both;
+}
+.rv-motion-dialog[data-state="closed"] {
+	animation: rv-crt-off var(--motion-crt) var(--ease-crt) forwards;
+	pointer-events: none;
+}
+/* 内容先塌缩，面板再收成线 → 点 */
+.rv-motion-dialog[data-state="closed"] > * {
+	animation: rv-content-collapse 120ms ease-in forwards;
+}
+.rv-motion-overlay[data-state="open"] {
+	animation: rv-fade-in var(--motion-base) ease-out both;
+}
+.rv-motion-overlay[data-state="closed"] {
+	animation: rv-fade-out var(--motion-crt) ease-in forwards;
+}
+
+/* 3. 列表 / 网格逐项入场（最多错开 12 项，之后同时出现） */
+@keyframes rv-rise {
+	from {
+		opacity: 0;
+		translate: 0 8px;
+	}
+}
+.rv-stagger > * {
+	animation: rv-rise var(--motion-base) var(--ease-paper) both;
+}
+.rv-stagger > :nth-child(2) {
+	animation-delay: 30ms;
+}
+.rv-stagger > :nth-child(3) {
+	animation-delay: 60ms;
+}
+.rv-stagger > :nth-child(4) {
+	animation-delay: 90ms;
+}
+.rv-stagger > :nth-child(5) {
+	animation-delay: 120ms;
+}
+.rv-stagger > :nth-child(6) {
+	animation-delay: 150ms;
+}
+.rv-stagger > :nth-child(7) {
+	animation-delay: 180ms;
+}
+.rv-stagger > :nth-child(8) {
+	animation-delay: 210ms;
+}
+.rv-stagger > :nth-child(9) {
+	animation-delay: 240ms;
+}
+.rv-stagger > :nth-child(10) {
+	animation-delay: 270ms;
+}
+.rv-stagger > :nth-child(11) {
+	animation-delay: 300ms;
+}
+.rv-stagger > :nth-child(n + 12) {
+	animation-delay: 330ms;
+}
+
+/* 4. 页面入场：内容面板像纸张轻放到桌面 */
+@keyframes rv-page-enter {
+	from {
+		opacity: 0;
+		translate: 0 10px;
+	}
+}
+.rv-page-enter {
+	animation: rv-page-enter var(--motion-slow) var(--ease-paper) both;
+}
+
+/* 5. 子导航滑块：底色由指示块承担，选中 tab 自身底色透明 */
+.rv-tab-indicator {
+	position: absolute;
+	left: 0;
+	top: 0;
+	z-index: 0;
+	pointer-events: none;
+	border-radius: var(--radius-control, 4px);
+	background-color: hsl(var(--background));
+	background-image: var(--tab-active-image);
+	box-shadow: var(--tab-active-shadow);
+	transition: translate var(--motion-base) var(--ease-paper), width var(--motion-base)
+		var(--ease-paper), height var(--motion-base) var(--ease-paper);
+}
+[data-tab-indicator="ready"] > [role="tab"] {
+	position: relative;
+	z-index: 1;
+}
+[data-tab-indicator="ready"] > [role="tab"][data-state="active"] {
+	background-color: transparent !important;
+	background-image: none !important;
+	box-shadow: none !important;
+}
+
+/* 6. 骨架 → 内容：内容出现时淡入 */
+.rv-fade-in {
+	animation: rv-fade-in var(--motion-base) ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-flip-enter],
+	.rv-motion-dialog,
+	.rv-motion-dialog > *,
+	.rv-motion-overlay,
+	.rv-stagger > *,
+	.rv-page-enter,
+	.rv-fade-in {
+		animation: none !important;
+	}
+	.rv-tab-indicator {
+		transition: none !important;
+	}
+}

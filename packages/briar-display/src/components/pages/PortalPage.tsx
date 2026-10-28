@@ -189,7 +189,7 @@ function PortalPageInner() {
 					</div>
 
 					{/* 入口卡片 */}
-					<div className="grid gap-5 sm:grid-cols-2">
+					<div className="rv-stagger grid gap-5 sm:grid-cols-2">
 						{visible.map((entry, i) => (
 							<EntryCard key={entry.href} entry={entry} tilt={tilts[i % tilts.length]} />
 						))}

@@ -9,6 +9,7 @@
 import { usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
 import { type ComponentType, useCallback, useEffect, useRef, useState } from 'react'
+import { useFlip } from './motion'
 import {
 	FilesIcon,
 	HomeIcon,
@@ -113,6 +114,9 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 
 	const active = activeRibbonHref(path)
 	const items = RIBBON_ITEMS.filter((item) => !item.adminOnly || (mounted && isAdmin))
+	// 异步出现的吊牌（如 CLEF）垂落入列，其后吊牌 FLIP 平滑下移
+	const listRef = useRef<HTMLUListElement>(null)
+	useFlip(listRef, [items.length])
 
 	return (
 		<>
@@ -132,12 +136,12 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 					aria-hidden
 					className="relative mb-2 h-3 w-3 rotate-45 border border-[color:var(--sidebar-tag-stroke)] bg-[var(--sidebar-tag-fill)]"
 				/>
-				<ul className="relative flex flex-col items-center gap-1.5">
+				<ul ref={listRef} className="relative flex flex-col items-center gap-1.5">
 					{items.map((item, i) => {
 						const Icon = item.icon
 						const isActive = active === item.href
 						return (
-							<li key={item.href}>
+							<li key={item.href} data-flip-key={item.href}>
 								<a
 									href={item.href}
 									title={item.label}
@@ -198,6 +202,7 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 	const trackRef = useRef<HTMLUListElement>(null)
 	const [edge, setEdge] = useState({ left: false, right: false })
 	const nudgedRef = useRef(false)
+	useFlip(trackRef, [items.length])
 
 	const updateEdge = useCallback(() => {
 		const el = trackRef.current
@@ -308,7 +313,11 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 						const Icon = item.icon
 						const isActive = active === item.href
 						return (
-							<li key={item.href} className="rv-ribbon-mobile-item shrink-0 snap-start">
+							<li
+								key={item.href}
+								data-flip-key={item.href}
+								className="rv-ribbon-mobile-item shrink-0 snap-start"
+							>
 								<a
 									href={item.href}
 									aria-current={isActive ? 'page' : undefined}

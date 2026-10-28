@@ -118,7 +118,7 @@ export default function FileGrid({
 	onFolderDrop,
 }: FileGridProps) {
 	return (
-		<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+		<div className="rv-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
 			{/* Select all */}
 			{files.length + subFolders.length > 0 && (
 				<div className="col-span-full flex items-center gap-2 pb-1">
