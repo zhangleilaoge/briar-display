@@ -5,8 +5,8 @@ import UserMenu from '@/components/common/UserMenu'
 import LoginMethodsCard from '@/components/profile/LoginMethodsCard'
 import MergeHistoryCard from '@/components/profile/MergeHistoryCard'
 import MessagesPanel from '@/components/profile/MessagesPanel'
+import { ProfileSheet, ProfileSheetHeader } from '@/components/profile/ProfileSheet'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -19,14 +19,14 @@ import {
 	AlertCircle,
 	Calendar,
 	Camera,
-	KeyRound,
 	Check,
+	KeyRound,
 	Loader2,
 	Mail,
 	Pencil,
-	X,
 	Shield,
 	User as UserIcon,
+	X,
 } from 'lucide-react'
 import { useRef, useState } from 'react'
 
@@ -106,7 +106,6 @@ function ProfilePageInner() {
 			if (fileInputRef.current) fileInputRef.current.value = ''
 		}
 	}
-
 
 	const startEditName = () => {
 		setNameDraft(user?.name || '')
@@ -197,15 +196,13 @@ function ProfilePageInner() {
 					<div className="min-w-0 flex-1">
 						<TabsContent value="profile" className="mt-0 space-y-6">
 							{/* 头像 */}
-							<Card>
-								<CardHeader>
-									<CardTitle className="flex items-center gap-2 text-base">
-										<UserIcon className="h-4 w-4" />
-										头像
-									</CardTitle>
-									<CardDescription>点击头像可更换</CardDescription>
-								</CardHeader>
-								<CardContent>
+							<ProfileSheet>
+								<ProfileSheetHeader
+									icon={<UserIcon className="h-4 w-4" />}
+									title="头像"
+									description="点击头像可更换"
+								/>
+								<div>
 									<div className="flex items-center gap-4">
 										<button
 											type="button"
@@ -243,19 +240,17 @@ function ProfilePageInner() {
 										className="hidden"
 										onChange={handleFileChange}
 									/>
-								</CardContent>
-							</Card>
+								</div>
+							</ProfileSheet>
 
 							{/* 基本信息 */}
-							<Card>
-								<CardHeader>
-									<CardTitle className="flex items-center gap-2 text-base">
-										<UserIcon className="h-4 w-4" />
-										基本信息
-									</CardTitle>
-									<CardDescription>你的账号资料</CardDescription>
-								</CardHeader>
-								<CardContent className="space-y-3">
+							<ProfileSheet>
+								<ProfileSheetHeader
+									icon={<UserIcon className="h-4 w-4" />}
+									title="基本信息"
+									description="你的账号资料"
+								/>
+								<div className="space-y-3">
 									<div className="flex items-start justify-between gap-3 border-b border-border/40 py-2">
 										<div className="flex shrink-0 items-center gap-2 pt-1.5 text-sm text-muted-foreground">
 											<UserIcon className="h-4 w-4" />
@@ -302,7 +297,9 @@ function ProfilePageInner() {
 															保存
 														</Button>
 													</div>
-													{nameError && <p className="text-right text-xs text-destructive">{nameError}</p>}
+													{nameError && (
+														<p className="text-right text-xs text-destructive">{nameError}</p>
+													)}
 												</div>
 											) : (
 												<div className="flex items-center justify-end gap-2">
@@ -312,9 +309,9 @@ function ProfilePageInner() {
 														onClick={startEditName}
 														className="inline-flex items-center gap-1 rounded-none px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 													>
-															<Pencil className="h-3 w-3" />
-															编辑
-														</button>
+														<Pencil className="h-3 w-3" />
+														编辑
+													</button>
 												</div>
 											)}
 										</div>
@@ -333,19 +330,17 @@ function ProfilePageInner() {
 										value={user?.id}
 										mono
 									/>
-								</CardContent>
-							</Card>
+								</div>
+							</ProfileSheet>
 
 							{/* 角色 */}
-							<Card>
-								<CardHeader>
-									<CardTitle className="flex items-center gap-2 text-base">
-										<Shield className="h-4 w-4" />
-										角色
-									</CardTitle>
-									<CardDescription>你当前被分配的角色</CardDescription>
-								</CardHeader>
-								<CardContent>
+							<ProfileSheet>
+								<ProfileSheetHeader
+									icon={<Shield className="h-4 w-4" />}
+									title="角色"
+									description="你当前被分配的角色"
+								/>
+								<div>
 									{roles.length === 0 ? (
 										<p className="text-sm text-muted-foreground">暂未分配任何角色</p>
 									) : (
@@ -364,22 +359,25 @@ function ProfilePageInner() {
 											))}
 										</div>
 									)}
-								</CardContent>
-							</Card>
+								</div>
+							</ProfileSheet>
 
 							{/* 权限 */}
-							<Card>
-								<CardHeader>
-									<CardTitle className="flex items-center gap-2 text-base">
-										<KeyRound className="h-4 w-4" />
-										权限
-										<span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-											{permissions.length}
-										</span>
-									</CardTitle>
-									<CardDescription>你拥有的全部权限编码（管理员拥有所有权限）</CardDescription>
-								</CardHeader>
-								<CardContent>
+							<ProfileSheet>
+								<ProfileSheetHeader
+									icon={<KeyRound className="h-4 w-4" />}
+									title={
+										<>
+											权限{' '}
+											<span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+												{' '}
+												{permissions.length}{' '}
+											</span>
+										</>
+									}
+									description="你拥有的全部权限编码（管理员拥有所有权限）"
+								/>
+								<div>
 									{permissions.length === 0 ? (
 										<p className="text-sm text-muted-foreground">暂未分配任何权限</p>
 									) : (
@@ -394,8 +392,8 @@ function ProfilePageInner() {
 											))}
 										</div>
 									)}
-								</CardContent>
-							</Card>
+								</div>
+							</ProfileSheet>
 
 							{/* 登录方式（含修改密码，原「安全」卡片并入此处） */}
 							<LoginMethodsCard email={user?.email} />

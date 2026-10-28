@@ -8,8 +8,8 @@ import {
 	markMessageRead,
 	notifyMessagesChanged,
 } from '@/api/messages'
+import { ProfileSheet, ProfileSheetHeader } from '@/components/profile/ProfileSheet'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
 	Dialog,
 	DialogContent,
@@ -135,38 +135,40 @@ export default function MessagesPanel() {
 	}
 
 	return (
-		<Card>
-			<CardHeader className="flex-row items-center justify-between space-y-0">
-				<div>
-					<CardTitle className="flex items-center gap-2 text-base">
-						<Mail className="h-4 w-4" />
+		<ProfileSheet>
+			<ProfileSheetHeader
+				icon={<Mail className="h-4 w-4" />}
+				title={
+					<>
 						站内信
 						{total > 0 && (
 							<span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
 								{total}
 							</span>
 						)}
-					</CardTitle>
-					<CardDescription>系统通知与消息</CardDescription>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button
-						variant="outline"
-						size="sm"
-						className="gap-1.5"
-						disabled={total === 0}
-						onClick={() => setClearOpen(true)}
-					>
-						<Trash2 className="h-3.5 w-3.5" />
-						清空已读
-					</Button>
-					<Button variant="outline" size="sm" className="gap-1.5" onClick={handleReadAll}>
-						<CheckCheck className="h-3.5 w-3.5" />
-						全部已读
-					</Button>
-				</div>
-			</CardHeader>
-			<CardContent>
+					</>
+				}
+				description="系统通知与消息"
+				actions={
+					<div className="flex items-center gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							className="gap-1.5"
+							disabled={total === 0}
+							onClick={() => setClearOpen(true)}
+						>
+							<Trash2 className="h-3.5 w-3.5" />
+							清空已读
+						</Button>
+						<Button variant="outline" size="sm" className="gap-1.5" onClick={handleReadAll}>
+							<CheckCheck className="h-3.5 w-3.5" />
+							全部已读
+						</Button>
+					</div>
+				}
+			/>
+			<div>
 				{loading ? (
 					<div className="rv-fade-in flex items-center justify-center gap-2 py-10 text-muted-foreground">
 						<Loader2 className="h-4 w-4 animate-spin" />
@@ -278,7 +280,7 @@ export default function MessagesPanel() {
 						)}
 					</>
 				)}
-			</CardContent>
+			</div>
 
 			{/* 详情弹窗 */}
 			<Dialog open={detail !== null} onOpenChange={(open) => !open && setDetail(null)}>
@@ -311,6 +313,6 @@ export default function MessagesPanel() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
-		</Card>
+		</ProfileSheet>
 	)
 }

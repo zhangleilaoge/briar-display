@@ -47,6 +47,21 @@ OFL 1.1 允许商用、嵌入与再分发，不得单独售卖字体文件本身
 
 CC BY / CC BY-SA 素材须保留署名；Fluent Emoji 已自本主题移除，MIT 声明块仍保留供 Phosphor 使用。
 
+## 门户 / 想法页随机贴纸池（`src/assets/decor/portal/`）
+
+`ScrapStickerDecor` 从 `SCRAP_STICKER_CATALOG`（≥30）随机抽几枚，叠在门户与想法页空白区；CSS `.rv-sticker-pad` 提供圆角白垫，**SVG 文件本身背景必须透明**（禁止全画布不透明白底矩形 / 嵌入白底栅格）。不进池示例：曾剔除的 `entablature-doric`（嵌入 PNG 白底）、`envelope`（纯白剪影）。
+
+| 文件（节选） | 用途 | 来源概况 | 授权 | 改动 |
+| --- | --- | --- | --- | --- |
+| `ionic-column.svg` / `ionic-column-2.svg` | 随机池 tall | Wikimedia Ionic order 等 | Public Domain | 单色、透明底 |
+| `floral-secession.svg` / `floral-1913.svg` / `floral-lilien.svg` / `floral-round.svg` | 随机池 | Wikimedia 新艺术线稿 | Public Domain | 单色 |
+| `gothic-arch.svg` / `abbey.svg` / `greek-temple.svg` / `doric-temple.svg` | 随机池 | Wikimedia 建筑线稿 | CC BY-SA / PD | 透明底 |
+| `lantern.svg` / `wax-seal.svg` / `scissors.svg` / `compass-rose.svg` / `antique-key.svg` / `fleur-de-lis.svg` | 随机池 | Wikimedia / game-icons | CC0 / CC BY / PD | 单色 |
+| `corinthian-helmet.svg` / `laurel-wreath.svg` / `amphora.svg` / `lyre.svg` / `caduceus.svg` / `ankh.svg` 等 | 随机池 | Wikimedia 古典纹样 | PD / CC0 | 去白底垫、单色线稿 |
+| 其余 `portal/*.svg`（花饰、蝴蝶、芦苇、星盘等） | 随机池 | Wikimedia / PSF 等 | PD / CC0 / CC BY | 透明底、svgo |
+
+完整文件以 `scrapStickerCatalog.ts` 为准；新增贴纸须：黑白线稿、透明背景、可商用授权，并在本表补一行。
+
 ## 自绘部分（随本仓库授权）
 
 只有简单几何图形是手写 SVG / CSS：

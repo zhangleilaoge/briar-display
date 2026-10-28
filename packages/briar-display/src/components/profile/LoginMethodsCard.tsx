@@ -2,8 +2,8 @@
 
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
 import { useLoginMethods } from '@/components/auth/useLoginMethods'
+import { ProfileSheet, ProfileSheetHeader } from '@/components/profile/ProfileSheet'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { KeyRound, Link2, Loader2, Mail } from 'lucide-react'
 import { useEffect } from 'react'
 
@@ -40,15 +40,13 @@ export default function LoginMethodsCard({ email }: { email?: string | null }) {
 	}, [load])
 
 	return (
-		<Card data-testid="login-methods-card">
-			<CardHeader>
-				<CardTitle className="flex items-center gap-2 text-base">
-					<Link2 className="h-4 w-4" />
-					登录方式
-				</CardTitle>
-				<CardDescription>可用于登录本账号的方式，至少保留一种</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-3">
+		<ProfileSheet data-testid="login-methods-card">
+			<ProfileSheetHeader
+				icon={<Link2 className="h-4 w-4" />}
+				title="登录方式"
+				description="可用于登录本账号的方式，至少保留一种"
+			/>
+			<div className="space-y-3">
 				{loading && !methods ? (
 					<div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
 						<Loader2 className="h-4 w-4 animate-spin" />
@@ -116,7 +114,7 @@ export default function LoginMethodsCard({ email }: { email?: string | null }) {
 				) : null}
 				{notice && <p className="text-sm text-success">{notice}</p>}
 				{error && <p className="text-sm text-destructive">{error}</p>}
-			</CardContent>
-		</Card>
+			</div>
+		</ProfileSheet>
 	)
 }

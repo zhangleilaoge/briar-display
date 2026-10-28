@@ -121,13 +121,19 @@
 		linear-gradient(180deg, #c9d3e8 0%, #dde2ef 28%, #efe9e4 62%, #f7f2ec 100%);
 	--page-bg-size: 160px 160px, auto, auto, auto, auto;
 
-	--sidebar-bg: linear-gradient(180deg, hsl(222 30% 86% / 0.55), hsl(222 30% 90% / 0.35));
-	--sidebar-tag-fill: #f3f4fa;
-	--sidebar-tag-stroke: #8d97b8;
-	--sidebar-icon: #6a7499;
-	--sidebar-active-fill: #f6dfe5;
-	--sidebar-active-icon: #b9545f;
-	--sidebar-string: #b2b9d3;
+	/* 手账吊牌：奶油纸贴 + 暖褐描边，去掉蓝灰底/蓝边，贴合页面暖渐变 */
+	--sidebar-bg: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--rv-cream) 72%, transparent),
+		color-mix(in srgb, var(--rv-beige) 55%, transparent)
+	);
+	--sidebar-tag-fill: #fffef9;
+	--sidebar-tag-stroke: color-mix(in srgb, var(--rv-ink) 28%, var(--rv-beige));
+	--sidebar-icon: color-mix(in srgb, var(--rv-ink) 72%, var(--rv-rose-deep));
+	--sidebar-active-fill: color-mix(in srgb, var(--rv-pink) 82%, white);
+	--sidebar-active-icon: var(--rv-rose-deep);
+	--sidebar-string: color-mix(in srgb, var(--rv-beige) 55%, var(--rv-ink) 28%);
+	--sidebar-active-dash: var(--rv-rose-deep);
 }
 
 .theme-arcane {
@@ -466,6 +472,24 @@ body {
 .rv-ribbon-tag[aria-current="page"] .rv-tag-icon,
 .rv-ribbon-tag[aria-current="page"] .rv-tag-label {
 	color: var(--sidebar-active-icon);
+}
+
+/* 手账选中：红虚线贴边（吊牌内圈），不用蓝描边 */
+.theme-scrapbook .rv-ribbon-tag[aria-current="page"] .rv-tag-shape {
+	stroke: color-mix(in srgb, var(--rv-rose-deep) 55%, var(--sidebar-tag-stroke));
+	stroke-width: 1.25;
+}
+.theme-scrapbook .rv-ribbon-tag[aria-current="page"] .rv-tag-inner-dash {
+	stroke: var(--sidebar-active-dash, var(--rv-rose-deep));
+	stroke-opacity: 0.95;
+}
+.theme-scrapbook .rv-ribbon-tag .rv-tag-inner-dash {
+	stroke: color-mix(in srgb, var(--rv-ink) 22%, var(--rv-beige));
+	stroke-opacity: 0.4;
+}
+.theme-scrapbook nav.rv-ribbon,
+.theme-scrapbook .rv-ribbon-mobile {
+	border-color: color-mix(in srgb, var(--rv-beige) 70%, var(--rv-ink) 12%) !important;
 }
 
 /* 浮雕效果：内阴影 + 高光 */
@@ -925,49 +949,31 @@ progress {
 	opacity: 0.55;
 }
 
-/* 拼贴底层纸片 */
-/* 叠纸底层：与 PaperSheet binder 同款打孔/横线/红边，避免只剩白底圆角 */
+/* 拼贴底层纸片（非 binder：小组件/搜索行等）；打孔只留给 PaperSheet binder 问候堆叠 */
 .rv-paper-back {
-	--rv-ps-fill: var(--rv-cream);
-	border: 1px solid color-mix(in srgb, var(--rv-navy) 22%, transparent);
-	border-radius: 2px;
-	padding-left: 2.1rem;
-	background-color: var(--rv-ps-fill);
-	background-image:
-		repeating-linear-gradient(
-			transparent 0,
-			transparent 27px,
-			color-mix(in srgb, var(--rv-sky) 55%, transparent) 27px,
-			color-mix(in srgb, var(--rv-sky) 55%, transparent) 28px
-		),
-		linear-gradient(
-			90deg,
-			transparent 1.75rem,
-			color-mix(in srgb, var(--rv-rose-deep) 35%, transparent) 1.75rem,
-			color-mix(in srgb, var(--rv-rose-deep) 35%, transparent) calc(1.75rem + 1px),
-			transparent calc(1.75rem + 1px)
-		),
-		radial-gradient(
-			circle at 0.95rem 18%,
-			color-mix(in srgb, var(--rv-beige) 70%, #c9c0b4) 0 0.32rem,
-			transparent 0.34rem
-		),
-		radial-gradient(
-			circle at 0.95rem 38%,
-			color-mix(in srgb, var(--rv-beige) 70%, #c9c0b4) 0 0.32rem,
-			transparent 0.34rem
-		),
-		radial-gradient(
-			circle at 0.95rem 58%,
-			color-mix(in srgb, var(--rv-beige) 70%, #c9c0b4) 0 0.32rem,
-			transparent 0.34rem
-		),
-		radial-gradient(
-			circle at 0.95rem 78%,
-			color-mix(in srgb, var(--rv-beige) 70%, #c9c0b4) 0 0.32rem,
-			transparent 0.34rem
-		);
+	background: linear-gradient(180deg, #fffdf8, var(--rv-beige));
+	border: 1px solid color-mix(in srgb, var(--rv-navy) 18%, transparent);
 	box-shadow: 0 8px 20px -12px hsl(221 46% 20% / 0.28);
+}
+
+/* 白底贴纸垫：门户柱/灯等剪纸，圆角白垫+轻阴影，不半透明漂浮 */
+.rv-sticker-pad {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.55rem 0.65rem;
+	border-radius: 0.85rem;
+	background: #fffefb;
+	box-shadow:
+		0 0 0 1px color-mix(in srgb, var(--rv-navy) 10%, transparent),
+		0 6px 16px -6px hsl(221 46% 20% / 0.28),
+		0 2px 4px hsl(221 46% 20% / 0.08);
+	opacity: 1;
+}
+.rv-sticker-pad > img,
+.rv-sticker-pad > svg {
+	opacity: 1;
+	filter: none;
 }
 
 /* 剪贴簿卡片加厚白描边感 */
@@ -977,14 +983,15 @@ progress {
 	box-shadow: 0 0 0 2px hsl(0 0% 100% / 0.92), var(--shadow-surface);
 }
 
-/* 弹窗纵向布局：顶栏 / 底栏固定，中间内容区滚动（基础 Dialog 为 flex column + max-h 100dvh-2rem） */
+/* 弹窗纵向布局：顶栏 / 底栏 / [data-rv-dialog-fixed] 固定不压缩；其余中间区可滚动
+ * （基础 Dialog 为 flex column + max-h 100dvh-2rem） */
 .rv-paper-dialog > * {
 	flex-shrink: 0;
 }
 .rv-paper-dialog
 	> :not(.rv-paper-header):not(.rv-paper-footer):not(.rv-crop-marks):not(.rv-paper-index):not(
 		[data-rv-dialog-close]
-	) {
+	):not([data-rv-dialog-fixed]) {
 	min-height: 0;
 	min-width: 0;
 	flex-shrink: 1;
@@ -992,9 +999,15 @@ progress {
 .rv-paper-dialog[role="dialog"]
 	> :not(.rv-paper-header):not(.rv-paper-footer):not(.rv-crop-marks):not(.rv-paper-index):not(
 		[data-rv-dialog-close]
-	) {
+	):not([data-rv-dialog-fixed]) {
 	overflow-y: auto;
 	overflow-x: hidden;
+}
+/* 显式固定块：吃满内容高度，禁止被压扁或单独出滚动条 */
+.rv-paper-dialog > [data-rv-dialog-fixed] {
+	flex-shrink: 0;
+	min-height: fit-content;
+	overflow: visible;
 }
 
 /* ==========================================================================
@@ -1497,3 +1510,359 @@ progress {
 	border-width: 0.5px;
 	opacity: 0.28;
 }
+
+/* —— sticky：便利贴顶条胶条 + 微暖色 —— */
+.rv-paper-sheet--sticky {
+	border-radius: 2px;
+	background:
+		linear-gradient(180deg, #fff9c4 0%, #fff59d 55%, color-mix(in srgb, #ffe082 70%, var(--rv-cream)) 100%);
+	box-shadow:
+		0 1px 0 hsl(45 60% 40% / 0.12),
+		0 10px 22px hsl(221 46% 20% / 0.16);
+	transform: rotate(-0.4deg);
+}
+.rv-paper-sheet--sticky .rv-paper-sheet__glue {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 0.85rem;
+	background: color-mix(in srgb, #f0e68c 55%, hsl(45 40% 40% / 0.18));
+	opacity: 0.85;
+	pointer-events: none;
+	z-index: 2;
+	box-shadow: inset 0 -1px 0 hsl(45 40% 30% / 0.12);
+}
+
+/* —— polaroid：拍立得白边 + 底部留白 —— */
+.rv-paper-sheet--polaroid {
+	border-radius: 2px;
+	padding: 0.65rem 0.65rem 1.6rem;
+	background: #fffefb;
+	box-shadow:
+		0 0 0 1px color-mix(in srgb, var(--rv-navy) 14%, transparent),
+		0 12px 24px hsl(221 46% 20% / 0.18);
+}
+.rv-paper-sheet--polaroid .rv-paper-sheet__polaroid-mat {
+	pointer-events: none;
+	position: absolute;
+	inset: 0.65rem 0.65rem 1.6rem;
+	border: 1px solid color-mix(in srgb, var(--rv-navy) 10%, transparent);
+	background: color-mix(in srgb, var(--rv-beige) 45%, #fffef9);
+	opacity: 0.55;
+	z-index: 0;
+}
+.rv-paper-sheet--polaroid .rv-paper-sheet__body {
+	z-index: 1;
+}
+
+/* —— kraft：牛皮纸暖褐 + 细纤维噪点 —— */
+.rv-paper-sheet--kraft {
+	border: 1px solid color-mix(in srgb, #8b6914 35%, transparent);
+	border-radius: 2px;
+	background-color: #e8d5b5;
+	background-image:
+		radial-gradient(circle at 18% 22%, hsl(35 30% 40% / 0.06) 0 1px, transparent 1.5px),
+		radial-gradient(circle at 72% 58%, hsl(30 25% 30% / 0.05) 0 1px, transparent 1.5px),
+		radial-gradient(circle at 44% 81%, hsl(40 20% 35% / 0.05) 0 1px, transparent 1.5px),
+		linear-gradient(165deg, #f0e0c4 0%, #e8d5b5 45%, #dcc4a0 100%);
+	background-size: 7px 9px, 11px 8px, 9px 12px, auto;
+	color: color-mix(in srgb, var(--rv-ink) 92%, #5c4033);
+	filter: drop-shadow(0 10px 18px hsl(30 40% 20% / 0.2));
+}
+
+/* —— ticket：票根上下齿孔撕线 —— */
+.rv-paper-sheet--ticket {
+	--rv-ps-notch: 4px;
+	--rv-ps-period: 12px;
+	border-radius: 0;
+	background:
+		linear-gradient(180deg, #fffef9 0%, var(--rv-cream) 50%, color-mix(in srgb, var(--rv-sky) 18%, var(--rv-cream)) 100%);
+	-webkit-mask:
+		radial-gradient(circle at 50% 0, #0000 var(--rv-ps-notch), #000 calc(var(--rv-ps-notch) + 0.6px)) top / var(--rv-ps-period) 50% round no-repeat,
+		radial-gradient(circle at 50% 100%, #0000 var(--rv-ps-notch), #000 calc(var(--rv-ps-notch) + 0.6px)) bottom / var(--rv-ps-period) 50% round no-repeat;
+	mask:
+		radial-gradient(circle at 50% 0, #0000 var(--rv-ps-notch), #000 calc(var(--rv-ps-notch) + 0.6px)) top / var(--rv-ps-period) 50% round no-repeat,
+		radial-gradient(circle at 50% 100%, #0000 var(--rv-ps-notch), #000 calc(var(--rv-ps-notch) + 0.6px)) bottom / var(--rv-ps-period) 50% round no-repeat;
+	-webkit-mask-composite: source-over;
+	mask-composite: add;
+	-webkit-mask-size: 100% 51%, 100% 51%;
+	mask-size: 100% 51%, 100% 51%;
+	-webkit-mask-position: top, bottom;
+	mask-position: top, bottom;
+	filter: drop-shadow(0 8px 16px hsl(221 46% 20% / 0.16));
+}
+.rv-paper-sheet--ticket .rv-paper-sheet__perf {
+	pointer-events: none;
+	position: absolute;
+	left: 0.75rem;
+	right: 0.75rem;
+	height: 0;
+	border-top: 1px dashed color-mix(in srgb, var(--rv-navy) 28%, transparent);
+	opacity: 0.55;
+	z-index: 2;
+}
+.rv-paper-sheet--ticket .rv-paper-sheet__perf--top { top: 0.85rem; }
+.rv-paper-sheet--ticket .rv-paper-sheet__perf--bottom { bottom: 0.85rem; }
+
+/* —— index：索引卡圆角孔 + 顶栏红线 + 淡横线（个人中心统一款） —— */
+.rv-paper-sheet--index {
+	border: 1px solid color-mix(in srgb, var(--rv-navy) 20%, transparent);
+	border-radius: 3px;
+	padding-top: 0.35rem;
+	background-color: var(--rv-ps-fill);
+	background-image:
+		repeating-linear-gradient(
+			transparent 0,
+			transparent 26px,
+			color-mix(in srgb, var(--rv-sky) 42%, transparent) 26px,
+			color-mix(in srgb, var(--rv-sky) 42%, transparent) 27px
+		),
+		linear-gradient(
+			180deg,
+			transparent 1.55rem,
+			color-mix(in srgb, var(--rv-rose-deep) 42%, transparent) 1.55rem,
+			color-mix(in srgb, var(--rv-rose-deep) 42%, transparent) calc(1.55rem + 1.5px),
+			transparent calc(1.55rem + 1.5px)
+		);
+	filter: drop-shadow(0 10px 20px hsl(221 46% 20% / 0.16));
+}
+.rv-paper-sheet--index .rv-paper-sheet__index-hole {
+	position: absolute;
+	top: 0.55rem;
+	right: 0.75rem;
+	width: 0.7rem;
+	height: 0.7rem;
+	border-radius: 9999px;
+	background:
+		radial-gradient(circle at 35% 30%, hsl(0 0% 100% / 0.5), transparent 55%),
+		radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--rv-beige) 65%, #c9c0b4) 0 62%, transparent 63%);
+	box-shadow:
+		inset 0 1px 2px hsl(221 30% 20% / 0.3),
+		0 0 0 1px color-mix(in srgb, var(--rv-navy) 16%, transparent);
+	pointer-events: none;
+	z-index: 2;
+}
+.rv-paper-sheet--index .rv-paper-sheet__index-rule {
+	display: none;
+}
+
+/* emoji 选择器：手账浮层小格 */
+.rv-emoji-picker {
+	width: min(18.5rem, calc(100vw - 2rem));
+	padding: 0.5rem;
+	background: var(--rv-cream);
+	border: 1px solid color-mix(in srgb, var(--rv-navy) 18%, transparent);
+	border-radius: 2px;
+	box-shadow: 0 12px 28px hsl(221 46% 20% / 0.2);
+}
+.rv-emoji-picker__tabs {
+	display: flex;
+	gap: 0.15rem;
+	margin-bottom: 0.4rem;
+	border-bottom: 1px solid color-mix(in srgb, var(--rv-navy) 12%, transparent);
+	padding-bottom: 0.35rem;
+}
+.rv-emoji-picker__tab {
+	flex: 1;
+	padding: 0.2rem 0;
+	font-size: 0.95rem;
+	line-height: 1.2;
+	border-radius: 2px;
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	opacity: 0.55;
+}
+.rv-emoji-picker__tab[data-active='true'] {
+	opacity: 1;
+	background: color-mix(in srgb, var(--rv-pink) 45%, transparent);
+}
+.rv-emoji-picker__grid {
+	display: grid;
+	grid-template-columns: repeat(8, 1fr);
+	gap: 0.1rem;
+	max-height: 11.5rem;
+	overflow-y: auto;
+}
+.rv-emoji-picker__cell {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	aspect-ratio: 1;
+	font-size: 1.2rem;
+	line-height: 1;
+	border: none;
+	border-radius: 2px;
+	background: transparent;
+	cursor: pointer;
+	padding: 0;
+}
+.rv-emoji-picker__cell:hover,
+.rv-emoji-picker__cell:focus-visible {
+	background: color-mix(in srgb, var(--rv-pink) 55%, transparent);
+	outline: none;
+}
+
+
+
+/* ---------------- 活页掀页（BinderPeel）— 柔性纸面卷边 ---------------- */
+.rv-binder-peel {
+	position: relative;
+	isolation: isolate;
+	perspective: 1400px;
+	perspective-origin: left center;
+}
+.rv-binder-peel__base {
+	position: relative;
+	z-index: 1;
+}
+/* 掀页时底层接一张柔和投射阴影，像纸被卷开压在下一页上 */
+.rv-binder-peel.is-peeling .rv-binder-peel__base::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	border-radius: inherit;
+	background: linear-gradient(
+		90deg,
+		hsl(221 30% 18% / 0.14) 0%,
+		hsl(221 30% 18% / 0.06) 28%,
+		transparent 62%
+	);
+	animation: rv-binder-cast 0.78s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.rv-binder-peel__sheet {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	transform-origin: left center;
+	transform-style: preserve-3d;
+	backface-visibility: hidden;
+	pointer-events: none;
+	/* 纸面保持不透明；卷到侧缘才淡出，避免刚性 fade */
+	animation: none;
+}
+.rv-binder-peel__blank {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(165deg, #fffef9 0%, var(--rv-cream) 52%, #f0e6dc 100%);
+}
+.rv-binder-peel__face {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	padding: inherit;
+	background: linear-gradient(165deg, #fffef9 0%, var(--rv-cream) 55%, #f3ebe3 100%);
+	border: 1px solid color-mix(in srgb, var(--rv-navy) 12%, transparent);
+	border-radius: 2px 6px 6px 2px;
+	box-shadow:
+		2px 0 0 color-mix(in srgb, var(--rv-navy) 4%, transparent),
+		8px 12px 28px -14px hsl(221 30% 18% / 0.32);
+	overflow: hidden;
+}
+/* 自由边卷曲高光条（纸被掀起时弯折处） */
+.rv-binder-peel__curl {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: 42%;
+	z-index: 2;
+	pointer-events: none;
+	border-radius: 0 6px 6px 0;
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		hsl(40 40% 96% / 0) 35%,
+		hsl(40 50% 98% / 0.45) 62%,
+		hsl(221 25% 20% / 0.1) 82%,
+		hsl(221 30% 16% / 0.22) 100%
+	);
+	opacity: 0;
+	mix-blend-mode: multiply;
+}
+.rv-binder-peel__sheet.is-peeled .rv-binder-peel__curl {
+	animation: rv-binder-curl-glow 0.78s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+/* 弯曲阴影带：沿折线扫过 */
+.rv-binder-peel__shade {
+	position: absolute;
+	inset: -2% -4% -2% 0;
+	z-index: 3;
+	pointer-events: none;
+	background: linear-gradient(
+		105deg,
+		transparent 0%,
+		transparent 48%,
+		hsl(221 35% 14% / 0.07) 58%,
+		hsl(221 35% 14% / 0.2) 72%,
+		hsl(40 45% 98% / 0.35) 86%,
+		hsl(221 30% 12% / 0.18) 100%
+	);
+	opacity: 0;
+	transform: translateX(8%);
+}
+.rv-binder-peel__sheet.is-peeled .rv-binder-peel__shade {
+	animation: rv-binder-shade-sweep 0.78s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.rv-binder-peel__sheet.is-peeled {
+	animation: rv-binder-peel-soft 0.78s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+@keyframes rv-binder-peel-soft {
+	0% {
+		transform: rotateY(0deg) rotateZ(0deg) translate3d(0, 0, 0) scaleX(1);
+		opacity: 1;
+		filter: brightness(1);
+	}
+	28% {
+		transform: rotateY(-28deg) rotateZ(-0.6deg) translate3d(-1.5%, 0.4%, 8px) scaleX(0.985);
+		opacity: 1;
+		filter: brightness(1.02);
+	}
+	62% {
+		transform: rotateY(-68deg) rotateZ(-1.2deg) translate3d(-4%, 0.8%, 18px) scaleX(0.96);
+		opacity: 1;
+		filter: brightness(0.98);
+	}
+	100% {
+		transform: rotateY(-108deg) rotateZ(-1.8deg) translate3d(-10%, 1.2%, 28px) scaleX(0.92);
+		opacity: 0;
+		filter: brightness(0.92);
+	}
+}
+@keyframes rv-binder-curl-glow {
+	0% { opacity: 0; width: 18%; }
+	35% { opacity: 0.85; width: 38%; }
+	100% { opacity: 0.55; width: 48%; }
+}
+@keyframes rv-binder-shade-sweep {
+	0% { opacity: 0; transform: translateX(12%); }
+	40% { opacity: 0.9; transform: translateX(2%); }
+	100% { opacity: 0.35; transform: translateX(-6%); }
+}
+@keyframes rv-binder-cast {
+	0% { opacity: 0; }
+	35% { opacity: 0.85; }
+	100% { opacity: 0.15; }
+}
+@media (prefers-reduced-motion: reduce) {
+	.rv-binder-peel__sheet,
+	.rv-binder-peel__blank,
+	.rv-binder-peel__curl,
+	.rv-binder-peel__shade,
+	.rv-binder-peel.is-peeling .rv-binder-peel__base::after {
+		animation: none !important;
+		transition: none !important;
+	}
+	.rv-binder-peel__sheet.is-peeled {
+		display: none;
+	}
+}
+

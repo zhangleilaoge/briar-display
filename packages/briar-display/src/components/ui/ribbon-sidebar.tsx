@@ -152,7 +152,7 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 									<svg
 										viewBox="0 0 48 62"
 										preserveAspectRatio="none"
-										className="absolute inset-0 h-full w-full drop-shadow-[0_2px_3px_rgba(28,43,75,0.18)]"
+										className="absolute inset-0 h-full w-full drop-shadow-[0_2px_3px_rgba(80,50,45,0.14)]"
 										aria-hidden
 									>
 										<path d="M24 0v8" stroke="var(--sidebar-string)" strokeWidth="1" />
@@ -162,11 +162,11 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 											d="M14 8h20l10 10v40a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V18Z"
 										/>
 										<path
+											className="rv-tag-inner-dash"
 											d="M14 11h20l7 7.4V56a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V18.4Z"
 											fill="none"
-											stroke="var(--sidebar-tag-stroke)"
-											strokeOpacity=".35"
-											strokeDasharray="1.5 2"
+											strokeWidth="1.15"
+											strokeDasharray="1.6 2.2"
 										/>
 										<circle
 											cx="24"
