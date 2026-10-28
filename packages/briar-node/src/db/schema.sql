@@ -438,3 +438,19 @@ CREATE TABLE IF NOT EXISTS user_preferences (
   PRIMARY KEY (user_id, pref_key),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户偏好';
+
+-- ============================================================
+-- 想法（短帖流，替代原静态博客）：纯文本 + emoji，列表直出，仅管理员可发
+-- ============================================================
+CREATE TABLE IF NOT EXISTS thoughts (
+  id VARCHAR(36) PRIMARY KEY COMMENT '想法唯一标识',
+  user_id VARCHAR(36) NOT NULL COMMENT '作者用户 ID',
+  body TEXT NOT NULL COMMENT '正文（纯文本 + emoji，无 Markdown）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
+  INDEX idx_created_at (created_at),
+  INDEX idx_user_id (user_id),
+  INDEX idx_deleted_at (deleted_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='想法短帖';

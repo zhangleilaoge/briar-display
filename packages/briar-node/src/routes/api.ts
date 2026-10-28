@@ -14,6 +14,7 @@ import messageRoutes from './messages'
 import schedulerRoutes from './scheduler'
 import sqlConsoleRoutes from './sqlConsole'
 import terminalRoutes from './terminal'
+import thoughtRoutes from './thoughts'
 import userRoutes from './users'
 import versionRoutes from './version'
 
@@ -38,6 +39,7 @@ api.route('/files/privacy', filePrivacyRoutes)
 api.route('/files', fileUploadRoutes)
 api.route('/files', fileRoutes)
 api.route('/users', userRoutes)
+api.route('/thoughts', thoughtRoutes)
 api.route('/version', versionRoutes)
 
 // 在此添加其他 API 路由...

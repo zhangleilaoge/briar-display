@@ -31,6 +31,7 @@ const SOFT_DELETE_TABLES = [
 	'messages',
 	'market_watchlist',
 	'user_identities',
+	'thoughts',
 ]
 
 const SRC = path.resolve(import.meta.dir, '..')

@@ -48,10 +48,10 @@ export const RIBBON_ITEMS: RibbonItem[] = [
 		icon: FilesIcon,
 	},
 	{
-		href: '/briar/blog/',
-		match: '/briar/blog',
-		label: '博客',
-		caption: 'Journal',
+		href: '/briar/thoughts/',
+		match: '/briar/thoughts',
+		label: '想法',
+		caption: 'Pensées',
 		icon: JournalIcon,
 	},
 	{
