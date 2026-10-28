@@ -70,7 +70,7 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
 		id: 'weather',
 		title: '天气',
 		caption: 'Météo',
-		description: '杭州实时天气',
+		description: '多地区实时天气、逐小时与七日预报',
 		sizes: ['1x1', '2x1', '2x2'],
 		defaultSize: '1x1',
 	},

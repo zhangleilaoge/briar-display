@@ -1,11 +1,12 @@
 'use client'
 
+import '@openpageflip/core/styles.css'
 import { prefersReducedMotion, useIsoLayoutEffect } from '@/components/ui/motion'
 import { cn } from '@/lib/utils'
+import { type Book, FlipBook, Page } from '@openpageflip/react'
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 
-const PEEL_MS = 680
-const PEEL_EASE = 'cubic-bezier(0.65, 0, 0.35, 1)'
+const PEEL_MS = 920
 
 type Props = {
 	contentKey: string | number
@@ -15,131 +16,198 @@ type Props = {
 	children: ReactNode
 }
 
-type Turn = {
+type Paper = {
+	id: number
+	key: string | number
 	content: ReactNode
-	fromHeight: number
-	toHeight: number
+	height?: number
 }
 
-/** 单张活页纸绕左缘翻转；旧纸文字随正面运动，新纸在下方被揭开。 */
-export function BinderPeel({ contentKey, ready = true, className, style, children }: Props) {
-	const [turn, setTurn] = useState<Turn | null>(null)
-	const rootRef = useRef<HTMLDivElement>(null)
-	const baseRef = useRef<HTMLDivElement>(null)
-	const sheetRef = useRef<HTMLDivElement>(null)
-	const prevKey = useRef<string | number | null>(null)
-	const prevChild = useRef<ReactNode>(null)
-	const lastHeight = useRef<number | null>(null)
-	const turning = useRef(false)
-	const animations = useRef<Animation[]>([])
+type Turn = {
+	key: string | number
+	fromHeight: number
+	toHeight: number
+	targetPage: number
+}
 
-	const cancelAnimations = useCallback(() => {
-		for (const animation of animations.current) {
-			animation.onfinish = null
-			animation.cancel()
-		}
-		animations.current = []
+function easeInOutCubic(t: number) {
+	return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2
+}
+
+/** 软纸从右下角卷起；可见页保留快照，隐藏测量层只负责同步容器高度。 */
+export function BinderPeel({ contentKey, ready = true, className, style, children }: Props) {
+	const [pages, setPages] = useState<Paper[]>([{ id: 0, key: contentKey, content: children }])
+	const [bookSize, setBookSize] = useState({ width: 0, height: 0 })
+	const rootRef = useRef<HTMLDivElement>(null)
+	const measureRef = useRef<HTMLDivElement>(null)
+	const bookRef = useRef<Book>(null)
+	const restHeight = useRef(0)
+	const pagesRef = useRef(pages)
+	const requestedKey = useRef<string | number | null>(null)
+	const shown = useRef<Paper>(pages[0])
+	const pending = useRef<{ key: string | number; content: ReactNode } | null>(null)
+	const turn = useRef<Turn | null>(null)
+	const resetting = useRef(false)
+	const nextId = useRef(1)
+	const styleRef = useRef(style)
+	styleRef.current = style
+
+	useIsoLayoutEffect(() => {
+		const measure = measureRef.current
+		if (!measure) return
+		restHeight.current = measure.offsetHeight
+		setBookSize({ width: measure.offsetWidth, height: measure.offsetHeight })
 	}, [])
 
 	useEffect(() => {
-		const base = baseRef.current
-		if (!base || typeof ResizeObserver === 'undefined') return
+		const measure = measureRef.current
+		if (!measure || typeof ResizeObserver === 'undefined') return
 		const observer = new ResizeObserver(() => {
-			if (!turning.current) lastHeight.current = base.offsetHeight
+			if (turn.current) return
+			restHeight.current = measure.offsetHeight
+			setBookSize({ width: measure.offsetWidth, height: measure.offsetHeight })
 		})
-		observer.observe(base)
+		observer.observe(measure)
 		return () => observer.disconnect()
 	}, [])
 
+	const renderPages = useCallback((next: Paper[]) => {
+		pagesRef.current = next
+		setPages(next)
+	}, [])
+
+	const showInstant = useCallback(
+		(content: ReactNode, key: string | number, height?: number) => {
+			resetting.current = true
+			turn.current = null
+			pending.current = null
+			const paper = { id: nextId.current++, key, content, height }
+			shown.current = paper
+			renderPages([paper])
+		},
+		[renderPages],
+	)
+
+	const beginTurn = useCallback(
+		(content: ReactNode, key: string | number) => {
+			const root = rootRef.current
+			const measure = measureRef.current
+			if (!root || !measure) return
+			const toHeight = measure.offsetHeight
+			if (!shown.current.content || prefersReducedMotion()) {
+				showInstant(content, key, toHeight)
+				return
+			}
+
+			const fromHeight = restHeight.current || root.getBoundingClientRect().height
+			turn.current = { key, fromHeight, toHeight, targetPage: pagesRef.current.length }
+			root.style.height = `${fromHeight}px`
+			setBookSize({ width: measure.offsetWidth, height: Math.max(fromHeight, toHeight) })
+			renderPages([
+				...pagesRef.current.slice(0, -1),
+				{ ...shown.current, height: fromHeight },
+				{ id: nextId.current++, key, content, height: toHeight },
+			])
+		},
+		[renderPages, showInstant],
+	)
+
+	useIsoLayoutEffect(() => {
+		if (!ready) return
+		if (requestedKey.current === null) {
+			requestedKey.current = contentKey
+			if (shown.current.content !== children) showInstant(children, contentKey)
+			return
+		}
+		if (requestedKey.current === contentKey) {
+			if (!turn.current && shown.current.content !== children) showInstant(children, contentKey)
+			return
+		}
+		requestedKey.current = contentKey
+		if (turn.current) {
+			pending.current = { key: contentKey, content: children }
+			return
+		}
+		beginTurn(children, contentKey)
+	}, [beginTurn, children, contentKey, ready, showInstant])
+
 	useIsoLayoutEffect(() => {
 		const root = rootRef.current
-		const base = baseRef.current
-		if (!root || !base || !ready) return
-
-		const nextHeight = base.offsetHeight
-		if (prevKey.current === null) {
-			prevKey.current = contentKey
-			prevChild.current = children
-			lastHeight.current = nextHeight
+		const measure = measureRef.current
+		if (!root) return
+		if (resetting.current) {
+			bookRef.current?.turnTo(0)
+			resetting.current = false
+			if (measure) {
+				restHeight.current = measure.offsetHeight
+				setBookSize({ width: measure.offsetWidth, height: measure.offsetHeight })
+			}
+			const height = styleRef.current?.height
+			root.style.height = typeof height === 'number' ? `${height}px` : (height ?? '')
 			return
 		}
-
-		if (prevKey.current === contentKey) {
-			prevChild.current = children
-			if (!turning.current) lastHeight.current = nextHeight
-			return
+		const active = turn.current
+		if (active && bookRef.current?.page !== active.targetPage) {
+			void bookRef.current?.flipTo(active.targetPage, 'bottom')
 		}
-
-		const fromHeight = turning.current
-			? root.getBoundingClientRect().height
-			: (lastHeight.current ?? root.getBoundingClientRect().height)
-		const outgoing = prevChild.current
-		prevKey.current = contentKey
-		prevChild.current = children
-		cancelAnimations()
-		turning.current = false
-		lastHeight.current = nextHeight
-
-		if (!outgoing || prefersReducedMotion()) {
-			setTurn(null)
-			return
-		}
-
-		turning.current = true
-		setTurn({ content: outgoing, fromHeight, toHeight: nextHeight })
-	}, [cancelAnimations, children, contentKey, ready])
-
-	useIsoLayoutEffect(() => {
-		const root = rootRef.current
-		const sheet = sheetRef.current
-		if (!turn || !root || !sheet) return
-
-		const sheetAnimation = sheet.animate(
-			[{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(-90deg)' }],
-			{ duration: PEEL_MS, easing: PEEL_EASE, fill: 'forwards' },
-		)
-		const nextAnimations = [sheetAnimation]
-		if (Math.abs(turn.toHeight - turn.fromHeight) >= 1) {
-			nextAnimations.push(
-				root.animate([{ height: `${turn.fromHeight}px` }, { height: `${turn.toHeight}px` }], {
-					duration: PEEL_MS,
-					easing: PEEL_EASE,
-					fill: 'forwards',
-				}),
-			)
-		}
-		animations.current = nextAnimations
-		sheetAnimation.onfinish = () => {
-			if (animations.current[0] !== sheetAnimation) return
-			turning.current = false
-			lastHeight.current = baseRef.current?.offsetHeight ?? turn.toHeight
-			setTurn(null)
-		}
-
-		return cancelAnimations
-	}, [cancelAnimations, turn])
+	}, [pages])
 
 	return (
 		<div
 			ref={rootRef}
 			className={cn('rv-binder-peel', className)}
-			style={{ ...style, ...(turn ? { height: `${turn.fromHeight}px` } : null) }}
-			data-turning={turn ? '' : undefined}
+			style={style}
+			data-turning={pages.length > 1 ? '' : undefined}
 		>
-			<div ref={baseRef} className="rv-binder-peel__base">
+			<div ref={measureRef} className="rv-binder-peel__measure" aria-hidden inert>
 				{children}
 			</div>
-			{turn && (
-				<div
-					className="rv-binder-peel__stage"
-					style={{ height: `${turn.fromHeight}px` }}
-					aria-hidden
-					inert
+			{bookSize.width > 0 && bookSize.height > 0 && (
+				<FlipBook
+					ref={bookRef}
+					className="rv-binder-peel__book"
+					style={{ height: bookSize.height }}
+					width={bookSize.width}
+					height={bookSize.height}
+					size="fixed"
+					layout="single"
+					autoSize={false}
+					flipDuration={PEEL_MS}
+					easing={easeInOutCubic}
+					shadowOpacity={0.28}
+					click="off"
+					drag={false}
+					swipe={false}
+					hover={false}
+					onFlip={({ page }) => {
+						if (resetting.current || turn.current?.targetPage !== page) return
+						const finished = turn.current
+						const paper = pagesRef.current[page]
+						if (!paper) return
+						turn.current = null
+						restHeight.current = finished.toHeight
+						shown.current = paper
+						const next = pending.current
+						pending.current = null
+						if (next) beginTurn(next.content, next.key)
+						else showInstant(paper.content, finished.key)
+					}}
+					onFlipProgress={({ to, progress }) => {
+						const active = turn.current
+						const root = rootRef.current
+						if (!active || !root || to !== active.targetPage) return
+						const height = active.fromHeight + (active.toHeight - active.fromHeight) * progress
+						root.style.height = `${height}px`
+					}}
 				>
-					<div ref={sheetRef} className="rv-binder-peel__sheet">
-						{turn.content}
-					</div>
-				</div>
+					{pages.map((paper) => (
+						<Page key={paper.id} density="soft">
+							<div className="rv-binder-peel__page-content" style={{ height: paper.height }}>
+								<div className="rv-binder-peel__paper">{paper.content}</div>
+							</div>
+						</Page>
+					))}
+				</FlipBook>
 			)}
 		</div>
 	)

@@ -1,34 +1,104 @@
 'use client'
 
+import { Button } from '@/components/ui/button'
+import { prefersReducedMotion } from '@/components/ui/motion'
+import { cn } from '@/lib/utils'
+import { LoaderCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { WidgetChrome } from '../WidgetChrome'
+import { WeatherDialog } from '../weather/WeatherDialog'
+import { WeatherIcon } from '../weather/WeatherIcon'
+import {
+	type WeatherForecast,
+	type WeatherLocation,
+	upcomingHours,
+	windLabel,
+	wmoInfo,
+} from '../weather/weather'
+import { getWeatherForecast } from '../weather/weatherApi'
+import { useWeatherLocations } from '../weather/weatherLocationStore'
 import type { WidgetSize } from '../widgetTypes'
 
-/** 杭州 · Open-Meteo（免费公开 API，无需 key） */
-const LAT = 30.2741
-const LON = 120.1551
-const URL = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FShanghai&forecast_days=1`
+const REFRESH_MS = 10 * 60_000
+const ROTATE_MS = 6_000
 
-interface WeatherData {
-	temp: number
-	humidity: number
-	wind: number
-	code: number
-	high: number
-	low: number
-}
+function WeatherCardContent({
+	location,
+	forecast,
+	size,
+}: {
+	location: WeatherLocation
+	forecast: WeatherForecast
+	size: WidgetSize
+}) {
+	const { current } = forecast
+	const today = forecast.daily[0]
+	const meta = wmoInfo(current.code, current.isDay)
+	if (size === '1x1') {
+		return (
+			<div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-0.5 text-center">
+				<WeatherIcon code={current.code} isDay={current.isDay} className="h-5 w-5" />
+				<p className="font-display text-2xl font-semibold leading-tight tabular-nums">
+					{Math.round(current.temperature)}°
+				</p>
+				<p className="max-w-full truncate text-[11px] text-muted-foreground">
+					{location.name} · {meta.label}
+				</p>
+				{today && (
+					<p className="text-[10px] tabular-nums text-muted-foreground">
+						{Math.round(today.temperatureMin)}° ~ {Math.round(today.temperatureMax)}°
+					</p>
+				)}
+				<p className="max-w-full truncate text-[10px] text-muted-foreground">
+					{windLabel(current.windSpeed, current.windDirection)}
+				</p>
+			</div>
+		)
+	}
 
-function wmoLabel(code: number): { text: string; glyph: string } {
-	if (code === 0) return { text: '晴', glyph: '☀' }
-	if (code <= 3) return { text: '多云', glyph: '☁' }
-	if (code <= 48) return { text: '雾', glyph: '〰' }
-	if (code <= 57) return { text: '毛毛雨', glyph: '☂' }
-	if (code <= 67) return { text: '雨', glyph: '☂' }
-	if (code <= 77) return { text: '雪', glyph: '❄' }
-	if (code <= 82) return { text: '阵雨', glyph: '☂' }
-	if (code <= 86) return { text: '阵雪', glyph: '❄' }
-	if (code <= 99) return { text: '雷暴', glyph: '⚡' }
-	return { text: '天气', glyph: '·' }
+	return (
+		<div className="flex min-h-0 flex-1 flex-col justify-center">
+			<div className="flex items-center justify-between gap-4">
+				<div className="flex min-w-0 items-center gap-3">
+					<WeatherIcon code={current.code} isDay={current.isDay} className="h-10 w-10 shrink-0" />
+					<div className="min-w-0">
+						<p className="font-display text-4xl font-semibold leading-none tabular-nums">
+							{Math.round(current.temperature)}°
+						</p>
+						<p className="mt-1.5 truncate text-xs text-muted-foreground">{meta.label}</p>
+					</div>
+				</div>
+				<div className="shrink-0 text-right text-xs leading-5 text-muted-foreground">
+					{today && (
+						<p className="font-medium text-foreground tabular-nums">
+							{Math.round(today.temperatureMin)}° ~ {Math.round(today.temperatureMax)}°
+						</p>
+					)}
+					<p>湿度 {current.humidity}%</p>
+					<p>{windLabel(current.windSpeed, current.windDirection)}</p>
+				</div>
+			</div>
+			{size === '2x2' && (
+				<ol className="mt-5 grid grid-cols-4 gap-2 border-t border-[color:var(--rv-navy)]/10 pt-3">
+					{upcomingHours(forecast, 4).map((hour, index) => (
+						<li key={hour.time} className="flex flex-col items-center gap-1 text-center">
+							<span className="text-[10px] text-muted-foreground">
+								{index === 0 ? '现在' : hour.time.slice(11, 16)}
+							</span>
+							<WeatherIcon
+								code={hour.code}
+								isDay={Number(hour.time.slice(11, 13)) >= 6 && Number(hour.time.slice(11, 13)) < 18}
+								className="h-4 w-4"
+							/>
+							<span className="font-display text-sm font-semibold tabular-nums">
+								{Math.round(hour.temperature)}°
+							</span>
+						</li>
+					))}
+				</ol>
+			)}
+		</div>
+	)
 }
 
 export function WeatherWidget({
@@ -40,86 +110,162 @@ export function WeatherWidget({
 	editing?: boolean
 	onRemove?: () => void
 }) {
-	const [data, setData] = useState<WeatherData | null>(null)
-	const [err, setErr] = useState(false)
+	const { locations, ready } = useWeatherLocations()
+	const [forecasts, setForecasts] = useState<Record<string, WeatherForecast | undefined>>({})
+	const [errors, setErrors] = useState<Record<string, string | undefined>>({})
+	const [reloadVersion, setReloadVersion] = useState(0)
+	const [index, setIndex] = useState(0)
+	const [dialogOpen, setDialogOpen] = useState(false)
+	const [paused, setPaused] = useState(false)
+	const [pageVisible, setPageVisible] = useState(true)
+	const locationsKey = locations.map((location) => location.id).join(',')
 
 	useEffect(() => {
-		let cancelled = false
-		;(async () => {
-			try {
-				const res = await fetch(URL)
-				if (!res.ok) throw new Error('weather')
-				const json = await res.json()
-				if (cancelled) return
-				setData({
-					temp: json.current.temperature_2m,
-					humidity: json.current.relative_humidity_2m,
-					wind: json.current.wind_speed_10m,
-					code: json.current.weather_code,
-					high: json.daily.temperature_2m_max[0],
-					low: json.daily.temperature_2m_min[0],
+		if (!ready) return
+		let active = true
+		const controller = new AbortController()
+		for (const location of locations) {
+			const key = String(location.id)
+			setErrors((previous) => ({ ...previous, [key]: undefined }))
+			void getWeatherForecast(location, controller.signal)
+				.then((forecast) => {
+					if (!active) return
+					setForecasts((previous) => ({ ...previous, [key]: forecast }))
 				})
-			} catch {
-				if (!cancelled) setErr(true)
-			}
-		})()
-		return () => {
-			cancelled = true
+				.catch((reason: unknown) => {
+					if (!active || (reason as { name?: string })?.name === 'AbortError') return
+					setErrors((previous) => ({ ...previous, [key]: '天气暂时不可用，请检查网络后重试' }))
+				})
 		}
+		return () => {
+			active = false
+			controller.abort()
+		}
+	}, [locations, ready, reloadVersion])
+
+	useEffect(() => {
+		const timer = window.setInterval(() => setReloadVersion((version) => version + 1), REFRESH_MS)
+		return () => window.clearInterval(timer)
 	}, [])
 
+	useEffect(() => {
+		setIndex(0)
+	}, [locationsKey])
+
+	useEffect(() => {
+		const update = () => setPageVisible(!document.hidden)
+		update()
+		document.addEventListener('visibilitychange', update)
+		return () => document.removeEventListener('visibilitychange', update)
+	}, [])
+
+	useEffect(() => {
+		if (
+			locations.length <= 1 ||
+			paused ||
+			editing ||
+			dialogOpen ||
+			!pageVisible ||
+			prefersReducedMotion()
+		) {
+			return
+		}
+		const timer = window.setInterval(
+			() => setIndex((current) => (current + 1) % locations.length),
+			ROTATE_MS,
+		)
+		return () => window.clearInterval(timer)
+	}, [dialogOpen, editing, locations.length, pageVisible, paused])
+
+	const location = locations[index % locations.length] ?? locations[0]
+	const forecast = location ? forecasts[String(location.id)] : undefined
+	const error = location ? errors[String(location.id)] : undefined
 	const compact = size === '1x1'
-	const meta = data ? wmoLabel(data.code) : null
+
+	if (!location) return null
 
 	return (
-		<WidgetChrome
-			title={compact ? undefined : '杭州'}
-			caption={size === '2x2' ? 'Météo' : undefined}
-			editing={editing}
-			onRemove={onRemove}
-			bodyClassName="flex flex-col justify-center"
-			tilt={-0.4}
+		<div
+			className="h-full"
+			onMouseEnter={() => setPaused(true)}
+			onMouseLeave={() => setPaused(false)}
+			onFocus={() => setPaused(true)}
+			onBlur={(event) => {
+				if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false)
+			}}
 		>
-			{err && <p className="text-center text-sm text-muted-foreground">暂时读不到天气，稍后再试</p>}
-			{!err && !data && <p className="text-center text-sm text-muted-foreground">加载中…</p>}
-			{data && meta && (
-				<div className={compact ? 'flex flex-col items-center gap-0.5' : 'space-y-2'}>
-					{compact ? (
-						<>
-							<span className="text-2xl" aria-hidden>
-								{meta.glyph}
+			<WidgetChrome
+				title={compact ? undefined : location.name}
+				caption={size === '2x2' ? 'Météo' : undefined}
+				editing={editing}
+				onRemove={onRemove}
+				bodyClassName={cn('flex min-h-0 flex-col', compact && '!px-2.5 !pb-2 !pt-1')}
+				tilt={-0.4}
+			>
+				{editing ? (
+					<div className="flex min-h-0 flex-1 items-center justify-center">
+						{forecast ? (
+							<WeatherCardContent location={location} forecast={forecast} size={size} />
+						) : (
+							<p className="text-center text-xs text-muted-foreground">加载天气…</p>
+						)}
+					</div>
+				) : (
+					<Button
+						type="button"
+						variant="ghost"
+						className="h-full min-h-0 w-full flex-1 flex-col whitespace-normal rounded-none px-0 py-0 font-normal hover:bg-transparent active:translate-y-0"
+						onClick={() => setDialogOpen(true)}
+						aria-label={`查看${location.name}天气详情`}
+					>
+						{forecast ? (
+							<WeatherCardContent location={location} forecast={forecast} size={size} />
+						) : error ? (
+							<span className="flex flex-1 flex-col items-center justify-center gap-1 px-2 text-center">
+								<span className="text-xs text-muted-foreground">天气暂时不可用</span>
+								<span className="text-[10px] text-muted-foreground">点击查看并重试</span>
 							</span>
-							<p className="font-display text-2xl font-semibold tabular-nums">
-								{Math.round(data.temp)}°
-							</p>
-							<p className="text-[11px] text-muted-foreground">杭州 · {meta.text}</p>
-						</>
-					) : (
-						<>
-							<div className="flex items-end justify-between gap-2">
-								<div>
-									<p className="font-display text-4xl font-semibold tabular-nums leading-none">
-										{Math.round(data.temp)}°
-									</p>
-									<p className="mt-1 text-sm text-muted-foreground">
-										<span aria-hidden className="mr-1">
-											{meta.glyph}
-										</span>
-										{meta.text}
-									</p>
-								</div>
-								<div className="text-right text-xs text-muted-foreground tabular-nums">
-									<p>
-										高 {Math.round(data.high)}° · 低 {Math.round(data.low)}°
-									</p>
-									<p className="mt-0.5">湿度 {data.humidity}%</p>
-									<p>风 {Math.round(data.wind)} km/h</p>
-								</div>
-							</div>
-						</>
-					)}
-				</div>
-			)}
-		</WidgetChrome>
+						) : (
+							<span className="flex flex-1 items-center justify-center gap-1.5 text-xs text-muted-foreground">
+								<LoaderCircle className="h-3.5 w-3.5 animate-spin" /> 加载天气…
+							</span>
+						)}
+					</Button>
+				)}
+				{!editing && locations.length > 1 && (
+					<div
+						className="flex h-3 shrink-0 items-center justify-center gap-1.5"
+						aria-label="天气地区轮播"
+					>
+						{locations.map((item, itemIndex) => (
+							<Button
+								key={item.id}
+								type="button"
+								size="icon-sm"
+								variant="ghost"
+								className={cn(
+									'h-2 min-h-0 w-2 rounded-full p-0',
+									itemIndex === index % locations.length
+										? 'bg-[color:var(--rv-rose-deep)]'
+										: 'bg-[color:var(--rv-navy)]/20 hover:bg-[color:var(--rv-navy)]/40',
+								)}
+								aria-label={`切换到${item.name}`}
+								aria-current={itemIndex === index % locations.length ? 'true' : undefined}
+								onClick={() => setIndex(itemIndex)}
+							/>
+						))}
+					</div>
+				)}
+			</WidgetChrome>
+			<WeatherDialog
+				open={dialogOpen}
+				onOpenChange={setDialogOpen}
+				initialLocationId={location.id}
+				locations={locations}
+				forecasts={forecasts}
+				errors={errors}
+				onRetry={() => setReloadVersion((version) => version + 1)}
+			/>
+		</div>
 	)
 }

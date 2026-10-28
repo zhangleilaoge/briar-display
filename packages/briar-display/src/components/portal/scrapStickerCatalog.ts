@@ -25,7 +25,6 @@ import ionicColumn from '@/assets/decor/portal/ionic-column.svg'
 import lantern from '@/assets/decor/portal/lantern.svg'
 import laurelWreath from '@/assets/decor/portal/laurel-wreath.svg'
 import lilienFloral from '@/assets/decor/portal/lilien-floral.svg'
-import paperScroll from '@/assets/decor/portal/paper-scroll.svg'
 import quill from '@/assets/decor/portal/quill.svg'
 import scissors from '@/assets/decor/portal/scissors.svg'
 import serratedLeaf from '@/assets/decor/portal/serrated-leaf.svg'
@@ -86,7 +85,6 @@ export const SCRAP_STICKER_CATALOG: ScrapSticker[] = [
 	{ id: 'abbey', src: srcOf(abbey), kind: 'wide', family: 'temple' },
 	{ id: 'quill', src: srcOf(quill), kind: 'tall', family: 'tool' },
 	{ id: 'caduceus', src: srcOf(caduceus), kind: 'tall', family: 'mythic' },
-	{ id: 'paper-scroll', src: srcOf(paperScroll), kind: 'wide', family: 'scroll' },
 	{ id: 'candle', src: srcOf(candle), kind: 'tall', family: 'mythic' },
 	{ id: 'serrated-leaf', src: srcOf(serratedLeaf), kind: 'tall', family: 'botanical' },
 	{ id: 'cattail', src: srcOf(cattail), kind: 'tall', family: 'botanical' },
@@ -98,7 +96,7 @@ export const SCRAP_STICKER_CATALOG: ScrapSticker[] = [
  * wax-seal, flower-ornament-black, corinthian-helmet, retro-flower, olive-branch,
  * doric-temple(=ionic-column-2), abstract-floral-1913(=floral-1913),
  * everybody-floral(=floral-round), floral-lilien(=lilien-floral),
- * amphora(#ff0000), lyre(#CD9133)
+ * amphora(#ff0000), lyre(#CD9133), paper-scroll
  */
 
 /** @deprecated */

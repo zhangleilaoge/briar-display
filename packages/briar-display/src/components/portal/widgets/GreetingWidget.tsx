@@ -70,12 +70,9 @@ export function GreetingWidget({
 									onClick={state.shuffle}
 									aria-label="换一句"
 									title="换一句"
-									className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[color:var(--rv-navy)]/55 transition hover:bg-[color:var(--rv-navy)]/5 hover:text-[color:var(--rv-rose-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose)]/40"
+									className="group inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[color:var(--rv-navy)]/55 transition hover:bg-[color:var(--rv-navy)]/5 hover:text-[color:var(--rv-rose-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose)]/40"
 								>
-									<RefreshCw
-										className={cn('h-3 w-3', state.spinning && 'animate-spin')}
-										aria-hidden
-									/>
+									<RefreshCw className="h-3 w-3 motion-safe:group-hover:animate-spin" aria-hidden />
 								</button>
 							)}
 						</div>
