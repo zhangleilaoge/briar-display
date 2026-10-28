@@ -76,24 +76,26 @@ export function GreetingWidget({
 						{state.greet || '\u00a0'}
 					</span>
 				</h2>
-				<p className="relative z-[1] mt-1 line-clamp-3 font-display text-sm text-muted-foreground sm:text-base">
-					{state.line || '\u00a0'}
-				</p>
+				<div className="relative z-[1] mt-1 flex items-center gap-1.5">
+					<p className="min-w-0 flex-1 line-clamp-3 font-display text-sm text-muted-foreground sm:text-base">
+						{state.line || '\u00a0'}
+					</p>
+					{!editing && (
+						<button
+							type="button"
+							onClick={shuffle}
+							aria-label="换一句"
+							title="换一句"
+							className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[color:var(--rv-navy)]/55 transition hover:bg-[color:var(--rv-navy)]/5 hover:text-[color:var(--rv-rose-deep)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose)]/40"
+						>
+							<RefreshCw className={cn('h-3 w-3', spinning && 'animate-spin')} aria-hidden />
+						</button>
+					)}
+				</div>
 				<Postmark
 					className="pointer-events-none absolute -right-1 -top-1 z-[1] h-16 w-16 rotate-12 opacity-90 sm:h-20 sm:w-20"
 					date={state.date.slice(-2) || '28'}
 				/>
-				{!editing && (
-					<button
-						type="button"
-						onClick={shuffle}
-						aria-label="换一句"
-						title="换一句"
-						className="absolute bottom-1 right-1 z-[2] inline-flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--rv-navy)]/20 bg-[var(--rv-cream)]/90 text-[color:var(--rv-navy)]/70 shadow-sm transition hover:border-[color:var(--rv-rose)]/50 hover:text-[color:var(--rv-rose-deep)]"
-					>
-						<RefreshCw className={cn('h-3 w-3', spinning && 'animate-spin')} aria-hidden />
-					</button>
-				)}
 			</WidgetChrome>
 		</div>
 	)

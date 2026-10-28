@@ -16,7 +16,6 @@ import {
 	CELL_REM_MOBILE,
 	GRID_COLS_DESKTOP,
 	GRID_COLS_MOBILE,
-	LAYOUT_STORAGE_KEY_LEGACY,
 	SIZE_SPECS,
 	WIDGET_CATALOG,
 	WIDGET_META,
@@ -76,19 +75,8 @@ function persist(cols: number, layout: WidgetPlacement[]) {
 
 function loadLayout(cols: number): WidgetPlacement[] {
 	const key = storageKeyForCols(cols)
-	let stored = parseStoredLayout(window.localStorage.getItem(key))
-	if (!stored) {
-		// 首次：尝试从旧版单 key 迁移一次
-		const legacy = parseStoredLayout(window.localStorage.getItem(LAYOUT_STORAGE_KEY_LEGACY))
-		if (legacy) {
-			stored = legacy
-			try {
-				window.localStorage.setItem(key, JSON.stringify(legacy))
-			} catch {
-				/* ignore */
-			}
-		}
-	}
+	const stored = parseStoredLayout(window.localStorage.getItem(key))
+	// v3 起默认全 1×1；不再从 v1/v2 迁入偏大出厂布局
 	return packLayout(stored ?? defaultLayoutForCols(cols), cols)
 }
 
