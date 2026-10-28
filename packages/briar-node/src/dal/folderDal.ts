@@ -57,13 +57,16 @@ export const folderDal = {
 	},
 
 	async findById(id: string): Promise<FolderRecord | null> {
-		const row = await queryOne<FolderRow>('SELECT * FROM folders WHERE id = ?', [id])
+		const row = await queryOne<FolderRow>(
+			'SELECT * FROM folders WHERE id = ? AND deleted_at IS NULL',
+			[id],
+		)
 		return row ? mapRow(row) : null
 	},
 
 	async listByUser(userId: string): Promise<FolderRecord[]> {
 		const rows = await query<FolderRow>(
-			'SELECT * FROM folders WHERE user_id = ? ORDER BY created_at ASC',
+			'SELECT * FROM folders WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at ASC',
 			[userId],
 		)
 		return rows.map(mapRow)
@@ -118,26 +121,29 @@ export const folderDal = {
 	},
 
 	async rename(id: string, userId: string, name: string): Promise<boolean> {
-		const result = await execute('UPDATE folders SET name = ? WHERE id = ? AND user_id = ?', [
-			name,
-			id,
-			userId,
-		])
+		const result = await execute(
+			'UPDATE folders SET name = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+			[name, id, userId],
+		)
 		return result.affectedRows > 0
 	},
 
 	async setPrivacy(id: string, userId: string, isPrivate: boolean): Promise<boolean> {
-		const result = await execute('UPDATE folders SET is_private = ? WHERE id = ? AND user_id = ?', [
-			isPrivate ? 1 : 0,
-			id,
-			userId,
-		])
+		const result = await execute(
+			'UPDATE folders SET is_private = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+			[isPrivate ? 1 : 0, id, userId],
+		)
 		return result.affectedRows > 0
 	},
 
-	async remove(id: string, userId: string): Promise<boolean> {
-		const result = await execute('DELETE FROM folders WHERE id = ? AND user_id = ?', [id, userId])
-		return result.affectedRows > 0
+	/** 软删除一组文件夹（调用方传入含子孙的完整 id 列表；软删除不会触发外键级联） */
+	async softDeleteByIds(userId: string, ids: string[]): Promise<number> {
+		if (ids.length === 0) return 0
+		const result = await execute(
+			`UPDATE folders SET deleted_at = NOW() WHERE user_id = ? AND deleted_at IS NULL AND id IN (${ids.map(() => '?').join(', ')})`,
+			[userId, ...ids],
+		)
+		return result.affectedRows
 	},
 
 	/** 收集目标文件夹及其全部子孙文件夹 id（含自身） */

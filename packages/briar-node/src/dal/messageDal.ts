@@ -49,7 +49,10 @@ export const messageDal = {
 	},
 
 	async findById(id: string): Promise<MessageRecord | null> {
-		const row = await queryOne<MessageRow>('SELECT * FROM messages WHERE id = ?', [id])
+		const row = await queryOne<MessageRow>(
+			'SELECT * FROM messages WHERE id = ? AND deleted_at IS NULL',
+			[id],
+		)
 		return row ? mapRow(row) : null
 	},
 
@@ -58,14 +61,14 @@ export const messageDal = {
 		params: { page: number; pageSize: number },
 	): Promise<{ items: MessageRecord[]; total: number }> {
 		const countRow = await queryOne<{ cnt: number }>(
-			'SELECT COUNT(*) AS cnt FROM messages WHERE user_id = ?',
+			'SELECT COUNT(*) AS cnt FROM messages WHERE user_id = ? AND deleted_at IS NULL',
 			[userId],
 		)
 		const total = countRow?.cnt ?? 0
 
 		const offset = (params.page - 1) * params.pageSize
 		const rows = await query<MessageRow>(
-			'SELECT * FROM messages WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+			'SELECT * FROM messages WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?',
 			[userId, params.pageSize, offset],
 		)
 
@@ -74,7 +77,7 @@ export const messageDal = {
 
 	async countUnread(userId: string): Promise<number> {
 		const row = await queryOne<{ cnt: number }>(
-			'SELECT COUNT(*) AS cnt FROM messages WHERE user_id = ? AND read_at IS NULL',
+			'SELECT COUNT(*) AS cnt FROM messages WHERE user_id = ? AND read_at IS NULL AND deleted_at IS NULL',
 			[userId],
 		)
 		return row?.cnt ?? 0
@@ -82,7 +85,7 @@ export const messageDal = {
 
 	async markRead(id: string, userId: string): Promise<boolean> {
 		const result = await execute(
-			'UPDATE messages SET read_at = NOW() WHERE id = ? AND user_id = ? AND read_at IS NULL',
+			'UPDATE messages SET read_at = NOW() WHERE id = ? AND user_id = ? AND read_at IS NULL AND deleted_at IS NULL',
 			[id, userId],
 		)
 		return result.affectedRows > 0
@@ -90,7 +93,7 @@ export const messageDal = {
 
 	async markAllRead(userId: string): Promise<number> {
 		const result = await execute(
-			'UPDATE messages SET read_at = NOW() WHERE user_id = ? AND read_at IS NULL',
+			'UPDATE messages SET read_at = NOW() WHERE user_id = ? AND read_at IS NULL AND deleted_at IS NULL',
 			[userId],
 		)
 		return result.affectedRows
@@ -98,15 +101,19 @@ export const messageDal = {
 
 	/** 删除单条（仅本人；硬删除——站内信为一次性通知，无需保留） */
 	async deleteOne(id: string, userId: string): Promise<boolean> {
-		const result = await execute('DELETE FROM messages WHERE id = ? AND user_id = ?', [id, userId])
+		const result = await execute(
+			'UPDATE messages SET deleted_at = NOW() WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+			[id, userId],
+		)
 		return result.affectedRows > 0
 	},
 
 	/** 清空已读（未读不受影响，未读数保持不变） */
 	async deleteRead(userId: string): Promise<number> {
-		const result = await execute('DELETE FROM messages WHERE user_id = ? AND read_at IS NOT NULL', [
-			userId,
-		])
+		const result = await execute(
+			'UPDATE messages SET deleted_at = NOW() WHERE user_id = ? AND read_at IS NOT NULL AND deleted_at IS NULL',
+			[userId],
+		)
 		return result.affectedRows
 	},
 }

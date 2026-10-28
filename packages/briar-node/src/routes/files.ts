@@ -168,8 +168,8 @@ fileRoutes.delete('/folders/:id', async (c) => {
 	const folderIds = await folderDal.collectDescendantIds(user.id, folderId)
 	const files = await fileDal.softDeleteByFolderIds(user.id, folderIds)
 
-	// 删除文件夹行（子文件夹通过 parent_id 外键级联删除）
-	await folderDal.remove(folderId, user.id)
+	// 软删除文件夹及全部子孙文件夹（软删除不走外键级联，需显式传入整棵树）
+	await folderDal.softDeleteByIds(user.id, folderIds)
 
 	// COS 对象删除（best effort，视频连带封面图）
 	for (const file of files) {

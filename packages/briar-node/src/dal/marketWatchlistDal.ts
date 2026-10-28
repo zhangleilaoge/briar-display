@@ -19,7 +19,7 @@ export const marketWatchlistDal = {
 	/** 按加入时间升序（新加的在最后） */
 	async list(userId: string): Promise<WatchlistItem[]> {
 		const rows = await query<WatchlistRow>(
-			'SELECT market, code, name, created_at FROM market_watchlist WHERE user_id = ? ORDER BY created_at ASC, id ASC',
+			'SELECT market, code, name, created_at FROM market_watchlist WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at ASC, id ASC',
 			[userId],
 		)
 		return rows.map(mapRow)
@@ -27,7 +27,7 @@ export const marketWatchlistDal = {
 
 	async count(userId: string): Promise<number> {
 		const row = await queryOne<{ cnt: number }>(
-			'SELECT COUNT(*) AS cnt FROM market_watchlist WHERE user_id = ?',
+			'SELECT COUNT(*) AS cnt FROM market_watchlist WHERE user_id = ? AND deleted_at IS NULL',
 			[userId],
 		)
 		return Number(row?.cnt ?? 0)
@@ -43,7 +43,12 @@ export const marketWatchlistDal = {
 		for (const item of items) {
 			if (room <= 0) break
 			const result = await execute(
-				'INSERT IGNORE INTO market_watchlist (id, user_id, market, code, name) VALUES (?, ?, ?, ?, ?)',
+				// 已存在且未删除：不变（affectedRows=0）；已软删除：复活（deleted_at 必须最后赋值，前面的 IF 读的是旧值）
+				`INSERT INTO market_watchlist (id, user_id, market, code, name) VALUES (?, ?, ?, ?, ?)
+				 ON DUPLICATE KEY UPDATE
+				   name = IF(deleted_at IS NULL, name, VALUES(name)),
+				   created_at = IF(deleted_at IS NULL, created_at, NOW()),
+				   deleted_at = NULL`,
 				[generateId(), userId, item.market, item.code, item.name.slice(0, 100)],
 			)
 			if (result.affectedRows > 0) {
@@ -55,10 +60,9 @@ export const marketWatchlistDal = {
 	},
 
 	async remove(userId: string, market: MarketId, code: string): Promise<void> {
-		await execute('DELETE FROM market_watchlist WHERE user_id = ? AND market = ? AND code = ?', [
-			userId,
-			market,
-			code,
-		])
+		await execute(
+			'UPDATE market_watchlist SET deleted_at = NOW() WHERE user_id = ? AND market = ? AND code = ? AND deleted_at IS NULL',
+			[userId, market, code],
+		)
 	},
 }

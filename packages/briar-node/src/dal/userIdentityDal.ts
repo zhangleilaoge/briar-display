@@ -38,7 +38,7 @@ export const userIdentityDal = {
 		providerUid: string,
 	): Promise<UserIdentityRecord | null> {
 		const row = await queryOne<UserIdentityRow>(
-			`SELECT ${COLUMNS} FROM user_identities WHERE provider = ? AND provider_uid = ?`,
+			`SELECT ${COLUMNS} FROM user_identities WHERE provider = ? AND provider_uid = ? AND deleted_at IS NULL`,
 			[provider, providerUid],
 		)
 		return row ? mapRow(row) : null
@@ -46,7 +46,7 @@ export const userIdentityDal = {
 
 	async listByUser(userId: string): Promise<UserIdentityRecord[]> {
 		const rows = await query<UserIdentityRow>(
-			`SELECT ${COLUMNS} FROM user_identities WHERE user_id = ? ORDER BY created_at`,
+			`SELECT ${COLUMNS} FROM user_identities WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at`,
 			[userId],
 		)
 		return rows.map(mapRow)
@@ -72,10 +72,10 @@ export const userIdentityDal = {
 	},
 
 	async deleteByUserProvider(userId: string, provider: IdentityProvider): Promise<number> {
-		const result = await execute('DELETE FROM user_identities WHERE user_id = ? AND provider = ?', [
-			userId,
-			provider,
-		])
+		const result = await execute(
+			'UPDATE user_identities SET deleted_at = NOW() WHERE user_id = ? AND provider = ? AND deleted_at IS NULL',
+			[userId, provider],
+		)
 		return result.affectedRows
 	},
 }

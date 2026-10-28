@@ -44,7 +44,7 @@ const buildContext = async (
 ): Promise<MergeContext> => {
 	const [users] = await conn.execute<RowDataPacket[]>(
 		`SELECT id, name, email, avatar, password_hash, has_password, security_password_hash
-		 FROM users WHERE id IN (?, ?)${lock ? ' FOR UPDATE' : ''}`,
+		 FROM users WHERE id IN (?, ?) AND deleted_at IS NULL${lock ? ' FOR UPDATE' : ''}`,
 		[sourceId, targetId],
 	)
 	const source = users.find((u) => u.id === sourceId)
@@ -137,7 +137,8 @@ export const userMergeService = {
 					modules.push({ name: h.name, label: h.label, ...(await h.merge(ctx)) })
 				}
 				const [del] = await conn.execute<import('mysql2/promise').ResultSetHeader>(
-					'DELETE FROM users WHERE id = ?',
+					// 源用户软删除（保留行；email_active 置空后邮箱可再注册）
+					'UPDATE users SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL',
 					[sourceId],
 				)
 				if (del.affectedRows !== 1) throw new Error('MERGE_SOURCE_NOT_FOUND')
@@ -182,7 +183,7 @@ export const userMergeService = {
 	},
 }
 
-/** 合并前的双方名字/邮箱快照（源用户合并后会被删除）；不存在的用户只留 id */
+/** 合并前的双方名字/邮箱快照（源用户合并后会被软删除）；不存在的用户只留 id */
 const snapshotUsers = async (sourceId: string, targetId: string) => {
 	const users = await query<{ id: string; name: string; email: string }>(
 		'SELECT id, name, email FROM users WHERE id IN (?, ?)',

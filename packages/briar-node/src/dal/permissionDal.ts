@@ -34,14 +34,14 @@ const mapRowToRecord = (row: PermissionRow): PermissionRecord => ({
 export const permissionDal = {
 	async list(): Promise<PermissionRecord[]> {
 		const rows = await query<PermissionRow>(
-			'SELECT id, code, name, description, type, module, created_at FROM permissions ORDER BY type, module, code',
+			'SELECT id, code, name, description, type, module, created_at FROM permissions WHERE deleted_at IS NULL ORDER BY type, module, code',
 		)
 		return rows.map(mapRowToRecord)
 	},
 
 	async findById(id: string): Promise<PermissionRecord | null> {
 		const row = await queryOne<PermissionRow>(
-			'SELECT id, code, name, description, type, module, created_at FROM permissions WHERE id = ?',
+			'SELECT id, code, name, description, type, module, created_at FROM permissions WHERE id = ? AND deleted_at IS NULL',
 			[id],
 		)
 		return row ? mapRowToRecord(row) : null
@@ -49,7 +49,7 @@ export const permissionDal = {
 
 	async findByCode(code: string): Promise<PermissionRecord | null> {
 		const row = await queryOne<PermissionRow>(
-			'SELECT id, code, name, description, type, module, created_at FROM permissions WHERE code = ?',
+			'SELECT id, code, name, description, type, module, created_at FROM permissions WHERE code = ? AND deleted_at IS NULL',
 			[code],
 		)
 		return row ? mapRowToRecord(row) : null
@@ -59,7 +59,7 @@ export const permissionDal = {
 		if (ids.length === 0) return []
 		const placeholders = ids.map(() => '?').join(', ')
 		const rows = await query<PermissionRow>(
-			`SELECT id, code, name, description, type, module, created_at FROM permissions WHERE id IN (${placeholders})`,
+			`SELECT id, code, name, description, type, module, created_at FROM permissions WHERE id IN (${placeholders}) AND deleted_at IS NULL`,
 			ids,
 		)
 		return rows.map(mapRowToRecord)
@@ -101,12 +101,18 @@ export const permissionDal = {
 		if (updates.length === 0) return permissionDal.findById(id)
 
 		values.push(id)
-		await execute(`UPDATE permissions SET ${updates.join(', ')} WHERE id = ?`, values)
+		await execute(
+			`UPDATE permissions SET ${updates.join(', ')} WHERE id = ? AND deleted_at IS NULL`,
+			values,
+		)
 		return permissionDal.findById(id)
 	},
 
 	async delete(id: string): Promise<boolean> {
-		const result = await execute('DELETE FROM permissions WHERE id = ?', [id])
+		const result = await execute(
+			'UPDATE permissions SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL',
+			[id],
+		)
 		return result.affectedRows > 0
 	},
 
@@ -119,7 +125,10 @@ export const permissionDal = {
 			 FROM permissions p
 			 INNER JOIN role_permissions rp ON p.id = rp.permission_id
 			 INNER JOIN user_roles ur ON rp.role_id = ur.role_id
-			 WHERE ur.user_id = ?`,
+			 INNER JOIN roles r ON r.id = ur.role_id
+			 WHERE ur.user_id = ?
+			   AND p.deleted_at IS NULL AND rp.deleted_at IS NULL
+			   AND ur.deleted_at IS NULL AND r.deleted_at IS NULL`,
 			[userId],
 		)
 		return rows.map((r) => r.code)
@@ -133,7 +142,7 @@ export const permissionDal = {
 			`SELECT p.id, p.code, p.name, p.description, p.type, p.module, p.created_at
 			 FROM permissions p
 			 INNER JOIN role_permissions rp ON p.id = rp.permission_id
-			 WHERE rp.role_id = ?
+			 WHERE rp.role_id = ? AND p.deleted_at IS NULL AND rp.deleted_at IS NULL
 			 ORDER BY p.type, p.module, p.code`,
 			[roleId],
 		)

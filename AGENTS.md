@@ -116,6 +116,14 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 
 **新增写路由时必须在 `apiPermissions.ts` 中注册**，否则会被拦截。这是故意设计的安全网。契约测试 `src/config/apiPermissions.contract.test.ts` 双向校验：路由↔映射表一一对应、免登录路径不得配权限，改了路由忘了同步表会让 CI 红。
 
+## 数据删除约定（软删除）
+
+- **所有业务数据删除一律软删除**：表上加 `deleted_at TIMESTAMP NULL DEFAULT NULL`，删除 = `UPDATE ... SET deleted_at = NOW() WHERE ... AND deleted_at IS NULL`；**所有**读取 / 计数 / 更新 / JOIN 都要带 `deleted_at IS NULL`（软删除不触发外键级联，关联表要显式过滤或显式软删子孙）。
+- 已软删除的表：users、roles、permissions、role_permissions、user_roles、folders、files、messages、market_watchlist、user_identities。用户合并后源用户也是软删除。
+- 唯一约束：单列自然键用 `*_active` STORED 生成列（`IF(deleted_at IS NULL, col, NULL)`）+ UNIQUE，只约束未删除行（users.email_active、roles.name_active、permissions.code_active、user_identities.provider_uid_active）；复合主键的关联表 / 自选股用 `INSERT ... ON DUPLICATE KEY UPDATE deleted_at = NULL` 复活旧行。
+- **允许物理 DELETE 的例外**（纯缓存、日志保留、短期凭证）：verification_codes、request_logs、scheduler_runs、cert_renewal_logs、media_cache、media_parse_cache，以及 SQL 控制台里管理员手写的 SQL。
+- 守卫测试 `packages/briar-node/src/db/softDelete.guard.test.ts`：源码里出现白名单外的 `DELETE FROM` 即失败；新增例外必须写进白名单并注明理由。新业务表要加 `deleted_at` 并加入该测试的 SOFT_DELETE_TABLES。
+
 ## 部署
 
 `git push` 到 master/main → GitHub Actions 一条流水线：后端测试 → 构建前端 + 上传 CDN → rsync 到服务器 `web/` → SSH 调 `deploy.sh`（build shared+node、migrate、PM2 重启）→ 健康检查 `/api/version`。

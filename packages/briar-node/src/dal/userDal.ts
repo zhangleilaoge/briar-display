@@ -48,7 +48,9 @@ const mapRowToRecord = (row: UserRow): UserRecord => ({
 
 export const userDal = {
 	async list(): Promise<UserRecord[]> {
-		const rows = await query<UserRow>(`SELECT ${USER_COLUMNS} FROM users ORDER BY created_at DESC`)
+		const rows = await query<UserRow>(
+			`SELECT ${USER_COLUMNS} FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC`,
+		)
 		return rows.map(mapRowToRecord)
 	},
 
@@ -57,7 +59,7 @@ export const userDal = {
 		limit: number
 		offset: number
 	}): Promise<{ rows: UserRecord[]; total: number }> {
-		const conditions: string[] = []
+		const conditions: string[] = ['u.deleted_at IS NULL']
 		const values: any[] = []
 
 		if (params.keyword) {
@@ -84,14 +86,18 @@ export const userDal = {
 	},
 
 	async findByEmail(email: string): Promise<UserRecord | null> {
-		const row = await queryOne<UserRow>(`SELECT ${USER_COLUMNS} FROM users WHERE email = ?`, [
-			email,
-		])
+		const row = await queryOne<UserRow>(
+			`SELECT ${USER_COLUMNS} FROM users WHERE email = ? AND deleted_at IS NULL`,
+			[email],
+		)
 		return row ? mapRowToRecord(row) : null
 	},
 
 	async findById(id: string): Promise<UserRecord | null> {
-		const row = await queryOne<UserRow>(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`, [id])
+		const row = await queryOne<UserRow>(
+			`SELECT ${USER_COLUMNS} FROM users WHERE id = ? AND deleted_at IS NULL`,
+			[id],
+		)
 		return row ? mapRowToRecord(row) : null
 	},
 
@@ -160,19 +166,28 @@ export const userDal = {
 		}
 
 		values.push(id)
-		await execute(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values)
+		await execute(
+			`UPDATE users SET ${updates.join(', ')} WHERE id = ? AND deleted_at IS NULL`,
+			values,
+		)
 
 		return userDal.findById(id)
 	},
 
 	async delete(id: string): Promise<boolean> {
-		const result = await execute('DELETE FROM users WHERE id = ?', [id])
+		const result = await execute(
+			'UPDATE users SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL',
+			[id],
+		)
 		return result.affectedRows > 0
 	},
 
 	/** token_version 自增：吊销该用户全部已签发 token（改密码后调用），返回最新记录 */
 	async incrementTokenVersion(id: string): Promise<UserRecord | null> {
-		await execute('UPDATE users SET token_version = token_version + 1 WHERE id = ?', [id])
+		await execute(
+			'UPDATE users SET token_version = token_version + 1 WHERE id = ? AND deleted_at IS NULL',
+			[id],
+		)
 		return userDal.findById(id)
 	},
 }

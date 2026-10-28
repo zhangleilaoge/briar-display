@@ -12,7 +12,7 @@ export const userRoleDal = {
 	 */
 	async getUserRoleIds(userId: string): Promise<string[]> {
 		const rows = await query<{ role_id: string }>(
-			'SELECT role_id FROM user_roles WHERE user_id = ?',
+			'SELECT role_id FROM user_roles WHERE user_id = ? AND deleted_at IS NULL',
 			[userId],
 		)
 		return rows.map((r) => r.role_id)
@@ -23,7 +23,7 @@ export const userRoleDal = {
 	 */
 	async getRoleUserIds(roleId: string): Promise<string[]> {
 		const rows = await query<{ user_id: string }>(
-			'SELECT user_id FROM user_roles WHERE role_id = ?',
+			'SELECT user_id FROM user_roles WHERE role_id = ? AND deleted_at IS NULL',
 			[roleId],
 		)
 		return rows.map((r) => r.user_id)
@@ -33,10 +33,10 @@ export const userRoleDal = {
 	 * 检查用户是否拥有某个角色
 	 */
 	async hasRole(userId: string, roleId: string): Promise<boolean> {
-		const row = await queryOne('SELECT 1 FROM user_roles WHERE user_id = ? AND role_id = ?', [
-			userId,
-			roleId,
-		])
+		const row = await queryOne(
+			'SELECT 1 FROM user_roles WHERE user_id = ? AND role_id = ? AND deleted_at IS NULL',
+			[userId, roleId],
+		)
 		return !!row
 	},
 
@@ -46,13 +46,22 @@ export const userRoleDal = {
 	async setUserRoles(userId: string, roleIds: string[]): Promise<void> {
 		const { transaction } = await import('../lib/db')
 		await transaction(async (conn) => {
-			await conn.execute('DELETE FROM user_roles WHERE user_id = ?', [userId])
-			if (roleIds.length > 0) {
+			// 软删除：不在新列表里的关联标记删除，列表里的插入或复活
+			if (roleIds.length === 0) {
+				await conn.execute(
+					'UPDATE user_roles SET deleted_at = NOW() WHERE user_id = ? AND deleted_at IS NULL',
+					[userId],
+				)
+			} else {
+				await conn.execute(
+					`UPDATE user_roles SET deleted_at = NOW() WHERE user_id = ? AND deleted_at IS NULL AND role_id NOT IN (${roleIds.map(() => '?').join(', ')})`,
+					[userId, ...roleIds],
+				)
 				const values = roleIds.map((rid) => [userId, rid])
 				const placeholders = values.map(() => '(?, ?)').join(', ')
 				const flatValues = values.flat()
 				await conn.execute(
-					`INSERT INTO user_roles (user_id, role_id) VALUES ${placeholders}`,
+					`INSERT INTO user_roles (user_id, role_id) VALUES ${placeholders} ON DUPLICATE KEY UPDATE deleted_at = NULL`,
 					flatValues,
 				)
 			}
@@ -63,17 +72,20 @@ export const userRoleDal = {
 	 * 给用户添加单个角色
 	 */
 	async addRole(userId: string, roleId: string): Promise<void> {
-		await execute('INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)', [
-			userId,
-			roleId,
-		])
+		await execute(
+			'INSERT INTO user_roles (user_id, role_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE deleted_at = NULL',
+			[userId, roleId],
+		)
 	},
 
 	/**
 	 * 移除用户的单个角色
 	 */
 	async removeRole(userId: string, roleId: string): Promise<void> {
-		await execute('DELETE FROM user_roles WHERE user_id = ? AND role_id = ?', [userId, roleId])
+		await execute(
+			'UPDATE user_roles SET deleted_at = NOW() WHERE user_id = ? AND role_id = ? AND deleted_at IS NULL',
+			[userId, roleId],
+		)
 	},
 
 	/**
@@ -95,6 +107,7 @@ export const userRoleDal = {
 			 FROM user_roles ur
 			 INNER JOIN users u ON ur.user_id = u.id
 			 INNER JOIN roles r ON ur.role_id = r.id
+			 WHERE ur.deleted_at IS NULL AND u.deleted_at IS NULL AND r.deleted_at IS NULL
 			 ORDER BY u.name, r.name`,
 		)
 	},
@@ -125,6 +138,7 @@ export const userRoleDal = {
 			 FROM user_roles ur
 			 INNER JOIN users u ON ur.user_id = u.id
 			 INNER JOIN roles r ON ur.role_id = r.id
+			 WHERE ur.deleted_at IS NULL AND u.deleted_at IS NULL AND r.deleted_at IS NULL
 			 ORDER BY u.name, r.name`,
 		)
 

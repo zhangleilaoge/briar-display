@@ -16,12 +16,12 @@ export const identitiesHandler: UserMergeHandler = {
 		if (!ctx.tables.has('user_identities')) return none
 		const src = await rows<{ provider: string; email: string | null }>(
 			ctx.conn,
-			'SELECT provider, email FROM user_identities WHERE user_id = ?',
+			'SELECT provider, email FROM user_identities WHERE user_id = ? AND deleted_at IS NULL',
 			[ctx.source.id],
 		)
 		const tgt = await rows<{ provider: string }>(
 			ctx.conn,
-			'SELECT provider FROM user_identities WHERE user_id = ?',
+			'SELECT provider FROM user_identities WHERE user_id = ? AND deleted_at IS NULL',
 			[ctx.target.id],
 		)
 		const conflicts = src
@@ -53,7 +53,8 @@ export const rolesHandler: UserMergeHandler = {
 		const added = await rows<{ display_name: string; level: number | null }>(
 			ctx.conn,
 			`SELECT r.display_name, r.level FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-			 WHERE ur.user_id = ? AND ur.role_id NOT IN (SELECT role_id FROM user_roles WHERE user_id = ?)`,
+			 WHERE ur.user_id = ? AND ur.deleted_at IS NULL AND r.deleted_at IS NULL
+			   AND ur.role_id NOT IN (SELECT role_id FROM user_roles WHERE user_id = ? AND deleted_at IS NULL)`,
 			[ctx.source.id, ctx.target.id],
 		)
 		return {
@@ -70,10 +71,16 @@ export const rolesHandler: UserMergeHandler = {
 		// 并集：目标原有角色不动，补上源用户独有的角色 → 两者中更高的角色一定保留
 		const moved = await exec(
 			ctx.conn,
-			'INSERT IGNORE INTO user_roles (user_id, role_id) SELECT ?, role_id FROM user_roles WHERE user_id = ?',
+			`INSERT INTO user_roles (user_id, role_id)
+			 SELECT ?, role_id FROM user_roles WHERE user_id = ? AND deleted_at IS NULL
+			 ON DUPLICATE KEY UPDATE deleted_at = NULL`,
 			[ctx.target.id, ctx.source.id],
 		)
-		await exec(ctx.conn, 'DELETE FROM user_roles WHERE user_id = ?', [ctx.source.id])
+		await exec(
+			ctx.conn,
+			'UPDATE user_roles SET deleted_at = NOW() WHERE user_id = ? AND deleted_at IS NULL',
+			[ctx.source.id],
+		)
 		return { moved, notes: [] }
 	},
 }
@@ -101,7 +108,7 @@ const rootFolderNames = async (ctx: MergeContext) =>
 	(
 		await rows<{ name: string }>(
 			ctx.conn,
-			'SELECT name FROM folders WHERE user_id = ? AND parent_id IS NULL',
+			'SELECT name FROM folders WHERE user_id = ? AND parent_id IS NULL AND deleted_at IS NULL',
 			[ctx.target.id],
 		)
 	).map((r) => r.name)
@@ -148,9 +155,11 @@ export const filesHandler: UserMergeHandler = {
 		{ table: 'files', column: 'user_id' },
 	],
 	async preview(ctx) {
-		const folders = await count(ctx.conn, 'SELECT COUNT(*) AS n FROM folders WHERE user_id = ?', [
-			ctx.source.id,
-		])
+		const folders = await count(
+			ctx.conn,
+			'SELECT COUNT(*) AS n FROM folders WHERE user_id = ? AND deleted_at IS NULL',
+			[ctx.source.id],
+		)
 		const files = await count(ctx.conn, 'SELECT COUNT(*) AS n FROM files WHERE user_id = ?', [
 			ctx.source.id,
 		])
@@ -174,9 +183,11 @@ export const filesHandler: UserMergeHandler = {
 		}
 	},
 	async merge(ctx) {
-		const folders = await count(ctx.conn, 'SELECT COUNT(*) AS n FROM folders WHERE user_id = ?', [
-			ctx.source.id,
-		])
+		const folders = await count(
+			ctx.conn,
+			'SELECT COUNT(*) AS n FROM folders WHERE user_id = ? AND deleted_at IS NULL',
+			[ctx.source.id],
+		)
 		const files = await count(ctx.conn, 'SELECT COUNT(*) AS n FROM files WHERE user_id = ?', [
 			ctx.source.id,
 		])
@@ -227,13 +238,14 @@ export const watchlistHandler: UserMergeHandler = {
 		if (!ctx.tables.has('market_watchlist')) return none
 		const total = await count(
 			ctx.conn,
-			'SELECT COUNT(*) AS n FROM market_watchlist WHERE user_id = ?',
+			'SELECT COUNT(*) AS n FROM market_watchlist WHERE user_id = ? AND deleted_at IS NULL',
 			[ctx.source.id],
 		)
 		const dup = await count(
 			ctx.conn,
 			`SELECT COUNT(*) AS n FROM market_watchlist s JOIN market_watchlist t
-			 ON t.user_id = ? AND t.market = s.market AND t.code = s.code WHERE s.user_id = ?`,
+			 ON t.user_id = ? AND t.market = s.market AND t.code = s.code AND t.deleted_at IS NULL
+			 WHERE s.user_id = ? AND s.deleted_at IS NULL`,
 			[ctx.target.id, ctx.source.id],
 		)
 		return {
@@ -244,15 +256,28 @@ export const watchlistHandler: UserMergeHandler = {
 	},
 	async merge(ctx) {
 		if (!ctx.tables.has('market_watchlist')) return { moved: 0, notes: [] }
-		// (user_id, market, code) 唯一：重复的 UPDATE IGNORE 跳过，然后删掉源用户残留
-		const moved = await exec(
+		// (user_id, market, code) 唯一（含已软删除行）：
+		// 1) 目标已软删除、源未删除的同一只股票 → 复活目标那条
+		const revived = await exec(
+			ctx.conn,
+			`UPDATE market_watchlist t JOIN market_watchlist s
+			   ON s.user_id = ? AND s.market = t.market AND s.code = t.code AND s.deleted_at IS NULL
+			 SET t.name = s.name, t.created_at = NOW(), t.deleted_at = NULL
+			 WHERE t.user_id = ? AND t.deleted_at IS NOT NULL`,
+			[ctx.source.id, ctx.target.id],
+		)
+		// 2) 其余搬到目标用户，重复的 UPDATE IGNORE 跳过；3) 源用户残留（重复项）软删除
+		const movedRest = await exec(
 			ctx.conn,
 			'UPDATE IGNORE market_watchlist SET user_id = ? WHERE user_id = ?',
 			[ctx.target.id, ctx.source.id],
 		)
-		const dropped = await exec(ctx.conn, 'DELETE FROM market_watchlist WHERE user_id = ?', [
-			ctx.source.id,
-		])
+		const moved = movedRest + revived
+		const dropped = await exec(
+			ctx.conn,
+			'UPDATE market_watchlist SET deleted_at = NOW() WHERE user_id = ? AND deleted_at IS NULL',
+			[ctx.source.id],
+		)
 		return { moved, notes: dropped ? [`去重丢弃 ${dropped} 条重复`] : [] }
 	},
 }

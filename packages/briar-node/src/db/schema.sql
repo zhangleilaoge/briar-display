@@ -31,7 +31,7 @@ USE briar_display;
 CREATE TABLE IF NOT EXISTS users (
   id VARCHAR(36) PRIMARY KEY COMMENT '用户唯一标识',
   name VARCHAR(100) NOT NULL COMMENT '用户名',
-  email VARCHAR(255) NOT NULL UNIQUE COMMENT '邮箱',
+  email VARCHAR(255) NOT NULL COMMENT '邮箱（未删除用户内唯一，见 uk_email_active）',
   password_hash VARCHAR(255) NOT NULL COMMENT '密码哈希',
   has_password TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否设置过可用的登录密码（Google 注册的账号为 0，重置密码后为 1）',
   security_password_hash VARCHAR(255) NULL COMMENT '隐私空间安全密码哈希',
@@ -40,7 +40,10 @@ CREATE TABLE IF NOT EXISTS users (
   avatar VARCHAR(500) COMMENT '头像 CDN URL',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
+  email_active VARCHAR(255) GENERATED ALWAYS AS (IF(deleted_at IS NULL, email, NULL)) STORED COMMENT '未删除时=email，删除后为 NULL（唯一约束只作用于未删除用户）',
 
+  UNIQUE KEY uk_email_active (email_active),
   INDEX idx_email (email),
   INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
@@ -70,13 +73,16 @@ CREATE TABLE IF NOT EXISTS verification_codes (
 -- 角色表
 CREATE TABLE IF NOT EXISTS roles (
   id VARCHAR(36) PRIMARY KEY COMMENT '角色唯一标识',
-  name VARCHAR(50) NOT NULL UNIQUE COMMENT '角色标识（英文）',
+  name VARCHAR(50) NOT NULL COMMENT '角色标识（英文；未删除角色内唯一）',
   display_name VARCHAR(100) NOT NULL COMMENT '角色显示名称',
   description VARCHAR(500) COMMENT '角色描述',
   level INT NOT NULL DEFAULT 0 COMMENT '角色等级（数字越大权限越高）',
   is_system BOOLEAN DEFAULT FALSE COMMENT '是否系统内置角色（不可删除）',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
+  name_active VARCHAR(50) GENERATED ALWAYS AS (IF(deleted_at IS NULL, name, NULL)) STORED COMMENT '未删除时=name（唯一约束用）',
+  UNIQUE KEY uk_name_active (name_active),
   INDEX idx_name (name),
   INDEX idx_level (level)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色表';
@@ -84,12 +90,15 @@ CREATE TABLE IF NOT EXISTS roles (
 -- 权限表
 CREATE TABLE IF NOT EXISTS permissions (
   id VARCHAR(36) PRIMARY KEY COMMENT '权限唯一标识',
-  code VARCHAR(100) NOT NULL UNIQUE COMMENT '权限编码（如 admin:role:manage）',
+  code VARCHAR(100) NOT NULL COMMENT '权限编码（如 admin:role:manage；未删除权限内唯一）',
   name VARCHAR(100) NOT NULL COMMENT '权限名称',
   description VARCHAR(500) COMMENT '权限描述',
   type ENUM('page', 'api') NOT NULL COMMENT '权限类型：page=页面访问，api=功能操作',
   module VARCHAR(50) NOT NULL COMMENT '所属模块（admin、system）',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
+  code_active VARCHAR(100) GENERATED ALWAYS AS (IF(deleted_at IS NULL, code, NULL)) STORED COMMENT '未删除时=code（唯一约束用）',
+  UNIQUE KEY uk_code_active (code_active),
   INDEX idx_code (code),
   INDEX idx_type (type),
   INDEX idx_module (module)
@@ -100,6 +109,7 @@ CREATE TABLE IF NOT EXISTS role_permissions (
   role_id VARCHAR(36) NOT NULL COMMENT '角色 ID',
   permission_id VARCHAR(36) NOT NULL COMMENT '权限 ID',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
   PRIMARY KEY (role_id, permission_id),
   FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
   FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
@@ -110,6 +120,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
   user_id VARCHAR(36) NOT NULL COMMENT '用户 ID',
   role_id VARCHAR(36) NOT NULL COMMENT '角色 ID',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
   PRIMARY KEY (user_id, role_id),
   INDEX idx_role_id (role_id),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -198,6 +209,7 @@ CREATE TABLE IF NOT EXISTS folders (
   parent_id VARCHAR(36) NULL COMMENT '父文件夹 ID（NULL 为根目录）',
   is_private TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否隐私文件夹',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
   INDEX idx_user_parent (user_id, parent_id),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (parent_id) REFERENCES folders(id) ON DELETE CASCADE
@@ -269,6 +281,7 @@ CREATE TABLE IF NOT EXISTS messages (
   content TEXT NOT NULL COMMENT '内容',
   read_at TIMESTAMP NULL DEFAULT NULL COMMENT '阅读时间（NULL 为未读）',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
   INDEX idx_user_read (user_id, read_at),
   INDEX idx_user_created (user_id, created_at),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -357,6 +370,7 @@ CREATE TABLE IF NOT EXISTS market_watchlist (
   code VARCHAR(16) NOT NULL COMMENT '个股代码（sh600519 / 00700 / AAPL / 7203 / 005930）',
   name VARCHAR(100) NOT NULL DEFAULT '' COMMENT '加入时的名称（行情拿不到时兜底显示）',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
   UNIQUE KEY uk_user_stock (user_id, market, code),
   INDEX idx_user_created (user_id, created_at),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -375,7 +389,7 @@ CREATE TABLE IF NOT EXISTS market_csi300_etf_snapshots (
 -- 多登录方式
 -- ============================================================
 
--- 第三方登录身份：一个用户可绑定多个身份；(provider, provider_uid) 全局唯一
+-- 第三方登录身份：一个用户可绑定多个身份；未删除身份中 (provider, provider_uid) 唯一（解绑为软删除）
 CREATE TABLE IF NOT EXISTS user_identities (
   id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
   user_id VARCHAR(36) NOT NULL COMMENT '所属用户 ID',
@@ -383,19 +397,22 @@ CREATE TABLE IF NOT EXISTS user_identities (
   provider_uid VARCHAR(128) NOT NULL COMMENT '提供方内的用户标识（Google sub）',
   email VARCHAR(255) NULL COMMENT '绑定时该身份的邮箱',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '绑定时间',
-  UNIQUE KEY uk_provider_uid (provider, provider_uid),
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
+  provider_uid_active VARCHAR(128) GENERATED ALWAYS AS (IF(deleted_at IS NULL, provider_uid, NULL)) STORED COMMENT '未删除时=provider_uid（唯一约束用）',
+  UNIQUE KEY uk_provider_uid_active (provider, provider_uid_active),
+  INDEX idx_provider_uid (provider, provider_uid),
   INDEX idx_user_id (user_id),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户第三方登录身份';
 
 -- ============================================================
--- 用户合并记录：每次合并（成功或失败）一条；源用户合并后被删除，故保存 id/名字/邮箱快照，不建外键
+-- 用户合并记录：每次合并（成功或失败）一条；源用户合并后被软删除（users.deleted_at），保存 id/名字/邮箱快照，不建外键
 -- ============================================================
 CREATE TABLE IF NOT EXISTS user_merge_logs (
   id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识',
   operator_id VARCHAR(36) NOT NULL COMMENT '执行合并的管理员 ID',
   operator_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '执行人名字快照',
-  source_user_id VARCHAR(36) NOT NULL COMMENT '被合并（删除）的用户 ID',
+  source_user_id VARCHAR(36) NOT NULL COMMENT '被合并（软删除）的用户 ID',
   source_name VARCHAR(255) NOT NULL DEFAULT '' COMMENT '源用户名字快照',
   source_email VARCHAR(255) NOT NULL DEFAULT '' COMMENT '源用户邮箱快照',
   target_user_id VARCHAR(36) NOT NULL COMMENT '保留的目标用户 ID',
