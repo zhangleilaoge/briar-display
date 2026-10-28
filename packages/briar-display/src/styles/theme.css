@@ -579,11 +579,12 @@ progress {
 
 /* ============================================================
    剪纸纸片弹层（RÉSULTATS 风格）—— Dialog / Popover / Select / Command
+   下拉浮层与「添加到文件夹」Select 统一：方角直角，非大圆角
    ============================================================ */
 
-.rv-paper-dialog {
+.rv-paper-dialog,
+.rv-paper-float {
 	--rv-paper-border: color-mix(in srgb, var(--rv-navy) 88%, transparent);
-	overflow: visible !important;
 	border: 1.5px solid var(--rv-navy) !important;
 	border-radius: 2px !important;
 	background-color: var(--rv-cream) !important;
@@ -599,31 +600,22 @@ progress {
 	color: var(--rv-ink);
 }
 
-/* Select / Popover / Command：与行情搜索下拉统一——浅底圆角软阴影，无剪纸锐角 */
-.rv-paper-float {
-	--rv-paper-border: color-mix(in srgb, var(--rv-navy) 28%, transparent);
+/* Dialog 可溢出装饰；浮层下拉必须裁切/滚动，勿 overflow:visible 破框 */
+.rv-paper-dialog {
 	overflow: visible !important;
-	border: 1px solid color-mix(in srgb, var(--rv-navy) 18%, transparent) !important;
-	border-radius: 0.75rem !important;
-	background-color: #f7fafc !important;
-	background-image: linear-gradient(180deg, #ffffff 0%, #f3f7fb 100%);
-	background-size: auto;
-	background-repeat: no-repeat;
-	box-shadow: 0 10px 28px -10px hsl(221 46% 20% / 0.28), 0 4px 12px -6px hsl(221 46% 20% / 0.14) !important;
-	color: var(--rv-ink);
 }
 
-.theme-arcane .rv-paper-dialog {
+.rv-paper-float {
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+.theme-arcane .rv-paper-dialog,
+.theme-arcane .rv-paper-float {
 	background-color: #f7fafc !important;
 	background-image: var(--paper-grain), linear-gradient(180deg, #ffffff 0%, #f3f7fb 100%);
 	box-shadow: 0 0 0 3px hsl(0 0% 100% / 0.95), 0 0 0 1px hsl(221 46% 20% / 0.35), 0 22px 50px -14px
 		hsl(221 46% 20% / 0.38) !important;
-}
-
-.theme-arcane .rv-paper-float {
-	background-color: #f7fafc !important;
-	background-image: linear-gradient(180deg, #ffffff 0%, #f3f7fb 100%);
-	box-shadow: 0 10px 28px -10px hsl(221 46% 20% / 0.28), 0 4px 12px -6px hsl(221 46% 20% / 0.14) !important;
 }
 
 /* 遮罩：柔和天空纸纹，不要纯黑 */
@@ -831,14 +823,14 @@ progress {
 		drop-shadow(0 3px 8px rgb(28 43 75 / 0.18));
 }
 
-/* 浮层菜单项选中态：淡蓝底 + 圆角（不用左侧粗竖条，与行情搜索下拉统一） */
+/* 浮层菜单项选中态：淡蓝洗 + 左条（方角，与 Select 一致） */
 .rv-paper-float [data-highlighted],
 .rv-paper-float [data-selected="true"],
 .rv-paper-float [cmdk-item][data-selected="true"] {
-	background: hsl(214 55% 92% / 0.85) !important;
+	background: hsl(214 55% 92% / 0.7) !important;
 	color: var(--rv-ink) !important;
-	box-shadow: none;
-	border-radius: 0.5rem !important;
+	box-shadow: inset 3px 0 0 var(--rv-navy);
+	border-radius: 0 !important;
 }
 
 /* 大号水印数字 */

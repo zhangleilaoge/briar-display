@@ -146,7 +146,7 @@ function StockSearch({ onOpen }: { onOpen: (s: StockRef) => void }) {
 							return (
 								<div
 									key={stockId(r)}
-									className="flex min-h-10 items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 transition-colors hover:border-foreground/15 hover:bg-accent/80"
+									className="flex min-h-10 items-center gap-2 rounded-none border border-transparent px-2 py-1.5 transition-colors hover:border-foreground/15 hover:bg-[hsl(214_55%_92%/0.55)] hover:shadow-[inset_3px_0_0_var(--rv-navy)]"
 								>
 									<button
 										type="button"
