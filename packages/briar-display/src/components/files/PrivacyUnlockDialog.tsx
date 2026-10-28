@@ -187,7 +187,7 @@ export default function PrivacyUnlockDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-sm">
+			<DialogContent index="05" ornament className="sm:max-w-sm">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<Lock className="h-4 w-4" />

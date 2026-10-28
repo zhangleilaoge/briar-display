@@ -30,6 +30,17 @@ OFL 1.1 允许商用、嵌入与再分发，不得单独售卖字体文件本身
 | `fluent-envelope.png` | 信封贴纸（`Envelope`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Envelope/3D | Microsoft | MIT | 256px 缩放 |
 | `fluent-sparkles.png` | 闪光贴纸（`Sparkles`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Sparkles/3D | Microsoft | MIT | 256px 缩放 |
 | `pocket-watch.svg` | 怀表（`PocketWatch`，背景与输入栏） | https://commons.wikimedia.org/wiki/File:Pocket_watch_gold.svg | Mrmw | CC0 1.0（公有领域贡献） | 补 viewBox，svgo 压缩 |
+
+| `fluent-dove.png` | 白鸽贴纸（`Dove`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Dove/3D | Microsoft | MIT | 256px 缩放 |
+| `fluent-teapot.png` | 茶壶贴纸（`Teapot`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Teapot/3D | Microsoft | MIT | 256px 缩放 |
+| `fluent-rose.png` | 玫瑰贴纸（`Rose`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Rose/3D | Microsoft | MIT | 256px 缩放 |
+| `fluent-classical.png` | 古典建筑贴纸（`ClassicalBuilding`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Classical%20building/3D | Microsoft | MIT | 256px 缩放 |
+| `fluent-ladder.png` | 梯子贴纸（`Ladder`） | https://github.com/microsoft/fluentui-emoji/tree/main/assets/Ladder/3D | Microsoft | MIT | 256px 缩放 |
+| `cherub-postscript.svg` | 小天使剪纸（`Cherub`，弹窗角饰） | Wikimedia Commons（PostScript 雕版公有领域图） | Public Domain | Public Domain | 裁切、改藏青描边、svgo |
+| `dove-olive.svg` | 白鸽线稿（`DoveOlive`） | Wikimedia Commons | Public Domain / CC0 | CC0 | 改色、svgo |
+| `floral-1913.svg` | 1913 花饰（`FloralStamp`） | Wikimedia Commons | Public Domain | Public Domain | 改色、svgo |
+| `floral-round.svg` | 圆形花饰（`FloralRound`） | Wikimedia Commons | Public Domain | Public Domain | 改色、svgo |
+| `gothic-arch.svg` | 哥特尖拱（`GothicArch`） | Wikimedia Commons | 贡献者 | CC BY-SA 3.0 | 改色、svgo |
 | `ionic-column.svg` | 爱奥尼柱（`GreekColumn`，Arcane 背景） | https://commons.wikimedia.org/wiki/File:Ionic_order.svg | F l a n k e r | Public Domain | 裁切为单柱、删除辅助线、改为主题蓝色描边/填充，svgo 压缩 |
 
 Fluent Emoji 的 MIT 许可要求在副本中保留版权与许可声明，声明全文见文末。

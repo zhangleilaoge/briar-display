@@ -92,6 +92,8 @@ export default function ToolMediaAddToDialog({ items, onClose }: ToolMediaAddToD
 			{/* Popover 打开期间禁止外部交互关闭：下拉内容 portal 在 DialogContent 之外，
 			    点击选项会被 Radix 误判为「点击弹窗外」 */}
 			<DialogContent
+				index="06"
+				ornament
 				className="sm:max-w-sm"
 				onInteractOutside={(e) => {
 					if (pickerOpen) e.preventDefault()

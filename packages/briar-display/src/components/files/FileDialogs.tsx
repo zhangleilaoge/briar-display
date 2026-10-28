@@ -29,9 +29,9 @@ export function ConfirmDialog({
 		<Dialog open={!!confirm} onOpenChange={(open) => !open && onClose()}>
 			{/* z-[120]：需盖过手写的 FileDetailModal（z-[100]），否则确认框被压在详情弹窗下且
 			    Radix 锁定 body pointer-events 会导致详情弹窗点击穿透 */}
-			<DialogContent className="z-[120] sm:max-w-sm">
+			<DialogContent className="z-[120] sm:max-w-sm" index="01" ornament>
 				<DialogHeader>
-					<DialogTitle className="break-all">{confirm?.title}</DialogTitle>
+					<DialogTitle className="break-all">CONFIRMER · {confirm?.title}</DialogTitle>
 				</DialogHeader>
 				<p className="text-sm text-muted-foreground">{confirm?.description}</p>
 				<div className="flex justify-end gap-2">
@@ -94,9 +94,9 @@ export function RenameDialog({
 
 	return (
 		<Dialog open={!!target} onOpenChange={(open) => !open && onClose()}>
-			<DialogContent className="sm:max-w-sm">
+			<DialogContent className="sm:max-w-sm" index="02" ornament>
 				<DialogHeader>
-					<DialogTitle>{title}</DialogTitle>
+					<DialogTitle>RENOMMER · {title}</DialogTitle>
 				</DialogHeader>
 				<div className="space-y-3">
 					<Input
@@ -159,13 +159,15 @@ export function MoveFileDialog({
 			{/* Popover 打开期间禁止外部交互关闭：下拉内容 portal 在 DialogContent 之外，
 			    点击选项会被 Radix 误判为「点击弹窗外」 */}
 			<DialogContent
+				index="03"
+				ornament
 				className="sm:max-w-sm"
 				onInteractOutside={(e) => {
 					if (pickerOpen) e.preventDefault()
 				}}
 			>
 				<DialogHeader>
-					<DialogTitle className="break-all">移动「{file?.originalName}」到</DialogTitle>
+					<DialogTitle className="break-all">DÉPLACER · 移动「{file?.originalName}」</DialogTitle>
 				</DialogHeader>
 				<div className="space-y-3">
 					{/* Select 在 Dialog 里会被焦点圈拦截导致 hover 不高亮，改用 Popover+Command */}

@@ -4,6 +4,8 @@ import UserMenu from '@/components/common/UserMenu'
 import { Card, CardContent } from '@/components/ui/card'
 import { ChatBubble } from '@/components/ui/chat-bubble'
 import {
+	Cherub,
+	Dove,
 	FilesIcon,
 	JournalIcon,
 	KeyIcon,
@@ -12,6 +14,7 @@ import {
 	Postmark,
 	Ribbon,
 	Strawberry,
+	Teapot,
 	ToolsIcon,
 } from '@/components/ui/ornaments'
 import { StampInputBar } from '@/components/ui/stamp-input-bar'
@@ -160,6 +163,9 @@ function PortalPageInner() {
 							/>
 							<Strawberry className="absolute -bottom-6 right-24 h-14 w-14 -rotate-12 sm:right-32" />
 							<Ribbon className="absolute -left-5 -top-6 h-14 w-14 -rotate-[18deg]" />
+							<Cherub className="absolute -right-3 bottom-10 hidden h-12 w-12 rotate-6 sm:block" />
+							<Dove className="absolute -left-4 bottom-16 hidden h-12 w-12 -rotate-6 opacity-90 sm:block" />
+							<Teapot className="absolute right-40 -bottom-5 hidden h-11 w-11 rotate-3 sm:block" />
 						</CardContent>
 					</Card>
 

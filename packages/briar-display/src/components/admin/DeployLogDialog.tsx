@@ -160,6 +160,8 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			{/* [&>button]:hidden 隐藏 Dialog 自带的右上角关闭按钮（与终端标题栏风格冲突），仍可 Esc/点击遮罩关闭 */}
 			<DialogContent
+				index="08"
+				ornament
 				className={cn(
 					'flex flex-col gap-0 overflow-hidden border-zinc-700 bg-zinc-950 p-0 text-zinc-100 [&>button]:hidden',
 					fullscreen ? 'h-screen max-w-none w-screen rounded-none' : 'max-w-4xl',

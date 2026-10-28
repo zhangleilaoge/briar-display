@@ -359,9 +359,9 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 						上传
 					</Button>
 				</DialogTrigger>
-				<DialogContent className="sm:max-w-md">
+				<DialogContent index="01" ornament className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle>上传文件</DialogTitle>
+						<DialogTitle>TÉLÉVERSER · 上传文件</DialogTitle>
 					</DialogHeader>
 					<div
 						onDrop={handleDrop}

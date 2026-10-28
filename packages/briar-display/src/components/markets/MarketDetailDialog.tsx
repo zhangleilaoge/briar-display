@@ -64,6 +64,8 @@ export default function MarketDetailDialog({ view, onClose }: MarketDetailDialog
 	return (
 		<Dialog open={top != null} onOpenChange={(open) => !open && onClose()}>
 			<DialogContent
+				index="10"
+				ornament
 				ref={contentRef}
 				className="max-h-[92vh] w-[calc(100%-1rem)] max-w-3xl overflow-y-auto rounded-2xl p-3 sm:p-6"
 			>
