@@ -172,10 +172,7 @@ export default function RunHistoryDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent
-				index="11"
-				className="flex max-h-[85vh] max-w-3xl flex-col gap-3 overflow-visible"
-			>
+			<DialogContent className="flex max-h-[85vh] max-w-3xl flex-col gap-3 overflow-visible">
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
 					<DialogDescription className="text-xs text-white/75">

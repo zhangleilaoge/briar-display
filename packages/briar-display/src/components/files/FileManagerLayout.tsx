@@ -22,7 +22,7 @@ interface FileManagerLayoutProps {
 export default function FileManagerLayout({ children }: FileManagerLayoutProps) {
 	return (
 		<PermissionProvider>
-			<ThemeShell variant="arcane" watermark="03" className="flex flex-col">
+			<ThemeShell variant="arcane" className="flex flex-col">
 				<PageHeader crumbs={[{ label: '文件' }]} right={<StorageQuota />} />
 
 				<main className="flex-1 p-4 sm:p-6">

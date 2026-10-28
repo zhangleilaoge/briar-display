@@ -116,7 +116,6 @@ export default function MergeLogsDialog({ open, onOpenChange }: Props) {
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
-				index="13"
 				className="flex max-h-[85vh] max-w-4xl flex-col gap-3 overflow-visible"
 				data-testid="merge-logs-dialog"
 			>

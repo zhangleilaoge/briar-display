@@ -66,7 +66,6 @@ export function ToolsShell({ children, currentPath }: ToolsLayoutProps) {
 			<ThemeShell
 				variant="arcane"
 				currentPath={currentPath}
-				watermark="02"
 				className="flex h-screen flex-col overflow-hidden"
 			>
 				<PageHeader

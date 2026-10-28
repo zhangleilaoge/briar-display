@@ -60,7 +60,7 @@ export default function LoginPage() {
 	}
 
 	return (
-		<ThemeShell variant="scrapbook" sidebar={false} watermark="00" className="flex overflow-hidden">
+		<ThemeShell variant="scrapbook" sidebar={false} className="flex overflow-hidden">
 			{/* Two-column layout */}
 			<div className="grid w-full lg:grid-cols-2">
 				{/* Left: Brand side */}

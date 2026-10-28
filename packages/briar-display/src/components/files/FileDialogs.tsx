@@ -29,7 +29,7 @@ export function ConfirmDialog({
 		<Dialog open={!!confirm} onOpenChange={(open) => !open && onClose()}>
 			{/* z-[120]：需盖过手写的 FileDetailModal（z-[100]），否则确认框被压在详情弹窗下且
 			    Radix 锁定 body pointer-events 会导致详情弹窗点击穿透 */}
-			<DialogContent className="z-[120] sm:max-w-sm" index="01" ornament>
+			<DialogContent className="z-[120] sm:max-w-sm" ornament>
 				<DialogHeader>
 					<DialogTitle className="break-all">CONFIRMER · {confirm?.title}</DialogTitle>
 				</DialogHeader>
@@ -94,7 +94,7 @@ export function RenameDialog({
 
 	return (
 		<Dialog open={!!target} onOpenChange={(open) => !open && onClose()}>
-			<DialogContent className="sm:max-w-sm" index="02" ornament>
+			<DialogContent className="sm:max-w-sm" ornament>
 				<DialogHeader>
 					<DialogTitle>RENOMMER · {title}</DialogTitle>
 				</DialogHeader>
@@ -159,7 +159,6 @@ export function MoveFileDialog({
 			{/* Popover 打开期间禁止外部交互关闭：下拉内容 portal 在 DialogContent 之外，
 			    点击选项会被 Radix 误判为「点击弹窗外」 */}
 			<DialogContent
-				index="03"
 				ornament
 				className="sm:max-w-sm"
 				onInteractOutside={(e) => {
