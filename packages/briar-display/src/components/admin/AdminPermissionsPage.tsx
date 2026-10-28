@@ -278,8 +278,10 @@ function AdminPermissionsPageInner() {
 
 						<div className="space-y-1">
 							{roles.map((role) => (
-								<button
-									type="button"
+								// biome-ignore lint/a11y/useSemanticElements: 行内含编辑/删除 <button>，外层用 <button> 会嵌套非法
+								<div
+									role="button"
+									tabIndex={0}
 									key={role.id}
 									className={`group flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors ${
 										selectedRole?.id === role.id
@@ -287,6 +289,13 @@ function AdminPermissionsPageInner() {
 											: 'text-muted-foreground hover:bg-accent/50'
 									}`}
 									onClick={() => loadRoleDetail(role.id)}
+									onKeyDown={(e) => {
+										// 外层不能用 <button>（内含编辑/删除按钮），用 div 模拟按钮键盘交互
+										if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+											e.preventDefault()
+											loadRoleDetail(role.id)
+										}
+									}}
 								>
 									{editingRole === role.id ? (
 										<div className="flex-1 space-y-1">
@@ -369,7 +378,7 @@ function AdminPermissionsPageInner() {
 											<ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
 										</>
 									)}
-								</button>
+								</div>
 							))}
 						</div>
 					</CardContent>

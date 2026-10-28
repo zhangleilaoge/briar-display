@@ -31,7 +31,7 @@ import {
 	UnfoldVertical,
 	Zap,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 
 const PAGE_SIZE = 50
 
@@ -495,7 +495,7 @@ function AdminLogsPageInner() {
 										return next
 									})
 								return (
-									<>
+									<Fragment key={log.id}>
 										<tr
 											key={log.id}
 											className={`cursor-pointer transition-colors hover:bg-muted/30 ${isExpanded ? 'bg-muted/20' : ''}`}
@@ -637,7 +637,7 @@ function AdminLogsPageInner() {
 												</td>
 											</tr>
 										)}
-									</>
+									</Fragment>
 								)
 							})}
 						</tbody>
