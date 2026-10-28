@@ -336,13 +336,24 @@ function PortalPageInner() {
 
 	const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
 		if (!results.length) return
-		if (e.key === 'ArrowDown') {
+		// sm+ 为 2 列网格：↑↓ 按行跳（±2），←→ 同排左右（±1）；窄屏单列时四向都按 ±1
+		const cols =
+			typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches ? 2 : 1
+		const move = (delta: number) => {
 			e.preventDefault()
-			setActive((i) => (i + 1) % results.length)
-		} else if (e.key === 'ArrowUp') {
-			e.preventDefault()
-			setActive((i) => (i <= 0 ? results.length - 1 : i - 1))
-		} else if (e.key === 'Enter' && query.trim()) {
+			setActive((i) => {
+				if (i < 0) return delta >= 0 ? 0 : results.length - 1
+				const next = i + delta
+				if (next < 0) return results.length - 1
+				if (next >= results.length) return 0
+				return next
+			})
+		}
+		if (e.key === 'ArrowDown') move(cols)
+		else if (e.key === 'ArrowUp') move(-cols)
+		else if (e.key === 'ArrowRight') move(1)
+		else if (e.key === 'ArrowLeft') move(-1)
+		else if (e.key === 'Enter' && query.trim()) {
 			e.preventDefault()
 			window.location.href = results[Math.max(active, 0)]
 		} else if (e.key === 'Escape') {
@@ -365,8 +376,8 @@ function PortalPageInner() {
 			{/* Main */}
 			<main className="flex flex-1 items-center justify-center p-4 sm:p-6">
 				<div className="w-full max-w-3xl space-y-8 sm:max-w-4xl">
-					{/* 参考帧：多层剪纸拼贴问候区 */}
-					<div className="relative mx-auto max-w-xl px-2 pb-4 pt-6 sm:px-6 sm:pb-6 sm:pt-8">
+					{/* 参考帧：多层剪纸拼贴问候区；贴纸挂在外框光环，不进白卡 */}
+					<div className="relative mx-auto max-w-xl overflow-visible px-5 pb-7 pt-9 sm:px-12 sm:pb-10 sm:pt-12">
 						{/* 底层倾斜纸片 */}
 						<div
 							aria-hidden
@@ -376,9 +387,9 @@ function PortalPageInner() {
 							aria-hidden
 							className="rv-paper-back absolute inset-x-6 -bottom-2 top-8 rotate-[2.5deg] rounded-md bg-[var(--rv-pink)]/55 sm:inset-x-10"
 						/>
+						<GreetingStickers kind={kind} seed={decorSeed} />
 						<Card className="relative z-[1] overflow-visible border-[color:var(--rv-navy)]/25 shadow-raised">
 							<CardContent className="relative flex flex-col gap-2 p-6 pb-10 sm:p-8 sm:pb-11">
-								<GreetingStickers kind={kind} seed={decorSeed} />
 								<span className="relative z-[1] rv-label text-muted-foreground">
 									{tod || '\u00a0'} · {date || '\u00a0'}
 								</span>
@@ -417,7 +428,7 @@ function PortalPageInner() {
 							onChange={(e) => setQuery(e.target.value)}
 							onKeyDown={onKeyDown}
 							placeholder="输入关键词筛选入口"
-							aria-label="筛选入口（↑↓ 选择，Enter 打开）"
+							aria-label="筛选入口（↑↓←→ 选择，Enter 打开）"
 						/>
 					</div>
 
@@ -476,7 +487,7 @@ function PortalPageInner() {
 							)}
 							{results.length > 0 && (
 								<p className="hidden text-center text-xs text-muted-foreground sm:block">
-									↑↓ 选择 · Enter 打开 · Esc 清空
+									↑↓←→ 选择 · Enter 打开 · Esc 清空
 								</p>
 							)}
 						</div>

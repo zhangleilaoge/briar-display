@@ -1,6 +1,6 @@
 'use client'
 
-import { getStockQuotes } from '@/api/markets'
+import { getMarketChart, getStockQuotes } from '@/api/markets'
 import { changeColorClass, formatPct, formatPrice } from '@/components/markets/marketUtils'
 import { unwrap, useMarketPolling } from '@/components/markets/useMarketPolling'
 import { stockId } from '@/components/markets/watchlistOps'
@@ -19,6 +19,77 @@ const DEFAULT_REFS: StockRef[] = [
 	{ market: 'hk', code: '00700', name: '腾讯控股' },
 ]
 
+function formatChange(change: number | null | undefined): string {
+	if (change == null) return '—'
+	return `${change > 0 ? '+' : ''}${change.toFixed(2)}`
+}
+
+/** 从报价构造简易火花线（无分时数据时兜底） */
+function syntheticSpark(q: StockQuote | undefined): number[] {
+	if (!q || q.price == null) return []
+	const prev = q.prevClose ?? q.open ?? q.price
+	const open = q.open ?? prev
+	const high = q.high ?? Math.max(open, q.price)
+	const low = q.low ?? Math.min(open, q.price)
+	const mid = (open + q.price) / 2
+	return [prev, open, low, mid, high, (high + q.price) / 2, q.price]
+}
+
+function downsample(values: number[], n = 28): number[] {
+	if (values.length <= n) return values
+	const out: number[] = []
+	for (let i = 0; i < n; i++) {
+		const idx = Math.round((i / (n - 1)) * (values.length - 1))
+		out.push(values[idx])
+	}
+	return out
+}
+
+function Sparkline({
+	values,
+	up,
+	className,
+}: {
+	values: number[]
+	up: boolean | null
+	className?: string
+}) {
+	if (values.length < 2) {
+		return <div className={className} aria-hidden />
+	}
+	const min = Math.min(...values)
+	const max = Math.max(...values)
+	const span = max - min || 1
+	const w = 100
+	const h = 36
+	const pad = 2
+	const pts = values
+		.map((v, i) => {
+			const x = pad + (i / (values.length - 1)) * (w - pad * 2)
+			const y = pad + (1 - (v - min) / span) * (h - pad * 2)
+			return `${x.toFixed(2)},${y.toFixed(2)}`
+		})
+		.join(' ')
+	const stroke =
+		up == null
+			? 'color-mix(in srgb, var(--rv-navy) 45%, transparent)'
+			: up
+				? 'var(--rv-rose-deep)'
+				: 'hsl(152 45% 38%)'
+	return (
+		<svg viewBox={`0 0 ${w} ${h}`} className={className} preserveAspectRatio="none" aria-hidden>
+			<polyline
+				fill="none"
+				stroke={stroke}
+				strokeWidth="1.75"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+				points={pts}
+			/>
+		</svg>
+	)
+}
+
 export function StocksWidget({
 	size,
 	editing,
@@ -29,10 +100,11 @@ export function StocksWidget({
 	onRemove?: () => void
 }) {
 	const watchlist = useWatchlist()
-	const usingDefaults = watchlist.ready && watchlist.items.length === 0
+	const items = Array.isArray(watchlist.items) ? watchlist.items : []
+	const usingDefaults = watchlist.ready && items.length === 0
 	const refs: StockRef[] = usingDefaults
 		? DEFAULT_REFS
-		: watchlist.items.map(({ market, code, name }) => ({ market, code, name }))
+		: items.map(({ market, code, name }) => ({ market, code, name }))
 	const idsKey = refs.map(stockId).join(',')
 
 	const { data, loading } = useMarketPolling(
@@ -59,87 +131,110 @@ export function StocksWidget({
 	}, [idsKey])
 	useEffect(() => {
 		if (refs.length <= 1) return
-		const id = window.setInterval(() => setIdx((i) => (i + 1) % refs.length), 4000)
+		const id = window.setInterval(() => setIdx((i) => (i + 1) % refs.length), 4500)
 		return () => clearInterval(id)
 	}, [refs.length])
 
-	const pageSize = size === '2x2' ? 3 : 4
-	const page = refs.slice(0, Math.max(refs.length, pageSize))
-	// 轮播：以 idx 为起点取 pageSize 条（环形）
-	const visible =
-		page.length === 0
-			? []
-			: Array.from(
-					{ length: Math.min(pageSize, page.length) },
-					(_, i) => page[(idx + i) % page.length],
-				)
+	const current = refs.length ? refs[idx % refs.length] : null
+	const quote = current ? quotes.get(stockId(current)) : undefined
+
+	const [spark, setSpark] = useState<number[]>([])
+	useEffect(() => {
+		if (!current) {
+			setSpark([])
+			return
+		}
+		let cancelled = false
+		;(async () => {
+			try {
+				const body = unwrap(await getMarketChart(current.market, 'stock', current.code, 'intraday'))
+				const days = body.days ?? []
+				const pts = days.flatMap((d) => d.points.map((p) => p[1])).filter((n) => Number.isFinite(n))
+				if (!cancelled && pts.length >= 2) {
+					setSpark(downsample(pts))
+					return
+				}
+			} catch {
+				/* fall through */
+			}
+			if (!cancelled) setSpark(syntheticSpark(quote))
+		})()
+		return () => {
+			cancelled = true
+		}
+		// quote 变化时用最新报价兜底；主依赖是当前标的
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [current?.market, current?.code, idx, quote?.price])
+
+	const up = quote?.changePct == null ? null : quote.changePct === 0 ? null : quote.changePct > 0
+	const wide = size === '2x1'
 
 	return (
 		<WidgetChrome
-			title="自选股"
-			caption="Actions"
 			editing={editing}
 			onRemove={onRemove}
-			bodyClassName="flex flex-col"
+			bodyClassName="flex flex-col !pt-2.5"
 			tilt={0.5}
 		>
-			{!watchlist.ready || (loading && !data) ? (
-				<p className="py-6 text-center text-sm text-muted-foreground">加载行情…</p>
+			{!watchlist.ready || (loading && !data) || !current ? (
+				<p className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+					加载行情…
+				</p>
 			) : (
-				<>
-					{usingDefaults && (
-						<p className="mb-1.5 text-[11px] text-muted-foreground">
-							暂无自选，展示热门示例 ·{' '}
-							<a
-								href="/briar/markets"
-								className="underline decoration-[color:var(--rv-rose)]/50 underline-offset-2 hover:text-foreground"
-							>
-								去加自选
-							</a>
-						</p>
-					)}
-					<ul className="flex flex-1 flex-col justify-center divide-y divide-[color:var(--rv-navy)]/10">
-						{visible.map((item) => {
-							const q = quotes.get(stockId(item))
-							return (
-								<li
-									key={stockId(item)}
-									className="flex items-center gap-2 py-1.5 first:pt-0 last:pb-0"
-								>
-									<a
-										href="/briar/markets"
-										className="flex min-w-0 flex-1 items-center gap-2 outline-none transition hover:opacity-90"
-									>
-										<span className="min-w-0 flex-1 truncate text-sm font-medium">{item.name}</span>
-										<span className="w-16 shrink-0 text-right text-sm tabular-nums sm:w-20">
-											{q ? formatPrice(q.price) : '—'}
-										</span>
-										<span
-											className={`w-14 shrink-0 text-right text-sm font-medium tabular-nums sm:w-16 ${changeColorClass(q?.changePct)}`}
-										>
-											{q ? formatPct(q.changePct) : '—'}
-										</span>
-									</a>
-								</li>
-							)
-						})}
-					</ul>
-					{refs.length > pageSize && (
-						<div className="mt-2 flex justify-center gap-1">
+				<a
+					href="/briar/markets"
+					className="flex min-h-0 flex-1 flex-col outline-none transition hover:opacity-95"
+				>
+					<div className="flex items-start justify-between gap-2">
+						<div className="min-w-0">
+							<p className="truncate font-heading text-sm font-semibold leading-tight">
+								{current.name}
+							</p>
+							<p className="truncate text-[11px] tabular-nums text-muted-foreground">
+								{current.code}
+								{usingDefaults ? ' · 示例' : ''}
+							</p>
+						</div>
+						<div
+							className={`shrink-0 text-right text-xs font-medium tabular-nums ${changeColorClass(quote?.changePct)}`}
+						>
+							<p>{formatChange(quote?.change)}</p>
+							<p>{formatPct(quote?.changePct)}</p>
+						</div>
+					</div>
+
+					<div className={`my-1.5 min-h-0 flex-1 ${wide ? 'px-0.5' : ''}`}>
+						<Sparkline
+							values={spark.length >= 2 ? spark : syntheticSpark(quote)}
+							up={up}
+							className="h-full w-full min-h-[2.25rem]"
+						/>
+					</div>
+
+					<p
+						className={`font-display font-semibold tabular-nums tracking-tight text-foreground ${
+							wide ? 'text-3xl' : 'text-2xl'
+						}`}
+					>
+						{formatPrice(quote?.price)}
+					</p>
+
+					{refs.length > 1 && (
+						<div className="mt-1.5 flex justify-center gap-1">
 							{refs.map((r, i) => (
 								<span
 									key={stockId(r)}
 									aria-hidden
 									className={
 										i === idx % refs.length
-											? 'h-1.5 w-1.5 rounded-full bg-[color:var(--rv-rose-deep)]'
-											: 'h-1.5 w-1.5 rounded-full bg-[color:var(--rv-navy)]/20'
+											? 'h-1 w-1 rounded-full bg-[color:var(--rv-rose-deep)]'
+											: 'h-1 w-1 rounded-full bg-[color:var(--rv-navy)]/20'
 									}
 								/>
 							))}
 						</div>
 					)}
-				</>
+				</a>
 			)}
 		</WidgetChrome>
 	)

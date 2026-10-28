@@ -11,21 +11,24 @@ import {
 	useState,
 } from 'react'
 import {
-	DEFAULT_LAYOUT,
+	CELL_MAX_STRETCH,
+	CELL_REM_DESKTOP,
+	CELL_REM_MOBILE,
 	GRID_COLS_DESKTOP,
 	GRID_COLS_MOBILE,
-	LAYOUT_STORAGE_KEY,
+	LAYOUT_STORAGE_KEY_LEGACY,
 	SIZE_SPECS,
 	WIDGET_CATALOG,
 	WIDGET_META,
 	type WidgetId,
 	type WidgetPlacement,
 	type WidgetSize,
+	defaultLayoutForCols,
 	gridItemStyle,
-	mobileSize,
 	packLayout,
 	parseStoredLayout,
 	snapPlacement,
+	storageKeyForCols,
 } from './widgetTypes'
 import { CalendarWidget } from './widgets/CalendarWidget'
 import { ClockWidget } from './widgets/ClockWidget'
@@ -63,20 +66,39 @@ function useGridCols() {
 	return cols
 }
 
-function persist(layout: WidgetPlacement[]) {
+function persist(cols: number, layout: WidgetPlacement[]) {
 	try {
-		window.localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout))
+		window.localStorage.setItem(storageKeyForCols(cols), JSON.stringify(layout))
 	} catch {
 		/* ignore quota */
 	}
+}
+
+function loadLayout(cols: number): WidgetPlacement[] {
+	const key = storageKeyForCols(cols)
+	let stored = parseStoredLayout(window.localStorage.getItem(key))
+	if (!stored) {
+		// 首次：尝试从旧版单 key 迁移一次
+		const legacy = parseStoredLayout(window.localStorage.getItem(LAYOUT_STORAGE_KEY_LEGACY))
+		if (legacy) {
+			stored = legacy
+			try {
+				window.localStorage.setItem(key, JSON.stringify(legacy))
+			} catch {
+				/* ignore */
+			}
+		}
+	}
+	return packLayout(stored ?? defaultLayoutForCols(cols), cols)
 }
 
 export function WidgetDesktop() {
 	const cols = useGridCols()
 	const [editing, setEditing] = useState(false)
 	const [hydrated, setHydrated] = useState(false)
-	const [layout, setLayout] = useState<WidgetPlacement[]>(DEFAULT_LAYOUT)
+	const [layout, setLayout] = useState<WidgetPlacement[]>(defaultLayoutForCols(GRID_COLS_DESKTOP))
 	const [pickerOpen, setPickerOpen] = useState(false)
+	const [pickerSizes, setPickerSizes] = useState<Partial<Record<WidgetId, WidgetSize>>>({})
 	const gridRef = useRef<HTMLDivElement>(null)
 	const dragRef = useRef<{
 		id: WidgetId
@@ -87,26 +109,18 @@ export function WidgetDesktop() {
 		startY: number
 	} | null>(null)
 	const [draggingId, setDraggingId] = useState<WidgetId | null>(null)
+	const colsRef = useRef(cols)
+	colsRef.current = cols
 
-	// hydrate from localStorage after mount（避免 SSR/CSR 不一致）
+	// 桌面 / 手机布局分存：列数变化时加载对应布局，互不覆盖
 	useEffect(() => {
-		const stored = parseStoredLayout(window.localStorage.getItem(LAYOUT_STORAGE_KEY))
-		const base = stored ?? DEFAULT_LAYOUT
-		const adapt = cols === GRID_COLS_MOBILE ? mobileSize : (s: WidgetSize) => s
-		setLayout(packLayout(base, cols, adapt))
+		setLayout(loadLayout(cols))
 		setHydrated(true)
-	}, [])
-
-	// 列数变化时重新打包（保留相对意图）
-	useEffect(() => {
-		if (!hydrated) return
-		const adapt = cols === GRID_COLS_MOBILE ? mobileSize : (s: WidgetSize) => s
-		setLayout((prev) => packLayout(prev, cols, adapt))
-	}, [cols, hydrated])
+	}, [cols])
 
 	const commit = useCallback((next: WidgetPlacement[]) => {
 		setLayout(next)
-		persist(next)
+		persist(colsRef.current, next)
 	}, [])
 
 	const remove = (id: WidgetId) => {
@@ -116,20 +130,23 @@ export function WidgetDesktop() {
 	const add = (id: WidgetId, size?: WidgetSize) => {
 		if (layout.some((p) => p.id === id)) return
 		const meta = WIDGET_META[id]
-		const chosen = size && meta.sizes.includes(size) ? size : meta.defaultSize
-		const adapted = cols === GRID_COLS_MOBILE ? mobileSize(chosen) : chosen
-		commit(packLayout([...layout, { id, size: adapted, col: -1, row: -1 }], cols))
+		const chosen =
+			size && meta.sizes.includes(size)
+				? size
+				: pickerSizes[id] && meta.sizes.includes(pickerSizes[id]!)
+					? pickerSizes[id]!
+					: meta.defaultSize
+		commit(packLayout([...layout, { id, size: chosen, col: -1, row: -1 }], cols))
 		setPickerOpen(false)
 	}
 
 	const resize = (id: WidgetId, size: WidgetSize) => {
 		const next = layout.map((p) => (p.id === id ? { ...p, size, col: -1, row: -1 } : p))
-		commit(packLayout(next, cols, cols === GRID_COLS_MOBILE ? mobileSize : (s) => s))
+		commit(packLayout(next, cols))
 	}
 
 	const reset = () => {
-		const adapt = cols === GRID_COLS_MOBILE ? mobileSize : (s: WidgetSize) => s
-		commit(packLayout(DEFAULT_LAYOUT, cols, adapt))
+		commit(packLayout(defaultLayoutForCols(cols), cols))
 	}
 
 	const missing = useMemo(
@@ -170,7 +187,6 @@ export function WidgetDesktop() {
 		const targetCol = x / (cellW + gap)
 		const targetRow = y / (rowH + gap)
 		const next = snapPlacement(layout, drag.id, targetCol, targetRow, cols)
-		// 仅在位置变化时更新，避免每帧 persist
 		const cur = layout.find((p) => p.id === drag.id)
 		const moved = next.find((p) => p.id === drag.id)
 		if (cur && moved && (cur.col !== moved.col || cur.row !== moved.row)) {
@@ -183,10 +199,9 @@ export function WidgetDesktop() {
 		if (!drag || drag.pointerId !== e.pointerId) return
 		dragRef.current = null
 		setDraggingId(null)
-		persist(layout)
+		persist(cols, layout)
 	}
 
-	// 计算网格行数
 	const rowCount = useMemo(() => {
 		let max = 2
 		for (const p of layout) {
@@ -195,18 +210,23 @@ export function WidgetDesktop() {
 		return max
 	}, [layout])
 
+	const cellRem = cols === GRID_COLS_MOBILE ? CELL_REM_MOBILE : CELL_REM_DESKTOP
+
 	return (
 		<section aria-label="桌面小组件" className="space-y-4">
 			{!hydrated ? (
 				<div
-					className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4"
-					style={{ gridAutoRows: 'minmax(7.5rem, auto)' }}
+					className="mx-auto grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4"
+					style={{
+						gridAutoRows: `${cellRem}rem`,
+						maxWidth: `calc(${cols} * ${cellRem * CELL_MAX_STRETCH}rem + ${(cols - 1) * 1}rem)`,
+					}}
 					aria-hidden
 				>
 					{Array.from({ length: 4 }).map((_, i) => (
 						<div
 							key={i}
-							className="col-span-2 h-36 animate-pulse rounded-[1.35rem] bg-[color:var(--rv-navy)]/8 sm:h-44"
+							className="col-span-1 h-full min-h-[9rem] animate-pulse rounded-[1.35rem] bg-[color:var(--rv-navy)]/8"
 						/>
 					))}
 				</div>
@@ -214,15 +234,20 @@ export function WidgetDesktop() {
 				<div
 					ref={gridRef}
 					className={cn(
-						'relative grid gap-3 sm:gap-4',
+						'relative mx-auto grid gap-3 sm:gap-4',
 						cols === GRID_COLS_MOBILE ? 'grid-cols-2' : 'grid-cols-4',
 						editing && 'rounded-2xl bg-[color:var(--rv-navy)]/[0.03] p-2 sm:p-3',
 					)}
 					style={
 						{
-							'--rv-widget-cell': cols === GRID_COLS_MOBILE ? '7.25rem' : '8.5rem',
+							'--rv-widget-cell': `${cellRem}rem`,
 							gridAutoRows: 'var(--rv-widget-cell)',
+							/* 单元格最多拉到 1.5× 单元，宽屏居中不无限变胖 */
+							gridTemplateColumns: `repeat(${cols}, minmax(0, calc(var(--rv-widget-cell) * ${CELL_MAX_STRETCH})))`,
+							justifyContent: 'center',
 							minHeight: `calc(var(--rv-widget-cell) * ${rowCount})`,
+							width: '100%',
+							maxWidth: `calc(${cols} * ${cellRem * CELL_MAX_STRETCH}rem + ${(cols - 1) * 1}rem)`,
 						} as CSSProperties
 					}
 					onPointerMove={onPointerMove}
@@ -237,7 +262,7 @@ export function WidgetDesktop() {
 							className={cn(
 								'touch-none select-none',
 								editing && 'cursor-grab active:cursor-grabbing',
-								draggingId === p.id && 'z-10 opacity-90',
+								draggingId === p.id && 'z-10 opacity-90 scale-[1.02] shadow-lg',
 							)}
 							onPointerDown={(e) => onPointerDown(e, p.id)}
 						>
@@ -250,11 +275,11 @@ export function WidgetDesktop() {
 											type="button"
 											onClick={(e) => {
 												e.stopPropagation()
-												resize(p.id, cols === GRID_COLS_MOBILE ? mobileSize(s) : s)
+												resize(p.id, s)
 											}}
 											className={cn(
 												'rounded-full border px-1.5 py-0.5 text-[10px] font-medium',
-												p.size === s || (cols === GRID_COLS_MOBILE && mobileSize(s) === p.size)
+												p.size === s
 													? 'border-[color:var(--rv-rose)] bg-[var(--rv-pink)] text-[color:var(--rv-ink)]'
 													: 'border-[color:var(--rv-navy)]/20 bg-[var(--rv-cream)]/90 text-muted-foreground',
 											)}
@@ -270,7 +295,7 @@ export function WidgetDesktop() {
 				</div>
 			)}
 
-			{/* iOS 风格：编辑小组件 / 完成 */}
+			{/* macOS 风格：编辑 / 添加 / 拖动 */}
 			<div className="flex flex-wrap items-center justify-center gap-2 pt-1">
 				{!editing ? (
 					<button
@@ -302,7 +327,7 @@ export function WidgetDesktop() {
 							onClick={() => {
 								setEditing(false)
 								setPickerOpen(false)
-								persist(layout)
+								persist(cols, layout)
 							}}
 							className="inline-flex items-center rounded-full border border-[color:var(--rv-rose)]/40 bg-[var(--rv-pink)] px-4 py-1.5 text-sm font-semibold text-[color:var(--rv-ink)]"
 						>
@@ -314,28 +339,56 @@ export function WidgetDesktop() {
 
 			{editing && pickerOpen && missing.length > 0 && (
 				<div className="mx-auto max-w-lg rounded-2xl border border-[color:var(--rv-navy)]/15 bg-[var(--rv-cream)] p-3 shadow-raised sm:p-4">
-					<p className="rv-label mb-2 text-muted-foreground">添加小组件</p>
-					<ul className="space-y-2">
-						{missing.map((m) => (
-							<li key={m.id} className="flex items-center justify-between gap-3">
-								<div className="min-w-0">
-									<p className="truncate font-heading text-sm font-semibold">
-										<span className="rv-script mr-1.5 text-[color:var(--rv-rose-deep)]">
-											{m.caption}
-										</span>
-										{m.title}
-									</p>
-									<p className="truncate text-xs text-muted-foreground">{m.description}</p>
-								</div>
-								<button
-									type="button"
-									onClick={() => add(m.id)}
-									className="shrink-0 rounded-full border border-[color:var(--rv-rose)]/40 bg-[var(--rv-pink)] px-3 py-1 text-xs font-semibold"
+					<p className="rv-label mb-1 text-muted-foreground">桌面小组件</p>
+					<p className="mb-3 text-[11px] text-muted-foreground">
+						选择尺寸后添加；添加后可拖动到网格，点 − 移除。
+					</p>
+					<ul className="space-y-3">
+						{missing.map((m) => {
+							const chosen = pickerSizes[m.id] ?? m.defaultSize
+							return (
+								<li
+									key={m.id}
+									className="flex flex-col gap-2 rounded-xl border border-[color:var(--rv-navy)]/10 bg-[color-mix(in_srgb,var(--rv-cream)_70%,white)] p-2.5 sm:flex-row sm:items-center sm:justify-between"
 								>
-									添加
-								</button>
-							</li>
-						))}
+									<div className="min-w-0">
+										<p className="truncate font-heading text-sm font-semibold">
+											<span className="rv-script mr-1.5 text-[color:var(--rv-rose-deep)]">
+												{m.caption}
+											</span>
+											{m.title}
+										</p>
+										<p className="truncate text-xs text-muted-foreground">{m.description}</p>
+										{m.sizes.length > 1 && (
+											<div className="mt-1.5 flex flex-wrap gap-1">
+												{m.sizes.map((s) => (
+													<button
+														key={s}
+														type="button"
+														onClick={() => setPickerSizes((prev) => ({ ...prev, [m.id]: s }))}
+														className={cn(
+															'rounded-full border px-2 py-0.5 text-[10px] font-medium',
+															chosen === s
+																? 'border-[color:var(--rv-rose)] bg-[var(--rv-pink)]'
+																: 'border-[color:var(--rv-navy)]/15 text-muted-foreground',
+														)}
+													>
+														{SIZE_SPECS[s].label}
+													</button>
+												))}
+											</div>
+										)}
+									</div>
+									<button
+										type="button"
+										onClick={() => add(m.id, chosen)}
+										className="shrink-0 self-end rounded-full border border-[color:var(--rv-rose)]/40 bg-[var(--rv-pink)] px-3 py-1 text-xs font-semibold sm:self-center"
+									>
+										添加
+									</button>
+								</li>
+							)
+						})}
 					</ul>
 				</div>
 			)}
