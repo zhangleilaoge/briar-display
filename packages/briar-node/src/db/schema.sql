@@ -454,3 +454,18 @@ CREATE TABLE IF NOT EXISTS thoughts (
   INDEX idx_deleted_at (deleted_at),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='想法短帖';
+
+-- ============================================================
+-- 想法点赞（登录用户可赞/取消；取消即硬删行）
+-- ============================================================
+CREATE TABLE IF NOT EXISTS thought_likes (
+  id VARCHAR(36) PRIMARY KEY COMMENT '点赞记录唯一标识',
+  thought_id VARCHAR(36) NOT NULL COMMENT '想法 ID',
+  user_id VARCHAR(36) NOT NULL COMMENT '点赞用户 ID',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '点赞时间',
+  UNIQUE KEY uk_thought_user (thought_id, user_id),
+  INDEX idx_thought_id (thought_id),
+  INDEX idx_user_id (user_id),
+  FOREIGN KEY (thought_id) REFERENCES thoughts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='想法点赞';

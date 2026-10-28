@@ -333,7 +333,6 @@ const FILL_LABELS = {
 	passwordHash: '登录密码',
 } as const
 
-
 // ==================== 用户偏好：同 key 保留目标 ====================
 
 export const preferencesHandler: UserMergeHandler = {
@@ -408,5 +407,48 @@ export const settingsHandler: UserMergeHandler = {
 			])
 		}
 		return { moved: Object.keys(fill).length, notes: [] }
+	},
+}
+
+// ==================== 想法点赞：同想法保留目标用户 ====================
+
+export const thoughtLikesHandler: UserMergeHandler = {
+	name: 'thought_likes',
+	label: '想法点赞',
+	claims: [{ table: 'thought_likes', column: 'user_id' }],
+	async preview(ctx) {
+		if (!ctx.tables.has('thought_likes')) return none
+		const total = await count(
+			ctx.conn,
+			'SELECT COUNT(*) AS n FROM thought_likes WHERE user_id = ?',
+			[ctx.source.id],
+		)
+		const dup = await count(
+			ctx.conn,
+			`SELECT COUNT(*) AS n FROM thought_likes s JOIN thought_likes t
+			 ON t.user_id = ? AND t.thought_id = s.thought_id
+			 WHERE s.user_id = ?`,
+			[ctx.target.id, ctx.source.id],
+		)
+		return {
+			count: total - dup,
+			conflicts: dup ? [`${dup} 条想法双方都赞过，保留目标用户`] : [],
+			notes: total ? [`并入 ${total - dup} 条`] : [],
+		}
+	},
+	async merge(ctx) {
+		if (!ctx.tables.has('thought_likes')) return { moved: 0, notes: [] }
+		const moved = await exec(
+			ctx.conn,
+			`UPDATE IGNORE thought_likes SET user_id = ? WHERE user_id = ?`,
+			[ctx.target.id, ctx.source.id],
+		)
+		const dropped = await exec(ctx.conn, 'DELETE FROM thought_likes WHERE user_id = ?', [
+			ctx.source.id,
+		])
+		return {
+			moved,
+			notes: dropped ? [`丢弃源用户重复点赞 ${dropped} 条`] : [],
+		}
 	},
 }
