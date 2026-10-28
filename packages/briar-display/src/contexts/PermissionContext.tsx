@@ -58,7 +58,19 @@ const readCachedIsAdmin = (): boolean => {
 	}
 }
 
+/**
+ * 权限上下文。外壳（AdminShell / ToolsLayout 等）与各页都可能包一层；
+ * 嵌套时复用外层，避免叠两个 Toaster 导致同一条 toast 弹两次。
+ */
 export function PermissionProvider({ children }: { children: ReactNode }) {
+	const parent = useContext(PermissionContext)
+	if (parent) {
+		return <>{children}</>
+	}
+	return <PermissionProviderRoot>{children}</PermissionProviderRoot>
+}
+
+function PermissionProviderRoot({ children }: { children: ReactNode }) {
 	const [permissions, setPermissions] = useState<string[]>([])
 	const [roles, setRoles] = useState<Role[]>([])
 	const [user, setUser] = useState<UserWithRoles | null>(null)
