@@ -23,10 +23,15 @@ export function GreetingWidget({
 			className={cn('relative h-full min-h-0 overflow-visible', editing && 'rv-jiggle')}
 			style={{ rotate: '-1deg' }}
 		>
-			<div
+			<PaperSheet
+				variant="binder"
+				holes={5}
 				aria-hidden
-				className="rv-paper-back pointer-events-none absolute inset-x-1 -bottom-1 top-2 -rotate-[1.4deg] rounded-sm opacity-70"
-			/>
+				className="pointer-events-none !absolute inset-x-1 -bottom-1 top-2 -rotate-[1.4deg] opacity-70"
+				bodyClassName="!p-0 min-h-[100%]"
+			>
+				{'\u00a0'}
+			</PaperSheet>
 			<PaperSheet
 				variant="binder"
 				holes={5}
@@ -63,7 +68,7 @@ export function GreetingWidget({
 					)}
 				</div>
 				<Postmark
-					className="pointer-events-none absolute -right-1 -top-1 z-[1] h-16 w-16 rotate-12 opacity-90 sm:h-20 sm:w-20"
+					className="pointer-events-none !absolute -right-1 -top-1 z-[1] h-16 w-16 rotate-12 opacity-90 sm:h-20 sm:w-20"
 					date={state.date.slice(-2) || '28'}
 				/>
 			</PaperSheet>
