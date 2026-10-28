@@ -35,6 +35,11 @@ import { GreetingWidget } from './widgets/GreetingWidget'
 import { StocksWidget } from './widgets/StocksWidget'
 import { WeatherWidget } from './widgets/WeatherWidget'
 
+/** 长按进编辑：与点击区分，约 450ms（macOS/iOS 风格） */
+const LONG_PRESS_MS = 450
+/** 长按过程中允许的轻微抖动（px），超出则取消 */
+const LONG_PRESS_MOVE_TOL = 10
+
 function renderWidget(id: WidgetId, size: WidgetSize, editing: boolean, onRemove: () => void) {
 	const props = { size, editing, onRemove }
 	switch (id) {
@@ -102,6 +107,12 @@ export function WidgetDesktop() {
 	const [floatPos, setFloatPos] = useState<{ x: number; y: number; w: number; h: number } | null>(
 		null,
 	)
+	const longPressRef = useRef<{
+		timer: ReturnType<typeof setTimeout>
+		pointerId: number
+		x: number
+		y: number
+	} | null>(null)
 	const colsRef = useRef(cols)
 	colsRef.current = cols
 
@@ -115,6 +126,15 @@ export function WidgetDesktop() {
 		setLayout(next)
 		persist(colsRef.current, next)
 	}, [])
+
+	const clearLongPress = useCallback(() => {
+		const lp = longPressRef.current
+		if (!lp) return
+		clearTimeout(lp.timer)
+		longPressRef.current = null
+	}, [])
+
+	useEffect(() => () => clearLongPress(), [clearLongPress])
 
 	const remove = (id: WidgetId) => {
 		commit(layout.filter((p) => p.id !== id))
@@ -147,15 +167,18 @@ export function WidgetDesktop() {
 		[layout],
 	)
 
-	const onPointerDown = (e: ReactPointerEvent, id: WidgetId) => {
-		if (!editing) return
+	const startDrag = (e: ReactPointerEvent, id: WidgetId) => {
 		/* 只放过真正的控件；链接不再 early-return，否则股票卡会触发浏览器「拖链接」 */
 		if ((e.target as HTMLElement).closest('button,input,textarea,select,[data-no-drag]')) return
 		const item = layout.find((p) => p.id === id)
 		if (!item) return
 		const rect = e.currentTarget.getBoundingClientRect()
 		e.preventDefault()
-		e.currentTarget.setPointerCapture(e.pointerId)
+		try {
+			e.currentTarget.setPointerCapture(e.pointerId)
+		} catch {
+			/* ignore */
+		}
 		dragRef.current = {
 			id,
 			originCol: item.col,
@@ -170,7 +193,54 @@ export function WidgetDesktop() {
 		setFloatPos({ x: rect.left, y: rect.top, w: rect.width, h: rect.height })
 	}
 
+	const onPointerDown = (e: ReactPointerEvent, id: WidgetId) => {
+		if (e.button !== undefined && e.button !== 0) return
+		/* 控件本身仍可点；长按也允许从卡片空白处启动 */
+		if ((e.target as HTMLElement).closest('button,input,textarea,select,[data-no-drag]')) return
+
+		if (!editing) {
+			clearLongPress()
+			const pointerId = e.pointerId
+			const x = e.clientX
+			const y = e.clientY
+			/* 触摸长按：拦住默认滚动/选中，鼠标仍可正常点链接 */
+			if (e.pointerType === 'touch') e.preventDefault()
+			try {
+				e.currentTarget.setPointerCapture(pointerId)
+			} catch {
+				/* ignore */
+			}
+			longPressRef.current = {
+				pointerId,
+				x,
+				y,
+				timer: setTimeout(() => {
+					longPressRef.current = null
+					setEditing(true)
+					try {
+						navigator.vibrate?.(12)
+					} catch {
+						/* ignore */
+					}
+				}, LONG_PRESS_MS),
+			}
+			return
+		}
+
+		startDrag(e, id)
+	}
+
 	const onPointerMove = (e: ReactPointerEvent) => {
+		const lp = longPressRef.current
+		if (lp && lp.pointerId === e.pointerId) {
+			const dx = e.clientX - lp.x
+			const dy = e.clientY - lp.y
+			if (dx * dx + dy * dy > LONG_PRESS_MOVE_TOL * LONG_PRESS_MOVE_TOL) {
+				clearLongPress()
+			}
+			return
+		}
+
 		const drag = dragRef.current
 		if (!drag || drag.pointerId !== e.pointerId || !gridRef.current) return
 		setFloatPos({ x: e.clientX - drag.gx, y: e.clientY - drag.gy, w: drag.w, h: drag.h })
@@ -195,6 +265,11 @@ export function WidgetDesktop() {
 	}
 
 	const onPointerUp = (e: ReactPointerEvent) => {
+		const lp = longPressRef.current
+		if (lp && lp.pointerId === e.pointerId) {
+			clearLongPress()
+		}
+
 		const drag = dragRef.current
 		if (!drag || drag.pointerId !== e.pointerId) return
 		dragRef.current = null
@@ -281,6 +356,7 @@ export function WidgetDesktop() {
 									}}
 									className={cn(
 										'touch-none select-none',
+										!editing && 'cursor-default',
 										editing &&
 											'cursor-grab active:cursor-grabbing [&_a]:pointer-events-none [&_a]:[-webkit-user-drag:none]',
 										floating &&
@@ -298,6 +374,10 @@ export function WidgetDesktop() {
 											: { height: '100%' }
 									}
 									onPointerDown={(e) => onPointerDown(e, p.id)}
+									onContextMenu={(e) => {
+										/* 长按进编辑时避免系统菜单抢事件 */
+										if (!editing || longPressRef.current) e.preventDefault()
+									}}
 								>
 									{renderWidget(p.id, p.size, editing, () => remove(p.id))}
 									{editing && !isDragging && WIDGET_META[p.id].sizes.length > 1 && (
@@ -330,17 +410,21 @@ export function WidgetDesktop() {
 				</div>
 			)}
 
-			{/* macOS 风格：编辑 / 添加 / 拖动 */}
+			{/* 有组件：长按进编辑；空桌面：显示「添加新组件」；编辑态保留工具栏 */}
 			<div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-				{!editing ? (
+				{!editing && layout.length === 0 && (
 					<button
 						type="button"
-						onClick={() => setEditing(true)}
+						onClick={() => {
+							setEditing(true)
+							setPickerOpen(true)
+						}}
 						className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--rv-navy)]/20 bg-[color-mix(in_srgb,var(--rv-cream)_88%,var(--rv-pink))] px-4 py-1.5 text-sm font-medium text-foreground shadow-[0_1px_0_hsl(0_0%_100%/0.8)_inset,0_4px_12px_-6px_hsl(221_46%_20%/0.25)] transition hover:-translate-y-0.5"
 					>
-						编辑桌面
+						添加新组件
 					</button>
-				) : (
+				)}
+				{editing && (
 					<>
 						<button
 							type="button"
@@ -428,11 +512,13 @@ export function WidgetDesktop() {
 				</div>
 			)}
 
-			{editing && (
+			{editing ? (
 				<p className="text-center text-[11px] text-muted-foreground">
 					拖动卡片吸附到网格 · 左上角 − 移除 · 右下角切换尺寸
 				</p>
-			)}
+			) : layout.length > 0 ? (
+				<p className="text-center text-[11px] text-muted-foreground">长按组件进入编辑</p>
+			) : null}
 		</section>
 	)
 }
