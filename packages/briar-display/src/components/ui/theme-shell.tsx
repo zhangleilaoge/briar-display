@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * 页面外壳：挂载全局吊牌侧栏 + 主题背景装饰。
+ * 页面外壳：挂载全局吊牌导航（md+ 悬浮不占位）+ 主题背景装饰。
  * Arcane 背景保留共享星盘（Astrolabe）；不再挂载水印数字或页面专属角饰。
  */
 import { cn } from '@/lib/utils'
@@ -31,7 +31,7 @@ export function ThemeShell({
 	currentPath,
 }: ThemeShellProps) {
 	return (
-		<div className={cn('relative isolate min-h-screen', sidebar && 'md:pl-16', className)}>
+		<div className={cn('relative isolate min-h-screen', className)}>
 			{sidebar && <RibbonSidebar currentPath={currentPath} />}
 			{decor && (variant === 'arcane' ? <ArcaneDecor /> : <ScrapbookDecor />)}
 			{children}
@@ -47,8 +47,8 @@ function ArcaneDecor() {
 				className="absolute -bottom-40 -right-32 h-[560px] w-[560px] opacity-[0.2]"
 				showWord={false}
 			/>
-			<div className="absolute left-[calc(4rem+12px)] right-3 top-3 hidden h-px bg-[var(--rv-line)] opacity-40 md:block" />
-			<div className="absolute bottom-4 left-[calc(4rem+12px)] right-3 hidden h-px bg-[var(--rv-line)] opacity-25 md:block" />
+			<div className="absolute left-3 right-3 top-3 hidden h-px bg-[var(--rv-line)] opacity-40 md:block" />
+			<div className="absolute bottom-4 left-3 right-3 hidden h-px bg-[var(--rv-line)] opacity-25 md:block" />
 			<div className="absolute bottom-5 right-6 hidden items-center gap-2 font-label text-[9px] uppercase tracking-[0.22em] text-[color:var(--rv-navy)]/55 xl:flex">
 				<span className="rv-barcode" />
 				<span>XIAOBUZI · ARCHIVE</span>

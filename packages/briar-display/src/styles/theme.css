@@ -431,6 +431,48 @@ body {
 }
 
 /* ---------------- 全局左侧吊牌导航（ribbon-sidebar） ---------------- */
+/* md+：无背景栏；吊牌串默认藏左侧外，热区 hover / focus-within 拉出 */
+.rv-ribbon-rail {
+	transform: translateX(-100%);
+	transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+	will-change: transform;
+}
+.rv-ribbon:hover .rv-ribbon-rail,
+.rv-ribbon:focus-within .rv-ribbon-rail {
+	transform: translateX(0);
+}
+.rv-ribbon-item {
+	transition:
+		transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+		opacity 0.28s ease;
+	transition-delay: calc(var(--rv-ribbon-i, 0) * 28ms);
+	transform: translateX(-10px);
+	opacity: 0.55;
+}
+.rv-ribbon:hover .rv-ribbon-item,
+.rv-ribbon:focus-within .rv-ribbon-item {
+	transform: translateX(0);
+	opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+	.rv-ribbon-rail,
+	.rv-ribbon-item {
+		transition: none;
+		transition-delay: 0ms;
+	}
+	.rv-ribbon-item {
+		transform: none;
+		opacity: 1;
+	}
+	.rv-ribbon-rail {
+		transform: translateX(-100%);
+	}
+	.rv-ribbon:hover .rv-ribbon-rail,
+	.rv-ribbon:focus-within .rv-ribbon-rail {
+		transform: translateX(0);
+	}
+}
+
 .rv-ribbon-tag {
 	transform-origin: 50% 0;
 	transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -487,7 +529,6 @@ body {
 	stroke: color-mix(in srgb, var(--rv-ink) 22%, var(--rv-beige));
 	stroke-opacity: 0.4;
 }
-.theme-scrapbook nav.rv-ribbon,
 .theme-scrapbook .rv-ribbon-mobile {
 	border-color: color-mix(in srgb, var(--rv-beige) 70%, var(--rv-ink) 12%) !important;
 }

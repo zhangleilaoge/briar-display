@@ -3,6 +3,7 @@
 /**
  * 全局左侧导航：一串挂在细绳上的行李吊牌，每张吊牌嵌一枚浮雕小图标（Phosphor duotone，MIT）。
  * 颜色全部来自主题 token（--sidebar-*），在 scrapbook / arcane 下自动切换。
+ * md+：无背景、不占布局；吊牌默认藏在左侧外，鼠标进入左缘热区或 focus-within 时 translateX 拉出。
  * md 以下收起为底部吊牌栏：固定在屏幕底部，触控区 ≥ 44px，适配 safe-area；
  * 条目过多时横向滑动，边缘渐隐 + 轻点头动画提示可滑（尊重 prefers-reduced-motion）。
  */
@@ -120,72 +121,80 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 
 	return (
 		<>
+			{/* md+：左缘热区；吊牌无底不占位，hover / focus-within 时从左侧拉出 */}
 			<nav
 				aria-label="全局导航"
 				className={cn(
-					'fixed inset-y-0 left-0 z-40 hidden w-16 flex-col items-center border-r border-[color:var(--rv-line)] pt-3 [background-image:var(--sidebar-bg)] backdrop-blur-sm md:flex',
+					'rv-ribbon group/ribbon fixed inset-y-0 left-0 z-40 hidden w-3 hover:w-[4.75rem] focus-within:w-[4.75rem] md:block',
 					className,
 				)}
 			>
-				{/* 吊绳 */}
-				<span
-					aria-hidden
-					className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[var(--sidebar-string)]"
-				/>
-				<span
-					aria-hidden
-					className="relative mb-2 h-3 w-3 rotate-45 border border-[color:var(--sidebar-tag-stroke)] bg-[var(--sidebar-tag-fill)]"
-				/>
-				<ul ref={listRef} className="relative flex flex-col items-center gap-1.5">
-					{items.map((item, i) => {
-						const Icon = item.icon
-						const isActive = active === item.href
-						return (
-							<li key={item.href} data-flip-key={item.href}>
-								<a
-									href={item.href}
-									title={item.label}
-									aria-current={isActive ? 'page' : undefined}
-									className="rv-ribbon-tag relative flex h-[62px] w-[54px] flex-col items-center outline-none"
-									style={{ transform: `rotate(${TILTS[i % TILTS.length]}deg)` }}
+				<div className="rv-ribbon-rail absolute inset-y-0 left-0 flex w-16 flex-col items-center pt-3">
+					{/* 吊绳 */}
+					<span
+						aria-hidden
+						className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[var(--sidebar-string)]"
+					/>
+					<span
+						aria-hidden
+						className="relative mb-2 h-3 w-3 rotate-45 border border-[color:var(--sidebar-tag-stroke)] bg-[var(--sidebar-tag-fill)]"
+					/>
+					<ul ref={listRef} className="relative flex flex-col items-center gap-1.5">
+						{items.map((item, i) => {
+							const Icon = item.icon
+							const isActive = active === item.href
+							return (
+								<li
+									key={item.href}
+									data-flip-key={item.href}
+									className="rv-ribbon-item"
+									style={{ ['--rv-ribbon-i' as string]: i }}
 								>
-									<svg
-										viewBox="0 0 48 62"
-										preserveAspectRatio="none"
-										className="absolute inset-0 h-full w-full drop-shadow-[0_2px_3px_rgba(80,50,45,0.14)]"
-										aria-hidden
+									<a
+										href={item.href}
+										title={item.label}
+										aria-current={isActive ? 'page' : undefined}
+										className="rv-ribbon-tag relative flex h-[62px] w-[54px] flex-col items-center outline-none"
+										style={{ transform: `rotate(${TILTS[i % TILTS.length]}deg)` }}
 									>
-										<path d="M24 0v8" stroke="var(--sidebar-string)" strokeWidth="1" />
-										<path
-											className="rv-tag-shape"
-											strokeWidth="1"
-											d="M14 8h20l10 10v40a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V18Z"
-										/>
-										<path
-											className="rv-tag-inner-dash"
-											d="M14 11h20l7 7.4V56a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V18.4Z"
-											fill="none"
-											strokeWidth="1.15"
-											strokeDasharray="1.6 2.2"
-										/>
-										<circle
-											cx="24"
-											cy="15"
-											r="2.2"
-											fill="none"
-											stroke="var(--sidebar-tag-stroke)"
-										/>
-									</svg>
-									<Icon className="rv-tag-icon relative mt-[21px] h-[22px] w-[22px]" />
-									<span className="rv-tag-label relative mt-0.5 font-label text-[7px] uppercase tracking-[0.04em] text-[color:var(--sidebar-icon)]">
-										{item.caption}
-									</span>
-									<span className="sr-only">{item.label}</span>
-								</a>
-							</li>
-						)
-					})}
-				</ul>
+										<svg
+											viewBox="0 0 48 62"
+											preserveAspectRatio="none"
+											className="absolute inset-0 h-full w-full drop-shadow-[0_2px_3px_rgba(80,50,45,0.14)]"
+											aria-hidden
+										>
+											<path d="M24 0v8" stroke="var(--sidebar-string)" strokeWidth="1" />
+											<path
+												className="rv-tag-shape"
+												strokeWidth="1"
+												d="M14 8h20l10 10v40a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V18Z"
+											/>
+											<path
+												className="rv-tag-inner-dash"
+												d="M14 11h20l7 7.4V56a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V18.4Z"
+												fill="none"
+												strokeWidth="1.15"
+												strokeDasharray="1.6 2.2"
+											/>
+											<circle
+												cx="24"
+												cy="15"
+												r="2.2"
+												fill="none"
+												stroke="var(--sidebar-tag-stroke)"
+											/>
+										</svg>
+										<Icon className="rv-tag-icon relative mt-[21px] h-[22px] w-[22px]" />
+										<span className="rv-tag-label relative mt-0.5 font-label text-[7px] uppercase tracking-[0.04em] text-[color:var(--sidebar-icon)]">
+											{item.caption}
+										</span>
+										<span className="sr-only">{item.label}</span>
+									</a>
+								</li>
+							)
+						})}
+					</ul>
+				</div>
 			</nav>
 			{/* 移动端：底部吊牌栏（窄屏可横滑，边缘渐隐提示） */}
 			<MobileRibbonNav items={items} active={active} />
