@@ -1,5 +1,6 @@
 'use client'
 
+import { useNavigate } from '@/components/common/SectionRouter'
 import UserMenu from '@/components/common/UserMenu'
 import {
 	Breadcrumb,
@@ -54,15 +55,11 @@ export function PageHeader({
 	inlineAt = 'lg',
 	className,
 }: PageHeaderProps) {
+	const navigate = useNavigate()
 	const navNode =
 		tabs ??
 		(nav && nav.length > 0 ? (
-			<Tabs
-				value={currentPath}
-				onValueChange={(v) => {
-					window.location.href = v
-				}}
-			>
+			<Tabs value={currentPath} onValueChange={navigate}>
 				<TabsList>
 					{nav.map((item) => (
 						<TabsTrigger key={item.href} value={item.href} className="gap-1.5">

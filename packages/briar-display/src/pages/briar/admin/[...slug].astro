@@ -1,0 +1,19 @@
+---
+// 管理后台 SPA：所有 /briar/admin/<page> 共用同一页面壳，子路由在客户端切换（见 AdminApp）。
+// 每个子路径都生成静态 HTML，保证刷新/深链直达。
+import AdminApp, { ADMIN_ROUTES } from '../../../components/admin/AdminApp'
+import Layout from '../../../layouts/Layout.astro'
+
+export function getStaticPaths() {
+	return ADMIN_ROUTES.map((r) => ({
+		params: { slug: r.path.replace('/briar/admin/', '') },
+		props: { path: r.path, title: r.title },
+	}))
+}
+
+const { path, title } = Astro.props
+---
+
+<Layout title={title}>
+	<AdminApp client:load initialPath={path} />
+</Layout>

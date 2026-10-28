@@ -1,5 +1,6 @@
 'use client'
 
+import { useSectionRouter } from '@/components/common/SectionRouter'
 import UserMenu from '@/components/common/UserMenu'
 import {
 	Breadcrumb,
@@ -24,7 +25,7 @@ interface NavItem {
 	icon: React.ReactNode
 }
 
-const NAV_ITEMS: NavItem[] = [
+export const ADMIN_NAV_ITEMS: NavItem[] = [
 	{
 		label: '权限管理',
 		href: '/briar/admin/permissions',
@@ -66,7 +67,13 @@ interface AdminLayoutProps {
 	fullWidth?: boolean
 }
 
-export default function AdminLayout({ children, currentPath, fullWidth }: AdminLayoutProps) {
+/** 子页包装：在管理后台 SPA 壳内直通，单独渲染时（兜底）自带外壳 */
+export default function AdminLayout(props: AdminLayoutProps) {
+	if (useSectionRouter()) return <>{props.children}</>
+	return <AdminShell {...props} />
+}
+
+export function AdminShell({ children, currentPath, fullWidth }: AdminLayoutProps) {
 	// 记住当前 tab，下次进入管理后台时恢复（同工具箱 TOOLS_LAST_TAB_KEY 模式）
 	useEffect(() => {
 		localStorage.setItem(ADMIN_LAST_TAB_KEY, currentPath)
@@ -83,7 +90,7 @@ export default function AdminLayout({ children, currentPath, fullWidth }: AdminL
 				<div className="flex min-w-0 flex-1 flex-col">
 					<PageHeader
 						crumbs={[{ label: '管理后台' }]}
-						nav={NAV_ITEMS}
+						nav={ADMIN_NAV_ITEMS}
 						currentPath={currentPath}
 						inlineAt="xl"
 					/>
