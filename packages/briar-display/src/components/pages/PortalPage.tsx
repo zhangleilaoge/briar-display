@@ -97,13 +97,14 @@ function EntryCard({
 		<a
 			href={entry.href}
 			data-active={active || undefined}
-			className="group block outline-none data-[active]:-translate-y-1 transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1"
+			className="group block outline-none transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1 data-[active]:-translate-y-1.5"
 			style={{ rotate: `${tilt}deg` }}
 		>
 			<Card
 				className={cn(
-					'rv-tile glass-interactive overflow-hidden group-focus-visible:shadow-focus',
-					active && 'shadow-focus',
+					'rv-tile glass-interactive overflow-hidden transition-[box-shadow,border-color,background-color] duration-200 group-focus-visible:shadow-focus',
+					active &&
+						'border-[color:var(--rv-navy)]/55 bg-[color-mix(in_srgb,var(--rv-pink)_42%,var(--rv-cream))] shadow-[0_0_0_2px_hsl(0_0%_100%/0.95),0_0_0_4px_color-mix(in_srgb,var(--rv-rose)_55%,transparent),0_10px_28px_-8px_hsl(221_46%_20%/0.28)]',
 				)}
 			>
 				<CardContent className="flex items-center gap-4 p-5">
@@ -114,7 +115,12 @@ function EntryCard({
 						<span className="rv-script block text-lg leading-none text-[color:var(--rv-rose-deep)]">
 							{entry.caption}
 						</span>
-						<h3 className="font-heading text-lg font-semibold transition-colors group-hover:text-[color:var(--rv-rose-deep)]">
+						<h3
+							className={cn(
+								'font-heading text-lg font-semibold transition-colors group-hover:text-[color:var(--rv-rose-deep)]',
+								active && 'text-[color:var(--rv-rose-deep)]',
+							)}
+						>
 							<Highlight text={entry.title} query={query} />
 						</h3>
 						<p className="truncate text-sm text-muted-foreground">{entry.description}</p>
@@ -207,7 +213,7 @@ function SubRouteRow({
 		<a
 			href={hit.sub.path}
 			data-active={active || undefined}
-			className="group relative block outline-none data-[active]:-translate-y-1 transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1 animate-[rv-rise_var(--motion-base)_var(--ease-paper)_both]"
+			className="group relative block outline-none transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1 data-[active]:-translate-y-1.5 animate-[rv-rise_var(--motion-base)_var(--ease-paper)_both]"
 			style={{ rotate: `${tilt}deg`, animationDelay: `${Math.min(index, 10) * 35}ms` }}
 		>
 			{/* 叠纸底片：与问候区同款，体量更轻，保持「次级」 */}
@@ -217,8 +223,9 @@ function SubRouteRow({
 			/>
 			<Card
 				className={cn(
-					'relative z-[1] rv-tile glass-interactive overflow-hidden group-focus-visible:shadow-focus',
-					active && 'shadow-focus',
+					'relative z-[1] rv-tile glass-interactive overflow-hidden transition-[box-shadow,border-color,background-color] duration-200 group-focus-visible:shadow-focus',
+					active &&
+						'border-[color:var(--rv-navy)]/55 bg-[color-mix(in_srgb,var(--rv-pink)_42%,var(--rv-cream))] shadow-[0_0_0_2px_hsl(0_0%_100%/0.95),0_0_0_4px_color-mix(in_srgb,var(--rv-rose)_55%,transparent),0_10px_28px_-8px_hsl(221_46%_20%/0.28)]',
 				)}
 			>
 				<CardContent className="flex items-center gap-3 p-3.5 sm:p-4">
@@ -229,7 +236,12 @@ function SubRouteRow({
 						<span className="rv-script block truncate text-sm leading-none text-[color:var(--rv-rose-deep)]">
 							<Highlight text={caption} query={query} />
 						</span>
-						<h3 className="truncate font-heading text-base font-semibold transition-colors group-hover:text-[color:var(--rv-rose-deep)]">
+						<h3
+							className={cn(
+								'truncate font-heading text-base font-semibold transition-colors group-hover:text-[color:var(--rv-rose-deep)]',
+								active && 'text-[color:var(--rv-rose-deep)]',
+							)}
+						>
 							<Highlight text={hit.sub.label} query={query} />
 						</h3>
 						<div className="mt-1 flex min-w-0 items-center gap-2">
@@ -407,11 +419,6 @@ function PortalPageInner() {
 							placeholder="输入关键词筛选入口"
 							aria-label="筛选入口（↑↓ 选择，Enter 打开）"
 						/>
-						{query.trim() && (
-							<ChatBubble from="user" className="mr-6">
-								我想找：{query.trim()}
-							</ChatBubble>
-						)}
 					</div>
 
 					{/* 空搜索：自定义桌面小组件；有关键词：一级入口 + 子路由筛选 */}
