@@ -1,11 +1,10 @@
 /**
  * 门户 / 想法页共用贴纸库：HermesAgent 级华丽神话/古典繁复线稿。
- * 仅单色线稿；剔纯黑实心剪影与低质简陋素材；同 MD5 副本只留一枚。
+ * 仅黑白线稿（可白描边）；严禁彩色；剔纯黑实心剪影与低质简陋素材；同 MD5 副本只留一枚。每屏最多 3 枚且互不相交。
  * 每次 ScrapStickerDecor 随机抽几枚，同屏 id / 视觉族不重复。
  */
 import abbey from '@/assets/decor/portal/abbey.svg'
 import abstractFloral from '@/assets/decor/portal/abstract-floral.svg'
-import amphora from '@/assets/decor/portal/amphora.svg'
 import antiqueKey from '@/assets/decor/portal/antique-key.svg'
 import astrolabePsf from '@/assets/decor/portal/astrolabe-psf.svg'
 import caduceus from '@/assets/decor/portal/caduceus.svg'
@@ -26,7 +25,6 @@ import ionicColumn from '@/assets/decor/portal/ionic-column.svg'
 import lantern from '@/assets/decor/portal/lantern.svg'
 import laurelWreath from '@/assets/decor/portal/laurel-wreath.svg'
 import lilienFloral from '@/assets/decor/portal/lilien-floral.svg'
-import lyre from '@/assets/decor/portal/lyre.svg'
 import paperScroll from '@/assets/decor/portal/paper-scroll.svg'
 import quill from '@/assets/decor/portal/quill.svg'
 import scissors from '@/assets/decor/portal/scissors.svg'
@@ -87,8 +85,6 @@ export const SCRAP_STICKER_CATALOG: ScrapSticker[] = [
 	{ id: 'laurel-wreath', src: srcOf(laurelWreath), kind: 'square', family: 'ornament' },
 	{ id: 'abbey', src: srcOf(abbey), kind: 'wide', family: 'temple' },
 	{ id: 'quill', src: srcOf(quill), kind: 'tall', family: 'tool' },
-	{ id: 'amphora', src: srcOf(amphora), kind: 'tall', family: 'mythic' },
-	{ id: 'lyre', src: srcOf(lyre), kind: 'tall', family: 'instrument' },
 	{ id: 'caduceus', src: srcOf(caduceus), kind: 'tall', family: 'mythic' },
 	{ id: 'paper-scroll', src: srcOf(paperScroll), kind: 'wide', family: 'scroll' },
 	{ id: 'candle', src: srcOf(candle), kind: 'tall', family: 'mythic' },
@@ -98,10 +94,11 @@ export const SCRAP_STICKER_CATALOG: ScrapSticker[] = [
 	{ id: 'castor-bean', src: srcOf(castorBean), kind: 'tall', family: 'botanical' },
 ]
 
-/** 已剔除（剪影 / 低质 / 重复副本）：butterfly-black, papillon, fleur-de-lis, ankh,
+/** 已剔除（剪影 / 低质 / 重复 / 彩色）：butterfly-black, papillon, fleur-de-lis, ankh,
  * wax-seal, flower-ornament-black, corinthian-helmet, retro-flower, olive-branch,
  * doric-temple(=ionic-column-2), abstract-floral-1913(=floral-1913),
- * everybody-floral(=floral-round), floral-lilien(=lilien-floral)
+ * everybody-floral(=floral-round), floral-lilien(=lilien-floral),
+ * amphora(#ff0000), lyre(#CD9133)
  */
 
 /** @deprecated */
