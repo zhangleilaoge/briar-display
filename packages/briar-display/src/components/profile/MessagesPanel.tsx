@@ -1,19 +1,28 @@
 'use client'
 
-import { getMessages, markAllMessagesRead, markMessageRead } from '@/api/messages'
+import {
+	clearReadMessages,
+	deleteMessage,
+	getMessages,
+	markAllMessagesRead,
+	markMessageRead,
+	notifyMessagesChanged,
+} from '@/api/messages'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
+	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import type { SiteMessage } from '@briar/shared'
 import { format } from 'date-fns'
-import { CheckCheck, ChevronLeft, ChevronRight, Loader2, Mail } from 'lucide-react'
+import { CheckCheck, ChevronLeft, ChevronRight, Loader2, Mail, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -33,6 +42,9 @@ export default function MessagesPanel() {
 	const [page, setPage] = useState(1)
 	const [loading, setLoading] = useState(true)
 	const [detail, setDetail] = useState<SiteMessage | null>(null)
+	const [confirmId, setConfirmId] = useState<string | null>(null)
+	const [clearOpen, setClearOpen] = useState(false)
+	const [busy, setBusy] = useState(false)
 
 	const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 	const unread = items.filter((m) => !m.readAt).length
@@ -61,6 +73,53 @@ export default function MessagesPanel() {
 		setItems((prev) => prev.map((m) => (m.id === msg.id ? { ...m, readAt } : m)))
 		setDetail((prev) => (prev?.id === msg.id ? { ...prev, readAt } : prev))
 		await markMessageRead(msg.id)
+		notifyMessagesChanged()
+	}
+
+	/** 删除后重载当前页；当前页删空则回退一页 */
+	const reloadAfterDelete = (removed: number) => {
+		const remaining = total - removed
+		const lastPage = Math.max(1, Math.ceil(remaining / PAGE_SIZE))
+		if (page > lastPage) setPage(lastPage)
+		else load(page)
+		notifyMessagesChanged()
+	}
+
+	const handleDelete = async (id: string) => {
+		setBusy(true)
+		try {
+			const res = await deleteMessage(id)
+			if (res.success) {
+				setConfirmId(null)
+				toast.success('已删除')
+				reloadAfterDelete(1)
+			} else {
+				toast.error(res.message || '删除失败')
+			}
+		} catch {
+			toast.error('删除失败')
+		} finally {
+			setBusy(false)
+		}
+	}
+
+	const handleClearRead = async () => {
+		setBusy(true)
+		try {
+			const res = await clearReadMessages()
+			if (res.success) {
+				setClearOpen(false)
+				const count = res.data?.count ?? 0
+				toast.success(count > 0 ? `已清空 ${count} 条已读消息` : '没有已读消息')
+				reloadAfterDelete(count)
+			} else {
+				toast.error(res.message || '操作失败')
+			}
+		} catch {
+			toast.error('操作失败')
+		} finally {
+			setBusy(false)
+		}
 	}
 
 	const handleReadAll = async () => {
@@ -68,6 +127,7 @@ export default function MessagesPanel() {
 		if (res.success) {
 			const readAt = new Date().toISOString()
 			setItems((prev) => prev.map((m) => ({ ...m, readAt: m.readAt ?? readAt })))
+			notifyMessagesChanged()
 			toast.success('已全部标记为已读')
 		} else {
 			toast.error(res.message || '操作失败')
@@ -89,10 +149,22 @@ export default function MessagesPanel() {
 					</CardTitle>
 					<CardDescription>系统通知与消息</CardDescription>
 				</div>
-				<Button variant="outline" size="sm" className="gap-1.5" onClick={handleReadAll}>
-					<CheckCheck className="h-3.5 w-3.5" />
-					全部已读
-				</Button>
+				<div className="flex items-center gap-2">
+					<Button
+						variant="outline"
+						size="sm"
+						className="gap-1.5"
+						disabled={total === 0}
+						onClick={() => setClearOpen(true)}
+					>
+						<Trash2 className="h-3.5 w-3.5" />
+						清空已读
+					</Button>
+					<Button variant="outline" size="sm" className="gap-1.5" onClick={handleReadAll}>
+						<CheckCheck className="h-3.5 w-3.5" />
+						全部已读
+					</Button>
+				</div>
 			</CardHeader>
 			<CardContent>
 				{loading ? (
@@ -106,33 +178,74 @@ export default function MessagesPanel() {
 					<>
 						<div className="divide-y rounded-md border">
 							{items.map((msg) => (
-								<button
+								<div
 									key={msg.id}
-									type="button"
-									onClick={() => openDetail(msg)}
-									className="flex w-full flex-col gap-1 px-3 py-2.5 text-left transition-colors hover:bg-accent"
+									className="group flex items-stretch transition-colors hover:bg-accent"
 								>
-									<div className="flex items-center gap-2">
-										<span
-											className={cn(
-												'h-1.5 w-1.5 shrink-0 rounded-full',
-												msg.readAt ? 'bg-transparent' : 'bg-danger',
-											)}
-										/>
-										<span
-											className={cn(
-												'flex-1 truncate text-sm',
-												msg.readAt ? 'text-muted-foreground' : 'font-medium',
-											)}
-										>
-											{msg.title}
-										</span>
-										<span className="shrink-0 text-[11px] text-muted-foreground">
-											{formatTime(msg.createdAt)}
-										</span>
-									</div>
-									<p className="line-clamp-1 pl-3.5 text-xs text-muted-foreground">{msg.content}</p>
-								</button>
+									<button
+										type="button"
+										onClick={() => openDetail(msg)}
+										className="flex min-w-0 flex-1 flex-col gap-1 py-2.5 pl-3 pr-1 text-left"
+									>
+										<div className="flex items-center gap-2">
+											<span
+												className={cn(
+													'h-1.5 w-1.5 shrink-0 rounded-full',
+													msg.readAt ? 'bg-transparent' : 'bg-danger',
+												)}
+											/>
+											<span
+												className={cn(
+													'flex-1 truncate text-sm',
+													msg.readAt ? 'text-muted-foreground' : 'font-medium',
+												)}
+											>
+												{msg.title}
+											</span>
+											<span className="shrink-0 text-[11px] text-muted-foreground">
+												{formatTime(msg.createdAt)}
+											</span>
+										</div>
+										<p className="line-clamp-1 pl-3.5 text-xs text-muted-foreground">
+											{msg.content}
+										</p>
+									</button>
+									<Popover
+										open={confirmId === msg.id}
+										onOpenChange={(open) => setConfirmId(open ? msg.id : null)}
+									>
+										<PopoverTrigger asChild>
+											<button
+												type="button"
+												aria-label="删除消息"
+												title="删除"
+												className={cn(
+													'mr-1.5 self-center rounded p-1.5 text-muted-foreground opacity-0 transition-opacity hover:text-danger focus-visible:opacity-100 group-hover:opacity-100',
+													confirmId === msg.id && 'opacity-100 text-danger',
+												)}
+											>
+												<Trash2 className="h-3.5 w-3.5" />
+											</button>
+										</PopoverTrigger>
+										<PopoverContent align="end" className="w-auto p-3">
+											<p className="mb-2.5 text-sm">删除这条消息？</p>
+											<div className="flex justify-end gap-2">
+												<Button variant="ghost" size="sm" onClick={() => setConfirmId(null)}>
+													取消
+												</Button>
+												<Button
+													variant="destructive"
+													size="sm"
+													disabled={busy}
+													onClick={() => handleDelete(msg.id)}
+												>
+													{busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+													删除
+												</Button>
+											</div>
+										</PopoverContent>
+									</Popover>
+								</div>
 							))}
 						</div>
 
@@ -175,6 +288,27 @@ export default function MessagesPanel() {
 						<DialogDescription>{detail ? formatTime(detail.createdAt) : ''}</DialogDescription>
 					</DialogHeader>
 					<p className="whitespace-pre-wrap text-sm leading-relaxed">{detail?.content}</p>
+				</DialogContent>
+			</Dialog>
+
+			{/* 清空已读确认 */}
+			<Dialog open={clearOpen} onOpenChange={(open) => !busy && setClearOpen(open)}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>清空已读消息</DialogTitle>
+						<DialogDescription>
+							将删除所有已读站内信，未读消息会保留。此操作不可恢复。
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button variant="outline" disabled={busy} onClick={() => setClearOpen(false)}>
+							取消
+						</Button>
+						<Button variant="destructive" disabled={busy} onClick={handleClearRead}>
+							{busy && <Loader2 className="h-4 w-4 animate-spin" />}
+							清空
+						</Button>
+					</DialogFooter>
 				</DialogContent>
 			</Dialog>
 		</Card>

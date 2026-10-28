@@ -61,6 +61,8 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 	// ==================== Messages（站内信，登录用户即可） ====================
 	'POST /api/messages/read-all': null,
 	'POST /api/messages/:id/read': null,
+	'DELETE /api/messages': null, // ?scope=read 清空已读
+	'DELETE /api/messages/:id': null, // 仅本人（路由内按 user_id 过滤）
 
 	// ==================== Media（工具箱-媒体解析，登录用户即可） ====================
 	'POST /api/media/parse': null,

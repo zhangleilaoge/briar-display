@@ -95,4 +95,18 @@ export const messageDal = {
 		)
 		return result.affectedRows
 	},
+
+	/** 删除单条（仅本人；硬删除——站内信为一次性通知，无需保留） */
+	async deleteOne(id: string, userId: string): Promise<boolean> {
+		const result = await execute('DELETE FROM messages WHERE id = ? AND user_id = ?', [id, userId])
+		return result.affectedRows > 0
+	},
+
+	/** 清空已读（未读不受影响，未读数保持不变） */
+	async deleteRead(userId: string): Promise<number> {
+		const result = await execute('DELETE FROM messages WHERE user_id = ? AND read_at IS NOT NULL', [
+			userId,
+		])
+		return result.affectedRows
+	},
 }

@@ -58,4 +58,31 @@ messageRoutes.post('/:id/read', async (c) => {
 	return c.json<ApiResponse>({ success: true })
 })
 
+/** DELETE /?scope=read — 清空已读 */
+messageRoutes.delete('/', async (c) => {
+	const user = requireUser(c)
+	if (!user) return unauthorized(c)
+
+	if (c.req.query('scope') !== 'read') {
+		return c.json<ApiResponse>(
+			{ success: false, message: '仅支持 scope=read' },
+			HTTP_STATUS.BAD_REQUEST,
+		)
+	}
+	const count = await messageDal.deleteRead(user.id)
+	return c.json<ApiResponse>({ success: true, data: { count } })
+})
+
+/** DELETE /:id — 删除单条（仅本人，他人消息按不存在处理） */
+messageRoutes.delete('/:id', async (c) => {
+	const user = requireUser(c)
+	if (!user) return unauthorized(c)
+
+	const ok = await messageDal.deleteOne(c.req.param('id'), user.id)
+	if (!ok) {
+		return c.json<ApiResponse>({ success: false, message: '消息不存在' }, HTTP_STATUS.NOT_FOUND)
+	}
+	return c.json<ApiResponse>({ success: true })
+})
+
 export default messageRoutes
