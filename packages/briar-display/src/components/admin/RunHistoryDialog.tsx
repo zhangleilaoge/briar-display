@@ -166,7 +166,11 @@ export default function RunHistoryDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="flex max-h-[85vh] max-w-3xl flex-col gap-3 overflow-hidden">
+			<DialogContent
+				index="11"
+				ornament
+				className="flex max-h-[85vh] max-w-3xl flex-col gap-3 overflow-hidden"
+			>
 				<div className="flex items-start justify-between gap-2 pr-6">
 					<div>
 						<DialogTitle className="text-base">{title}</DialogTitle>

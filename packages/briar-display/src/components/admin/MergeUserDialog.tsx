@@ -127,7 +127,7 @@ export default function MergeUserDialog({ source, onOpenChange, onMerged }: Prop
 
 	return (
 		<Dialog open={!!source} onOpenChange={(open) => !merging && onOpenChange(open)}>
-			<DialogContent className="sm:max-w-2xl" data-testid="merge-user-dialog">
+			<DialogContent index="09" ornament className="sm:max-w-2xl" data-testid="merge-user-dialog">
 				<DialogHeader>
 					<DialogTitle>合并用户</DialogTitle>
 					<DialogDescription>

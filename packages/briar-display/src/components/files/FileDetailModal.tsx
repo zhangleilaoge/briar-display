@@ -2,6 +2,8 @@
 
 import { type FileItem, getFileContent } from '@/api/files'
 import { Button } from '@/components/ui/button'
+import { Cherub } from '@/components/ui/ornaments'
+import { cn } from '@/lib/utils'
 import { Check, Clipboard, Download, X } from 'lucide-react'
 import { Suspense, lazy, useEffect, useState } from 'react'
 import DocxPreview from './DocxPreview'
@@ -85,6 +87,28 @@ function getPreviewKind(file: FileItem): PreviewKind {
 	return 'none'
 }
 
+function previewLabel(kind: PreviewKind): { fr: string; zh: string; index: string } {
+	switch (kind) {
+		case 'video':
+			return { fr: 'VIDÉO', zh: '视频预览', index: '01' }
+		case 'image':
+			return { fr: 'IMAGE', zh: '图片预览', index: '01' }
+		case 'audio':
+			return { fr: 'AUDIO', zh: '音频预览', index: '01' }
+		case 'pdf':
+			return { fr: 'DOCUMENT', zh: '文档预览', index: '02' }
+		case 'markdown':
+		case 'text':
+			return { fr: 'TEXTE', zh: '文本预览', index: '02' }
+		case 'excel':
+			return { fr: 'TABLEAU', zh: '表格预览', index: '02' }
+		case 'docx':
+			return { fr: 'DOCUMENT', zh: '文稿预览', index: '02' }
+		default:
+			return { fr: 'APERÇU', zh: '文件详情', index: '01' }
+	}
+}
+
 interface Props {
 	file: FileItem
 	onClose: () => void
@@ -137,9 +161,11 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 		}
 	}
 
+	const label = previewLabel(kind)
+
 	return (
 		<div
-			className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+			className="rv-paper-overlay fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4"
 			onClick={onClose}
 		>
 			{/* 全屏图片预览（仅图片类型可用，点击任意处关闭） */}
@@ -160,22 +186,39 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 			)}
 
 			<div
-				className="relative max-h-[90vh] w-full max-w-3xl overflow-auto rounded-xl bg-background shadow-2xl"
+				className="rv-paper-dialog relative max-h-[90vh] w-full max-w-3xl overflow-visible"
 				onClick={(e) => e.stopPropagation()}
 			>
-				{/* Header */}
-				<div className="sticky top-0 z-10 flex items-center justify-between border-b bg-background px-6 py-3">
-					<h2 className="truncate text-sm font-medium">{file.originalName}</h2>
-					<Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+				<span className="rv-crop-marks" aria-hidden>
+					<span />
+				</span>
+				<Cherub className="rv-dialog-ornament absolute -left-5 -top-9 z-[3] hidden h-14 w-14 -rotate-[16deg] sm:block" />
+				<span className="rv-paper-index">{label.index}</span>
+
+				{/* 藏青顶栏 */}
+				<div className="rv-paper-header sticky top-0 z-10 !mx-0 !mt-0 mb-0 rounded-none">
+					<h2 className="rv-paper-title max-w-[85%] truncate px-2">
+						{label.fr} · {label.zh}
+					</h2>
+					<p className="max-w-[90%] truncate font-display text-xs text-white/70">
+						{file.originalName}
+					</p>
+					<button
+						type="button"
+						data-rv-dialog-close=""
+						aria-label="关闭"
+						className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-sm p-1 text-white/85 transition-opacity hover:bg-white/10 hover:text-white"
+						onClick={onClose}
+					>
 						<X className="h-4 w-4" />
-					</Button>
+					</button>
 				</div>
 
-				<div className="p-6">
+				<div className="max-h-[calc(90vh-4.5rem)] overflow-auto p-5 sm:p-6">
 					{/* Preview */}
-					<div className="mb-6">
+					<div className="mb-5">
 						{kind === 'image' && (
-							<div className="flex justify-center rounded-lg bg-muted p-4">
+							<div className="flex justify-center border border-[color:var(--rv-navy)]/20 bg-[var(--rv-beige)] p-3">
 								<img
 									src={file.cdnUrl}
 									alt={file.originalName}
@@ -186,7 +229,7 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 							</div>
 						)}
 						{kind === 'video' && (
-							<div className="flex justify-center rounded-lg bg-black p-2">
+							<div className="flex justify-center border border-[color:var(--rv-navy)]/25 bg-[var(--rv-navy)] p-2">
 								{/* biome-ignore lint/a11y/useMediaCaption: 用户上传的视频没有字幕文件 */}
 								<video src={file.cdnUrl} controls autoPlay className="max-h-[50vh] max-w-full" />
 							</div>
@@ -194,19 +237,19 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 						{(kind === 'markdown' || kind === 'text') && (
 							<>
 								{textError && (
-									<div className="rounded-lg bg-muted p-4 text-center text-sm text-muted-foreground">
+									<div className="border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] p-4 text-center text-sm text-muted-foreground">
 										{textError}
 									</div>
 								)}
 								{!textError && textContent === null && (
-									<div className="rounded-lg bg-muted p-4 text-center text-sm text-muted-foreground">
+									<div className="border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] p-4 text-center text-sm text-muted-foreground">
 										加载中...
 									</div>
 								)}
 								{!textError && textContent !== null && kind === 'markdown' && (
 									<Suspense
 										fallback={
-											<div className="rounded-lg bg-muted p-4 text-center text-sm text-muted-foreground">
+											<div className="border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] p-4 text-center text-sm text-muted-foreground">
 												加载中...
 											</div>
 										}
@@ -215,7 +258,7 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 									</Suspense>
 								)}
 								{!textError && textContent !== null && kind === 'text' && (
-									<pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap break-all rounded-lg bg-muted p-4 text-xs">
+									<pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap break-all border border-[color:var(--rv-navy)]/15 bg-white p-4 font-mono text-xs">
 										{textContent}
 									</pre>
 								)}
@@ -225,56 +268,75 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 							<iframe
 								src={file.cdnUrl}
 								title={file.originalName}
-								className="h-[60vh] w-full rounded-lg border bg-muted"
+								className="h-[60vh] w-full border border-[color:var(--rv-navy)]/20 bg-[var(--rv-beige)]"
 							/>
 						)}
 						{kind === 'excel' && <ExcelPreview file={file} />}
 						{kind === 'docx' && <DocxPreview file={file} />}
 						{kind === 'audio' && (
-							<div className="flex justify-center rounded-lg bg-muted p-6">
+							<div className="flex justify-center border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] p-6">
 								{/* biome-ignore lint/a11y/useMediaCaption: 用户上传的音频没有字幕文件 */}
 								<audio src={file.cdnUrl} controls className="w-full max-w-md" />
 							</div>
 						)}
 						{kind === 'none' && (
-							<div className="flex flex-col items-center gap-2 rounded-lg bg-muted py-10 text-muted-foreground">
+							<div className="flex flex-col items-center gap-2 border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] py-10 text-muted-foreground">
 								<FileTypeIcon fileName={file.originalName} mimeType={file.mimeType} />
 								<p className="text-sm">该类型不支持预览</p>
 							</div>
 						)}
 					</div>
 
-					{/* Metadata */}
-					<div className="mb-6 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-						<div className="min-w-0">
-							<p className="text-muted-foreground">大小</p>
-							<p className="font-medium">{formatSize(file.size)}</p>
+					{/* Metadata — 纸片分行 */}
+					<div className="mb-5 grid grid-cols-2 gap-0 border border-[color:var(--rv-navy)]/20 sm:grid-cols-4">
+						<div className="rv-paper-row min-w-0 !border-b-0 border-r border-[color:var(--rv-navy)]/15">
+							<div>
+								<p className="rv-label text-[10px] text-muted-foreground">TAILLE · 大小</p>
+								<p className="font-display text-base font-semibold">{formatSize(file.size)}</p>
+							</div>
 						</div>
-						<div className="min-w-0">
-							<p className="text-muted-foreground">类型</p>
-							<p className="truncate font-medium" title={file.mimeType}>
-								{file.mimeType}
-							</p>
+						<div className="rv-paper-row min-w-0 !border-b-0 border-r border-[color:var(--rv-navy)]/15 sm:border-r">
+							<div className="min-w-0">
+								<p className="rv-label text-[10px] text-muted-foreground">TYPE · 类型</p>
+								<p className="truncate font-display text-sm font-semibold" title={file.mimeType}>
+									{file.mimeType}
+								</p>
+							</div>
 						</div>
 						{file.width && file.height ? (
-							<div className="min-w-0">
-								<p className="text-muted-foreground">尺寸</p>
-								<p className="font-medium">
-									{file.width} × {file.height}
-								</p>
+							<div className="rv-paper-row min-w-0 !border-b-0 border-r border-[color:var(--rv-navy)]/15">
+								<div>
+									<p className="rv-label text-[10px] text-muted-foreground">DIMENSION · 尺寸</p>
+									<p className="font-display text-base font-semibold">
+										{file.width} × {file.height}
+									</p>
+								</div>
 							</div>
 						) : (
-							<div className="min-w-0">
-								<p className="text-muted-foreground">上传时间</p>
-								<p className="font-medium">
-									{new Date(file.createdAt).toLocaleDateString('zh-CN')}
-								</p>
+							<div className="rv-paper-row min-w-0 !border-b-0 border-r border-[color:var(--rv-navy)]/15">
+								<div>
+									<p className="rv-label text-[10px] text-muted-foreground">DATE · 上传</p>
+									<p className="font-display text-base font-semibold">
+										{new Date(file.createdAt).toLocaleDateString('zh-CN')}
+									</p>
+								</div>
 							</div>
 						)}
+						<div className="rv-paper-row min-w-0 !border-b-0">
+							<div>
+								<p className="rv-label text-[10px] text-muted-foreground">FICHIER · 文件</p>
+								<p
+									className="truncate font-display text-sm font-semibold"
+									title={file.originalName}
+								>
+									{file.originalName}
+								</p>
+							</div>
+						</div>
 					</div>
 
 					{/* Actions */}
-					<div className="flex flex-wrap items-center gap-2 border-t pt-4">
+					<div className="flex flex-wrap items-center gap-2 border-t border-[color:var(--rv-navy)]/15 pt-4">
 						<Button variant="outline" size="sm" className="gap-1.5" onClick={copyLink}>
 							{copied ? (
 								<Check className="h-4 w-4 text-success" />
@@ -289,7 +351,7 @@ export default function FileDetailModal({ file, onClose, onDelete }: Props) {
 						<Button
 							variant="destructive"
 							size="sm"
-							className="gap-1.5 ml-auto"
+							className={cn('ml-auto gap-1.5')}
 							onClick={() => onDelete(file.id)}
 						>
 							<X className="h-4 w-4" /> 删除

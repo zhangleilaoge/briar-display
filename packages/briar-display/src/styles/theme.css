@@ -572,3 +572,260 @@ input[type="range"],
 progress {
 	accent-color: hsl(var(--primary));
 }
+
+/* ============================================================
+   剪纸纸片弹层（RÉSULTATS 风格）—— Dialog / Popover / Select / Command
+   ============================================================ */
+
+.rv-paper-dialog,
+.rv-paper-float {
+	--rv-paper-border: color-mix(in srgb, var(--rv-navy) 88%, transparent);
+	border: 1.5px solid var(--rv-navy) !important;
+	border-radius: 2px !important;
+	background-color: var(--rv-cream) !important;
+	background-image: var(--paper-grain),
+		linear-gradient(180deg, #fffdf8 0%, var(--rv-cream) 55%, #f3ebe3 100%);
+	background-size: 180px 180px, auto;
+	background-repeat: repeat, no-repeat;
+	box-shadow:
+		0 0 0 3px hsl(0 0% 100% / 0.92),
+		0 1px 0 hsl(0 0% 100% / 0.85) inset,
+		0 18px 48px -12px hsl(221 46% 20% / 0.32),
+		0 6px 16px -6px hsl(221 46% 20% / 0.18) !important;
+	color: var(--rv-ink);
+}
+
+.theme-arcane .rv-paper-dialog,
+.theme-arcane .rv-paper-float {
+	background-color: #f7fafc !important;
+	background-image: var(--paper-grain), linear-gradient(180deg, #ffffff 0%, #f3f7fb 100%);
+	box-shadow: 0 0 0 3px hsl(0 0% 100% / 0.95), 0 0 0 1px hsl(221 46% 20% / 0.35), 0 22px 50px -14px
+		hsl(221 46% 20% / 0.38) !important;
+}
+
+/* 遮罩：柔和天空纸纹，不要纯黑 */
+.rv-paper-overlay {
+	background: var(--paper-grain),
+		radial-gradient(ellipse 70% 50% at 50% 40%, hsl(214 42% 78% / 0.55), transparent 70%),
+		hsl(214 32% 52% / 0.42) !important;
+	backdrop-filter: blur(3px) saturate(1.05);
+	-webkit-backdrop-filter: blur(3px) saturate(1.05);
+}
+
+/* 藏青顶栏 */
+.rv-paper-header {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.15rem;
+	margin: -1.5rem -1.5rem 0.75rem;
+	padding: 0.7rem 2.75rem;
+	background: var(--rv-navy);
+	color: #fff;
+	text-align: center;
+	border-bottom: 1px solid color-mix(in srgb, var(--rv-navy) 70%, #000);
+	box-shadow: 0 1px 0 hsl(0 0% 100% / 0.08) inset;
+}
+
+.rv-paper-header.sr-only {
+	margin: 0;
+	padding: 0;
+	background: transparent;
+	box-shadow: none;
+	border: 0;
+}
+
+.rv-paper-title {
+	font-family: var(--font-display);
+	font-weight: 600;
+	font-size: 1.05rem;
+	letter-spacing: 0.04em;
+	color: #fff;
+	line-height: 1.2;
+}
+
+.rv-paper-header.sr-only .rv-paper-title {
+	color: inherit;
+}
+
+/* 粉奶油编号签，叠在顶栏左侧 */
+.rv-paper-index {
+	position: absolute;
+	left: 0.65rem;
+	top: 0.55rem;
+	z-index: 5;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.65rem;
+	height: 1.45rem;
+	padding: 0 0.35rem;
+	background: linear-gradient(180deg, #fff6f0, #f3d7de);
+	color: var(--rv-navy);
+	font-family: var(--font-display);
+	font-size: 0.8rem;
+	font-weight: 700;
+	border: 1px solid color-mix(in srgb, var(--rv-navy) 35%, transparent);
+	box-shadow: 0 1px 2px hsl(221 46% 20% / 0.18);
+	z-index: 1;
+}
+
+/* L 形裁切角标 */
+.rv-crop-marks {
+	pointer-events: none;
+	position: absolute;
+	inset: -7px;
+	z-index: 2;
+}
+.rv-crop-marks::before,
+.rv-crop-marks::after,
+.rv-crop-marks span::before,
+.rv-crop-marks span::after {
+	content: "";
+	position: absolute;
+	width: 12px;
+	height: 12px;
+	border-color: var(--rv-navy);
+	border-style: solid;
+	opacity: 0.85;
+}
+.rv-crop-marks::before {
+	left: 0;
+	top: 0;
+	border-width: 1.5px 0 0 1.5px;
+}
+.rv-crop-marks::after {
+	right: 0;
+	top: 0;
+	border-width: 1.5px 1.5px 0 0;
+}
+.rv-crop-marks span::before {
+	left: 0;
+	bottom: 0;
+	border-width: 0 0 1.5px 1.5px;
+}
+.rv-crop-marks span::after {
+	right: 0;
+	bottom: 0;
+	border-width: 0 1.5px 1.5px 0;
+}
+
+/* 右下角 + 印刷记号 */
+.rv-paper-dialog::after {
+	content: "+";
+	position: absolute;
+	right: -14px;
+	bottom: -16px;
+	font-family: var(--font-display);
+	font-size: 14px;
+	color: var(--rv-navy);
+	opacity: 0.55;
+	pointer-events: none;
+}
+
+/* 顶栏存在时，关闭按钮改白色 */
+.rv-paper-dialog:has(.rv-paper-header:not(.sr-only)) [data-rv-dialog-close] {
+	color: #fff;
+	opacity: 0.85;
+	top: 0.7rem;
+}
+.rv-paper-dialog:has(.rv-paper-header:not(.sr-only)) [data-rv-dialog-close]:hover {
+	opacity: 1;
+	background: hsl(0 0% 100% / 0.12);
+}
+
+/* 列表行：编号方格 + 选中淡蓝洗 + 左海军条 */
+.rv-index-box {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.35rem;
+	height: 1.35rem;
+	flex-shrink: 0;
+	border: 1px solid var(--rv-navy);
+	font-family: var(--font-display);
+	font-size: 0.7rem;
+	font-weight: 700;
+	color: var(--rv-navy);
+	background: transparent;
+	line-height: 1;
+}
+.rv-index-box[data-active="true"],
+[data-selected="true"] > .rv-index-box,
+[data-highlighted] > .rv-index-box,
+[aria-selected="true"] > .rv-index-box {
+	background: var(--rv-navy);
+	color: #fff;
+}
+
+.rv-paper-row {
+	position: relative;
+	display: flex;
+	align-items: flex-start;
+	gap: 0.65rem;
+	padding: 0.55rem 0.75rem;
+	border-bottom: 1px solid hsl(222 20% 80% / 0.55);
+}
+.rv-paper-row[data-active="true"],
+.rv-paper-row[data-selected="true"] {
+	background: hsl(214 55% 92% / 0.55);
+}
+.rv-paper-row[data-active="true"]::before,
+.rv-paper-row[data-selected="true"]::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+	background: var(--rv-navy);
+}
+
+/* 剪纸贴纸：白描边 + 柔和投影（不规则外形用多重 drop-shadow） */
+.rv-cutout {
+	pointer-events: none;
+	user-select: none;
+	object-fit: contain;
+	filter: drop-shadow(0 0 0.6px #fff) drop-shadow(0 0 1.2px #fff) drop-shadow(0 0 2.2px #fff)
+		drop-shadow(0 0 3px #fff) drop-shadow(0 4px 10px rgb(28 43 75 / 0.22));
+}
+
+.rv-cutout-soft {
+	filter: drop-shadow(0 0 0.5px #fff) drop-shadow(0 0 1.5px #fff)
+		drop-shadow(0 3px 8px rgb(28 43 75 / 0.18));
+}
+
+/* 浮层菜单项选中态：淡蓝洗 + 左条 */
+.rv-paper-float [data-highlighted],
+.rv-paper-float [data-selected="true"],
+.rv-paper-float [cmdk-item][data-selected="true"] {
+	background: hsl(214 55% 92% / 0.7) !important;
+	color: var(--rv-ink) !important;
+	box-shadow: inset 3px 0 0 var(--rv-navy);
+	border-radius: 0 !important;
+}
+
+/* 大号水印数字 */
+.rv-watermark-num {
+	font-family: var(--font-display);
+	font-weight: 600;
+	line-height: 0.85;
+	color: transparent;
+	-webkit-text-stroke: 1.5px color-mix(in srgb, var(--rv-navy) 28%, transparent);
+	pointer-events: none;
+	user-select: none;
+}
+
+@media (max-width: 639.98px) {
+	.rv-paper-dialog {
+		width: calc(100vw - 1.5rem) !important;
+		max-width: calc(100vw - 1.5rem) !important;
+		max-height: calc(100dvh - 2rem);
+		overflow-y: auto;
+	}
+	.rv-paper-dialog .rv-dialog-ornament {
+		display: none;
+	}
+}

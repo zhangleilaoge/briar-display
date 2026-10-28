@@ -142,9 +142,9 @@ export default function FileToolbar({
 							新建文件夹
 						</Button>
 					</DialogTrigger>
-					<DialogContent className="sm:max-w-sm">
+					<DialogContent index="02" ornament className="sm:max-w-sm">
 						<DialogHeader>
-							<DialogTitle>新建文件夹</DialogTitle>
+							<DialogTitle>NOUVEAU · 新建文件夹</DialogTitle>
 						</DialogHeader>
 						<div className="space-y-3">
 							<Input

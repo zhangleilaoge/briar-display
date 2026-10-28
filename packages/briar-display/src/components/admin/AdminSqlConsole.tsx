@@ -450,7 +450,7 @@ function SqlConsoleContent() {
 
 			{/* 写操作确认弹窗 */}
 			<Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-				<DialogContent className="max-w-md">
+				<DialogContent index="12" ornament className="max-w-md">
 					<DialogHeader>
 						<DialogTitle>确认执行写操作</DialogTitle>
 						<DialogDescription asChild>

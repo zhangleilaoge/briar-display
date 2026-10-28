@@ -50,7 +50,7 @@ export default function FileContextMenu({ x, y, items, onClose }: FileContextMen
 		<div
 			ref={ref}
 			style={{ left, top }}
-			className="fixed z-[200] w-44 rounded-md border bg-background p-1 shadow-lg"
+			className="rv-paper-float fixed z-[200] w-48 overflow-visible p-1"
 		>
 			{items.map((item) => (
 				<button
@@ -60,8 +60,8 @@ export default function FileContextMenu({ x, y, items, onClose }: FileContextMen
 						onClose()
 						item.onClick()
 					}}
-					className={`flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted ${
-						item.danger ? 'text-destructive' : ''
+					className={`flex w-full items-center gap-2 border-b border-[color:var(--rv-navy)]/10 px-2 py-2 text-left text-sm last:border-0 transition-colors hover:bg-[hsl(214_55%_92%/0.7)] ${
+						item.danger ? 'text-destructive' : 'text-[color:var(--rv-ink)]'
 					}`}
 				>
 					{item.icon}
