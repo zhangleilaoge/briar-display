@@ -1,15 +1,15 @@
 'use client'
 
 /**
- * 活页掀页：顶页沿左缘（打孔侧）柔性卷边掀开，露出下一张。
- * 卷边高光 + 弯曲投射阴影，避免刚性 fade。
+ * 活页掀页：顶页沿左缘（打孔侧）用嵌套铰链柔性卷曲掀开，露出下一张。
+ * 三段 rotateY 叠加成纸卷，配卷边高光与投射阴影；避免单片刚性门扇/渐隐。
  * 尊重 prefers-reduced-motion：直接切内容、不播动画。
  */
 import { prefersReducedMotion } from '@/components/ui/motion'
 import { cn } from '@/lib/utils'
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 
-const PEEL_MS = 780
+const PEEL_MS = 1100
 
 type Props = {
 	/** 内容身份：变化时触发掀页（换一句 / 初次就绪） */
@@ -57,7 +57,7 @@ export function BinderPeel({ contentKey, ready = true, className, style, childre
 			requestAnimationFrame(() => {
 				requestAnimationFrame(() => setPeeling(true))
 			})
-			const t = window.setTimeout(finish, PEEL_MS + 60)
+			const t = window.setTimeout(finish, PEEL_MS + 80)
 			return () => window.clearTimeout(t)
 		}
 
@@ -77,7 +77,7 @@ export function BinderPeel({ contentKey, ready = true, className, style, childre
 		requestAnimationFrame(() => {
 			requestAnimationFrame(() => setPeeling(true))
 		})
-		const t = window.setTimeout(finish, PEEL_MS + 60)
+		const t = window.setTimeout(finish, PEEL_MS + 80)
 		return () => window.clearTimeout(t)
 	}, [contentKey, ready, children, finish])
 
@@ -86,8 +86,15 @@ export function BinderPeel({ contentKey, ready = true, className, style, childre
 			<div className="rv-binder-peel__base">{children}</div>
 			{overlay && (
 				<div className={cn('rv-binder-peel__sheet', peeling && 'is-peeled')} aria-hidden>
-					<div className="rv-binder-peel__face">{overlay}</div>
-					<span className="rv-binder-peel__curl" aria-hidden />
+					{/* 三段嵌套铰链：近书脊弯得少，自由边弯得多 → 柔性纸卷 */}
+					<div className="rv-binder-peel__h rv-binder-peel__h--1">
+						<div className="rv-binder-peel__h rv-binder-peel__h--2">
+							<div className="rv-binder-peel__h rv-binder-peel__h--3">
+								<div className="rv-binder-peel__face">{overlay}</div>
+								<span className="rv-binder-peel__curl" aria-hidden />
+							</div>
+						</div>
+					</div>
 					<span className="rv-binder-peel__shade" aria-hidden />
 				</div>
 			)}
