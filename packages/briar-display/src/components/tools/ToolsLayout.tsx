@@ -88,11 +88,16 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 				className="flex h-screen flex-col overflow-hidden"
 				accent={<ScissorsCut className="h-28 w-auto -rotate-12" />}
 			>
-				<PageHeader crumbs={[{ label: '工具箱' }]} nav={NAV_ITEMS} currentPath={currentPath} />
+				<PageHeader
+					crumbs={[{ label: '工具箱' }]}
+					nav={NAV_ITEMS}
+					currentPath={currentPath}
+					inlineAt="2xl"
+				/>
 
 				{/* 内容区 */}
 				<main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
-					<PaperPanel index="02" title="ATELIER · 工作台" className="flex min-h-0 flex-1 flex-col">
+					<PaperPanel index="02" title="ATELIER · 工作台" className="flex flex-[1_0_auto] flex-col">
 						<div className="flex min-h-0 w-full flex-1 flex-col">{children}</div>
 					</PaperPanel>
 				</main>
