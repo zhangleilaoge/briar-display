@@ -5,7 +5,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { ChatBubble } from '@/components/ui/chat-bubble'
 import {
 	FilesIcon,
-	GothicArch,
 	JournalIcon,
 	KeyIcon,
 	MarketsIcon,
@@ -18,6 +17,7 @@ import { StampInputBar } from '@/components/ui/stamp-input-bar'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { SITE_SECTIONS, type SectionMeta, type SubRouteMeta } from '@/config/site-routes'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
+import { pickDailyGreeting } from '@/data/daily-greetings'
 import { cn } from '@/lib/utils'
 import {
 	type ComponentType,
@@ -246,22 +246,19 @@ function SubRouteRow({
 	)
 }
 
-/** 按本地时间问候；在 effect 中计算，避免 SSR/CSR 不一致 */
+/** 按 Asia/Shanghai 日历日抽取问候+谚语；effect 内赋值避免 SSR/CSR 不一致 */
 function useGreeting() {
-	const [state, setState] = useState({ greet: 'Bonjour', date: '' })
+	const [state, setState] = useState({ greet: '', line: '', date: '' })
 	useEffect(() => {
-		const now = new Date()
-		const h = now.getHours()
-		const greet = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir'
-		const date = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`
-		setState({ greet, date })
+		const g = pickDailyGreeting()
+		setState({ greet: g.greet, line: g.line, date: g.dateLabel })
 	}, [])
 	return state
 }
 
 function PortalPageInner() {
 	const { isAdmin, loading } = usePermissions()
-	const { greet, date } = useGreeting()
+	const { greet, line, date } = useGreeting()
 	const [query, setQuery] = useState('')
 
 	const visible = useMemo(() => {
@@ -306,6 +303,7 @@ function PortalPageInner() {
 		<ThemeShell variant="scrapbook" watermark="01" className="flex flex-col overflow-hidden">
 			{/* Top bar */}
 			<PageHeader
+				hideBrand
 				user={
 					loading ? <div className="h-4 w-16 animate-pulse rounded-control bg-muted" /> : undefined
 				}
@@ -325,23 +323,17 @@ function PortalPageInner() {
 							aria-hidden
 							className="rv-paper-back absolute inset-x-6 -bottom-2 top-8 rotate-[2.5deg] rounded-md bg-[var(--rv-pink)]/55 sm:inset-x-10"
 						/>
-						{/* 旁侧：只留一处尖拱，留白 */}
-						<GothicArch className="absolute -left-2 top-2 hidden h-32 w-auto -rotate-6 opacity-80 sm:-left-8 sm:block" />
-
 						<Card className="relative z-[1] overflow-visible border-[color:var(--rv-navy)]/25 shadow-raised">
 							<CardContent className="relative flex flex-col gap-2 p-6 sm:p-8">
 								<span className="rv-label text-muted-foreground">
-									Carnet de voyage · {date || '\u00a0'}
+									今日一句 · {date || '\u00a0'}
 								</span>
 								<h1 className="font-display text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
-									<span className="rv-script mr-2 font-normal text-[color:var(--rv-rose-deep)]">
-										{greet},
+									<span className="rv-script font-normal text-[color:var(--rv-rose-deep)]">
+										{greet || '\u00a0'}
 									</span>
-									xiaobuzi
 								</h1>
-								<p className="font-display text-lg italic text-muted-foreground">
-									le salon du code est ouvert · 今天想去哪里看看？
-								</p>
+								<p className="font-display text-lg text-muted-foreground">{line || '\u00a0'}</p>
 								<Postmark
 									className="absolute -top-6 right-4 h-24 w-24 rotate-12 sm:right-8"
 									date={date.slice(-2) || '27'}
@@ -352,14 +344,11 @@ function PortalPageInner() {
 
 					{/* 邮票输入条：筛选下方入口 */}
 					<div className="space-y-3">
-						<p className="text-center font-display text-sm italic text-muted-foreground">
-							或者，从这里开始 · ou commencez ici
-						</p>
 						<StampInputBar
 							value={query}
 							onChange={(e) => setQuery(e.target.value)}
 							onKeyDown={onKeyDown}
-							placeholder="Écrivez-moi…  输入关键词筛选入口"
+							placeholder="输入关键词筛选入口"
 							aria-label="筛选入口（↑↓ 选择，Enter 打开）"
 						/>
 						{query.trim() && (

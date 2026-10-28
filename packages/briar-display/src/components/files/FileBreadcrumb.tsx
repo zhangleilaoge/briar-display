@@ -9,6 +9,7 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { Fragment } from 'react'
 
 interface FileBreadcrumbProps {
 	/** 根 → 当前 的文件夹路径 */
@@ -28,14 +29,16 @@ export default function FileBreadcrumb({
 	onDrop,
 }: FileBreadcrumbProps) {
 	return (
-		<Breadcrumb>
-			<BreadcrumbList>
-				<BreadcrumbItem>
+		<Breadcrumb className="min-w-0">
+			{/* leading-none + items-center 已在 BreadcrumbList；各段同 font-control，避免中文衬线/黑体混排错位 */}
+			<BreadcrumbList className="gap-1 sm:gap-1.5">
+				<BreadcrumbItem className="min-w-0">
 					{folderPath.length === 0 ? (
-						<BreadcrumbPage>全部文件</BreadcrumbPage>
+						<BreadcrumbPage className="truncate">全部文件</BreadcrumbPage>
 					) : (
 						<BreadcrumbLink
 							href="#"
+							className="truncate"
 							onClick={(e) => {
 								e.preventDefault()
 								onNavigate(null)
@@ -49,14 +52,15 @@ export default function FileBreadcrumb({
 					)}
 				</BreadcrumbItem>
 				{folderPath.map((folder, idx) => (
-					<span key={folder.id} className="contents">
+					<Fragment key={folder.id}>
 						<BreadcrumbSeparator />
-						<BreadcrumbItem>
+						<BreadcrumbItem className="min-w-0">
 							{idx === folderPath.length - 1 ? (
-								<BreadcrumbPage>{folder.name}</BreadcrumbPage>
+								<BreadcrumbPage className="truncate">{folder.name}</BreadcrumbPage>
 							) : (
 								<BreadcrumbLink
 									href="#"
+									className="truncate"
 									onClick={(e) => {
 										e.preventDefault()
 										onNavigate(folder.id)
@@ -66,7 +70,7 @@ export default function FileBreadcrumb({
 								</BreadcrumbLink>
 							)}
 						</BreadcrumbItem>
-					</span>
+					</Fragment>
 				))}
 			</BreadcrumbList>
 		</Breadcrumb>

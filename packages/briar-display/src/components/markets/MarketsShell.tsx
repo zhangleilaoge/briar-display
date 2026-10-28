@@ -9,10 +9,9 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { CompassRose } from '@/components/ui/ornaments'
 import { PageHeader } from '@/components/ui/page-header'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { HudTitle, PaperPanel, ThemeShell } from '@/components/ui/theme-shell'
+import { PaperPanel, ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { MARKET_IDS, MARKET_LABELS, type MarketId } from '@briar/shared'
 import type { ReactNode } from 'react'
@@ -44,12 +43,7 @@ export default function MarketsShell({ children, market }: MarketsShellProps) {
 
 	return (
 		<PermissionProvider>
-			<ThemeShell
-				variant="arcane"
-				watermark="05"
-				className="flex flex-col"
-				accent={<CompassRose className="h-36 w-36" />}
-			>
+			<ThemeShell variant="arcane" watermark="05" className="flex flex-col">
 				<PageHeader
 					crumbs={[
 						{ label: '行情', href: '/briar/markets' },
@@ -60,9 +54,7 @@ export default function MarketsShell({ children, market }: MarketsShellProps) {
 				/>
 				<main className="flex-1 p-4 sm:p-6">
 					<div className="mx-auto w-full max-w-6xl">
-						<PaperPanel index="05" title="MARCHÉ · 星图">
-							{children}
-						</PaperPanel>
+						<PaperPanel title="MARCHÉ · 星图">{children}</PaperPanel>
 					</div>
 				</main>
 			</ThemeShell>

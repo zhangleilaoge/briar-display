@@ -10,10 +10,9 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { AntiqueKey } from '@/components/ui/ornaments'
 import { PageHeader } from '@/components/ui/page-header'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { HudTitle, PaperPanel, ThemeShell } from '@/components/ui/theme-shell'
+import { PaperPanel, ThemeShell } from '@/components/ui/theme-shell'
 import { ADMIN_SECTION } from '@/config/site-routes'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
@@ -65,12 +64,7 @@ export function AdminShell({ children, currentPath, fullWidth }: AdminLayoutProp
 
 	return (
 		<PermissionProvider>
-			<ThemeShell
-				variant="arcane"
-				watermark="06"
-				className="flex flex-col"
-				accent={<AntiqueKey className="h-28 w-28 rotate-12" />}
-			>
+			<ThemeShell variant="arcane" watermark="06" className="flex flex-col">
 				<div className="flex min-w-0 flex-1 flex-col">
 					<PageHeader
 						crumbs={[{ label: '管理后台' }]}
@@ -81,9 +75,7 @@ export function AdminShell({ children, currentPath, fullWidth }: AdminLayoutProp
 
 					<main className="flex-1 p-4 sm:p-6">
 						<div className={fullWidth ? 'w-full' : 'mx-auto w-full max-w-[1200px]'}>
-							<PaperPanel index="06" title="CLEF · 机要室">
-								{children}
-							</PaperPanel>
+							<PaperPanel title="CLEF · 机要室">{children}</PaperPanel>
 						</div>
 					</main>
 				</div>

@@ -1,7 +1,6 @@
 'use client'
 
 import { useSectionRouter } from '@/components/common/SectionRouter'
-import { ScissorsCut } from '@/components/ui/ornaments'
 import { PageHeader } from '@/components/ui/page-header'
 import { PaperPanel, ThemeShell } from '@/components/ui/theme-shell'
 import { TOOLS_SECTION } from '@/config/site-routes'
@@ -69,7 +68,6 @@ export function ToolsShell({ children, currentPath }: ToolsLayoutProps) {
 				currentPath={currentPath}
 				watermark="02"
 				className="flex h-screen flex-col overflow-hidden"
-				accent={<ScissorsCut className="h-28 w-auto -rotate-12" />}
 			>
 				<PageHeader
 					crumbs={[{ label: '工具箱' }]}
@@ -81,7 +79,6 @@ export function ToolsShell({ children, currentPath }: ToolsLayoutProps) {
 				{/* 内容区 */}
 				<main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
 					<PaperPanel
-						index="02"
 						title="ATELIER · 工作台"
 						autoHeight={false}
 						className="flex flex-[1_0_auto] flex-col"
