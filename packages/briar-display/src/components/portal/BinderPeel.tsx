@@ -1,15 +1,17 @@
 'use client'
 
 /**
- * 活页掀页：参考 StPageFlip 右下角 soft 卷曲（不迁入整库）。
- * clip 切面 + 纸背三角瓣 + 折线阴影 + 轻微 3D，读成柔性纸角而非整卡 rotateY。
- * prefers-reduced-motion：直接切内容。
+ * 活页掀页：右下角 soft corner curl（参考 StPageFlip / Bilibili Paper，不迁入整库）。
+ * - 折线锚在右下角，最大揭起约短边 35–45%，非整页从腰切开
+ * - face 与 flap 同带 outgoing 文案：字跟着被掀的纸走
+ * - 容器 overflow:hidden，瓣尖不得窜出纸顶
+ * prefers-reduced-motion：直接切内容
  */
 import { prefersReducedMotion } from '@/components/ui/motion'
 import { cn } from '@/lib/utils'
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 
-const PEEL_MS = 1200
+const PEEL_MS = 1100
 
 type Props = {
 	contentKey: string | number
@@ -81,10 +83,11 @@ export function BinderPeel({ contentKey, ready = true, className, style, childre
 			<div className="rv-binder-peel__base">{children}</div>
 			{overlay && (
 				<div className={cn('rv-binder-peel__sheet', peeling && 'is-peeled')} aria-hidden>
-					{/* 桌面残留纸面：右下角对角被 clip 掉（StPageFlip bottom 折线） */}
+					{/* 残留纸面：右下角缺口随进度扩大；旧文随 clip 留在未掀区域 */}
 					<div className="rv-binder-peel__face">{overlay}</div>
-					{/* 掀起的纸角：纸背灰面 + 圆柱明暗，绕折线略 3D */}
-					<span className="rv-binder-peel__flap" aria-hidden>
+					{/* 掀起的纸角：同份旧文 + 纸背明暗，绕右下角 soft curl */}
+					<span className="rv-binder-peel__flap">
+						<span className="rv-binder-peel__flap-face">{overlay}</span>
 						<span className="rv-binder-peel__flap-back" />
 					</span>
 					{/* 折线落在底页上的接触影 */}

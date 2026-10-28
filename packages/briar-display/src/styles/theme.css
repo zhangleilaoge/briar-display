@@ -1695,14 +1695,16 @@ progress {
 
 
 
-/* ---------------- 活页掀页（BinderPeel）— 角部柔性卷曲（参考 StPageFlip，不迁库） ---------------- */
-/* 右下角 soft curl：clip 切面 + 纸背三角 + 折线阴影；非整卡 rotateY */
+/* ---------------- 活页掀页（BinderPeel）— 右下角 soft curl（参考 StPageFlip，不迁库） ---------------- */
+/* 折线锚右下角；最大揭起 ~短边 35–40%；overflow+inset clip 防窜顶；flap 带旧文 */
+/* 注意：裁切祖先不要 preserve-3d，否则 overflow:hidden 无法裁 3D 子层 */
 .rv-binder-peel {
 	position: relative;
 	isolation: isolate;
-	overflow: visible;
-	perspective: 1400px;
-	perspective-origin: 70% 70%;
+	overflow: hidden;
+	clip-path: inset(0);
+	perspective: 900px;
+	perspective-origin: 92% 92%;
 }
 .rv-binder-peel__base {
 	position: relative;
@@ -1713,8 +1715,8 @@ progress {
 	inset: 0;
 	z-index: 2;
 	pointer-events: none;
-	overflow: visible;
-	transform-style: preserve-3d;
+	overflow: hidden;
+	clip-path: inset(0);
 }
 .rv-binder-peel__blank {
 	display: flex;
@@ -1725,7 +1727,7 @@ progress {
 	min-height: 8rem;
 	background: linear-gradient(165deg, #fffef9 0%, var(--rv-cream) 52%, #f0e6dc 100%);
 }
-/* 残留纸面：右下角缺口随进度扩大（5 点 polygon 可插值） */
+/* 残留纸面：右下角小缺口（横卡用非等比例，避免腰切观感） */
 .rv-binder-peel__face {
 	position: absolute;
 	inset: 0;
@@ -1739,142 +1741,153 @@ progress {
 		6px 10px 24px -12px hsl(221 30% 18% / 0.22);
 	overflow: hidden;
 	clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 100% 100%, 0% 100%);
-	transform-origin: 0% 0%;
+	transform-origin: 100% 100%;
 }
 .rv-binder-peel__sheet.is-peeled .rv-binder-peel__face {
-	animation: rv-corner-face 1.2s cubic-bezier(0.2, 0.72, 0.18, 1) forwards;
+	animation: rv-corner-face 1.1s cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
 }
-/* 纸角容器：沿对角折线抬起 */
+/* 掀起角：整页对齐旧文 + 轻纸背；clip 只露右下三角；绕右下角 soft curl（无大位移） */
 .rv-binder-peel__flap {
 	position: absolute;
-	right: 0;
-	bottom: 0;
+	inset: 0;
 	z-index: 4;
-	width: 0;
-	height: 0;
 	pointer-events: none;
-	transform-origin: 0% 0%; /* 折线大致从左上到右下的角瓣原点在对角 */
-	transform-style: preserve-3d;
-	filter: drop-shadow(-6px -7px 10px hsl(30 20% 12% / 0.32));
+	overflow: hidden;
+	transform-origin: 100% 100%;
+	filter: drop-shadow(-3px -4px 6px hsl(30 20% 12% / 0.26));
 	opacity: 0;
-	will-change: width, height, opacity, transform;
+	clip-path: polygon(100% 100%, 100% 100%, 100% 100%);
+	will-change: transform, opacity, clip-path;
 }
 .rv-binder-peel__sheet.is-peeled .rv-binder-peel__flap {
-	animation: rv-corner-flap 1.2s cubic-bezier(0.2, 0.72, 0.18, 1) forwards;
+	animation: rv-corner-flap 1.1s cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
 }
-/* 纸背：浅灰圆柱卷曲明暗（亮→折线暗带→再亮） */
+.rv-binder-peel__flap-face {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	background: linear-gradient(165deg, #fffef9 0%, var(--rv-cream) 55%, #f3ebe3 100%);
+}
+/* 纸背明暗：半透明叠层，旧字仍可读 */
 .rv-binder-peel__flap-back {
-	display: block;
-	width: 100%;
-	height: 100%;
-	clip-path: polygon(100% 0, 0 100%, 100% 100%);
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
 	background: linear-gradient(
 		135deg,
-		#f7f3eb 0%,
-		#e8e2d6 32%,
-		#b9b1a4 46%,
-		#d2cbbe 54%,
-		#efe9df 74%,
-		#faf6ee 100%
+		hsl(40 28% 96% / 0.05) 0%,
+		hsl(35 16% 70% / 0.22) 30%,
+		hsl(28 12% 38% / 0.38) 48%,
+		hsl(35 14% 68% / 0.22) 62%,
+		hsl(40 28% 96% / 0.08) 100%
 	);
-	border-radius: 0 0 4px 0;
-	transform: translateZ(0.5px);
+	opacity: 0.9;
 }
 .rv-binder-peel__cast {
 	position: absolute;
-	right: 0;
-	bottom: 0;
+	inset: 0;
 	z-index: 1;
-	width: 0;
-	height: 0;
 	pointer-events: none;
 	background: radial-gradient(
-		125% 125% at 100% 100%,
-		hsl(30 22% 10% / 0.3) 0%,
-		hsl(30 22% 12% / 0.12) 40%,
-		transparent 72%
+		70% 70% at 100% 100%,
+		hsl(30 22% 10% / 0.26) 0%,
+		hsl(30 22% 12% / 0.1) 36%,
+		transparent 64%
 	);
-	clip-path: polygon(100% 0, 0 100%, 100% 100%);
+	clip-path: polygon(100% 100%, 100% 100%, 100% 100%);
 	opacity: 0;
-	filter: blur(5px);
+	filter: blur(3px);
 }
 .rv-binder-peel__sheet.is-peeled .rv-binder-peel__cast {
-	animation: rv-corner-cast 1.2s cubic-bezier(0.2, 0.72, 0.18, 1) forwards;
+	animation: rv-corner-cast 1.1s cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
 }
 
+/*
+ * 右下角：高度最大揭约 38%（短边），宽度约 14–18%（横卡），
+ * 折线始终贴 BR，不像从纸腰斜穿。末段 face 淡出交出新页。
+ */
 @keyframes rv-corner-face {
 	0% {
 		clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 100% 100%, 0% 100%);
 		opacity: 1;
 	}
-	16% {
-		clip-path: polygon(0% 0%, 100% 0%, 100% 82%, 82% 100%, 0% 100%);
+	20% {
+		clip-path: polygon(0% 0%, 100% 0%, 100% 92%, 96% 100%, 0% 100%);
 		opacity: 1;
 	}
-	40% {
-		clip-path: polygon(0% 0%, 100% 0%, 100% 55%, 55% 100%, 0% 100%);
+	45% {
+		clip-path: polygon(0% 0%, 100% 0%, 100% 78%, 90% 100%, 0% 100%);
 		opacity: 1;
 	}
-	65% {
-		clip-path: polygon(0% 0%, 100% 0%, 100% 28%, 28% 100%, 0% 100%);
-		opacity: 1;
+	70% {
+		clip-path: polygon(0% 0%, 100% 0%, 100% 66%, 84% 100%, 0% 100%);
+		opacity: 0.95;
 	}
-	88% {
-		clip-path: polygon(0% 0%, 100% 0%, 100% 8%, 8% 100%, 0% 100%);
-		opacity: 0.5;
+	90% {
+		clip-path: polygon(0% 0%, 100% 0%, 100% 62%, 82% 100%, 0% 100%);
+		opacity: 0.3;
 	}
 	100% {
-		clip-path: polygon(0% 0%, 100% 0%, 100% 0%, 0% 100%, 0% 100%);
+		clip-path: polygon(0% 0%, 100% 0%, 100% 62%, 82% 100%, 0% 100%);
 		opacity: 0;
 	}
 }
 
-/* 角瓣长大并绕对角轻微翻起（rotateX/Y 合成纸感，非整卡门扇） */
+/* 轻量 curl：小角度 + 微缩放，不向卡外 translate */
 @keyframes rv-corner-flap {
 	0% {
-		width: 0;
-		height: 0;
+		clip-path: polygon(100% 100%, 100% 100%, 100% 100%);
 		opacity: 0;
-		transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+		transform: rotate(-2deg) scale(1);
 	}
-	12% {
-		width: 20%;
-		height: 20%;
+	16% {
+		clip-path: polygon(100% 92%, 96% 100%, 100% 100%);
 		opacity: 1;
-		transform: translate3d(0, 0, 2px) rotateX(6deg) rotateY(-8deg) rotateZ(-1deg);
+		transform: rotate(-4deg) scale(1.01);
 	}
-	38% {
-		width: 44%;
-		height: 44%;
+	42% {
+		clip-path: polygon(100% 78%, 90% 100%, 100% 100%);
 		opacity: 1;
-		transform: translate3d(-2%, -2%, 8px) rotateX(12deg) rotateY(-16deg) rotateZ(-2.2deg);
+		transform: rotate(-7deg) scale(1.02);
 	}
-	62% {
-		width: 66%;
-		height: 66%;
+	68% {
+		clip-path: polygon(100% 66%, 84% 100%, 100% 100%);
 		opacity: 1;
-		transform: translate3d(-5%, -5%, 14px) rotateX(18deg) rotateY(-24deg) rotateZ(-3.5deg);
+		transform: rotate(-10deg) scale(1.03);
 	}
-	82% {
-		width: 88%;
-		height: 88%;
-		opacity: 0.82;
-		transform: translate3d(-10%, -10%, 22px) rotateX(26deg) rotateY(-34deg) rotateZ(-5deg);
+	88% {
+		clip-path: polygon(100% 62%, 82% 100%, 100% 100%);
+		opacity: 0.65;
+		transform: rotate(-12deg) scale(1.035);
 	}
 	100% {
-		width: 112%;
-		height: 112%;
+		clip-path: polygon(100% 60%, 80% 100%, 100% 100%);
 		opacity: 0;
-		transform: translate3d(-16%, -16%, 36px) rotateX(34deg) rotateY(-46deg) rotateZ(-7deg);
+		transform: rotate(-14deg) scale(1.04);
 	}
 }
 
 @keyframes rv-corner-cast {
-	0% { width: 0; height: 0; opacity: 0; }
-	14% { width: 24%; height: 24%; opacity: 0.75; }
-	45% { width: 52%; height: 52%; opacity: 0.9; }
-	75% { width: 80%; height: 80%; opacity: 0.4; }
-	100% { width: 105%; height: 105%; opacity: 0; }
+	0% {
+		clip-path: polygon(100% 100%, 100% 100%, 100% 100%);
+		opacity: 0;
+	}
+	18% {
+		clip-path: polygon(100% 92%, 96% 100%, 100% 100%);
+		opacity: 0.65;
+	}
+	48% {
+		clip-path: polygon(100% 78%, 90% 100%, 100% 100%);
+		opacity: 0.8;
+	}
+	75% {
+		clip-path: polygon(100% 66%, 84% 100%, 100% 100%);
+		opacity: 0.4;
+	}
+	100% {
+		clip-path: polygon(100% 62%, 82% 100%, 100% 100%);
+		opacity: 0;
+	}
 }
 
 /* 背景贴纸：掀页结束后淡出换一批再淡入 */
@@ -1901,6 +1914,5 @@ progress {
 		transition: none !important;
 	}
 }
-
 
 
