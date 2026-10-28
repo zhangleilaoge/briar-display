@@ -174,7 +174,8 @@ export function parseStoredLayout(raw: string | null): WidgetPlacement[] | null 
 				row: Number.isFinite(r) && r >= 0 ? Math.floor(r) : -1,
 			})
 		}
-		return out.length ? out : null
+		/* 显式 [] 表示用户清空桌面，勿回落到出厂默认 */
+		return out
 	} catch {
 		return null
 	}
