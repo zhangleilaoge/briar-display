@@ -1,5 +1,6 @@
 'use client'
 
+import { useSectionRouter } from '@/components/common/SectionRouter'
 import { ScissorsCut } from '@/components/ui/ornaments'
 import { PageHeader } from '@/components/ui/page-header'
 import { PaperPanel, ThemeShell } from '@/components/ui/theme-shell'
@@ -22,7 +23,7 @@ interface NavItem {
 	icon: React.ReactNode
 }
 
-const NAV_ITEMS: NavItem[] = [
+export const TOOLS_NAV_ITEMS: NavItem[] = [
 	{
 		label: '文件 Diff',
 		href: '/briar/tools/diff',
@@ -72,7 +73,13 @@ interface ToolsLayoutProps {
 	currentPath: string
 }
 
+/** 子页包装：在工具箱 SPA 壳内直通，单独渲染时（兜底）自带外壳 */
 export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps) {
+	if (useSectionRouter()) return <>{children}</>
+	return <ToolsShell currentPath={currentPath}>{children}</ToolsShell>
+}
+
+export function ToolsShell({ children, currentPath }: ToolsLayoutProps) {
 	// 记住当前 tab，下次从首页进入工具箱时恢复
 	useEffect(() => {
 		localStorage.setItem(TOOLS_LAST_TAB_KEY, currentPath)
@@ -90,7 +97,7 @@ export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps)
 			>
 				<PageHeader
 					crumbs={[{ label: '工具箱' }]}
-					nav={NAV_ITEMS}
+					nav={TOOLS_NAV_ITEMS}
 					currentPath={currentPath}
 					inlineAt="2xl"
 				/>
