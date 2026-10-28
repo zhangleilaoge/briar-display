@@ -15,6 +15,8 @@ const HARD_DELETE_WHITELIST: Record<string, string> = {
 	media_parse_cache: '媒体解析缓存（随 media_cache 清理）',
 	// services/userMerge/handlers.ts：遍历 MEDIA_TABLES（即上面两张缓存表）去重
 	'${t}': '动态表名，仅用于 MEDIA_TABLES 缓存表',
+	// services/userMerge/handlers.ts：偏好表无 deleted_at，合并去重后硬删源用户残留
+	user_preferences: '用户偏好 KV（无软删列；合并时 UPDATE IGNORE 后硬删源用户重复键）',
 }
 
 /** 已改为软删除的业务表：schema.sql 中必须有 deleted_at */
