@@ -333,6 +333,50 @@ const FILL_LABELS = {
 	passwordHash: '登录密码',
 } as const
 
+
+// ==================== 用户偏好：同 key 保留目标 ====================
+
+export const preferencesHandler: UserMergeHandler = {
+	name: 'preferences',
+	label: '用户偏好',
+	claims: [{ table: 'user_preferences', column: 'user_id' }],
+	async preview(ctx) {
+		if (!ctx.tables.has('user_preferences')) return none
+		const total = await count(
+			ctx.conn,
+			'SELECT COUNT(*) AS n FROM user_preferences WHERE user_id = ?',
+			[ctx.source.id],
+		)
+		const dup = await count(
+			ctx.conn,
+			`SELECT COUNT(*) AS n FROM user_preferences s JOIN user_preferences t
+			 ON t.user_id = ? AND t.pref_key = s.pref_key
+			 WHERE s.user_id = ?`,
+			[ctx.target.id, ctx.source.id],
+		)
+		return {
+			count: total - dup,
+			conflicts: dup ? [`${dup} 个偏好键双方都有，保留目标用户`] : [],
+			notes: total ? [`并入 ${total - dup} 条`] : [],
+		}
+	},
+	async merge(ctx) {
+		if (!ctx.tables.has('user_preferences')) return { moved: 0, notes: [] }
+		const moved = await exec(
+			ctx.conn,
+			`UPDATE IGNORE user_preferences SET user_id = ? WHERE user_id = ?`,
+			[ctx.target.id, ctx.source.id],
+		)
+		const dropped = await exec(ctx.conn, 'DELETE FROM user_preferences WHERE user_id = ?', [
+			ctx.source.id,
+		])
+		return {
+			moved,
+			notes: dropped ? [`丢弃源用户重复偏好 ${dropped} 条`] : [],
+		}
+	},
+}
+
 export const settingsHandler: UserMergeHandler = {
 	name: 'settings',
 	label: '账号设置',

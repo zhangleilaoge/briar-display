@@ -428,3 +428,13 @@ CREATE TABLE IF NOT EXISTS user_merge_logs (
   INDEX idx_target (target_user_id),
   INDEX idx_source (source_user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户合并记录';
+
+-- 用户偏好 KV（门户问候换一句等）；登录用户跨设备；访客走前端 localStorage
+CREATE TABLE IF NOT EXISTS user_preferences (
+  user_id VARCHAR(36) NOT NULL COMMENT '用户 ID',
+  pref_key VARCHAR(64) NOT NULL COMMENT '偏好键（如 portal-greeting）',
+  pref_value JSON NOT NULL COMMENT '偏好 JSON',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (user_id, pref_key),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户偏好';

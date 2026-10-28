@@ -10,6 +10,7 @@ import {
 	getCertStatus,
 	getDeployHistory,
 	getDeployRunHistory,
+	rerunDeployRun,
 	triggerNginxDeploy,
 } from '@/api/deploy'
 import AdminLayout from '@/components/admin/AdminLayout'
@@ -31,6 +32,7 @@ import {
 	History,
 	Loader2,
 	RefreshCw,
+	RotateCcw,
 	Rocket,
 	Server,
 	ShieldCheck,
@@ -160,6 +162,7 @@ function AdminDeployPageInner() {
 	const [renewalsExpanded, setRenewalsExpanded] = useState(false)
 	const [historyExpanded, setHistoryExpanded] = useState(false)
 	const [logRunId, setLogRunId] = useState<string | null>(null)
+	const [retryingRunId, setRetryingRunId] = useState<string | null>(null)
 	const [logOpen, setLogOpen] = useState(false)
 	const wasRunningRef = useRef(false)
 
@@ -509,18 +512,58 @@ function AdminDeployPageInner() {
 												<td className="px-3 py-2">{deployStatusBadge(item.status)}</td>
 												<td className="px-3 py-2 text-right">
 													{item.run && (
-														<Button
-															variant="ghost"
-															size="sm"
-															className="h-7 gap-1 px-2 text-xs"
-															onClick={() => {
-																setLogRunId(item.run)
-																setLogOpen(true)
-															}}
-														>
-															<FileTerminal className="h-3.5 w-3.5" />
-															发布日志
-														</Button>
+														<div className="inline-flex items-center justify-end gap-1">
+															<Button
+																variant="ghost"
+																size="sm"
+																className="h-7 gap-1 px-2 text-xs"
+																onClick={() => {
+																	setLogRunId(item.run)
+																	setLogOpen(true)
+																}}
+															>
+																<FileTerminal className="h-3.5 w-3.5" />
+																日志
+															</Button>
+															<Button
+																variant="ghost"
+																size="sm"
+																className="h-7 gap-1 px-2 text-xs"
+																disabled={retryingRunId === item.run}
+																title="重试该次部署（卡住会先取消再 rerun）"
+																onClick={async () => {
+																	setRetryingRunId(item.run)
+																	try {
+																		const res = await rerunDeployRun(item.run)
+																		if (!res.success) {
+																			toast.error(res.message || '重试失败')
+																			return
+																		}
+																		toast.success(
+																			res.data?.cancelled
+																				? '已取消并重新排队'
+																				: '已触发重试',
+																		)
+																		await fetchHistory()
+																	} catch (err) {
+																		const msg =
+																			(err as { response?: { data?: { message?: string } } })
+																				?.response?.data?.message ||
+																			(err instanceof Error ? err.message : '重试失败')
+																		toast.error(msg)
+																	} finally {
+																		setRetryingRunId(null)
+																	}
+																}}
+															>
+																{retryingRunId === item.run ? (
+																	<Loader2 className="h-3.5 w-3.5 animate-spin" />
+																) : (
+																	<RotateCcw className="h-3.5 w-3.5" />
+																)}
+																重试
+															</Button>
+														</div>
 													)}
 												</td>
 											</tr>

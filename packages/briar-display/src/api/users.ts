@@ -19,3 +19,20 @@ export const uploadAvatar = async (file: File) => {
 	})
 	return response.data
 }
+
+/** 读当前用户偏好；未登录或 401 时由调用方兜底 */
+export const getPreference = async <T = unknown>(key: string) => {
+	const response = await apiClient.get<ApiResponse<{ key: string; value: T | null }>>(
+		`/users/me/preferences/${encodeURIComponent(key)}`,
+	)
+	return response.data
+}
+
+/** 写当前用户偏好（body 即 JSON 值） */
+export const putPreference = async <T = unknown>(key: string, value: T) => {
+	const response = await apiClient.put<ApiResponse<{ key: string; value: T }>>(
+		`/users/me/preferences/${encodeURIComponent(key)}`,
+		value,
+	)
+	return response.data
+}

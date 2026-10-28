@@ -19,13 +19,8 @@ import { StampInputBar } from '@/components/ui/stamp-input-bar'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { SITE_SECTIONS, type SectionMeta, type SubRouteMeta } from '@/config/site-routes'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
-import {
-	type GreetingKind,
-	dailyGreetingIndex,
-	pickDailyGreeting,
-	pickRandomGreeting,
-	pickTimeOfDayGreeting,
-} from '@/data/daily-greetings'
+import { useGreeting } from '@/components/portal/greetingStore'
+import { fieldsMatchQuery, normalizePortalQuery, textMatchesQuery } from '@/lib/portalSearch'
 import { cn } from '@/lib/utils'
 import { RefreshCw } from 'lucide-react'
 import {
@@ -164,11 +159,9 @@ interface SubHit {
 	hint?: string
 }
 
-const norm = (v: string) => v.toLowerCase().replace(/\s+/g, '')
-
-/** 子路由仅在搜索时出现；名称命中优先，其次别名、拼音首字母、关键词 */
+/** 子路由仅在搜索时出现；名称命中优先，其次别名、拼音（全拼/简拼）、关键词 */
 function searchSubRoutes(query: string, isAdmin: boolean): SubHit[] {
-	const q = norm(query)
+	const q = normalizePortalQuery(query)
 	if (!q) return []
 	const hits: { hit: SubHit; rank: number }[] = []
 	for (const section of SITE_SECTIONS) {
@@ -181,7 +174,7 @@ function searchSubRoutes(query: string, isAdmin: boolean): SubHit[] {
 				[sub.keywords, 3],
 				[section.title, 4],
 			]
-			const found = fields.find(([v]) => v && norm(v).includes(q))
+			const found = fields.find(([v]) => v && textMatchesQuery(v, q))
 			if (!found) continue
 			const [value, rank] = found
 			hits.push({
@@ -267,47 +260,6 @@ function SubRouteRow({
 	)
 }
 
-/** 顶栏按时段问候；大字+谚语按日种子，可「换一句」随机换 */
-function useGreeting() {
-	const [state, setState] = useState({
-		tod: '',
-		greet: '',
-		line: '',
-		date: '',
-		index: -1,
-		kind: '' as '' | GreetingKind,
-		decorSeed: 0,
-	})
-	const [spinning, setSpinning] = useState(false)
-	useEffect(() => {
-		const g = pickDailyGreeting()
-		const index = dailyGreetingIndex()
-		setState({
-			tod: pickTimeOfDayGreeting(),
-			greet: g.greet,
-			line: g.line,
-			date: g.dateLabel,
-			index,
-			kind: g.kind,
-			decorSeed: (index + 1) * 9973,
-		})
-	}, [])
-	const shuffle = () => {
-		const next = pickRandomGreeting([state.index])
-		setState((s) => ({
-			...s,
-			tod: pickTimeOfDayGreeting(),
-			greet: next.greet,
-			line: next.line,
-			index: next.index,
-			kind: next.kind,
-			decorSeed: (next.index + 1) * 9973 + (s.decorSeed % 9973) + 17,
-		}))
-		setSpinning(true)
-		window.setTimeout(() => setSpinning(false), 480)
-	}
-	return { ...state, spinning, shuffle }
-}
 
 function PortalPageInner() {
 	const { isAdmin, loading } = usePermissions()
@@ -315,9 +267,9 @@ function PortalPageInner() {
 	const [query, setQuery] = useState('')
 
 	const visible = useMemo(() => {
-		const q = query.trim().toLowerCase()
+		const q = query.trim()
 		return ENTRIES.filter((e) => !e.adminOnly || isAdmin).filter(
-			(e) => !q || `${e.title}${e.caption}${e.description}`.toLowerCase().includes(q),
+			(e) => !q || fieldsMatchQuery([e.title, e.caption, e.description], q),
 		)
 	}, [isAdmin, query])
 	const subHits = useMemo(() => searchSubRoutes(query, isAdmin), [isAdmin, query])

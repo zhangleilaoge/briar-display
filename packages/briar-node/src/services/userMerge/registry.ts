@@ -22,6 +22,7 @@ import {
 	rolesHandler,
 	settingsHandler,
 	watchlistHandler,
+	preferencesHandler,
 } from './handlers'
 import { reassignColumn } from './simple'
 import type { UserMergeHandler } from './types'
@@ -34,6 +35,7 @@ export const USER_MERGE_HANDLERS: UserMergeHandler[] = [
 	watchlistHandler,
 	mediaCacheHandler,
 	reassignColumn('messages', 'user_id', '站内信'),
+	preferencesHandler,
 	reassignColumn('wiki', 'author_id', 'Wiki 作者'), // 旧库遗留表，不在 schema.sql 中，存在才迁移
 	reassignColumn('sql_audit_logs', 'user_id', 'SQL 审计日志'),
 	reassignColumn('terminal_audit_logs', 'user_id', '终端审计日志'),

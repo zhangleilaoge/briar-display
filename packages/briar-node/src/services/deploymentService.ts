@@ -286,6 +286,81 @@ export const deploymentService = {
 	},
 
 	/**
+	 * 重试某次 GitHub Actions run：
+	 * - 进行中/排队：先 cancel，再 rerun（卡住的 job 常用）
+	 * - 已结束：直接 rerun（失败/取消也会整次重跑）
+	 */
+	async rerunDeployRun(runId: string): Promise<{ runId: string; url: string; cancelled: boolean }> {
+		if (!/^\d+$/.test(runId)) {
+			throw new Error(`非法的 runId: ${runId}`)
+		}
+		const candidates = resolveGithubTokenCandidates()
+		if (candidates.length === 0) {
+			throw new Error(
+				'未找到 GitHub token（BRIAR_GITHUB_TOKEN 或 briar-assets/github/.env），无法重试 CI',
+			)
+		}
+		const repo = resolveGithubRepo()
+		let lastError: Error | null = null
+		for (const { token, source } of candidates) {
+			try {
+				const headers = githubHeaders(token)
+				const runRes = await fetch(`${GITHUB_API}/repos/${repo}/actions/runs/${runId}`, {
+					headers,
+				})
+				if (!runRes.ok) {
+					throw new Error(`查询 run 失败: HTTP ${runRes.status}`)
+				}
+				const run = (await runRes.json()) as { status: string; conclusion: string | null }
+				let cancelled = false
+				if (run.status !== 'completed') {
+					const cancelRes = await fetch(
+						`${GITHUB_API}/repos/${repo}/actions/runs/${runId}/cancel`,
+						{ method: 'POST', headers },
+					)
+					// 202 = 已受理；409 = 已不可取消；都继续尝试 rerun
+					if (!cancelRes.ok && cancelRes.status !== 409) {
+						throw new Error(`取消 run 失败: HTTP ${cancelRes.status}`)
+					}
+					cancelled = cancelRes.ok
+					// 等 cancel 落定，否则 rerun 会 403
+					for (let i = 0; i < 8; i++) {
+						await new Promise((r) => setTimeout(r, 750))
+						const check = await fetch(`${GITHUB_API}/repos/${repo}/actions/runs/${runId}`, {
+							headers,
+						})
+						if (!check.ok) break
+						const cur = (await check.json()) as { status: string }
+						if (cur.status === 'completed') break
+					}
+				}
+				const rerunRes = await fetch(`${GITHUB_API}/repos/${repo}/actions/runs/${runId}/rerun`, {
+					method: 'POST',
+					headers,
+				})
+				if (!rerunRes.ok) {
+					const body = await rerunRes.text().catch(() => '')
+					throw new Error(
+						`重试 run 失败: HTTP ${rerunRes.status}${body ? ` ${body.slice(0, 160)}` : ''}`,
+					)
+				}
+				return {
+					runId,
+					url: `https://github.com/${repo}/actions/runs/${runId}`,
+					cancelled,
+				}
+			} catch (error) {
+				lastError = error instanceof Error ? error : new Error(String(error))
+				console.warn(`⚠️  token 来源 ${source} 重试失败: ${lastError.message}`)
+			}
+		}
+		throw new Error(
+			`${lastError?.message ?? '未知错误'}（已尝试 ${candidates.length} 个 token 来源均失败）`,
+		)
+	},
+
+
+	/**
 	 * 某次运行的步骤级实时进度（jobs API 在运行中即可用，日志接口只能完成后拉取）
 	 */
 	async getRunProgress(runId: string): Promise<DeployRunProgress> {

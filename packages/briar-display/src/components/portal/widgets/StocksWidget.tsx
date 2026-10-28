@@ -168,6 +168,63 @@ export function StocksWidget({
 
 	const up = quote?.changePct == null ? null : quote.changePct === 0 ? null : quote.changePct > 0
 	const wide = size === '2x1'
+	const shellClass = 'flex min-h-0 flex-1 flex-col outline-none transition hover:opacity-95'
+	const showLoading = !watchlist.ready || (loading && !data) || !current
+
+	const quoteBody =
+		current == null ? null : (
+			<>
+				<div className="flex items-start justify-between gap-2">
+					<div className="min-w-0">
+						<p className="truncate font-heading text-sm font-semibold leading-tight">
+							{current.name}
+						</p>
+						<p className="truncate text-[11px] tabular-nums text-muted-foreground">
+							{current.code}
+							{usingDefaults ? ' · 示例' : ''}
+						</p>
+					</div>
+					<div
+						className={`shrink-0 text-right text-xs font-medium tabular-nums ${changeColorClass(quote?.changePct)}`}
+					>
+						<p>{formatChange(quote?.change)}</p>
+						<p>{formatPct(quote?.changePct)}</p>
+					</div>
+				</div>
+
+				<div className={`my-1.5 min-h-0 flex-1 ${wide ? 'px-0.5' : ''}`}>
+					<Sparkline
+						values={spark.length >= 2 ? spark : syntheticSpark(quote)}
+						up={up}
+						className="h-full w-full min-h-[2.25rem]"
+					/>
+				</div>
+
+				<p
+					className={`font-display font-semibold tabular-nums tracking-tight text-foreground ${
+						wide ? 'text-3xl' : 'text-2xl'
+					}`}
+				>
+					{formatPrice(quote?.price)}
+				</p>
+
+				{refs.length > 1 && (
+					<div className="mt-1.5 flex justify-center gap-1">
+						{refs.map((r, i) => (
+							<span
+								key={stockId(r)}
+								aria-hidden
+								className={
+									i === idx % refs.length
+										? 'h-1 w-1 rounded-full bg-[color:var(--rv-rose-deep)]'
+										: 'h-1 w-1 rounded-full bg-[color:var(--rv-navy)]/20'
+								}
+							/>
+						))}
+					</div>
+				)}
+			</>
+		)
 
 	return (
 		<WidgetChrome
@@ -176,64 +233,18 @@ export function StocksWidget({
 			bodyClassName="flex flex-col !pt-2.5"
 			tilt={0.5}
 		>
-			{!watchlist.ready || (loading && !data) || !current ? (
+			{showLoading || !quoteBody ? (
 				<p className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
 					加载行情…
 				</p>
+			) : editing ? (
+				/* 编辑态不用 <a>，避免浏览器原生「拖链接」幽灵抢走整卡拖拽 */
+				<div className={shellClass} draggable={false}>
+					{quoteBody}
+				</div>
 			) : (
-				<a
-					href="/briar/markets"
-					className="flex min-h-0 flex-1 flex-col outline-none transition hover:opacity-95"
-				>
-					<div className="flex items-start justify-between gap-2">
-						<div className="min-w-0">
-							<p className="truncate font-heading text-sm font-semibold leading-tight">
-								{current.name}
-							</p>
-							<p className="truncate text-[11px] tabular-nums text-muted-foreground">
-								{current.code}
-								{usingDefaults ? ' · 示例' : ''}
-							</p>
-						</div>
-						<div
-							className={`shrink-0 text-right text-xs font-medium tabular-nums ${changeColorClass(quote?.changePct)}`}
-						>
-							<p>{formatChange(quote?.change)}</p>
-							<p>{formatPct(quote?.changePct)}</p>
-						</div>
-					</div>
-
-					<div className={`my-1.5 min-h-0 flex-1 ${wide ? 'px-0.5' : ''}`}>
-						<Sparkline
-							values={spark.length >= 2 ? spark : syntheticSpark(quote)}
-							up={up}
-							className="h-full w-full min-h-[2.25rem]"
-						/>
-					</div>
-
-					<p
-						className={`font-display font-semibold tabular-nums tracking-tight text-foreground ${
-							wide ? 'text-3xl' : 'text-2xl'
-						}`}
-					>
-						{formatPrice(quote?.price)}
-					</p>
-
-					{refs.length > 1 && (
-						<div className="mt-1.5 flex justify-center gap-1">
-							{refs.map((r, i) => (
-								<span
-									key={stockId(r)}
-									aria-hidden
-									className={
-										i === idx % refs.length
-											? 'h-1 w-1 rounded-full bg-[color:var(--rv-rose-deep)]'
-											: 'h-1 w-1 rounded-full bg-[color:var(--rv-navy)]/20'
-									}
-								/>
-							))}
-						</div>
-					)}
+				<a href="/briar/markets" draggable={false} className={shellClass}>
+					{quoteBody}
 				</a>
 			)}
 		</WidgetChrome>
