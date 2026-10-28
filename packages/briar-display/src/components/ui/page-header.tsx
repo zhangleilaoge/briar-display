@@ -36,7 +36,7 @@ interface PageHeaderProps {
 	/** 替换默认 UserMenu（如加载占位） */
 	user?: ReactNode
 	/** 子导航同行显示的断点，默认 lg */
-	inlineAt?: 'md' | 'lg' | '2xl'
+	inlineAt?: 'md' | 'lg' | 'xl' | '2xl'
 	className?: string
 }
 
@@ -78,9 +78,12 @@ export function PageHeader({
 	const inlineCls = {
 		md: `hidden ${scroll} md:block`,
 		lg: `hidden ${scroll} lg:block`,
+		xl: `hidden ${scroll} xl:block`,
 		'2xl': `hidden ${scroll} 2xl:block`,
 	}[inlineAt]
-	const stackCls = { md: 'md:hidden', lg: 'lg:hidden', '2xl': '2xl:hidden' }[inlineAt]
+	const stackCls = { md: 'md:hidden', lg: 'lg:hidden', xl: 'xl:hidden', '2xl': '2xl:hidden' }[
+		inlineAt
+	]
 
 	return (
 		<header className={`glass-header sticky top-0 z-50 ${className ?? ''}`}>
