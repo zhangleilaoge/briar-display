@@ -1202,3 +1202,58 @@ progress {
 		transition: none !important;
 	}
 }
+
+/* ============================================================
+   深色终端 / 日志面（部署日志、SSH 控制台、主机信息）
+   对比度（相对 --term-bg #0d1117）：fg 13.6:1 · title 16:1 · muted 7.6:1 · dim 5.3:1，均 ≥ WCAG AA
+   ============================================================ */
+:root {
+	--term-bg: #0d1117;
+	--term-bg-raised: #161b22;
+	--term-border: #30363d;
+	--term-fg: #d6dde8;
+	--term-title: #f0f4f8;
+	--term-muted: #9ba8ba;
+	--term-dim: #7f8ca0;
+}
+.rv-terminal {
+	background-color: var(--term-bg);
+	color: var(--term-fg);
+	border-color: var(--term-border);
+}
+.rv-term-raised {
+	background-color: var(--term-bg-raised);
+	border-color: var(--term-border);
+}
+.rv-term-fg {
+	color: var(--term-fg);
+}
+.rv-term-title {
+	color: var(--term-title);
+}
+.rv-term-muted {
+	color: var(--term-muted);
+}
+.rv-term-dim {
+	color: var(--term-dim);
+}
+.rv-term-btn {
+	color: var(--term-muted);
+	transition: color 150ms;
+}
+.rv-term-btn:hover {
+	color: var(--term-title);
+}
+/* 终端型 Dialog：盖掉纸片底色/纸纹，标题不用纸片墨色 */
+.rv-paper-dialog.rv-terminal {
+	background-color: var(--term-bg) !important;
+	background-image: none !important;
+	color: var(--term-fg);
+}
+.rv-terminal .rv-paper-title {
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-weight: 500;
+	font-size: 0.8rem;
+	letter-spacing: 0.01em;
+	color: var(--term-title);
+}

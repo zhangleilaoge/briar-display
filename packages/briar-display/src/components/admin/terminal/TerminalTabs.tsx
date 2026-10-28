@@ -163,7 +163,13 @@ export default function TerminalTabs() {
 				fontSize: 13,
 				fontFamily: 'Menlo, Monaco, "Courier New", monospace',
 				cursorBlink: true,
-				theme: { background: '#0c0c0c' },
+				// 与 theme.css --term-* 保持一致（xterm 渲染在 canvas，读不到 CSS 变量）
+				theme: {
+					background: '#0d1117',
+					foreground: '#d6dde8',
+					cursor: '#f0f4f8',
+					selectionBackground: '#3b4a61',
+				},
 			})
 			const fit = new libRef.current.FitAddon()
 			term.loadAddon(fit)
@@ -280,12 +286,12 @@ export default function TerminalTabs() {
 	return (
 		<div
 			ref={cardRef}
-			className={`overflow-hidden border border-[#2d2d2d] bg-[#0c0c0c] shadow-lg ${
+			className={`overflow-hidden border border-[var(--term-border)] bg-[var(--term-bg)] shadow-lg ${
 				isFullscreen ? 'flex h-full flex-col rounded-none' : 'rounded-lg'
 			}`}
 		>
 			{/* 标签栏 */}
-			<div className="flex items-center gap-1 bg-[#1e1e1e] px-2 pt-1.5">
+			<div className="flex items-center gap-1 bg-[var(--term-bg-raised)] px-2 pt-1.5">
 				{sessions.map((s, i) => (
 					<div
 						key={s.id}
@@ -296,8 +302,8 @@ export default function TerminalTabs() {
 						onKeyDown={(e) => e.key === 'Enter' && setActiveId(s.id)}
 						className={`group flex cursor-pointer items-center gap-2 rounded-t-md px-3 py-1.5 text-xs transition-colors ${
 							s.id === activeId
-								? 'bg-[#0c0c0c] text-gray-200'
-								: 'text-gray-500 hover:bg-[#2a2a2a] hover:text-gray-300'
+								? 'bg-[var(--term-bg)] text-[var(--term-title)]'
+								: 'text-[var(--term-muted)] hover:bg-white/10 hover:text-[var(--term-title)]'
 						}`}
 					>
 						<span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[s.status]}`} />
@@ -309,7 +315,7 @@ export default function TerminalTabs() {
 								e.stopPropagation()
 								closeSession(s.id)
 							}}
-							className="rounded p-0.5 text-gray-600 hover:bg-[#3a3a3a] hover:text-gray-300"
+							className="rounded p-0.5 text-[var(--term-dim)] hover:bg-white/10 hover:text-[var(--term-title)]"
 						>
 							<X className="h-3 w-3" />
 						</button>
@@ -319,7 +325,7 @@ export default function TerminalTabs() {
 					type="button"
 					aria-label="新建会话"
 					onClick={addSession}
-					className="rounded p-1.5 text-gray-500 hover:bg-[#2a2a2a] hover:text-gray-300"
+					className="rounded p-1.5 text-[var(--term-muted)] hover:bg-white/10 hover:text-[var(--term-title)]"
 				>
 					<Plus className="h-3.5 w-3.5" />
 				</button>
@@ -328,7 +334,7 @@ export default function TerminalTabs() {
 					<Button
 						variant="ghost"
 						size="sm"
-						className="mb-1 h-6 gap-1.5 px-2 text-xs text-gray-400 hover:bg-[#2a2a2a] hover:text-gray-200"
+						className="mb-1 h-6 gap-1.5 px-2 text-xs text-[var(--term-muted)] hover:bg-white/10 hover:text-[var(--term-title)]"
 						onClick={() => activeId !== null && connect(activeId)}
 						disabled={activeSession.status === 'connecting'}
 					>
@@ -341,7 +347,7 @@ export default function TerminalTabs() {
 					aria-label={isFullscreen ? '退出全屏' : '全屏'}
 					title={isFullscreen ? '退出全屏' : '全屏'}
 					onClick={toggleFullscreen}
-					className="mb-1 rounded p-1.5 text-gray-500 hover:bg-[#2a2a2a] hover:text-gray-300"
+					className="mb-1 rounded p-1.5 text-[var(--term-muted)] hover:bg-white/10 hover:text-[var(--term-title)]"
 				>
 					{isFullscreen ? (
 						<Minimize className="h-3.5 w-3.5" />
@@ -354,14 +360,14 @@ export default function TerminalTabs() {
 			<div className={isFullscreen ? 'flex-1 overflow-hidden p-2' : 'p-2'}>
 				{sessions.length === 0 ? (
 					<div
-						className="flex flex-col items-center justify-center gap-3 text-gray-500"
+						className="flex flex-col items-center justify-center gap-3 text-[var(--term-muted)]"
 						style={{ height: paneHeight }}
 					>
 						<p className="text-sm">没有打开的会话</p>
 						<Button
 							variant="outline"
 							size="sm"
-							className="gap-1.5 border-[#3a3a3a] bg-transparent text-gray-300 hover:bg-[#2a2a2a] hover:text-gray-100"
+							className="gap-1.5 border-[var(--term-border)] bg-transparent text-[var(--term-fg)] hover:bg-white/10 hover:text-[var(--term-title)]"
 							onClick={addSession}
 						>
 							<Plus className="h-3.5 w-3.5" />
