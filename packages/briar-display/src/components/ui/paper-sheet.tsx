@@ -5,8 +5,7 @@ import type { HTMLAttributes, ReactNode } from 'react'
 
 /**
  * 手账纸容器变体。
- * 已铺开：binder（门户问候）、torn（想法记一笔）、stamp（想法列表）、index（个人中心）。
- * 库存未铺开：sticky / polaroid / kraft / ticket —— 灵感来自 scrapbook / zine / Ephemera 纸 UI。
+ * 已铺开：binder（门户问候）、torn（想法 compose）、stamp/polaroid/kraft/ticket/sticky（想法列表按 id 哈希）、index（个人中心）。
  */
 export type PaperSheetVariant =
 	| 'binder'
