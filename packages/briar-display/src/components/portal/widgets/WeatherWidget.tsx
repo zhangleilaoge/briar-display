@@ -74,7 +74,7 @@ export function WeatherWidget({
 	return (
 		<WidgetChrome
 			title={compact ? undefined : '杭州'}
-			caption={compact ? undefined : 'Météo'}
+			caption={size === '2x2' ? 'Météo' : undefined}
 			editing={editing}
 			onRemove={onRemove}
 			bodyClassName="flex flex-col justify-center"

@@ -172,14 +172,14 @@ export default function RunHistoryDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="flex max-h-[85vh] max-w-3xl flex-col gap-3 overflow-visible">
-				<DialogHeader>
+			<DialogContent className="flex max-h-[85vh] max-w-3xl flex-col gap-3 overflow-hidden">
+				<DialogHeader className="shrink-0">
 					<DialogTitle>{title}</DialogTitle>
 					<DialogDescription className="text-xs text-white/75">
 						{description ?? '所有运行记录均已落库，保留 180 天'}
 					</DialogDescription>
 				</DialogHeader>
-				<div className="flex justify-end">
+				<div className="flex shrink-0 justify-end">
 					<Button
 						size="sm"
 						variant="ghost"
@@ -193,7 +193,7 @@ export default function RunHistoryDialog({
 				</div>
 
 				{stats && stats.total > 0 && (
-					<div className="space-y-1 rounded-md border bg-muted/30 p-2">
+					<div className="shrink-0 space-y-1 rounded-md border bg-muted/30 p-2 min-h-fit">
 						<div className="flex items-center justify-between text-xs text-muted-foreground">
 							<span>最近 {stats.total} 次</span>
 							<span>
@@ -214,7 +214,7 @@ export default function RunHistoryDialog({
 					</div>
 				)}
 
-				<div className="flex flex-wrap gap-1">
+				<div className="flex shrink-0 flex-wrap gap-1">
 					{FILTERS.map((f) => (
 						<Button
 							key={f.value}
@@ -311,12 +311,14 @@ export default function RunHistoryDialog({
 				</div>
 
 				{data && data.total > PAGE_SIZE && (
-					<AdminPagination
-						total={data.total}
-						limit={PAGE_SIZE}
-						offset={offset}
-						onPageChange={setOffset}
-					/>
+					<div className="shrink-0">
+						<AdminPagination
+							total={data.total}
+							limit={PAGE_SIZE}
+							offset={offset}
+							onPageChange={setOffset}
+						/>
+					</div>
 				)}
 			</DialogContent>
 		</Dialog>

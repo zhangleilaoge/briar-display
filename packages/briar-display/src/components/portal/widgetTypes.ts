@@ -1,9 +1,15 @@
-/** 门户桌面小组件：iOS/macOS 风格网格尺寸、默认布局、localStorage */
+/** 门户桌面小组件：以 1×1 为单元，尺寸克制，桌面/手机分存 */
 
 export type WidgetId = 'calendar' | 'clock' | 'stocks' | 'weather' | 'greeting'
 
-/** 网格占位：宽×高（列×行），桌面 4 列 / 窄屏 2 列 */
-export type WidgetSize = '1x1' | '2x2' | '4x2' | '2x4'
+/**
+ * 网格占位：宽×高（列×行）
+ * - 1×1 小（主尺寸，对齐 macOS small）
+ * - 2×1 中（横向）
+ * - 2×2 大
+ * 不再提供 4×2 / 2×4 等过宽过高规格，避免过于灵活。
+ */
+export type WidgetSize = '1x1' | '2x1' | '2x2'
 
 export interface SizeSpec {
 	w: number
@@ -13,9 +19,8 @@ export interface SizeSpec {
 
 export const SIZE_SPECS: Record<WidgetSize, SizeSpec> = {
 	'1x1': { w: 1, h: 1, label: '小' },
-	'2x2': { w: 2, h: 2, label: '中' },
-	'4x2': { w: 4, h: 2, label: '宽' },
-	'2x4': { w: 2, h: 4, label: '高' },
+	'2x1': { w: 2, h: 1, label: '中' },
+	'2x2': { w: 2, h: 2, label: '大' },
 }
 
 export interface WidgetPlacement {
@@ -42,7 +47,7 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
 		title: '今日问候',
 		caption: 'Bonjour',
 		description: '按上海日历日轮换的一句问候',
-		sizes: ['2x2', '4x2'],
+		sizes: ['2x2'],
 		defaultSize: '2x2',
 	},
 	{
@@ -66,16 +71,16 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
 		title: '天气',
 		caption: 'Météo',
 		description: '杭州实时天气',
-		sizes: ['2x2', '1x1'],
-		defaultSize: '2x2',
+		sizes: ['1x1', '2x1', '2x2'],
+		defaultSize: '1x1',
 	},
 	{
 		id: 'stocks',
 		title: '自选股',
 		caption: 'Actions',
-		description: '自选股行情轮播',
-		sizes: ['4x2', '2x4', '2x2'],
-		defaultSize: '4x2',
+		description: '单标的行情轮播（价 + 涨跌 + 走势）',
+		sizes: ['1x1', '2x1'],
+		defaultSize: '1x1',
 	},
 ]
 
@@ -85,34 +90,63 @@ export const WIDGET_META: Record<WidgetId, WidgetMeta> = Object.fromEntries(
 
 /**
  * 默认桌面（4 列；问候由明信片承担，不在默认布局）：
- *  [日历 2×2] [天气 2×2]
- *  [钟 1×1]
- *  [自选 4×2]
+ *  [日历 2×2] [天气 1×1] [钟 1×1]
+ *             [自选 1×1] …
+ *  实际装箱：calendar(0,0) weather(2,0) clock(3,0) stocks(2,1)
  */
-export const DEFAULT_LAYOUT: WidgetPlacement[] = [
+export const DEFAULT_LAYOUT_DESKTOP: WidgetPlacement[] = [
 	{ id: 'calendar', size: '2x2', col: 0, row: 0 },
-	{ id: 'weather', size: '2x2', col: 2, row: 0 },
-	{ id: 'clock', size: '1x1', col: 0, row: 2 },
-	{ id: 'stocks', size: '4x2', col: 0, row: 3 },
+	{ id: 'weather', size: '1x1', col: 2, row: 0 },
+	{ id: 'clock', size: '1x1', col: 3, row: 0 },
+	{ id: 'stocks', size: '1x1', col: 2, row: 1 },
 ]
 
-export const LAYOUT_STORAGE_KEY = 'briar_portal_widgets_v1'
+/** 默认手机（2 列） */
+export const DEFAULT_LAYOUT_MOBILE: WidgetPlacement[] = [
+	{ id: 'calendar', size: '2x2', col: 0, row: 0 },
+	{ id: 'weather', size: '1x1', col: 0, row: 2 },
+	{ id: 'clock', size: '1x1', col: 1, row: 2 },
+	{ id: 'stocks', size: '1x1', col: 0, row: 3 },
+]
+
+/** @deprecated 兼容旧引用 */
+export const DEFAULT_LAYOUT = DEFAULT_LAYOUT_DESKTOP
+
+/** 桌面 / 手机分存，互不覆盖 */
+export const LAYOUT_STORAGE_KEY_DESKTOP = 'briar_portal_widgets_desktop_v2'
+export const LAYOUT_STORAGE_KEY_MOBILE = 'briar_portal_widgets_mobile_v2'
+/** 旧版单 key，仅作首次迁移读取 */
+export const LAYOUT_STORAGE_KEY_LEGACY = 'briar_portal_widgets_v1'
+export const LAYOUT_STORAGE_KEY = LAYOUT_STORAGE_KEY_DESKTOP
 
 export const GRID_COLS_DESKTOP = 4
 export const GRID_COLS_MOBILE = 2
 
+/** 单元边长（rem）。1×1 贴近 macOS small，不再过小 */
+export const CELL_REM_DESKTOP = 10.5
+export const CELL_REM_MOBILE = 9.5
+/** 宽屏时单元格最大拉伸倍数（相对单元边长） */
+export const CELL_MAX_STRETCH = 1.5
+
 const VALID_IDS = new Set<string>(WIDGET_CATALOG.map((m) => m.id))
 const VALID_SIZES = new Set<string>(Object.keys(SIZE_SPECS))
 
+/** 旧尺寸 → 新尺寸 */
+const LEGACY_SIZE_MAP: Record<string, WidgetSize> = {
+	'1x1': '1x1',
+	'2x1': '2x1',
+	'2x2': '2x2',
+	'4x2': '2x1',
+	'2x4': '2x2',
+}
+
 function clampSize(id: WidgetId, size: unknown): WidgetSize {
 	const meta = WIDGET_META[id]
-	if (
-		typeof size === 'string' &&
-		VALID_SIZES.has(size) &&
-		meta.sizes.includes(size as WidgetSize)
-	) {
-		return size as WidgetSize
-	}
+	const mapped =
+		typeof size === 'string'
+			? (LEGACY_SIZE_MAP[size] ?? (VALID_SIZES.has(size) ? size : null))
+			: null
+	if (mapped && meta.sizes.includes(mapped as WidgetSize)) return mapped as WidgetSize
 	return meta.defaultSize
 }
 
@@ -144,7 +178,15 @@ export function parseStoredLayout(raw: string | null): WidgetPlacement[] | null 
 	}
 }
 
-/** 窄屏把超宽尺寸压成可放进 2 列的规格 */
+export function storageKeyForCols(cols: number): string {
+	return cols === GRID_COLS_MOBILE ? LAYOUT_STORAGE_KEY_MOBILE : LAYOUT_STORAGE_KEY_DESKTOP
+}
+
+export function defaultLayoutForCols(cols: number): WidgetPlacement[] {
+	return cols === GRID_COLS_MOBILE ? DEFAULT_LAYOUT_MOBILE : DEFAULT_LAYOUT_DESKTOP
+}
+
+/** 窄屏把超宽尺寸压进 2 列（现规格里 2×1 / 2×2 已可放下，仅兜底） */
 export function mobileSize(size: WidgetSize): WidgetSize {
 	const spec = SIZE_SPECS[size]
 	if (spec.w > GRID_COLS_MOBILE) return '2x2'

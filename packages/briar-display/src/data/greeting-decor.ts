@@ -1,75 +1,73 @@
 /**
- * 问候明信片分类贴纸：同一 kind 共用视觉家族（扁平剪纸 / 软印章）。
- * 位置由 seed 派生，换一句时换 seed 重掷，并保证间距。
+ * 问候明信片分类贴纸：同一 kind 共用视觉家族（扁平裸 emoji）。
+ * 落在明信片外圈光环，换一句时换 seed 重掷，并保证间距。
  */
 
 import type { GreetingKind } from './daily-greetings'
 
 export interface DecorGlyph {
-	/** 精选 emoji（配合 CSS 做成软印章，非 Fluent 立体贴纸） */
+	/** 精选扁平 emoji（无白底圆章、非 Fluent 立体贴纸） */
 	emoji: string
-	/** 略偏色的印章底，贴近剪纸色板 */
-	wash: string
 }
 
 /** 每类 5–6 个候选；渲染时抽 2–3 个 */
 export const KIND_GLYPHS: Record<GreetingKind, readonly DecorGlyph[]> = {
 	proverb: [
-		{ emoji: '📜', wash: 'hsl(32 28% 88%)' },
-		{ emoji: '🖋️', wash: 'hsl(215 22% 88%)' },
-		{ emoji: '🍵', wash: 'hsl(95 18% 88%)' },
-		{ emoji: '🎋', wash: 'hsl(140 16% 88%)' },
-		{ emoji: '📖', wash: 'hsl(28 24% 90%)' },
-		{ emoji: '🏛️', wash: 'hsl(220 14% 90%)' },
+		{ emoji: '📜' },
+		{ emoji: '🖋️' },
+		{ emoji: '🍵' },
+		{ emoji: '🎋' },
+		{ emoji: '📖' },
+		{ emoji: '🏛️' },
 	],
 	joke: [
-		{ emoji: '😄', wash: 'hsl(42 45% 90%)' },
-		{ emoji: '🎭', wash: 'hsl(330 28% 90%)' },
-		{ emoji: '✨', wash: 'hsl(48 40% 91%)' },
-		{ emoji: '🐱', wash: 'hsl(25 30% 90%)' },
-		{ emoji: '🃏', wash: 'hsl(265 22% 90%)' },
-		{ emoji: '🎈', wash: 'hsl(350 35% 91%)' },
+		{ emoji: '😄' },
+		{ emoji: '🎭' },
+		{ emoji: '✨' },
+		{ emoji: '🐱' },
+		{ emoji: '🃏' },
+		{ emoji: '🎈' },
 	],
 	encourage: [
-		{ emoji: '🌟', wash: 'hsl(45 50% 90%)' },
-		{ emoji: '🌱', wash: 'hsl(125 28% 90%)' },
-		{ emoji: '🚀', wash: 'hsl(210 35% 90%)' },
-		{ emoji: '💪', wash: 'hsl(12 35% 90%)' },
-		{ emoji: '🌻', wash: 'hsl(48 42% 90%)' },
-		{ emoji: '🔥', wash: 'hsl(18 45% 90%)' },
+		{ emoji: '🌟' },
+		{ emoji: '🌱' },
+		{ emoji: '🚀' },
+		{ emoji: '💪' },
+		{ emoji: '🌻' },
+		{ emoji: '🔥' },
 	],
 	witty: [
-		{ emoji: '💡', wash: 'hsl(48 48% 90%)' },
-		{ emoji: '🧩', wash: 'hsl(280 22% 90%)' },
-		{ emoji: '⌨️', wash: 'hsl(215 16% 90%)' },
-		{ emoji: '📎', wash: 'hsl(20 18% 90%)' },
-		{ emoji: '🔧', wash: 'hsl(200 18% 90%)' },
-		{ emoji: '🧪', wash: 'hsl(165 22% 91%)' },
+		{ emoji: '💡' },
+		{ emoji: '🧩' },
+		{ emoji: '⌨️' },
+		{ emoji: '📎' },
+		{ emoji: '🔧' },
+		{ emoji: '🧪' },
 	],
 	seasonal: [
-		{ emoji: '🌸', wash: 'hsl(340 35% 92%)' },
-		{ emoji: '🍃', wash: 'hsl(130 28% 90%)' },
-		{ emoji: '🍂', wash: 'hsl(25 40% 90%)' },
-		{ emoji: '❄️', wash: 'hsl(200 30% 92%)' },
-		{ emoji: '🌙', wash: 'hsl(230 20% 90%)' },
-		{ emoji: '☀️', wash: 'hsl(42 50% 91%)' },
+		{ emoji: '🌸' },
+		{ emoji: '🍃' },
+		{ emoji: '🍂' },
+		{ emoji: '❄️' },
+		{ emoji: '🌙' },
+		{ emoji: '☀️' },
 	],
 	calm: [
-		{ emoji: '🕊️', wash: 'hsl(200 18% 92%)' },
-		{ emoji: '☁️', wash: 'hsl(210 16% 93%)' },
-		{ emoji: '🫧', wash: 'hsl(190 25% 92%)' },
-		{ emoji: '🫖', wash: 'hsl(15 22% 90%)' },
-		{ emoji: '🌊', wash: 'hsl(195 28% 90%)' },
-		{ emoji: '🕯️', wash: 'hsl(35 28% 91%)' },
+		{ emoji: '🕊️' },
+		{ emoji: '☁️' },
+		{ emoji: '🫧' },
+		{ emoji: '🌿' },
+		{ emoji: '🌊' },
+		{ emoji: '🕯️' },
 	],
 }
 
 export interface StickerPlacement {
 	emoji: string
-	wash: string
-	/** 相对卡片 % */
+	/** 相对定位容器 %（可超出 0–100，挂在卡片外缘） */
 	left: number
 	top: number
+	/** rem；约为旧版 1.5–2× */
 	size: number
 	rotate: number
 	opacity: number
@@ -88,15 +86,23 @@ export function mulberry32(seed: number): () => number {
 }
 
 /**
- * 允许落点区（避开邮票右上、换一句右下、标题主字）：
- * - 标题左侧竖条
- * - 正文下方横带
- * - 中右留白（邮票下方）
+ * 外圈光环落点（相对明信片堆叠容器）：
+ * 避开白卡正文区、右上邮戳、右下「换一句」。
+ * 坐标可略出 0–100，让贴纸贴在卡片外缘。
  */
-const ZONES: { left: [number, number]; top: [number, number]; size: [number, number] }[] = [
-	{ left: [2, 14], top: [28, 58], size: [1.55, 1.95] },
-	{ left: [12, 62], top: [72, 90], size: [1.35, 1.75] },
-	{ left: [58, 78], top: [42, 62], size: [1.25, 1.65] },
+const RING_ZONES: { left: [number, number]; top: [number, number]; size: [number, number] }[] = [
+	// 左缘光环（落在加大后的左右 padding 里，不压正文）
+	{ left: [1, 8], top: [22, 44], size: [2.5, 3.3] },
+	{ left: [1, 9], top: [52, 76], size: [2.4, 3.2] },
+	// 顶缘光环（pt 区，避开右上邮戳）
+	{ left: [14, 42], top: [1, 10], size: [2.6, 3.4] },
+	{ left: [44, 68], top: [2, 11], size: [2.4, 3.1] },
+	// 右缘光环（邮戳下方）
+	{ left: [91, 99], top: [34, 56], size: [2.5, 3.3] },
+	{ left: [90, 98], top: [58, 78], size: [2.4, 3.1] },
+	// 底缘光环（避开右下换一句）
+	{ left: [14, 48], top: [90, 99], size: [2.6, 3.4] },
+	{ left: [50, 78], top: [91, 99], size: [2.4, 3.2] },
 ]
 
 function dist(a: { left: number; top: number }, b: { left: number; top: number }) {
@@ -105,7 +111,7 @@ function dist(a: { left: number; top: number }, b: { left: number; top: number }
 	return Math.hypot(dx, dy)
 }
 
-/** 抽 2–3 枚贴纸并排布；seed 变化即重掷 */
+/** 抽 2–3 枚贴纸并排布在外圈；seed 变化即重掷 */
 export function layoutGreetingStickers(
 	kind: GreetingKind,
 	seed: number,
@@ -123,20 +129,26 @@ export function layoutGreetingStickers(
 		picks.push(pool[idx])
 	}
 
+	// 打乱可用边区，保证同屏不挤在同一侧
+	const zoneOrder = RING_ZONES.map((_, i) => i)
+	for (let i = zoneOrder.length - 1; i > 0; i--) {
+		const j = Math.floor(rand() * (i + 1))
+		;[zoneOrder[i], zoneOrder[j]] = [zoneOrder[j], zoneOrder[i]]
+	}
+
 	const placed: StickerPlacement[] = []
-	const minGap = 16
+	const minGap = 22
 	for (let i = 0; i < picks.length; i++) {
-		const zone = ZONES[i % ZONES.length]
+		const zone = RING_ZONES[zoneOrder[i % zoneOrder.length]]
 		let best: StickerPlacement | null = null
-		for (let attempt = 0; attempt < 18; attempt++) {
+		for (let attempt = 0; attempt < 24; attempt++) {
 			const left = zone.left[0] + rand() * (zone.left[1] - zone.left[0])
 			const top = zone.top[0] + rand() * (zone.top[1] - zone.top[0])
 			const size = zone.size[0] + rand() * (zone.size[1] - zone.size[0])
-			const rotate = -18 + rand() * 36
-			const opacity = 0.72 + rand() * 0.22
+			const rotate = -22 + rand() * 44
+			const opacity = 0.88 + rand() * 0.12
 			const cand: StickerPlacement = {
 				emoji: picks[i].emoji,
-				wash: picks[i].wash,
 				left,
 				top,
 				size,
