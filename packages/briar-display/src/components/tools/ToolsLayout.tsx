@@ -4,6 +4,7 @@ import { useSectionRouter } from '@/components/common/SectionRouter'
 import { ScissorsCut } from '@/components/ui/ornaments'
 import { PageHeader } from '@/components/ui/page-header'
 import { PaperPanel, ThemeShell } from '@/components/ui/theme-shell'
+import { TOOLS_SECTION } from '@/config/site-routes'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import {
 	Braces,
@@ -23,48 +24,23 @@ interface NavItem {
 	icon: React.ReactNode
 }
 
-export const TOOLS_NAV_ITEMS: NavItem[] = [
-	{
-		label: '文件 Diff',
-		href: '/briar/tools/diff',
-		icon: <FileDiff className="h-4 w-4" />,
-	},
-	{
-		label: '图片压缩',
-		href: '/briar/tools/compress',
-		icon: <ImageIcon className="h-4 w-4" />,
-	},
-	{
-		label: 'JSON 格式化',
-		href: '/briar/tools/json',
-		icon: <Braces className="h-4 w-4" />,
-	},
-	{
-		label: '媒体解析',
-		href: '/briar/tools/media',
-		icon: <Clapperboard className="h-4 w-4" />,
-	},
-	{
-		label: '磁力查询',
-		href: '/briar/tools/magnet',
-		icon: <Magnet className="h-4 w-4" />,
-	},
-	{
-		label: '正则可视化',
-		href: '/briar/tools/regex',
-		icon: <Spline className="h-4 w-4" />,
-	},
-	{
-		label: 'PDF 解除限制',
-		href: '/briar/tools/pdf',
-		icon: <FileLock2 className="h-4 w-4" />,
-	},
-	{
-		label: '切面模拟器',
-		href: '/briar/tools/section',
-		icon: <SquareStack className="h-4 w-4" />,
-	},
-]
+const NAV_ICONS: Record<string, ReactNode> = {
+	'/briar/tools/diff': <FileDiff className="h-4 w-4" />,
+	'/briar/tools/compress': <ImageIcon className="h-4 w-4" />,
+	'/briar/tools/json': <Braces className="h-4 w-4" />,
+	'/briar/tools/media': <Clapperboard className="h-4 w-4" />,
+	'/briar/tools/magnet': <Magnet className="h-4 w-4" />,
+	'/briar/tools/regex': <Spline className="h-4 w-4" />,
+	'/briar/tools/pdf': <FileLock2 className="h-4 w-4" />,
+	'/briar/tools/section': <SquareStack className="h-4 w-4" />,
+}
+
+/** 顶栏 tab：文案与路径来自 config/site-routes */
+export const TOOLS_NAV_ITEMS: NavItem[] = TOOLS_SECTION.children.map((sub) => ({
+	label: sub.label,
+	href: sub.path,
+	icon: NAV_ICONS[sub.path],
+}))
 
 export const TOOLS_LAST_TAB_KEY = 'briar_tools_last_tab'
 

@@ -6,52 +6,28 @@ import {
 	SectionRouterProvider,
 	useSectionPath,
 } from '@/components/common/SectionRouter'
+import { TOOLS_SECTION, sectionTitle } from '@/config/site-routes'
 import { lazy } from 'react'
 import { ToolsShell } from './ToolsLayout'
 
 /** 工具箱子路由表：各工具按需懒加载（切面模拟器的 three/R3F、媒体解析等只在访问时下载） */
-export const TOOL_ROUTES: SectionRoute[] = [
-	{
-		path: '/briar/tools/diff',
-		title: '文件 Diff - 工具箱',
-		component: lazy(() => import('./ToolDiffPage')),
-	},
-	{
-		path: '/briar/tools/compress',
-		title: '图片压缩 - 工具箱',
-		component: lazy(() => import('./ToolCompressPage')),
-	},
-	{
-		path: '/briar/tools/json',
-		title: 'JSON 格式化 - 工具箱',
-		component: lazy(() => import('./ToolJsonPage')),
-	},
-	{
-		path: '/briar/tools/media',
-		title: '媒体解析 - 工具箱',
-		component: lazy(() => import('./ToolMediaPage')),
-	},
-	{
-		path: '/briar/tools/magnet',
-		title: '磁力查询 - 工具箱',
-		component: lazy(() => import('./ToolMagnetPage')),
-	},
-	{
-		path: '/briar/tools/regex',
-		title: '正则可视化 - 工具箱',
-		component: lazy(() => import('./ToolRegexPage')),
-	},
-	{
-		path: '/briar/tools/pdf',
-		title: 'PDF 解除限制 - 工具箱',
-		component: lazy(() => import('./ToolPdfUnlockPage')),
-	},
-	{
-		path: '/briar/tools/section',
-		title: '切面模拟器 - 工具箱',
-		component: lazy(() => import('./ToolSectionPage')),
-	},
-]
+/** 子页组件（按需懒加载）；路径/标题来自 config/site-routes，避免与首页搜索、顶栏 tab 不同步 */
+const COMPONENTS: Record<string, SectionRoute['component']> = {
+	'/briar/tools/diff': lazy(() => import('./ToolDiffPage')),
+	'/briar/tools/compress': lazy(() => import('./ToolCompressPage')),
+	'/briar/tools/json': lazy(() => import('./ToolJsonPage')),
+	'/briar/tools/media': lazy(() => import('./ToolMediaPage')),
+	'/briar/tools/magnet': lazy(() => import('./ToolMagnetPage')),
+	'/briar/tools/regex': lazy(() => import('./ToolRegexPage')),
+	'/briar/tools/pdf': lazy(() => import('./ToolPdfUnlockPage')),
+	'/briar/tools/section': lazy(() => import('./ToolSectionPage')),
+}
+
+export const TOOL_ROUTES: SectionRoute[] = TOOLS_SECTION.children.map((sub) => ({
+	path: sub.path,
+	title: sectionTitle(TOOLS_SECTION, sub),
+	component: COMPONENTS[sub.path],
+}))
 
 const Fallback = () => <div className="min-h-[50vh] w-full animate-pulse rounded-md bg-muted/40" />
 

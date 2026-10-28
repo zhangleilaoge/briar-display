@@ -14,6 +14,7 @@ import { AntiqueKey } from '@/components/ui/ornaments'
 import { PageHeader } from '@/components/ui/page-header'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { HudTitle, PaperPanel, ThemeShell } from '@/components/ui/theme-shell'
+import { ADMIN_SECTION } from '@/config/site-routes'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
 import { Database, Radio, Rocket, Shield, TerminalSquare, Users } from 'lucide-react'
@@ -25,38 +26,21 @@ interface NavItem {
 	icon: React.ReactNode
 }
 
-export const ADMIN_NAV_ITEMS: NavItem[] = [
-	{
-		label: '权限管理',
-		href: '/briar/admin/permissions',
-		icon: <Shield className="h-4 w-4" />,
-	},
-	{
-		label: '用户角色',
-		href: '/briar/admin/users',
-		icon: <Users className="h-4 w-4" />,
-	},
-	{
-		label: '天网日志',
-		href: '/briar/admin/logs',
-		icon: <Radio className="h-4 w-4" />,
-	},
-	{
-		label: 'SQL 控制台',
-		href: '/briar/admin/sql',
-		icon: <Database className="h-4 w-4" />,
-	},
-	{
-		label: '应用部署',
-		href: '/briar/admin/deploy',
-		icon: <Rocket className="h-4 w-4" />,
-	},
-	{
-		label: 'SSH 控制台',
-		href: '/briar/admin/terminal',
-		icon: <TerminalSquare className="h-4 w-4" />,
-	},
-]
+const NAV_ICONS: Record<string, ReactNode> = {
+	'/briar/admin/permissions': <Shield className="h-4 w-4" />,
+	'/briar/admin/users': <Users className="h-4 w-4" />,
+	'/briar/admin/logs': <Radio className="h-4 w-4" />,
+	'/briar/admin/sql': <Database className="h-4 w-4" />,
+	'/briar/admin/deploy': <Rocket className="h-4 w-4" />,
+	'/briar/admin/terminal': <TerminalSquare className="h-4 w-4" />,
+}
+
+/** 顶栏 tab：文案与路径来自 config/site-routes */
+export const ADMIN_NAV_ITEMS: NavItem[] = ADMIN_SECTION.children.map((sub) => ({
+	label: sub.label,
+	href: sub.path,
+	icon: NAV_ICONS[sub.path],
+}))
 
 export const ADMIN_LAST_TAB_KEY = 'briar_admin_last_tab'
 
