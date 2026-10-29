@@ -237,7 +237,7 @@ export default function ToolJsonPage() {
 						</CardTitle>
 					</div>
 					<div className="flex items-center gap-2">
-						<Button variant="outline" size="sm" onClick={handleFileUpload} className="gap-1.5">
+						<Button variant="primary" size="sm" onClick={handleFileUpload} className="gap-1.5">
 							<FileUp className="h-4 w-4" />
 							上传文件
 						</Button>

@@ -33,7 +33,7 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 		id: 'dialog',
 		via: 'shared-paper',
 		status: 'done',
-		notes: 'scrapbook 暖粉奶油纸片顶栏 + 白撕边 sticker + 粉雾；无裁切角；arcane 藏青顶栏 + HUD 裁切角',
+		notes: 'scrapbook 纸片顶栏 + 折角纸签关闭 + 纸张收起；arcane 藏青顶栏 + HUD 裁切角 + CRT 关屏',
 	},
 	{
 		id: 'popover',
@@ -75,13 +75,13 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 		id: 'tabs',
 		via: 'css-token',
 		status: 'skeleton',
-		notes: '--tabs-list-bg / --tab-active-*：scrapbook 暖粉纸标签；天气另有 .rv-wx-tabs 粉邮票条',
+		notes: '--tabs-list-bg / --tab-active-*：scrapbook 暖粉纸标签；天气另有 .rv-wx-tabs 索引签',
 	},
 	{
 		id: 'weather-dialog',
 		via: 'css-theme-class',
 		status: 'done',
-		notes: '.rv-wx-*：scrapbook 暖粉撕边贴纸卡/邮戳 tab；arcane 直角 HUD 行',
+		notes: '.rv-wx-*：scrapbook 双层纸页/胶带主视觉/票据小时带/账目式七日；arcane 直角 HUD',
 	},
 	{
 		id: 'badge',
@@ -92,7 +92,8 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 		id: 'input',
 		via: 'css-token',
 		status: 'done',
-		notes: 'scrapbook 纸片柔角 + 暖灰粉描边；天气搜索 .rv-wx-search；arcane 直角 --radius-field:2px',
+		notes:
+			'scrapbook 纸片柔角 + 暖灰粉描边；天气搜索 .rv-wx-search；arcane 直角 --radius-field:2px',
 	},
 	{
 		id: 'textarea',

@@ -96,6 +96,7 @@ function QuizPanel() {
 						key={quizKind}
 						size="sm"
 						variant={kind === quizKind ? 'default' : 'outline'}
+						aria-pressed={kind === quizKind}
 						onClick={() => reload(quizKind)}
 					>
 						{QUIZ_LABELS[quizKind]}

@@ -362,6 +362,7 @@ export default function ToolCompressPage() {
 											key={val}
 											variant={format === val ? 'default' : 'outline'}
 											size="sm"
+											aria-pressed={format === val}
 											onClick={() => setFormat(val)}
 										>
 											{label}

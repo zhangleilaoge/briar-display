@@ -68,6 +68,7 @@ export default function AdminPagination({
 					key={page}
 					variant={page === currentPage ? 'default' : 'outline'}
 					size="sm"
+					aria-current={page === currentPage ? 'page' : undefined}
 					onClick={() => handlePageChange(page)}
 				>
 					{page}

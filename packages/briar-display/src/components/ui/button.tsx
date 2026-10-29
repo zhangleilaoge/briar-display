@@ -12,6 +12,8 @@ const buttonVariants = cva(
 			variant: {
 				default:
 					'bg-primary [background-image:var(--btn-primary-image)] text-[hsl(var(--btn-primary-fg))] shadow-control hover:shadow-control-hover hover:brightness-[1.03]',
+				primary:
+					'rv-btn-primary bg-primary [background-image:var(--btn-primary-image)] text-[hsl(var(--btn-primary-fg))] shadow-control hover:shadow-control-hover hover:brightness-[1.03]',
 				destructive:
 					'bg-destructive text-destructive-foreground shadow-control hover:bg-destructive/90 hover:shadow-control-hover',
 				secondary:

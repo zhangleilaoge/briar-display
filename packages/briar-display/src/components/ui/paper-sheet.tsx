@@ -5,7 +5,7 @@ import type { HTMLAttributes, ReactNode } from 'react'
 
 /**
  * 手账纸容器变体。
- * 已铺开：binder（门户问候）、torn（想法 compose）、stamp/polaroid/kraft/ticket/sticky（想法列表按 id 哈希）、index（个人中心）。
+ * 已铺开：binder（门户问候）、torn（想法 compose / 天气预报纸）、stamp/polaroid/kraft/ticket/sticky（想法列表按 id 哈希）、index（个人中心）。
  */
 export type PaperSheetVariant =
 	| 'binder'

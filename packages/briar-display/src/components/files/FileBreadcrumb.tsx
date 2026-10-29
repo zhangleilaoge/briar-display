@@ -30,8 +30,8 @@ export default function FileBreadcrumb({
 }: FileBreadcrumbProps) {
 	return (
 		<Breadcrumb className="min-w-0">
-			{/* leading-none + items-center 已在 BreadcrumbList；各段同 font-control，避免中文衬线/黑体混排错位 */}
-			<BreadcrumbList className="gap-1 sm:gap-1.5">
+			{/* 中文回退字体需要正常行高，避免字形上下被裁切 */}
+			<BreadcrumbList className="gap-1 leading-normal sm:gap-1.5">
 				<BreadcrumbItem className="min-w-0">
 					{folderPath.length === 0 ? (
 						<BreadcrumbPage className="truncate">全部文件</BreadcrumbPage>

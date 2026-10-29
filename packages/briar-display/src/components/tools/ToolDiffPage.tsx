@@ -213,7 +213,7 @@ export default function ToolDiffPage() {
 							<RotateCcw className="h-4 w-4" />
 							清空
 						</Button>
-						<Button size="sm" onClick={handleCompare} className="gap-1.5">
+						<Button variant="primary" size="sm" onClick={handleCompare} className="gap-1.5">
 							<FileDiff className="h-4 w-4" />
 							比较
 						</Button>

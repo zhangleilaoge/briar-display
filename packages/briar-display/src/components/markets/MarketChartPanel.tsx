@@ -171,7 +171,7 @@ export function ChartPanelBody({
 							className={cn(
 								'rounded-md px-1 py-1.5 text-sm font-medium transition-colors',
 								period === p
-									? 'bg-background text-foreground shadow'
+									? 'bg-background [background-image:var(--tab-active-image)] text-[color:var(--tab-active-fg)] shadow-[var(--tab-active-shadow)]'
 									: 'text-muted-foreground hover:text-foreground',
 								disabled &&
 									'text-muted-foreground/45 line-through decoration-1 hover:text-muted-foreground/60',
