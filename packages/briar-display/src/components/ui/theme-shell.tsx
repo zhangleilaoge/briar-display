@@ -31,7 +31,7 @@ export function ThemeShell({
 	currentPath,
 }: ThemeShellProps) {
 	return (
-		<div className={cn('relative isolate min-h-screen', className)}>
+		<div className={cn('rv-shell-inset relative isolate min-h-screen', className)}>
 			{sidebar && <RibbonSidebar currentPath={currentPath} />}
 			{decor && (variant === 'arcane' ? <ArcaneDecor /> : <ScrapbookDecor />)}
 			{children}
