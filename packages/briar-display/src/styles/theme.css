@@ -2800,6 +2800,7 @@ progress {
 }
 
 /* ---------------- 活页翻页（BinderPeel）— OpenPageFlip 软纸卷边 ---------------- */
+/* 高度只按纸面本体；右上角邮戳 absolute 溢出，不进 measure / FlipBook 高度 */
 .rv-binder-peel {
 	position: relative;
 	isolation: isolate;
@@ -2809,7 +2810,6 @@ progress {
 	position: relative;
 	visibility: hidden;
 	pointer-events: none;
-	padding: 24px 4px 0 0;
 }
 .rv-binder-peel__book {
 	position: absolute !important;
@@ -2825,7 +2825,7 @@ progress {
 	box-sizing: border-box;
 	width: 100%;
 	height: 100%;
-	padding: 24px 4px 0 0;
+	overflow: visible;
 }
 .rv-binder-peel__book [data-opf-clone] .rv-binder-peel__page-content {
 	height: 100% !important;
@@ -2836,7 +2836,7 @@ progress {
 .rv-binder-peel__book [data-opf-clone] .rv-binder-peel__page-content::before {
 	content: "";
 	position: absolute;
-	inset: 24px 4px 0 0;
+	inset: 0;
 	box-sizing: border-box;
 	border: 1px solid color-mix(in srgb, var(--rv-navy) 22%, transparent);
 	border-radius: 2px;
