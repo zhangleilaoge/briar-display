@@ -173,18 +173,11 @@ function StickerShell({
 	)
 }
 
-/** 吊绳 + 眼孔接点（无蝴蝶结） */
+/** 眼孔接点（无 per-tag 短线；统一垂直吊绳由侧栏 rail 承担） */
 function HangString({ cx = 28, cy = 10 }: { cx?: number; cy?: number }) {
 	return (
 		<g>
-			<path
-				d={`M${cx} 0 V${cy}`}
-				fill="none"
-				stroke="var(--sidebar-string)"
-				strokeWidth={1.1}
-				strokeLinecap="round"
-			/>
-			{/* 眼孔：线与牌的干净接点 */}
+			{/* 眼孔：主吊绳落到牌顶的接点 */}
 			<circle cx={cx} cy={cy} r={2.15} fill={fill} stroke={ink} strokeWidth={0.95} />
 			<circle cx={cx} cy={cy} r={1.0} fill="none" stroke={ink} strokeWidth={0.7} />
 		</g>
