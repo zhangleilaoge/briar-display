@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
 import { Astrolabe } from './astrolabe'
 import { AutoHeight } from './motion'
-import { FleurDeLis, FloralRound } from './ornaments'
+import { FloralRound } from './ornaments'
 import { RibbonSidebar } from './ribbon-sidebar'
 
 export interface ThemeShellProps {
@@ -117,12 +117,12 @@ export function ScrapTitle({
 	)
 }
 
-/** 登录/注册页品牌拼贴：花体问候 + 衬线品牌名 + 单枚平面角饰（登录鸢尾 / 注册圆花） */
+/** 登录/注册页品牌拼贴：花体问候 + 衬线品牌名；去掉堆叠空白斜卡与登录百合角饰 */
 export function BrandCollage({
 	script,
 	subtitle,
 	className,
-	motif = 'fleur',
+	motif = 'none',
 }: {
 	script: string
 	subtitle: string
@@ -135,16 +135,11 @@ export function BrandCollage({
 		>
 			<div className="rv-surface absolute inset-0 -rotate-2 rounded-surface border border-border/60 bg-card shadow-raised" />
 			<div className="absolute inset-3 -rotate-2 rounded-[calc(var(--radius-surface)-6px)] border border-dashed border-[color:var(--rv-rose)]" />
-			<div className="absolute -left-10 top-6 hidden h-28 w-20 -rotate-[14deg] rounded-sm border border-[color:var(--rv-navy)]/20 bg-[var(--rv-beige)] shadow-surface sm:block" />
-			<div className="absolute -right-8 bottom-8 hidden h-24 w-28 rotate-[8deg] rounded-sm border border-[color:var(--rv-navy)]/15 bg-[var(--rv-pink)]/70 shadow-surface sm:block" />
 			<span className="rv-script relative text-4xl text-[color:var(--rv-rose-deep)]">{script}</span>
 			<h1 className="relative font-display text-6xl font-semibold tracking-tight text-foreground">
 				xiaobuzi
 			</h1>
 			<p className="relative font-display text-xl italic text-muted-foreground">{subtitle}</p>
-			{motif === 'fleur' ? (
-				<FleurDeLis className="absolute -right-8 -top-8 h-16 w-16 rotate-12 opacity-90" />
-			) : null}
 			{motif === 'floral' ? (
 				<FloralRound className="absolute -bottom-8 -left-6 h-20 w-20 -rotate-12 opacity-80" />
 			) : null}

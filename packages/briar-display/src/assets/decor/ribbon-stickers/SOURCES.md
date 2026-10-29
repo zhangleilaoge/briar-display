@@ -14,3 +14,9 @@ Not in `scrapStickerCatalog` portal carousel (no lantern / PPKey01 antique-key /
 | `moi-cameo.png` | Moi | [Cameo tailpiece, Velhagen & Klasings Monatshefte, 1911–1912, 01.svg](https://commons.wikimedia.org/wiki/File:Cameo_tailpiece,_Velhagen_%26_Klasings_Monatshefte,_1911%E2%80%931912,_01.svg) | Public domain | Ornate cameo frame |
 
 Alts kept in folder (not wired): `outils-plane.png` ← [Plane tool (PSF).png](https://commons.wikimedia.org/wiki/File:Plane_tool_(PSF).png) PD; `accueil` bungalow PSF; `moi` Cameo (PSF).jpg; game-icons gears/hammer (silhouette — unused).
+
+## Hang bow (吊牌顶结)
+
+| File | Source | License | Notes |
+|------|--------|---------|-------|
+| `hang-bow.svg` | [Classic Ribbon Bow With Long Tails](https://svgitem.com/svg/classic-ribbon-bow-with-long-tails) (SVG Item) | CC0 1.0 | Recolored `#6e4a42` for scrapbook ink; used as `<image>` in HangBow |
