@@ -70,7 +70,7 @@ export function WeatherDialog({
 			<DialogContent className="max-w-2xl gap-3 overflow-y-auto p-4 sm:p-6">
 				<DialogHeader className="pr-7 text-left">
 					<DialogTitle className="flex items-center gap-2">
-						<MapPin aria-hidden className="h-4 w-4 text-[color:var(--rv-rose-deep)]" />
+						<MapPin aria-hidden className="rv-wx-pin h-4 w-4" />
 						{view === 'forecast' ? `${location.name}天气` : '管理默认地区'}
 					</DialogTitle>
 					<DialogDescription>
@@ -149,13 +149,13 @@ export function WeatherDialog({
 						)}
 						{forecast && currentMeta && today && (
 							<>
-								<section className="rounded-2xl border border-[color:color-mix(in_srgb,var(--rv-rose-deep)_20%,transparent)] bg-[color-mix(in_srgb,var(--rv-cream)_72%,var(--rv-pink))] p-4">
+								<section className="rv-wx-now">
 									<div className="flex items-center justify-between gap-4">
 										<div className="flex items-center gap-3">
 											<WeatherIcon
 												code={forecast.current.code}
 												isDay={forecast.current.isDay}
-												className="h-12 w-12 text-[color:color-mix(in_srgb,var(--rv-ink)_70%,var(--rv-rose-deep))]"
+												className="rv-wx-now-icon h-12 w-12"
 											/>
 											<div>
 												<p className="font-display text-5xl font-semibold leading-none tabular-nums">
@@ -181,12 +181,12 @@ export function WeatherDialog({
 								</section>
 
 								<Tabs key={location.id} defaultValue="hourly">
-									<TabsList className="grid w-full grid-cols-2">
+									<TabsList className="rv-wx-tabs grid w-full grid-cols-2">
 										<TabsTrigger value="hourly">逐小时</TabsTrigger>
 										<TabsTrigger value="daily">未来 7 天</TabsTrigger>
 									</TabsList>
 									<TabsContent value="hourly" className="mt-3">
-										<ol className="flex gap-2 overflow-x-auto pb-2" aria-label="未来 24 小时天气">
+										<ol className="rv-wx-hours" aria-label="未来 24 小时天气">
 											{upcomingHours(forecast).map((hour, index) => {
 												const hourNumber = Number(hour.time.slice(11, 13))
 												const crossesDay =
@@ -194,12 +194,12 @@ export function WeatherDialog({
 												return (
 													<li
 														key={hour.time}
-														className="flex min-w-[4.5rem] flex-col items-center gap-2 rounded-xl border border-[color:color-mix(in_srgb,var(--rv-rose-deep)_16%,transparent)] bg-[color-mix(in_srgb,var(--rv-cream)_80%,white)] px-2 py-3 text-center"
+														className="rv-wx-hour"
 													>
 														<span
 															className={cn(
 																'text-xs',
-																index === 0 && 'font-semibold text-[color:var(--rv-rose-deep)]',
+																index === 0 && 'rv-wx-hour-now',
 															)}
 														>
 															{index === 0 ? '现在' : hour.time.slice(11, 16)}
@@ -227,13 +227,13 @@ export function WeatherDialog({
 									</TabsContent>
 									<TabsContent value="daily" className="mt-3">
 										<ol
-											className="divide-y divide-[color:color-mix(in_srgb,var(--rv-rose-deep)_14%,transparent)]"
+											className="rv-wx-days"
 											aria-label="未来 7 天天气"
 										>
 											{forecast.daily.map((day, index) => (
 												<li
 													key={day.date}
-													className="grid grid-cols-[3.5rem_1.5rem_1fr_auto] items-center gap-2 py-2.5 text-xs sm:grid-cols-[4rem_1.5rem_1fr_auto_auto] sm:gap-3"
+													className="rv-wx-day"
 												>
 													<div>
 														<p className="font-medium">{dailyDateLabel(day.date, index)}</p>
