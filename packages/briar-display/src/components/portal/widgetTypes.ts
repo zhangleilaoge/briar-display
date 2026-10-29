@@ -62,7 +62,7 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
 		id: 'clock',
 		title: '时钟',
 		caption: 'Horloge',
-		description: '实时时间与日期',
+		description: '古典指针表盘与实时数字时间',
 		sizes: ['1x1', '2x2'],
 		defaultSize: '1x1',
 	},
