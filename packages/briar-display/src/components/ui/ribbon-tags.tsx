@@ -1,6 +1,6 @@
 /**
  * 左侧吊牌：每项独立手绘异形壳 + 插画切图贴纸（Wikimedia PD/CC0/CC BY-SA，见 assets/decor/ribbon-stickers/SOURCES.md）。
- * 禁止共用同一矩形外壳只换图标；法文 caption 由 ribbon-sidebar 可见渲染。
+ * 禁止共用同一矩形外壳只换图标；法文 caption 由 ribbon-sidebar 以 font-label 可见渲染，图文一组居中。
  */
 import accueilHouse from '@/assets/decor/ribbon-stickers/accueil-house.png'
 import clefKey from '@/assets/decor/ribbon-stickers/clef-key.png'

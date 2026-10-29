@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * 全局左侧导航：手绘异形吊牌壳 + 插画切图贴纸 + 可见法文 caption（拱形 / 花边圆 / 波浪底 / 心形 / 椭圆 Cameo 等）。
+ * 全局左侧导航：手绘异形吊牌壳 + 插画切图贴纸 + font-label 法文 caption；图文一组居中（拱形 / 花边圆 / 波浪底 / 心形 / 椭圆 Cameo 等）。
  * 颜色走 --sidebar-*；md+ 无底不占位，热区拉出；窄屏底部横滑。
  */
 import { usePermissions } from '@/contexts/PermissionContext'
@@ -158,16 +158,17 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 										}}
 									>
 										<Tag active={isActive} />
-										<img
-											src={RIBBON_STICKER_SRC[item.kind]}
-											alt=""
-											aria-hidden
-											draggable={false}
-											decoding="async"
-											className="rv-ribbon-cutout pointer-events-none select-none object-contain"
-										/>
-										<span aria-hidden className="rv-ribbon-caption">
-											{item.caption}
+										<span className="rv-ribbon-stack" aria-hidden>
+											<img
+												src={RIBBON_STICKER_SRC[item.kind]}
+												alt=""
+												draggable={false}
+												decoding="async"
+												className="rv-ribbon-cutout select-none object-contain"
+											/>
+											<span className="rv-ribbon-caption rv-tag-label font-label text-[7.5px] uppercase tracking-[0.05em]">
+												{item.caption}
+											</span>
 										</span>
 										<span className="sr-only">
 											{item.label} · {item.caption}
@@ -288,16 +289,17 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 									<span aria-hidden className="h-1.5 w-px bg-[var(--sidebar-string)]" />
 									<span className="relative h-[58px] w-[48px]">
 										<Tag active={isActive} />
-										<img
-											src={RIBBON_STICKER_SRC[item.kind]}
-											alt=""
-											aria-hidden
-											draggable={false}
-											decoding="async"
-											className="rv-ribbon-cutout pointer-events-none select-none object-contain"
-										/>
-										<span aria-hidden className="rv-ribbon-caption">
-											{item.caption}
+										<span className="rv-ribbon-stack" aria-hidden>
+											<img
+												src={RIBBON_STICKER_SRC[item.kind]}
+												alt=""
+												draggable={false}
+												decoding="async"
+												className="rv-ribbon-cutout select-none object-contain"
+											/>
+											<span className="rv-ribbon-caption rv-tag-label font-label text-[6.5px] uppercase tracking-[0.04em]">
+												{item.caption}
+											</span>
 										</span>
 									</span>
 									<span className="sr-only">{item.label}</span>
