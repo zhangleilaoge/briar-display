@@ -296,7 +296,7 @@ Adapted from https://github.com/sky-jiangcheng/aurora-clock
 
 .aurora-clock .current-time {
 	flex: none;
-	padding-top: 10px;
+	padding-top: 6px;
 	color: var(--rv-ink);
 	font-family: var(--font-heading);
 	font-size: 1.35rem;
