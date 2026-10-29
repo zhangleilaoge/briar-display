@@ -285,7 +285,7 @@ export default function MessagesPanel() {
 			{/* 详情弹窗 */}
 			<Dialog open={detail !== null} onOpenChange={(open) => !open && setDetail(null)}>
 				<DialogContent ornament>
-					<DialogHeader>
+					<DialogHeader kicker="Courrier · Message">
 						<DialogTitle>{detail?.title}</DialogTitle>
 						<DialogDescription>{detail ? formatTime(detail.createdAt) : ''}</DialogDescription>
 					</DialogHeader>
@@ -296,7 +296,7 @@ export default function MessagesPanel() {
 			{/* 清空已读确认 */}
 			<Dialog open={clearOpen} onOpenChange={(open) => !busy && setClearOpen(open)}>
 				<DialogContent>
-					<DialogHeader>
+					<DialogHeader kicker="Courrier · Confirmation">
 						<DialogTitle>清空已读消息</DialogTitle>
 						<DialogDescription>
 							将删除所有已读站内信，未读消息会保留。此操作不可恢复。

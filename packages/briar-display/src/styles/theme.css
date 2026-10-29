@@ -918,7 +918,7 @@ progress {
    双主题约定：
    - 共享结构类：.rv-paper-dialog / .rv-paper-float / .rv-paper-header / .rv-paper-overlay
    - Arcane（默认本段基线 + .theme-arcane 微调）：藏青顶栏、直角、冰蓝洗、HUD 裁切角
-   - Scrapbook：.theme-scrapbook 覆盖为本段末尾「=== Dialog scrapbook ===」——暖粉奶油纸片、白撕边 sticker、中性黑遮罩；无 HUD 裁切角
+   - Scrapbook：.theme-scrapbook 覆盖为本段末尾「=== Dialog scrapbook ===」——奶油纸页、直角细框、左对齐标题与中性黑遮罩；无 HUD 裁切角
    下拉浮层（.rv-paper-float）两主题均保持方角直角（Select 溢出约定）。
    ============================================================ */
 
@@ -1172,25 +1172,28 @@ progress {
 	border-radius: 0 !important;
 }
 
+.rv-paper-kicker {
+	color: inherit;
+	font-family: var(--font-label);
+	font-size: 0.625rem;
+	letter-spacing: 0.16em;
+	opacity: 0.72;
+	text-transform: uppercase;
+}
+
 /* === Dialog scrapbook ===
-   暖粉奶油剪纸手账：粉玫瑰点缀 + 白撕边 sticker + 中性黑遮罩。
-   保留剪纸结构（不规则纸角、邮戳顶栏、贴纸格），色调回到门户暖粉；
-   scrapbook 下隐藏 HUD 裁切角与印刷 + 记号。Arcane 藏青顶栏基线不动。 */
+   所有暖色 Dialog 共用天气纸页：奶油底、直角细框、左对齐标题与中性遮罩。
+   暖粉只作少量点缀，不再使用粉色渐变顶栏或厚白贴纸外框。 */
 .theme-scrapbook .rv-paper-dialog {
-	--rv-paper-border: color-mix(in srgb, var(--rv-rose-deep) 32%, var(--rv-beige));
+	isolation: isolate;
+	--rv-paper-border: #9b8276;
 	border-color: var(--rv-paper-border) !important;
-	/* 略不规则纸角：剪纸感，非现代大 pill、亦非 HUD 直角 */
-	border-radius: 4px 12px 7px 10px !important;
-	background-color: #fffdf9 !important;
+	border-radius: 2px !important;
+	background-color: #fbf7ef !important;
 	background-image: var(--paper-grain),
-		linear-gradient(165deg, #fffefb 0%, var(--rv-cream) 42%, #f8ece8 100%);
-	/* 厚白 sticker 描边 + 暖玫影 */
-	box-shadow:
-		0 0 0 4px hsl(0 0% 100% / 0.96),
-		0 0 0 5px color-mix(in srgb, var(--rv-rose-deep) 12%, transparent),
-		0 1px 0 hsl(0 0% 100% / 0.9) inset,
-		0 20px 44px -14px hsl(350 35% 40% / 0.28),
-		0 8px 18px -8px hsl(350 30% 45% / 0.16) !important;
+		linear-gradient(145deg, #fffdf8 0%, #faf5ec 58%, #f4eadf 100%);
+	box-shadow: 0 0 0 1px hsl(40 40% 98% / 0.8) inset, 0 3px 0 #d8c5b5, 0 22px 42px -16px
+		hsl(24 25% 28% / 0.38) !important;
 }
 
 /* 下拉浮层：保持方角，暖粉描边 / 奶油纸（Select 溢出约定） */
@@ -1205,14 +1208,17 @@ progress {
 		-4px hsl(350 25% 45% / 0.14) !important;
 }
 
-/* 暖粉 / 奶油纸条顶栏（邮戳感虚线底；非藏青实心条） */
 .theme-scrapbook .rv-paper-header {
-	background: var(--paper-grain), linear-gradient(180deg, #fff9f5 0%, #f8e4ea 48%, #efd0d8 100%);
-	background-size: 180px 180px, auto;
-	color: var(--rv-ink);
-	border-bottom: 1.5px dashed color-mix(in srgb, var(--rv-rose-deep) 28%, transparent);
-	box-shadow: 0 1px 0 hsl(0 0% 100% / 0.88) inset, 0 2px 8px -2px hsl(350 40% 45% / 0.12);
-	border-radius: 3px 10px 0 0;
+	align-items: flex-start;
+	justify-content: flex-start;
+	margin-bottom: 0;
+	padding: 0.4rem 3rem 1rem 0.75rem;
+	border-bottom: 1px solid #c9b3a6;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: 0 1px 0 hsl(0 0% 100% / 0.75);
+	color: #4b4039;
+	text-align: left;
 }
 
 .theme-scrapbook .rv-paper-header.sr-only {
@@ -1222,15 +1228,24 @@ progress {
 	border-radius: 0;
 }
 
-.theme-scrapbook .rv-paper-header .rv-paper-title {
-	color: color-mix(in srgb, var(--rv-ink) 82%, var(--rv-rose-deep));
-	letter-spacing: 0.02em;
+.theme-scrapbook .rv-paper-dialog:not(.rv-terminal) .rv-paper-header .rv-paper-title {
+	color: #453a34;
+	font-size: 1.65rem;
+	letter-spacing: 0.03em;
+	line-height: 1.15;
+}
+
+.theme-scrapbook .rv-paper-header .rv-paper-kicker {
+	margin-bottom: 0.35rem;
+	color: #986a70;
+	opacity: 1;
 }
 
 .theme-scrapbook .rv-paper-header .text-muted-foreground,
 .theme-scrapbook .rv-paper-header [data-slot="dialog-description"],
 .theme-scrapbook .rv-paper-header p {
-	color: color-mix(in srgb, var(--rv-ink) 52%, var(--rv-rose-deep) 18%);
+	color: #796b62;
+	font-size: 0.75rem;
 }
 
 /* 左侧小粉签 / 邮戳感编号 */
@@ -1354,12 +1369,9 @@ progress {
 		/* 保持 visible，避免裁切角标；滚动交给内部 .rv-dialog-scroll */
 		overflow: visible !important;
 	}
-	.theme-scrapbook .rv-paper-dialog {
-		border-radius: 4px 10px 6px 8px !important;
-	}
 }
 
-/* === Weather dialog：共享信息结构；scrapbook 纸页拼贴，arcane 直角 HUD === */
+/* === Weather dialog：外壳复用 Dialog，以下仅定义天气内容布局 === */
 .rv-wx-header {
 	flex-shrink: 0;
 }
@@ -1393,14 +1405,6 @@ progress {
 }
 .theme-scrapbook .rv-wx-scroll-fade {
 	background: linear-gradient(transparent, #fbf7ef 90%);
-}
-.rv-wx-header .rv-wx-kicker {
-	color: inherit;
-	font-family: var(--font-label);
-	font-size: 0.625rem;
-	letter-spacing: 0.16em;
-	opacity: 0.72;
-	text-transform: uppercase;
 }
 .rv-wx-now {
 	position: relative;
@@ -1464,40 +1468,8 @@ progress {
 	color: color-mix(in srgb, var(--rv-ink) 70%, var(--rv-navy));
 }
 
-.theme-scrapbook .rv-wx-dialog {
-	isolation: isolate;
-	border-color: #9b8276 !important;
-	border-radius: 2px !important;
-	background-color: #fbf7ef !important;
-	background-image: var(--paper-grain),
-		linear-gradient(145deg, #fffdf8 0%, #faf5ec 58%, #f4eadf 100%);
-	box-shadow: 0 0 0 1px hsl(40 40% 98% / 0.8) inset, 0 3px 0 #d8c5b5, 0 22px 42px -16px
-		hsl(24 25% 28% / 0.38) !important;
-}
 .theme-scrapbook .rv-wx-header {
-	align-items: flex-start;
 	margin: -1.75rem -1.75rem 0;
-	padding: 0.4rem 3rem 1rem 0.75rem;
-	border-bottom: 1px solid #c9b3a6;
-	border-radius: 0;
-	background: transparent;
-	box-shadow: 0 1px 0 hsl(0 0% 100% / 0.75);
-	color: #4b4039;
-}
-.theme-scrapbook .rv-wx-header .rv-paper-title {
-	color: #453a34;
-	font-size: 1.65rem;
-	letter-spacing: 0.03em;
-	line-height: 1.15;
-}
-.theme-scrapbook .rv-wx-header .rv-wx-kicker {
-	margin-bottom: 0.35rem;
-	color: #986a70;
-	opacity: 1;
-}
-.theme-scrapbook .rv-wx-header .text-muted-foreground {
-	color: #796b62;
-	font-size: 0.75rem;
 }
 .theme-scrapbook .rv-wx-pin,
 .theme-scrapbook .rv-wx-now-icon {
@@ -1828,7 +1800,7 @@ progress {
 		margin: -1.25rem -1.25rem 0;
 		padding: 0.35rem 2.5rem 0.85rem 0.6rem;
 	}
-	.theme-scrapbook .rv-wx-header .rv-paper-title {
+	.theme-scrapbook .rv-paper-dialog:not(.rv-terminal) .rv-paper-header .rv-paper-title {
 		font-size: 1.4rem;
 	}
 	.rv-wx-now {

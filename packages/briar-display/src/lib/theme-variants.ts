@@ -33,7 +33,8 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 		id: 'dialog',
 		via: 'shared-paper',
 		status: 'done',
-		notes: 'scrapbook 纸片顶栏 + 折角纸签关闭 + 纸张收起；arcane 藏青顶栏 + HUD 裁切角 + CRT 关屏',
+		notes:
+			'scrapbook 奶油纸页 + 左对齐标题/kicker + 折角纸签关闭；arcane 藏青顶栏 + HUD 裁切角 + CRT 关屏',
 	},
 	{
 		id: 'popover',

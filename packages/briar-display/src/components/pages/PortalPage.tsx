@@ -14,6 +14,7 @@ import {
 	MarketsIcon,
 	type OrnamentIconProps,
 	Postmark,
+	StyleIcon,
 	ToolsIcon,
 } from '@/components/ui/ornaments'
 import { PageHeader } from '@/components/ui/page-header'
@@ -45,6 +46,13 @@ interface Entry {
 }
 
 const ENTRIES: Entry[] = [
+	{
+		icon: StyleIcon,
+		title: '风格',
+		caption: 'Style',
+		description: '基础组件、纸张与交互的陈列室',
+		href: '/briar/style',
+	},
 	{
 		icon: ToolsIcon,
 		title: '工具箱',

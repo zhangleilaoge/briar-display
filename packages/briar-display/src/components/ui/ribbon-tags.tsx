@@ -1,3 +1,4 @@
+import styleFlower from '@/assets/decor/flower-psf.svg'
 /**
  * 左侧吊牌：每项独立手绘异形壳 + 插画切图贴纸（Wikimedia PD/CC0/CC BY-SA，见 assets/decor/ribbon-stickers/SOURCES.md）。
  * 禁止共用同一矩形外壳只换图标；法文 caption 由 ribbon-sidebar 以 font-label 可见渲染，图文一组居中。
@@ -14,6 +15,7 @@ import type { ReactNode, SVGProps } from 'react'
 
 export type RibbonTagKind =
 	| 'home'
+	| 'style'
 	| 'tools'
 	| 'files'
 	| 'thoughts'
@@ -44,6 +46,8 @@ export const RIBBON_HAND_PATHS: Record<RibbonTagKind, string> = {
 		'L16.8 63.4' +
 		'C13.2 63.0 10.4 60.2 10.2 56.6' +
 		'Z',
+	style:
+		'M27.8 8.4' + 'L45.2 21.6' + 'L42.0 55.8' + 'L28.4 64.4' + 'L12.6 55.2' + 'L9.8 23.6' + 'Z',
 	tools:
 		'M29.4 11.2' +
 		'C36.8 11.8 43.6 17.4 47.8 26.2' +
@@ -109,6 +113,7 @@ export const RIBBON_HAND_PATHS: Record<RibbonTagKind, string> = {
 /** 挂环中心：落在吊绳与牌顶轮廓的接触点（略深入牌面，结心压在顶缘） */
 export const RIBBON_HANG_CY: Record<RibbonTagKind, number> = {
 	home: 6.5,
+	style: 10.5,
 	tools: 14.2,
 	files: 15.5,
 	thoughts: 14.5,
@@ -124,6 +129,7 @@ function srcOf(m: string | { src: string }): string {
 /** 插画切图贴纸（已着色 + 白撕纸边）；避开 portal 轮播同款素材 */
 export const RIBBON_STICKER_SRC: Record<RibbonTagKind, string> = {
 	home: srcOf(accueilHouse),
+	style: srcOf(styleFlower),
 	tools: srcOf(outilsInkwell),
 	files: srcOf(fichiersPurse),
 	thoughts: srcOf(penseesBook),
@@ -194,6 +200,9 @@ function TagShell({ kind, active, className, ...rest }: TagSvgProps & { kind: Ri
 export function TagHome(p: TagSvgProps) {
 	return <TagShell kind="home" {...p} />
 }
+export function TagStyle(p: TagSvgProps) {
+	return <TagShell kind="style" {...p} />
+}
 export function TagTools(p: TagSvgProps) {
 	return <TagShell kind="tools" {...p} />
 }
@@ -215,6 +224,7 @@ export function TagProfile(p: TagSvgProps) {
 
 export const RIBBON_TAG_BY_KIND: Record<RibbonTagKind, (p: TagSvgProps) => ReactNode> = {
 	home: TagHome,
+	style: TagStyle,
 	tools: TagTools,
 	files: TagFiles,
 	thoughts: TagThoughts,

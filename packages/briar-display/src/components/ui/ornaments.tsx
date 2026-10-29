@@ -27,6 +27,7 @@ import {
 	FolderOpen,
 	HouseLine,
 	Key,
+	Palette,
 	type IconProps as PhIconProps,
 	Toolbox,
 	UserCircle,
@@ -48,6 +49,7 @@ const duo = (Icon: typeof HouseLine) =>
 	}
 
 export const HomeIcon = duo(HouseLine)
+export const StyleIcon = duo(Palette)
 export const ToolsIcon = duo(Toolbox)
 export const FilesIcon = duo(FolderOpen)
 export const JournalIcon = duo(BookOpenText)

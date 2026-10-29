@@ -97,14 +97,11 @@ export function WeatherDialog({
 				if (!next) setView('forecast')
 			}}
 		>
-			<DialogContent
-				data-no-drag
-				className="rv-wx-dialog max-w-2xl gap-4 overflow-y-auto p-5 sm:p-7"
-			>
-				<DialogHeader className="rv-wx-header pr-9 text-left">
-					<span className="rv-wx-kicker">
-						Météo · {forecast?.current.time.slice(0, 10) ?? 'Carnet quotidien'}
-					</span>
+			<DialogContent data-no-drag className="max-w-2xl gap-4 overflow-y-auto p-5 sm:p-7">
+				<DialogHeader
+					className="rv-wx-header pr-9 text-left"
+					kicker={`Météo · ${forecast?.current.time.slice(0, 10) ?? 'Carnet quotidien'}`}
+				>
 					<DialogTitle className="flex items-center gap-2">
 						<MapPin aria-hidden className="rv-wx-pin h-4 w-4" />
 						{view === 'forecast' ? `${location.name}天气` : '管理默认地区'}

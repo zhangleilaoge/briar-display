@@ -7,6 +7,7 @@
 import { usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from './hover-card'
 import { useFlip } from './motion'
 import {
 	RIBBON_JITTER,
@@ -18,6 +19,7 @@ import {
 	TagHome,
 	TagMarkets,
 	TagProfile,
+	TagStyle,
 	TagThoughts,
 	TagTools,
 } from './ribbon-tags'
@@ -33,6 +35,13 @@ interface RibbonItem {
 
 export const RIBBON_ITEMS: RibbonItem[] = [
 	{ href: '/briar/', match: '/briar', label: '首页', caption: 'Accueil', kind: 'home' },
+	{
+		href: '/briar/style',
+		match: '/briar/style',
+		label: '风格',
+		caption: 'Style',
+		kind: 'style',
+	},
 	{
 		href: '/briar/tools',
 		match: '/briar/tools',
@@ -240,36 +249,46 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 									className="rv-ribbon-item"
 									style={{ ['--rv-ribbon-i' as string]: i }}
 								>
-									<a
-										href={item.href}
-										title={`${item.label} · ${item.caption}`}
-										aria-current={isActive ? 'page' : undefined}
-										data-kind={item.kind}
-										className={cn(
-											'rv-ribbon-tag relative flex h-[70px] w-[58px] flex-col items-center outline-none',
-											isActive && 'is-active',
-										)}
-										style={{
-											transform: `translateX(${jitter.x}px) rotate(${jitter.rotate}deg)`,
-										}}
-									>
-										<Tag active={isActive} />
-										<span className="rv-ribbon-stack" aria-hidden>
-											<img
-												src={RIBBON_STICKER_SRC[item.kind]}
-												alt=""
-												draggable={false}
-												decoding="async"
-												className="rv-ribbon-cutout select-none object-contain"
-											/>
-											<span className="rv-ribbon-caption rv-tag-label font-label text-[7.5px] uppercase tracking-[0.05em]">
-												{item.caption}
-											</span>
-										</span>
-										<span className="sr-only">
+									<HoverCard openDelay={120} closeDelay={0}>
+										<HoverCardTrigger asChild>
+											<a
+												href={item.href}
+												aria-current={isActive ? 'page' : undefined}
+												data-kind={item.kind}
+												className={cn(
+													'rv-ribbon-tag relative flex h-[70px] w-[58px] flex-col items-center outline-none',
+													isActive && 'is-active',
+												)}
+												style={{
+													transform: `translateX(${jitter.x}px) rotate(${jitter.rotate}deg)`,
+												}}
+											>
+												<Tag active={isActive} />
+												<span className="rv-ribbon-stack" aria-hidden>
+													<img
+														src={RIBBON_STICKER_SRC[item.kind]}
+														alt=""
+														draggable={false}
+														decoding="async"
+														className="rv-ribbon-cutout select-none object-contain"
+													/>
+													<span className="rv-ribbon-caption rv-tag-label font-label text-[7.5px] uppercase tracking-[0.05em]">
+														{item.caption}
+													</span>
+												</span>
+												<span className="sr-only">
+													{item.label} · {item.caption}
+												</span>
+											</a>
+										</HoverCardTrigger>
+										<HoverCardContent
+											side="right"
+											sideOffset={10}
+											className="w-auto whitespace-nowrap px-3 py-2 text-xs"
+										>
 											{item.label} · {item.caption}
-										</span>
-									</a>
+										</HoverCardContent>
+									</HoverCard>
 								</li>
 							)
 						})}
@@ -418,4 +437,4 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 export default RibbonSidebar
 
 // re-export tag components in case ornaments/tests referenced old icons via sidebar
-export { TagAdmin, TagFiles, TagHome, TagMarkets, TagProfile, TagThoughts, TagTools }
+export { TagAdmin, TagFiles, TagHome, TagMarkets, TagProfile, TagStyle, TagThoughts, TagTools }

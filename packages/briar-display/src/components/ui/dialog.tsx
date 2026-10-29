@@ -74,8 +74,22 @@ const DialogContent = React.forwardRef<
 )
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
-const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-	<div className={cn('rv-paper-header', className)} {...props} />
+const DialogKicker = React.forwardRef<HTMLSpanElement, React.ComponentPropsWithoutRef<'span'>>(
+	({ className, ...props }, ref) => (
+		<span ref={ref} className={cn('rv-paper-kicker', className)} {...props} />
+	),
+)
+DialogKicker.displayName = 'DialogKicker'
+
+interface DialogHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+	kicker?: React.ReactNode
+}
+
+const DialogHeader = ({ className, kicker, children, ...props }: DialogHeaderProps) => (
+	<div className={cn('rv-paper-header', className)} {...props}>
+		{kicker != null && <DialogKicker>{kicker}</DialogKicker>}
+		{children}
+	</div>
 )
 DialogHeader.displayName = 'DialogHeader'
 
@@ -118,6 +132,7 @@ export {
 	DialogClose,
 	DialogContent,
 	DialogHeader,
+	DialogKicker,
 	DialogFooter,
 	DialogTitle,
 	DialogDescription,
