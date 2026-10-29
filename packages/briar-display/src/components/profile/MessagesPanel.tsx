@@ -42,6 +42,7 @@ export default function MessagesPanel() {
 	const [page, setPage] = useState(1)
 	const [loading, setLoading] = useState(true)
 	const [detail, setDetail] = useState<SiteMessage | null>(null)
+	const [detailOpen, setDetailOpen] = useState(false)
 	const [confirmId, setConfirmId] = useState<string | null>(null)
 	const [clearOpen, setClearOpen] = useState(false)
 	const [busy, setBusy] = useState(false)
@@ -68,6 +69,7 @@ export default function MessagesPanel() {
 
 	const openDetail = async (msg: SiteMessage) => {
 		setDetail(msg)
+		setDetailOpen(true)
 		if (msg.readAt) return
 		const readAt = new Date().toISOString()
 		setItems((prev) => prev.map((m) => (m.id === msg.id ? { ...m, readAt } : m)))
@@ -283,7 +285,7 @@ export default function MessagesPanel() {
 			</div>
 
 			{/* 详情弹窗 */}
-			<Dialog open={detail !== null} onOpenChange={(open) => !open && setDetail(null)}>
+			<Dialog open={detailOpen} onOpenChange={setDetailOpen}>
 				<DialogContent ornament>
 					<DialogHeader kicker="Courrier · Message">
 						<DialogTitle>{detail?.title}</DialogTitle>
