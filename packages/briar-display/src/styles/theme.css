@@ -562,6 +562,96 @@ body {
 	border-color: color-mix(in srgb, var(--rv-beige) 70%, var(--rv-ink) 12%) !important;
 }
 
+/* 插画切图贴纸：叠在壳上，默认略下移避开挂环/描边 */
+.rv-ribbon-tag .rv-ribbon-cutout {
+	position: absolute;
+	z-index: 2;
+	left: 50%;
+	top: 22px;
+	width: 28px;
+	height: 28px;
+	transform: translateX(-50%);
+	object-fit: contain;
+	filter: drop-shadow(0 0 0.4px #fff) drop-shadow(0 1px 2px hsl(221 46% 20% / 0.18));
+	pointer-events: none;
+}
+/* Pensées / Étoiles / Clef：再下移，避免与挂环/白描边重叠 */
+.rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-cutout,
+.rv-ribbon-tag[data-kind="markets"] .rv-ribbon-cutout,
+.rv-ribbon-tag[data-kind="admin"] .rv-ribbon-cutout {
+	top: 26px;
+}
+.rv-ribbon-tag[data-kind="tools"] .rv-ribbon-cutout {
+	top: 20px;
+}
+.rv-ribbon-tag[data-kind="profile"] .rv-ribbon-cutout {
+	top: 20px;
+}
+.rv-ribbon-tag[data-kind="home"] .rv-ribbon-cutout,
+.rv-ribbon-tag[data-kind="files"] .rv-ribbon-cutout {
+	top: 22px;
+}
+
+/* 法文 caption：七枚统一字号/字重；底对齐，牌内安全边距 */
+.rv-ribbon-tag .rv-ribbon-caption {
+	position: absolute;
+	z-index: 2;
+	left: 50%;
+	bottom: 11px;
+	transform: translateX(-50%);
+	margin: 0;
+	padding: 0 1px;
+	max-width: 46px;
+	overflow: hidden;
+	text-overflow: clip;
+	white-space: nowrap;
+	text-align: center;
+	font-family: "Courier New", "IBM Plex Mono", ui-monospace, monospace;
+	font-size: 7.5px;
+	font-weight: 600;
+	font-style: normal;
+	line-height: 1.05;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	color: var(--sidebar-icon);
+	pointer-events: none;
+}
+.rv-ribbon-tag[aria-current="page"] .rv-ribbon-caption,
+.rv-ribbon-tag.is-active .rv-ribbon-caption {
+	color: var(--sidebar-active-icon);
+	/* 与未选中同一字重，避免 Accueil 单独显粗 */
+	font-weight: 600;
+}
+/* 异形底边安全：心形/波浪/花边略抬高，仍统一字号字重 */
+.rv-ribbon-tag[data-kind="tools"] .rv-ribbon-caption { bottom: 14px; }
+.rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-caption { bottom: 13px; }
+.rv-ribbon-tag[data-kind="markets"] .rv-ribbon-caption { bottom: 14px; }
+.rv-ribbon-tag[data-kind="admin"] .rv-ribbon-caption { bottom: 16px; }
+.rv-ribbon-tag[data-kind="profile"] .rv-ribbon-caption { bottom: 13px; }
+
+/* 移动端缩略：略小但仍统一 */
+.rv-ribbon-mobile .rv-ribbon-tag .rv-ribbon-cutout {
+	top: 18px;
+	width: 22px;
+	height: 22px;
+}
+.rv-ribbon-mobile .rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-cutout,
+.rv-ribbon-mobile .rv-ribbon-tag[data-kind="markets"] .rv-ribbon-cutout,
+.rv-ribbon-mobile .rv-ribbon-tag[data-kind="admin"] .rv-ribbon-cutout {
+	top: 21px;
+}
+.rv-ribbon-mobile .rv-ribbon-tag .rv-ribbon-caption {
+	bottom: 8px;
+	font-size: 6px;
+	font-weight: 600;
+	max-width: 38px;
+}
+.rv-ribbon-mobile .rv-ribbon-tag[data-kind="tools"] .rv-ribbon-caption { bottom: 10px; }
+.rv-ribbon-mobile .rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-caption { bottom: 10px; }
+.rv-ribbon-mobile .rv-ribbon-tag[data-kind="markets"] .rv-ribbon-caption { bottom: 10px; }
+.rv-ribbon-mobile .rv-ribbon-tag[data-kind="admin"] .rv-ribbon-caption { bottom: 12px; }
+.rv-ribbon-mobile .rv-ribbon-tag[data-kind="profile"] .rv-ribbon-caption { bottom: 10px; }
+
 /* 贴纸吊牌轻微呼吸投影 */
 .rv-ribbon-sticker {
 	filter: drop-shadow(0 2px 3px hsl(221 46% 20% / 0.14));
