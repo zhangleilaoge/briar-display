@@ -1,3 +1,7 @@
+/**
+ * Dialog：结构单一；scrapbook | arcane 视觉差全部由 theme.css `.rv-paper-*` +
+ * `.theme-scrapbook` / `.theme-arcane` 分流（见 theme-variants.ts）。
+ */
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import * as React from 'react'
@@ -52,6 +56,7 @@ const DialogContent = React.forwardRef<
 				)}
 				{...props}
 			>
+				{/* Arcane HUD 裁切角；.theme-scrapbook 下 CSS display:none */}
 				<span className="rv-crop-marks" aria-hidden>
 					<span />
 				</span>

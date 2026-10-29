@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * 全局左侧导航：各异形蓝白线稿贴纸吊牌（拱形 / 花边圆 / 波浪底 / 心形 / 椭圆 Cameo 等）。
+ * 全局左侧导航：手绘异形吊牌壳 + 插画切图贴纸 + font-label 法文 caption；图文一组居中（拱形 / 花边圆 / 波浪底 / 心形 / 椭圆 Cameo 等）。
  * 颜色走 --sidebar-*；md+ 无底不占位，热区拉出；窄屏底部横滑。
  */
 import { usePermissions } from '@/contexts/PermissionContext'
@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFlip } from './motion'
 import {
 	RIBBON_JITTER,
+	RIBBON_STICKER_SRC,
 	RIBBON_TAG_BY_KIND,
 	type RibbonTagKind,
 	TagAdmin,
@@ -145,8 +146,9 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 								>
 									<a
 										href={item.href}
-										title={item.label}
+										title={`${item.label} · ${item.caption}`}
 										aria-current={isActive ? 'page' : undefined}
+										data-kind={item.kind}
 										className={cn(
 											'rv-ribbon-tag relative flex h-[70px] w-[58px] flex-col items-center outline-none',
 											isActive && 'is-active',
@@ -156,6 +158,18 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 										}}
 									>
 										<Tag active={isActive} />
+										<span className="rv-ribbon-stack" aria-hidden>
+											<img
+												src={RIBBON_STICKER_SRC[item.kind]}
+												alt=""
+												draggable={false}
+												decoding="async"
+												className="rv-ribbon-cutout select-none object-contain"
+											/>
+											<span className="rv-ribbon-caption rv-tag-label font-label text-[7.5px] uppercase tracking-[0.05em]">
+												{item.caption}
+											</span>
+										</span>
 										<span className="sr-only">
 											{item.label} · {item.caption}
 										</span>
@@ -263,6 +277,7 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 								<a
 									href={item.href}
 									aria-current={isActive ? 'page' : undefined}
+									data-kind={item.kind}
 									className={cn(
 										'rv-ribbon-tag group flex h-[4.25rem] w-[3.4rem] min-w-11 flex-col items-center outline-none',
 										isActive && 'is-active',
@@ -274,6 +289,18 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 									<span aria-hidden className="h-1.5 w-px bg-[var(--sidebar-string)]" />
 									<span className="relative h-[58px] w-[48px]">
 										<Tag active={isActive} />
+										<span className="rv-ribbon-stack" aria-hidden>
+											<img
+												src={RIBBON_STICKER_SRC[item.kind]}
+												alt=""
+												draggable={false}
+												decoding="async"
+												className="rv-ribbon-cutout select-none object-contain"
+											/>
+											<span className="rv-ribbon-caption rv-tag-label font-label text-[6.5px] uppercase tracking-[0.04em]">
+												{item.caption}
+											</span>
+										</span>
 									</span>
 									<span className="sr-only">{item.label}</span>
 								</a>
