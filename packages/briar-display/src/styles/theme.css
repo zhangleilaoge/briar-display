@@ -95,17 +95,12 @@
 	--btn-secondary-image: linear-gradient(180deg, #f4f6fb 0%, #d9e1ef 100%);
 	--btn-outline-image: linear-gradient(180deg, #fffdf9 0%, #f3ece4 100%);
 
-	/* 纸标签感：奶油/天蓝水洗，避免粉渐变 pill */
-	--tabs-list-bg: color-mix(in srgb, var(--rv-sky) 28%, var(--rv-beige));
-	--tab-active-image: linear-gradient(
-		180deg,
-		#fffef9 0%,
-		color-mix(in srgb, var(--rv-sky) 42%, var(--rv-cream)) 100%
-	);
-	--tab-active-fg: var(--rv-navy);
-	--tab-active-shadow: inset 0 0 0 1.5px hsl(0 0% 100% / 0.88), 0 0 0 1px
-		color-mix(in srgb, var(--rv-navy) 20%, transparent), 0 3px 8px -3px
-		hsl(214 30% 35% / 0.22);
+	/* 纸标签感：暖粉奶油（门户 scrapbook 主色） */
+	--tabs-list-bg: hsl(24 33% 93% / 0.85);
+	--tab-active-image: linear-gradient(180deg, #faeaef 0%, #edcdd4 100%);
+	--tab-active-fg: hsl(222 25% 20%);
+	--tab-active-shadow: inset 0 0 0 1.5px hsl(0 0% 100% / 0.8), 0 3px 8px -3px
+		hsl(350 40% 45% / 0.35);
 
 	--row-hover: hsl(345 47% 92% / 0.55);
 	--row-selected: hsl(345 47% 90%);
@@ -691,7 +686,7 @@ progress {
    双主题约定：
    - 共享结构类：.rv-paper-dialog / .rv-paper-float / .rv-paper-header / .rv-paper-overlay
    - Arcane（默认本段基线 + .theme-arcane 微调）：藏青顶栏、直角、冰蓝洗、HUD 裁切角
-   - Scrapbook：.theme-scrapbook 覆盖为本段末尾「=== Dialog scrapbook ===」——奶油/冷天蓝纸片、白撕边 sticker、冷雾遮罩（非粉现代 UI）
+   - Scrapbook：.theme-scrapbook 覆盖为本段末尾「=== Dialog scrapbook ===」——暖粉奶油纸片、白撕边 sticker、粉雾遮罩；无 HUD 裁切角
    下拉浮层（.rv-paper-float）两主题均保持方角直角（Select 溢出约定）。
    ============================================================ */
 
@@ -732,7 +727,7 @@ progress {
 		hsl(221 46% 20% / 0.38) !important;
 }
 
-/* 遮罩：Arcane / 基线偏冷蓝灰纸雾（scrapbook 覆盖仍保持冷天蓝雾，非粉雾） */
+/* 遮罩：Arcane / 基线偏冷蓝灰纸雾（scrapbook 在下方覆盖为暖粉雾） */
 .rv-paper-overlay {
 	background: var(--paper-grain),
 		radial-gradient(ellipse 70% 50% at 50% 40%, hsl(214 42% 78% / 0.55), transparent 70%),
@@ -937,7 +932,7 @@ progress {
 		drop-shadow(0 3px 8px rgb(28 43 75 / 0.18));
 }
 
-/* 浮层菜单项选中态：淡蓝洗 + 左条（方角，与 Select 一致；scrapbook 天蓝水洗覆盖见下） */
+/* 浮层菜单项选中态：淡蓝洗 + 左条（方角，与 Select 一致；scrapbook 粉洗覆盖见下） */
 .rv-paper-float [data-highlighted],
 .rv-paper-float [data-selected="true"],
 .rv-paper-float [cmdk-item][data-selected="true"] {
@@ -948,70 +943,61 @@ progress {
 }
 
 /* === Dialog scrapbook ===
-   目标案例剪纸手账：冷奶油纸 + 雾白撕边 sticker + 深蓝/雾灰墨字 + 冷天蓝雾。
-   不要实心粉条、不要 soft-pink pill 审美。Arcane 藏青顶栏基线不动。 */
+   暖粉奶油剪纸手账：粉玫瑰点缀 + 白撕边 sticker + 粉雾遮罩。
+   保留剪纸结构（不规则纸角、邮戳顶栏、贴纸格），色调回到门户暖粉；
+   scrapbook 下隐藏 HUD 裁切角与印刷 + 记号。Arcane 藏青顶栏基线不动。 */
 .theme-scrapbook .rv-paper-dialog {
-	--rv-paper-border: color-mix(in srgb, var(--rv-navy) 38%, var(--rv-beige));
+	--rv-paper-border: color-mix(in srgb, var(--rv-rose-deep) 32%, var(--rv-beige));
 	border-color: var(--rv-paper-border) !important;
-	/* 略不规则纸角：非现代大圆角 pill */
-	border-radius: 4px 10px 6px 8px !important;
-	background-color: #fffef9 !important;
+	/* 略不规则纸角：剪纸感，非现代大 pill、亦非 HUD 直角 */
+	border-radius: 4px 12px 7px 10px !important;
+	background-color: #fffdf9 !important;
 	background-image: var(--paper-grain),
-		linear-gradient(
-			168deg,
-			#fffefb 0%,
-			var(--rv-cream) 48%,
-			color-mix(in srgb, var(--rv-sky) 22%, var(--rv-cream)) 100%
-		);
-	/* 厚白 sticker 描边 + 冷灰影 */
+		linear-gradient(165deg, #fffefb 0%, var(--rv-cream) 42%, #f8ece8 100%);
+	/* 厚白 sticker 描边 + 暖玫影 */
 	box-shadow:
 		0 0 0 4px hsl(0 0% 100% / 0.96),
-		0 0 0 5px color-mix(in srgb, var(--rv-navy) 10%, transparent),
+		0 0 0 5px color-mix(in srgb, var(--rv-rose-deep) 12%, transparent),
 		0 1px 0 hsl(0 0% 100% / 0.9) inset,
-		0 20px 44px -14px hsl(214 32% 30% / 0.28),
-		0 8px 18px -8px hsl(214 28% 35% / 0.14) !important;
+		0 20px 44px -14px hsl(350 35% 40% / 0.28),
+		0 8px 18px -8px hsl(350 30% 45% / 0.16) !important;
 }
 
-/* 下拉浮层：保持方角，奶油纸 + 雾灰描边（Select 溢出约定） */
+/* 下拉浮层：保持方角，暖粉描边 / 奶油纸（Select 溢出约定） */
 .theme-scrapbook .rv-paper-float {
-	--rv-paper-border: color-mix(in srgb, var(--rv-navy) 32%, var(--rv-beige));
+	--rv-paper-border: color-mix(in srgb, var(--rv-rose-deep) 26%, var(--rv-beige));
 	border-color: var(--rv-paper-border) !important;
 	border-radius: 2px !important;
-	background-color: #fffef9 !important;
+	background-color: #fffdf9 !important;
 	background-image: var(--paper-grain),
-		linear-gradient(180deg, #fffefb 0%, var(--rv-cream) 60%, color-mix(in srgb, var(--rv-sky) 18%, var(--rv-cream)) 100%);
+		linear-gradient(180deg, #fffefb 0%, var(--rv-cream) 60%, #f6ebe6 100%);
 	box-shadow:
 		0 0 0 3px hsl(0 0% 100% / 0.94),
-		0 14px 36px -12px hsl(214 30% 32% / 0.24),
-		0 4px 12px -4px hsl(214 26% 38% / 0.12) !important;
+		0 14px 36px -12px hsl(350 30% 40% / 0.26),
+		0 4px 12px -4px hsl(350 25% 45% / 0.14) !important;
 }
 
 .theme-scrapbook .rv-paper-overlay {
 	background: var(--paper-grain),
-		radial-gradient(ellipse 72% 52% at 50% 38%, hsl(214 48% 82% / 0.58), transparent 72%),
-		radial-gradient(ellipse 48% 38% at 82% 78%, hsl(210 40% 88% / 0.35), transparent 70%),
-		hsl(214 30% 55% / 0.4) !important;
-	backdrop-filter: blur(3.5px) saturate(1.06);
-	-webkit-backdrop-filter: blur(3.5px) saturate(1.06);
+		radial-gradient(ellipse 72% 52% at 50% 38%, hsl(345 48% 88% / 0.62), transparent 72%),
+		radial-gradient(ellipse 50% 40% at 80% 80%, hsl(36 50% 90% / 0.4), transparent 70%),
+		hsl(350 28% 62% / 0.38) !important;
+	backdrop-filter: blur(4px) saturate(1.08);
+	-webkit-backdrop-filter: blur(4px) saturate(1.08);
 }
 
-/* 奶油/雾白纸条顶栏（邮戳感底线；非粉洗实心条） */
+/* 暖粉 / 奶油纸条顶栏（邮戳感虚线底；非藏青实心条） */
 .theme-scrapbook .rv-paper-header {
 	background:
 		var(--paper-grain),
-		linear-gradient(
-			180deg,
-			#fffefb 0%,
-			#f7f3ec 52%,
-			color-mix(in srgb, var(--rv-sky) 30%, var(--rv-cream)) 100%
-		);
+		linear-gradient(180deg, #fff9f5 0%, #f8e4ea 48%, #efd0d8 100%);
 	background-size: 180px 180px, auto;
 	color: var(--rv-ink);
-	border-bottom: 1.5px dashed color-mix(in srgb, var(--rv-navy) 22%, transparent);
+	border-bottom: 1.5px dashed color-mix(in srgb, var(--rv-rose-deep) 28%, transparent);
 	box-shadow:
-		0 1px 0 hsl(0 0% 100% / 0.9) inset,
-		0 2px 6px -2px hsl(214 28% 40% / 0.1);
-	border-radius: 3px 8px 0 0;
+		0 1px 0 hsl(0 0% 100% / 0.88) inset,
+		0 2px 8px -2px hsl(350 40% 45% / 0.12);
+	border-radius: 3px 10px 0 0;
 }
 
 .theme-scrapbook .rv-paper-header.sr-only {
@@ -1022,92 +1008,81 @@ progress {
 }
 
 .theme-scrapbook .rv-paper-header .rv-paper-title {
-	color: var(--rv-navy);
-	letter-spacing: 0.03em;
+	color: color-mix(in srgb, var(--rv-ink) 82%, var(--rv-rose-deep));
+	letter-spacing: 0.02em;
 }
 
 .theme-scrapbook .rv-paper-header .text-muted-foreground,
 .theme-scrapbook .rv-paper-header [data-slot="dialog-description"],
 .theme-scrapbook .rv-paper-header p {
-	color: color-mix(in srgb, var(--rv-ink) 55%, var(--rv-navy) 12%);
+	color: color-mix(in srgb, var(--rv-ink) 52%, var(--rv-rose-deep) 18%);
 }
 
-/* 左侧小签：奶油邮戳，海军字 */
+/* 左侧小粉签 / 邮戳感编号 */
 .theme-scrapbook .rv-paper-index {
-	background: linear-gradient(165deg, #fffef9, color-mix(in srgb, var(--rv-sky) 45%, var(--rv-cream)));
-	color: var(--rv-navy);
-	border-color: color-mix(in srgb, var(--rv-navy) 28%, transparent);
+	background: linear-gradient(165deg, #fff8f4, #f0c9d2);
+	color: var(--rv-rose-deep);
+	border-color: color-mix(in srgb, var(--rv-rose-deep) 35%, transparent);
 	border-radius: 2px 6px 2px 6px;
-	box-shadow: 0 1px 3px hsl(214 30% 40% / 0.16);
+	box-shadow: 0 1px 3px hsl(350 40% 45% / 0.18);
 	transform: rotate(-2deg);
 }
 
-/* 角标：雾灰海军，弱化 HUD */
-.theme-scrapbook .rv-crop-marks::before,
-.theme-scrapbook .rv-crop-marks::after,
-.theme-scrapbook .rv-crop-marks span::before,
-.theme-scrapbook .rv-crop-marks span::after {
-	border-color: color-mix(in srgb, var(--rv-navy) 55%, var(--rv-sky));
-	opacity: 0.38;
-	width: 10px;
-	height: 10px;
+/* scrapbook：彻底隐藏 HUD 裁切角与右下印刷记号（两套主题分开） */
+.theme-scrapbook .rv-crop-marks {
+	display: none !important;
 }
-
 .theme-scrapbook .rv-paper-dialog::after {
-	color: color-mix(in srgb, var(--rv-navy) 55%, var(--rv-sky));
-	opacity: 0.28;
-	content: "✦";
-	font-size: 11px;
-	right: -12px;
-	bottom: -14px;
+	content: none !important;
+	display: none !important;
 }
 
-/* 关闭钮：墨色 */
+/* 关闭钮：墨色 + 粉玫瑰，非白 */
 .theme-scrapbook .rv-paper-dialog:has(.rv-paper-header:not(.sr-only)) [data-rv-dialog-close] {
-	color: color-mix(in srgb, var(--rv-ink) 80%, var(--rv-navy));
+	color: color-mix(in srgb, var(--rv-ink) 78%, var(--rv-rose-deep));
 	opacity: 0.72;
 	top: 0.7rem;
 }
 .theme-scrapbook .rv-paper-dialog:has(.rv-paper-header:not(.sr-only)) [data-rv-dialog-close]:hover {
 	opacity: 1;
-	background: color-mix(in srgb, var(--rv-sky) 55%, white);
+	background: color-mix(in srgb, var(--rv-pink) 70%, white);
 }
 
 .theme-scrapbook .rv-paper-footer {
-	border-color: color-mix(in srgb, var(--rv-navy) 14%, transparent);
+	border-color: color-mix(in srgb, var(--rv-rose-deep) 18%, transparent);
 }
 
-/* 浮层选中：天蓝水洗 + 海军左条（仍方角） */
+/* 浮层选中：粉洗 + 玫棕左条（仍方角） */
 .theme-scrapbook .rv-paper-float [data-highlighted],
 .theme-scrapbook .rv-paper-float [data-selected="true"],
 .theme-scrapbook .rv-paper-float [cmdk-item][data-selected="true"] {
-	background: hsl(214 42% 93% / 0.88) !important;
+	background: hsl(345 47% 93% / 0.85) !important;
 	color: var(--rv-ink) !important;
-	box-shadow: inset 3px 0 0 var(--rv-navy);
+	box-shadow: inset 3px 0 0 var(--rv-rose-deep);
 	border-radius: 0 !important;
 }
 
 .theme-scrapbook .rv-paper-row[data-active="true"],
 .theme-scrapbook .rv-paper-row[data-selected="true"] {
-	background: hsl(214 42% 93% / 0.72);
+	background: hsl(345 47% 93% / 0.7);
 }
 .theme-scrapbook .rv-paper-row[data-active="true"]::before,
 .theme-scrapbook .rv-paper-row[data-selected="true"]::before {
-	background: var(--rv-navy);
+	background: var(--rv-rose-deep);
 }
 
 .theme-scrapbook .rv-index-box {
-	border-color: color-mix(in srgb, var(--rv-navy) 45%, var(--rv-sky));
-	color: color-mix(in srgb, var(--rv-ink) 75%, var(--rv-navy));
+	border-color: color-mix(in srgb, var(--rv-rose-deep) 45%, var(--rv-ink));
+	color: color-mix(in srgb, var(--rv-ink) 70%, var(--rv-rose-deep));
 	border-radius: 3px;
 }
 .theme-scrapbook .rv-index-box[data-active="true"],
 .theme-scrapbook [data-selected="true"] > .rv-index-box,
 .theme-scrapbook [data-highlighted] > .rv-index-box,
 .theme-scrapbook [aria-selected="true"] > .rv-index-box {
-	background: linear-gradient(180deg, #fffef9, color-mix(in srgb, var(--rv-sky) 50%, var(--rv-cream)));
-	color: var(--rv-navy);
-	border-color: color-mix(in srgb, var(--rv-navy) 35%, transparent);
+	background: linear-gradient(180deg, #f9e9ee, #e8c0c9);
+	color: var(--rv-ink);
+	border-color: color-mix(in srgb, var(--rv-rose-deep) 40%, transparent);
 }
 
 /* 大号水印数字 */
@@ -1130,11 +1105,11 @@ progress {
 		overflow: visible !important;
 	}
 	.theme-scrapbook .rv-paper-dialog {
-		border-radius: 4px 8px 5px 7px !important;
+		border-radius: 4px 10px 6px 8px !important;
 	}
 }
 
-/* === Weather dialog 纸片内页（scrapbook 剪纸；arcane 直角 HUD） === */
+/* === Weather dialog 纸片内页（scrapbook 暖粉剪纸；arcane 直角 HUD） === */
 .rv-wx-now {
 	position: relative;
 	padding: 1rem;
@@ -1144,18 +1119,18 @@ progress {
 }
 .theme-scrapbook .rv-wx-now {
 	border-radius: 3px 9px 5px 7px;
-	border-color: color-mix(in srgb, var(--rv-navy) 22%, var(--rv-sky));
+	border-color: color-mix(in srgb, var(--rv-rose-deep) 28%, var(--rv-beige));
 	background:
 		var(--paper-grain),
 		linear-gradient(
 			165deg,
 			#fffefb 0%,
 			var(--rv-cream) 55%,
-			color-mix(in srgb, var(--rv-sky) 26%, var(--rv-cream)) 100%
+			color-mix(in srgb, var(--rv-pink) 55%, var(--rv-cream)) 100%
 		);
 	box-shadow:
 		0 0 0 3px hsl(0 0% 100% / 0.95),
-		0 6px 14px -6px hsl(214 28% 35% / 0.18);
+		0 6px 14px -6px hsl(350 30% 40% / 0.18);
 }
 .theme-scrapbook .rv-wx-now::before {
 	/* 极轻古典线稿点缀：不挡字 */
@@ -1168,9 +1143,9 @@ progress {
 	opacity: 0.12;
 	pointer-events: none;
 	background:
-		radial-gradient(circle at 50% 50%, transparent 42%, color-mix(in srgb, var(--rv-navy) 70%, transparent) 43% 46%, transparent 47%),
-		linear-gradient(var(--rv-navy), var(--rv-navy)) center / 1px 55% no-repeat,
-		linear-gradient(90deg, var(--rv-navy), var(--rv-navy)) center / 55% 1px no-repeat;
+		radial-gradient(circle at 50% 50%, transparent 42%, color-mix(in srgb, var(--rv-rose-deep) 70%, transparent) 43% 46%, transparent 47%),
+		linear-gradient(var(--rv-rose-deep), var(--rv-rose-deep)) center / 1px 55% no-repeat,
+		linear-gradient(90deg, var(--rv-rose-deep), var(--rv-rose-deep)) center / 55% 1px no-repeat;
 }
 
 .theme-arcane .rv-wx-now {
@@ -1184,7 +1159,7 @@ progress {
 	color: var(--rv-navy);
 }
 .theme-scrapbook .rv-wx-pin {
-	color: color-mix(in srgb, var(--rv-navy) 78%, var(--rv-sky));
+	color: color-mix(in srgb, var(--rv-ink) 70%, var(--rv-rose-deep));
 }
 .theme-arcane .rv-wx-pin {
 	color: var(--rv-navy);
@@ -1194,14 +1169,14 @@ progress {
 	color: color-mix(in srgb, var(--rv-ink) 70%, var(--rv-navy));
 }
 .theme-scrapbook .rv-wx-now-icon {
-	color: color-mix(in srgb, var(--rv-ink) 65%, var(--rv-navy));
+	color: color-mix(in srgb, var(--rv-ink) 65%, var(--rv-rose-deep));
 }
 
-/* 纸标签 / 邮票条 tab（非粉 pill） */
+/* 纸标签 / 邮票条 tab（暖粉） */
 .theme-scrapbook .rv-wx-tabs {
 	border-radius: 3px !important;
-	background: color-mix(in srgb, var(--rv-sky) 22%, var(--rv-beige)) !important;
-	border: 1px dashed color-mix(in srgb, var(--rv-navy) 18%, transparent);
+	background: color-mix(in srgb, var(--rv-pink) 55%, var(--rv-beige)) !important;
+	border: 1px dashed color-mix(in srgb, var(--rv-rose-deep) 22%, transparent);
 	padding: 3px !important;
 	box-shadow: 0 0 0 2px hsl(0 0% 100% / 0.85);
 }
@@ -1244,13 +1219,13 @@ progress {
 }
 .theme-scrapbook .rv-wx-hour {
 	border-radius: 2px 7px 3px 6px;
-	border-color: color-mix(in srgb, var(--rv-navy) 20%, var(--rv-sky));
+	border-color: color-mix(in srgb, var(--rv-rose-deep) 26%, var(--rv-beige));
 	background:
 		var(--paper-grain),
-		linear-gradient(180deg, #fffefb 0%, var(--rv-cream) 70%, color-mix(in srgb, var(--rv-sky) 18%, white) 100%);
+		linear-gradient(180deg, #fffefb 0%, var(--rv-cream) 70%, color-mix(in srgb, var(--rv-pink) 40%, white) 100%);
 	box-shadow:
 		0 0 0 2.5px hsl(0 0% 100% / 0.96),
-		0 4px 10px -4px hsl(214 28% 35% / 0.2);
+		0 4px 10px -4px hsl(350 30% 40% / 0.2);
 }
 .theme-scrapbook .rv-wx-hour:nth-child(3n) {
 	transform: rotate(-0.8deg);
@@ -1274,7 +1249,7 @@ progress {
 	color: var(--rv-navy);
 }
 .theme-scrapbook .rv-wx-hour-now {
-	color: var(--rv-navy);
+	color: color-mix(in srgb, var(--rv-ink) 75%, var(--rv-rose-deep));
 }
 .theme-arcane .rv-wx-hour-now {
 	color: var(--rv-navy);
@@ -1302,10 +1277,10 @@ progress {
 }
 .theme-scrapbook .rv-wx-day {
 	border-radius: 2px 6px 3px 5px;
-	border: 1px solid color-mix(in srgb, var(--rv-navy) 14%, var(--rv-sky));
+	border: 1px solid color-mix(in srgb, var(--rv-rose-deep) 20%, var(--rv-beige));
 	background:
 		var(--paper-grain),
-		linear-gradient(90deg, #fffefb 0%, var(--rv-cream) 70%, color-mix(in srgb, var(--rv-sky) 14%, white) 100%);
+		linear-gradient(90deg, #fffefb 0%, var(--rv-cream) 70%, color-mix(in srgb, var(--rv-pink) 35%, white) 100%);
 	box-shadow: 0 0 0 2px hsl(0 0% 100% / 0.92);
 }
 .theme-scrapbook .rv-wx-day:nth-child(even) {
