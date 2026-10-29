@@ -99,15 +99,42 @@ export interface RibbonSidebarProps {
 	currentPath?: string
 }
 
+/** 离开热区后延迟再收起（进区立刻展开；重进取消计时） */
+const RIBBON_LEAVE_MS = 2500
+
 export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 	const { isAdmin } = usePermissions()
 	const [path, setPath] = useState(currentPath ?? '')
 	const [mounted, setMounted] = useState(false)
+	const [open, setOpen] = useState(false)
+	const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+	const clearLeaveTimer = useCallback(() => {
+		if (leaveTimerRef.current != null) {
+			clearTimeout(leaveTimerRef.current)
+			leaveTimerRef.current = null
+		}
+	}, [])
+
+	const openNow = useCallback(() => {
+		clearLeaveTimer()
+		setOpen(true)
+	}, [clearLeaveTimer])
+
+	const scheduleClose = useCallback(() => {
+		clearLeaveTimer()
+		leaveTimerRef.current = setTimeout(() => {
+			leaveTimerRef.current = null
+			setOpen(false)
+		}, RIBBON_LEAVE_MS)
+	}, [clearLeaveTimer])
 
 	useEffect(() => {
 		setPath(window.location.pathname)
 		setMounted(true)
 	}, [])
+
+	useEffect(() => () => clearLeaveTimer(), [clearLeaveTimer])
 
 	const active = activeRibbonHref(path)
 	const items = RIBBON_ITEMS.filter((item) => !item.adminOnly || (mounted && isAdmin))
@@ -118,6 +145,15 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 		<>
 			<nav
 				aria-label="全局导航"
+				data-open={open ? '' : undefined}
+				onMouseEnter={openNow}
+				onMouseLeave={scheduleClose}
+				onFocusCapture={openNow}
+				onBlurCapture={(event) => {
+					const next = event.relatedTarget
+					if (next instanceof Node && event.currentTarget.contains(next)) return
+					scheduleClose()
+				}}
 				className={cn(
 					'rv-ribbon group/ribbon fixed inset-y-0 left-0 z-[60] hidden w-[5.25rem] md:block',
 					className,
