@@ -9,7 +9,6 @@ import fichiersPurse from '@/assets/decor/ribbon-stickers/fichiers-purse.png'
 import moiCameo from '@/assets/decor/ribbon-stickers/moi-cameo.png'
 import outilsInkwell from '@/assets/decor/ribbon-stickers/outils-inkwell-quill.png'
 import penseesBook from '@/assets/decor/ribbon-stickers/pensees-book.png'
-import hangBowSvg from '@/assets/decor/ribbon-stickers/hang-bow.svg'
 import { cn } from '@/lib/utils'
 import type { ReactNode, SVGProps } from 'react'
 
@@ -122,8 +121,6 @@ function srcOf(m: string | { src: string }): string {
 	return typeof m === 'string' ? m : m.src
 }
 
-/** CC0 Classic Ribbon Bow (SVG Item) — 顶结资源 */
-const HANG_BOW_SRC = srcOf(hangBowSvg)
 
 /** 插画切图贴纸（已着色 + 白撕纸边）；避开 portal 轮播同款素材 */
 export const RIBBON_STICKER_SRC: Record<RibbonTagKind, string> = {
@@ -176,14 +173,10 @@ function StickerShell({
 	)
 }
 
-/** 挂绳接触点蝴蝶结：引用 CC0 SVG 资源（加大，结心对齐眼孔） */
-function HangBow({ cx = 28, cy = 10 }: { cx?: number; cy?: number }) {
-	/** viewBox 56×72 内约 ½ 牌宽，结心压在 (cx,cy) */
-	const bw = 32
-	const bh = 28
+/** 吊绳 + 眼孔接点（无蝴蝶结） */
+function HangString({ cx = 28, cy = 10 }: { cx?: number; cy?: number }) {
 	return (
 		<g>
-			{/* 吊绳落到接触点 */}
 			<path
 				d={`M${cx} 0 V${cy}`}
 				fill="none"
@@ -191,17 +184,7 @@ function HangBow({ cx = 28, cy = 10 }: { cx?: number; cy?: number }) {
 				strokeWidth={1.1}
 				strokeLinecap="round"
 			/>
-			{/* 网上 CC0 缎带蝴蝶结 */}
-			<image
-				href={HANG_BOW_SRC}
-				x={cx - bw / 2}
-				y={cy - bh / 2 + 1.2}
-				width={bw}
-				height={bh}
-				preserveAspectRatio="xMidYMid meet"
-				style={{ pointerEvents: 'none' }}
-			/>
-			{/* 眼孔：线与牌的接触点（叠在结心上） */}
+			{/* 眼孔：线与牌的干净接点 */}
 			<circle cx={cx} cy={cy} r={2.15} fill={fill} stroke={ink} strokeWidth={0.95} />
 			<circle cx={cx} cy={cy} r={1.0} fill="none" stroke={ink} strokeWidth={0.7} />
 		</g>
@@ -216,7 +199,7 @@ function TagShell({
 }: TagSvgProps & { kind: RibbonTagKind }) {
 	return (
 		<StickerShell d={RIBBON_HAND_PATHS[kind]} active={active} className={className} {...rest}>
-			<HangBow cy={RIBBON_HANG_CY[kind]} />
+			<HangString cy={RIBBON_HANG_CY[kind]} />
 		</StickerShell>
 	)
 }
