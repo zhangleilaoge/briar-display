@@ -33,13 +33,13 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 		id: 'dialog',
 		via: 'shared-paper',
 		status: 'done',
-		notes: 'scrapbook 奶油/冷天蓝纸片顶栏 + 白撕边 sticker + 冷雾；arcane 藏青顶栏 + HUD 裁切角',
+		notes: 'scrapbook 暖粉奶油纸片顶栏 + 白撕边 sticker + 粉雾；无裁切角；arcane 藏青顶栏 + HUD 裁切角',
 	},
 	{
 		id: 'popover',
 		via: 'shared-paper',
 		status: 'done',
-		notes: '共用 .rv-paper-float；scrapbook 雾灰描边仍方角',
+		notes: '共用 .rv-paper-float；scrapbook 暖粉描边仍方角',
 	},
 	{
 		id: 'select',
@@ -51,7 +51,7 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 		id: 'command',
 		via: 'shared-paper',
 		status: 'done',
-		notes: '共用 .rv-paper-float 选中天蓝水洗 / 冰蓝洗',
+		notes: '共用 .rv-paper-float 选中粉洗 / 冰蓝洗',
 	},
 	{
 		id: 'hover-card',
@@ -75,13 +75,13 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 		id: 'tabs',
 		via: 'css-token',
 		status: 'skeleton',
-		notes: '--tabs-list-bg / --tab-active-*：scrapbook 奶油天蓝纸标签；天气另有 .rv-wx-tabs 邮票条',
+		notes: '--tabs-list-bg / --tab-active-*：scrapbook 暖粉纸标签；天气另有 .rv-wx-tabs 粉邮票条',
 	},
 	{
 		id: 'weather-dialog',
 		via: 'css-theme-class',
 		status: 'done',
-		notes: '.rv-wx-*：scrapbook 撕边贴纸卡/邮戳 tab；arcane 直角 HUD 行',
+		notes: '.rv-wx-*：scrapbook 暖粉撕边贴纸卡/邮戳 tab；arcane 直角 HUD 行',
 	},
 	{
 		id: 'badge',
@@ -143,5 +143,5 @@ export function themeVariantIdsFor(status: ThemeVariantStatus): string[] {
 
 /** 文档/注释用：两主题短标签 */
 export function themeVariantLabel(theme: ReverieTheme): string {
-	return theme === 'arcane' ? 'Arcane 1999 HUD' : '冷天蓝剪纸手账 Scrapbook'
+	return theme === 'arcane' ? 'Arcane 1999 HUD' : '暖粉剪纸手账 Scrapbook'
 }
