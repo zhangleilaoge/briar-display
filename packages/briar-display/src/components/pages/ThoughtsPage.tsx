@@ -12,12 +12,12 @@ import {
 import { ScrapStickerDecor } from '@/components/portal/ScrapStickerDecor'
 import { EmojiInsertButton } from '@/components/thoughts/EmojiInsertButton'
 import { Button } from '@/components/ui/button'
+import { LinkifiedText } from '@/components/ui/linkified-text'
 import { PageHeader } from '@/components/ui/page-header'
 import { PaperSheet, type PaperSheetVariant } from '@/components/ui/paper-sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
-import { type LinkifyPart, splitLinkify } from '@/lib/linkify'
 import { cn } from '@/lib/utils'
 import { Heart, Loader2, Pencil, Send, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -550,28 +550,5 @@ function ThoughtCard({
 				</div>
 			)}
 		</PaperSheet>
-	)
-}
-
-function LinkifiedText({ text }: { text: string }) {
-	const parts = useMemo(() => splitLinkify(text), [text])
-	return (
-		<>
-			{parts.map((part: LinkifyPart, i) =>
-				part.type === 'link' ? (
-					<a
-						key={`l-${i}`}
-						href={part.href}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="break-all text-[color:var(--rv-rose-deep)] underline underline-offset-2 hover:opacity-80"
-					>
-						{part.value}
-					</a>
-				) : (
-					<span key={`t-${i}`}>{part.value}</span>
-				),
-			)}
-		</>
 	)
 }
