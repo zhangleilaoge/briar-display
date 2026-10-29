@@ -31,15 +31,17 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
 				weekdays: 'flex',
 				weekday: 'text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]',
 				week: 'flex w-full mt-2',
-				day: 'h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20',
+				// 格子勿对任意 aria-selected 铺方角 accent，否则会与选中圆点叠出墨色方块黑边
+				day: 'h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-middle)]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20',
 				day_button: cn(
 					buttonVariants({ variant: 'ghost' }),
-					'h-9 w-9 p-0 font-normal aria-selected:opacity-100',
+					'h-9 w-9 p-0 font-normal aria-selected:opacity-100 aria-selected:bg-transparent aria-selected:hover:bg-transparent',
 				),
 				range_end: 'day-range-end',
+				// 选中态走 row-selected + radius-control：scrapbook 粉圆，arcane 藏青直角；勿用 bg-primary 方角墨块
 				selected:
-					'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
-				today: 'bg-primary/10 text-primary font-semibold ring-1 ring-primary',
+					'rv-cal-day-selected rounded-[var(--radius-control)] bg-[hsl(var(--row-selected))] text-[hsl(var(--row-selected-fg))] hover:bg-[hsl(var(--row-selected))] hover:text-[hsl(var(--row-selected-fg))] focus:bg-[hsl(var(--row-selected))] focus:text-[hsl(var(--row-selected-fg))]',
+				today: 'bg-accent/60 text-foreground font-semibold ring-1 ring-primary/30',
 				outside:
 					'day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30',
 				disabled: 'text-muted-foreground opacity-50',
