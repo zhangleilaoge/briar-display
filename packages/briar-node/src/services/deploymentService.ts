@@ -2,7 +2,9 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { deployRunDal } from '../dal/deployRunDal'
 import { type GithubJobLite, extractErrorExcerpt, pickFailedJobStep } from '../lib/deployFailure'
+import { CDN_DEPLOY_WORKFLOW } from '../lib/deployNotify'
 import { findRepoRoot } from './certificate/utils'
+import { deployNotifyService } from './deployNotifyService'
 
 export interface DeployHistoryItem {
 	commit: string
@@ -17,6 +19,8 @@ export interface DeployHistoryItem {
 	startedAt?: string
 	/** 运行结束时间（GitHub completed 时 updated_at / CI 记录的 at；运行中无） */
 	finishedAt?: string
+	/** GitHub workflow 路径；jsonl 缺省视为 CDN deploy.yml */
+	workflowPath?: string
 }
 
 export interface DeployRunLogs {
@@ -212,9 +216,13 @@ export const deploymentService = {
 				.split('\n')
 				.map((line) => line.trim())
 				.filter(Boolean)
-				.map((line) => {
+				.map((line): DeployHistoryItem | null => {
 					try {
-						return JSON.parse(line) as DeployHistoryItem
+						const item = JSON.parse(line) as DeployHistoryItem
+						return {
+							...item,
+							workflowPath: item.workflowPath || CDN_DEPLOY_WORKFLOW,
+						}
 					} catch {
 						return null
 					}
@@ -229,10 +237,14 @@ export const deploymentService = {
 	},
 
 	/**
-	 * 部署记录：jsonl 历史 + GitHub 实时 runs 合并
-	 * API 数据更新（状态实时），同一 run 以 API 为准；token 全失效时退回纯 jsonl
+	 * 同步部署记录（jsonl + GitHub），落库并触发站内信。
+	 * API 优先合并；token 全失效时退回纯 jsonl。
+	 * @param awaitFailureBackfill 定时任务传 true，等失败回填（含失败站内信）完成再返回；管理端列表默认 false 以免拖慢接口
 	 */
-	async listDeployRuns(limit = 20): Promise<DeployHistoryItem[]> {
+	async listDeployRuns(
+		limit = 20,
+		opts?: { awaitFailureBackfill?: boolean },
+	): Promise<DeployHistoryItem[]> {
 		const history = await this.listDeployHistory(50)
 
 		let apiRuns: DeployHistoryItem[] = []
@@ -267,13 +279,23 @@ export const deploymentService = {
 		const merged = [...byRun.values()].sort((a, b) => b.at.localeCompare(a.at))
 		// 落库：部署记录持久化到 deploy_runs（写库失败不影响列表返回）
 		await deployRunDal.upsertMany(merged).catch((e) => console.error('部署记录落库失败:', e))
+		// 进行中的 CDN 部署 → 给管理员发「发布开始」站内信（幂等）
+		await deployNotifyService
+			.notifyStarts(merged)
+			.catch((e) => console.error('部署开始站内信失败:', e))
 		// 回填：库中缺起止时间的旧记录，按 run_id 逐个查 GitHub（每次同步最多 BACKFILL_BATCH 条）
 		if (workingToken) {
 			await backfillDeployDurations(workingToken).catch((e) =>
 				console.error('部署耗时回填失败:', e),
 			)
-			// 失败原因（job/step + 日志尾部片段）后台回填，不阻塞列表返回
-			void backfillDeployFailures(workingToken)
+			// 失败原因（job/step + 日志尾部片段）；定时任务等待完成以便发出失败站内信
+			if (opts?.awaitFailureBackfill) {
+				await backfillDeployFailures(workingToken).catch((e) =>
+					console.error('部署失败原因回填失败:', e),
+				)
+			} else {
+				void backfillDeployFailures(workingToken)
+			}
 		}
 		return merged.slice(0, limit)
 	},
@@ -358,7 +380,6 @@ export const deploymentService = {
 			`${lastError?.message ?? '未知错误'}（已尝试 ${candidates.length} 个 token 来源均失败）`,
 		)
 	},
-
 
 	/**
 	 * 某次运行的步骤级实时进度（jobs API 在运行中即可用，日志接口只能完成后拉取）
@@ -476,6 +497,7 @@ const fetchRecentRuns = async (token: string, limit: number): Promise<DeployHist
 			updated_at?: string
 			run_started_at?: string
 			display_title?: string
+			path?: string
 			actor: { login: string } | null
 		}>
 	}
@@ -493,6 +515,7 @@ type GithubRun = {
 	updated_at?: string
 	run_started_at?: string
 	display_title?: string
+	path?: string
 	actor: { login: string } | null
 }
 
@@ -507,6 +530,7 @@ const githubRunToItem = (run: GithubRun): DeployHistoryItem => ({
 	msg: run.display_title,
 	startedAt: run.run_started_at ?? run.created_at,
 	finishedAt: run.status === 'completed' ? run.updated_at : undefined,
+	workflowPath: run.path,
 })
 
 const BACKFILL_BATCH = 20
@@ -542,6 +566,7 @@ const backfillDeployFailures = async (token: string): Promise<void> => {
 				)
 				if (jobsRes.status === 404) {
 					await deployRunDal.saveFailure(runId, { job: null, step: null, excerpt: null })
+					await deployNotifyService.notifyFail(runId)
 					continue
 				}
 				if (!jobsRes.ok) throw new Error(`HTTP ${jobsRes.status}`)
@@ -560,6 +585,7 @@ const backfillDeployFailures = async (token: string): Promise<void> => {
 					else if (logRes && logRes.status !== 404 && logRes.status !== 410) continue // 暂不可用，下次再试
 				}
 				await deployRunDal.saveFailure(runId, { job: info.job, step: info.step, excerpt })
+				await deployNotifyService.notifyFail(runId)
 			} catch (e) {
 				console.warn(`⚠️  部署失败原因回填 run ${runId} 失败:`, e instanceof Error ? e.message : e)
 			}

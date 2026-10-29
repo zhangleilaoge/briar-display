@@ -316,6 +316,9 @@ CREATE TABLE IF NOT EXISTS deploy_runs (
   failure_step VARCHAR(255) DEFAULT NULL COMMENT '失败的 step 名',
   failure_excerpt TEXT COMMENT '失败日志尾部报错片段',
   failure_checked_at TIMESTAMP NULL DEFAULT NULL COMMENT '已拉取失败原因的时间（NULL=待拉取）',
+  workflow_path VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'GitHub workflow 路径（如 .github/workflows/deploy.yml）',
+  start_notified_at TIMESTAMP NULL DEFAULT NULL COMMENT '已发「发布开始」站内信时间（NULL=未发）',
+  fail_notified_at TIMESTAMP NULL DEFAULT NULL COMMENT '已发「发布失败」站内信时间（NULL=未发）',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   INDEX idx_deployed_at (deployed_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='部署记录';
