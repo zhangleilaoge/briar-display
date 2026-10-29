@@ -1174,17 +1174,19 @@ progress {
 
 /* 纸标签 / 邮票条 tab（暖粉） */
 .theme-scrapbook .rv-wx-tabs {
-	border-radius: 3px !important;
+	border-radius: 8px !important;
 	background: color-mix(in srgb, var(--rv-pink) 55%, var(--rv-beige)) !important;
 	border: 1px dashed color-mix(in srgb, var(--rv-rose-deep) 22%, transparent);
 	padding: 3px !important;
 	box-shadow: 0 0 0 2px hsl(0 0% 100% / 0.85);
 }
 .theme-scrapbook .rv-wx-tabs .rv-tab-indicator {
-	border-radius: 2px !important;
+	border-radius: 6px !important;
+	background: linear-gradient(180deg, #fff9f6, #f5dde4) !important;
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--rv-rose-deep) 26%, transparent);
 }
 .theme-scrapbook .rv-wx-tabs [role="tab"] {
-	border-radius: 2px !important;
+	border-radius: 6px !important;
 	font-family: var(--font-label);
 	letter-spacing: 0.06em;
 }
@@ -1301,6 +1303,40 @@ progress {
 }
 .theme-arcane .rv-wx-days {
 	gap: 0;
+}
+
+/* 管理地区：搜索框纸片柔角（scrapbook）；arcane 保持直角 HUD */
+.theme-scrapbook .rv-wx-search.rv-paper-float,
+.theme-scrapbook .rv-wx-search {
+	border-radius: 10px 14px 12px 11px !important;
+	border-color: color-mix(in srgb, var(--rv-rose-deep) 28%, var(--rv-beige)) !important;
+	background-color: #fffdf9 !important;
+	background-image: var(--paper-grain),
+		linear-gradient(180deg, #fffefb 0%, var(--rv-cream) 65%, #f7ebe6 100%) !important;
+	box-shadow:
+		0 0 0 2px hsl(0 0% 100% / 0.94),
+		0 4px 12px -4px hsl(350 28% 42% / 0.14) !important;
+	overflow: hidden;
+}
+.theme-scrapbook .rv-wx-search [cmdk-input-wrapper] {
+	border-bottom-color: color-mix(in srgb, var(--rv-rose-deep) 18%, transparent);
+}
+.theme-scrapbook .rv-wx-loc-chip {
+	border-color: color-mix(in srgb, var(--rv-rose-deep) 28%, transparent) !important;
+	background: color-mix(in srgb, var(--rv-pink) 45%, var(--rv-cream)) !important;
+}
+.theme-arcane .rv-wx-search.rv-paper-float,
+.theme-arcane .rv-wx-search {
+	border-radius: 2px !important;
+}
+
+/* scrapbook 通用 Input / Textarea / Select 触发器：纸片柔角 + 暖灰粉描边 */
+.theme-scrapbook .rounded-field {
+	border-radius: var(--radius-field) !important;
+	border-color: color-mix(in srgb, var(--rv-rose-deep) 22%, var(--rv-beige));
+}
+.theme-arcane .rounded-field {
+	border-radius: var(--radius-field) !important;
 }
 
 /* ============================================================
