@@ -63,7 +63,7 @@ export function WeatherLocationManager() {
 					{locations.map((location) => (
 						<li
 							key={location.id}
-							className="flex max-w-full items-center gap-1 rounded-full border border-[color:var(--rv-navy)]/15 bg-[var(--rv-cream)] py-1 pl-2.5 pr-1"
+							className="rv-wx-loc-chip flex max-w-full items-center gap-1 rounded-full border border-[color:var(--rv-navy)]/15 bg-[var(--rv-cream)] py-1 pl-2.5 pr-1"
 						>
 							<MapPin aria-hidden className="h-3 w-3 shrink-0 text-[color:var(--rv-rose-deep)]" />
 							<span className="truncate text-xs" title={weatherLocationLabel(location)}>
@@ -85,7 +85,7 @@ export function WeatherLocationManager() {
 				</ul>
 			</section>
 
-			<Command shouldFilter={false} className="border border-[color:var(--rv-navy)]/15">
+			<Command shouldFilter={false} className="rv-wx-search border border-[color:var(--rv-navy)]/15">
 				<CommandInput
 					value={query}
 					onValueChange={setQuery}

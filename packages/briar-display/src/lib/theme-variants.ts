@@ -91,8 +91,8 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 	{
 		id: 'input',
 		via: 'css-token',
-		status: 'skeleton',
-		notes: '半径/描边走 --radius-field 与主题边框 token',
+		status: 'done',
+		notes: 'scrapbook 纸片柔角 + 暖灰粉描边；天气搜索 .rv-wx-search；arcane 直角 --radius-field:2px',
 	},
 	{
 		id: 'textarea',
