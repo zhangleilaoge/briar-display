@@ -88,7 +88,7 @@ export function PageHeader({
 	return (
 		<header className={`glass-header sticky top-0 z-50 ${className ?? ''}`}>
 			<div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
-				<div className="rv-header-lead flex min-w-0 items-center gap-6">
+				<div className="flex min-w-0 items-center gap-6">
 					{(!hideBrand || crumbs.length > 0) && (
 						<Breadcrumb className="shrink-0 whitespace-nowrap">
 							<BreadcrumbList>
@@ -123,9 +123,7 @@ export function PageHeader({
 					{user ?? <UserMenu />}
 				</div>
 			</div>
-			{navNode && (
-				<div className={`rv-header-lead overflow-x-auto px-3 pb-2 ${stackCls}`}>{navNode}</div>
-			)}
+			{navNode && <div className={`overflow-x-auto px-3 pb-2 ${stackCls}`}>{navNode}</div>}
 		</header>
 	)
 }
