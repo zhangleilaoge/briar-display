@@ -449,14 +449,13 @@ body {
 }
 
 /* ---------------- 全局左侧吊牌导航（ribbon-sidebar） ---------------- */
-/* md+：无背景栏；吊牌串默认藏左侧外，热区 hover / focus-within 拉出 */
+/* md+：无背景栏；吊牌串默认藏左侧外，data-open 拉出（JS：进立刻 / 离延迟约 2.5s） */
 .rv-ribbon-rail {
 	transform: translateX(-100%);
 	transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 	will-change: transform;
 }
-.rv-ribbon:hover .rv-ribbon-rail,
-.rv-ribbon:focus-within .rv-ribbon-rail {
+.rv-ribbon[data-open] .rv-ribbon-rail {
 	transform: translateX(0);
 }
 .rv-ribbon-item {
@@ -465,8 +464,7 @@ body {
 	transform: translateX(-10px);
 	opacity: 0.55;
 }
-.rv-ribbon:hover .rv-ribbon-item,
-.rv-ribbon:focus-within .rv-ribbon-item {
+.rv-ribbon[data-open] .rv-ribbon-item {
 	transform: translateX(0);
 	opacity: 1;
 }
@@ -483,8 +481,7 @@ body {
 	.rv-ribbon-rail {
 		transform: translateX(-100%);
 	}
-	.rv-ribbon:hover .rv-ribbon-rail,
-	.rv-ribbon:focus-within .rv-ribbon-rail {
+	.rv-ribbon[data-open] .rv-ribbon-rail {
 		transform: translateX(0);
 	}
 	.rv-ribbon-sticker,
@@ -564,7 +561,7 @@ body {
 	border-color: color-mix(in srgb, var(--rv-beige) 70%, var(--rv-ink) 12%) !important;
 }
 
-/* 插画+caption 作为一组垂直居中；间距随外形 per-kind 微调 */
+/* 插画+caption 作为一组垂直居中；间距随外形 per-kind 微调（过挤时 gap 可更小） */
 .rv-ribbon-stack {
 	position: absolute;
 	inset: 0;
@@ -575,51 +572,53 @@ body {
 	justify-content: center;
 	box-sizing: border-box;
 	pointer-events: none;
-	/* 默认：避开挂环；图文一组光学居中，间距清晰 */
-	padding: 15px 5px 12px;
-	gap: 7px;
+	/* 默认：避开挂环与描边；图文一组光学居中 */
+	padding: 16px 6px 14px;
+	gap: 4px;
 }
 /* 拱形 Accueil：挂环占上沿，组略偏下 */
 .rv-ribbon-tag[data-kind="home"] .rv-ribbon-stack {
-	padding: 16px 5px 12px;
-	gap: 7px;
+	padding: 16px 6px 15px;
+	gap: 3.5px;
 }
-/* 扇面 Outils：上宽下收，略加压（勿过压贴底） */
+/* 扇面 Outils：外形底边偏高（~y53/72），底 inset 要大，gap 收紧 */
 .rv-ribbon-tag[data-kind="tools"] .rv-ribbon-stack {
-	padding: 19px 6px 12px;
-	gap: 7px;
+	padding: 16px 8px 24px;
+	gap: 3px;
+	/* 真机标注：整体右下各偏 1px */
+	transform: translate(1px, 1px);
 }
 /* 波浪顶 Fichiers */
 .rv-ribbon-tag[data-kind="files"] .rv-ribbon-stack {
-	padding: 16px 5px 12px;
-	gap: 7px;
+	padding: 16px 6px 15px;
+	gap: 3.5px;
 }
-/* 花边盾 Pensées：内收 + 间距，防字叠书/贴底 */
+/* 花边盾 Pensées：侧边尖角，左右多收；底留白防贴边 */
 .rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-stack {
-	padding: 15px 8px 15px;
-	gap: 7px;
+	padding: 15px 9px 20px;
+	gap: 3px;
 }
-/* 波浪底 Étoiles：底边安全 */
+/* 波浪底 Étoiles：尖底安全 inset */
 .rv-ribbon-tag[data-kind="markets"] .rv-ribbon-stack {
-	padding: 15px 5px 16px;
-	gap: 7px;
+	padding: 16px 6px 23px;
+	gap: 3px;
 }
-/* 心形 Clef：上叶留白，组进心肚；略右移纠钥匙斜构图 */
+/* 心形 Clef：上叶留白，组进心肚；尖底多 inset；gap 再收 */
 .rv-ribbon-tag[data-kind="admin"] .rv-ribbon-stack {
-	padding: 21px 8px 13px 12px;
-	gap: 6px;
+	padding: 19px 10px 23px 10px;
+	gap: 2.5px;
 }
 /* 椭圆 Moi */
 .rv-ribbon-tag[data-kind="profile"] .rv-ribbon-stack {
-	padding: 14px 7px 12px;
-	gap: 6px;
+	padding: 15px 9px 16px;
+	gap: 3.5px;
 }
 
 .rv-ribbon-tag .rv-ribbon-cutout {
 	position: relative;
 	flex-shrink: 0;
-	width: 24px;
-	height: 24px;
+	width: 22px;
+	height: 22px;
 	object-fit: contain;
 	/* 主题色滤镜 + 白边投影 */
 	filter: var(--sidebar-cutout-filter, none) drop-shadow(0 0 0.4px #fff)
@@ -629,53 +628,72 @@ body {
 .theme-arcane .rv-ribbon-tag .rv-ribbon-cutout {
 	filter: drop-shadow(0 0 0.4px #fff) drop-shadow(0 1px 2px hsl(221 46% 20% / 0.18));
 }
-/* 易叠字的外形：略缩小插画，给 caption 让距 */
+/* 易叠字/尖底的外形：略缩插画，给 caption 与描边让距 */
 .rv-ribbon-tag[data-kind="home"] .rv-ribbon-cutout {
-	width: 24px;
-	height: 24px;
+	width: 22px;
+	height: 22px;
 }
-.rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-cutout,
+.rv-ribbon-tag[data-kind="files"] .rv-ribbon-cutout {
+	width: 21px;
+	height: 21px;
+}
+.rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-cutout {
+	width: 17px;
+	height: 17px;
+	/* 真机标注：书本往下 2px */
+	transform: translateY(2px);
+}
 .rv-ribbon-tag[data-kind="markets"] .rv-ribbon-cutout {
-	width: 20px;
-	height: 20px;
+	width: 17px;
+	height: 17px;
 }
 .rv-ribbon-tag[data-kind="admin"] .rv-ribbon-cutout {
-	width: 19px;
-	height: 19px;
+	width: 14px;
+	height: 14px;
 	/* 钥匙斜构图视觉偏左，微右移 */
 	transform: translateX(2px);
 }
 .rv-ribbon-tag[data-kind="tools"] .rv-ribbon-cutout {
-	width: 19px;
-	height: 22px;
+	width: 13px;
+	height: 16px;
 }
 .rv-ribbon-tag[data-kind="profile"] .rv-ribbon-cutout {
-	width: 21px;
-	height: 23px;
+	width: 19px;
+	height: 21px;
 }
 
-/* 法文 caption：恢复 font-label（Josefin），勿用锐利等宽/打字机 */
+/* 法文 caption：Josefin font-label，再小一号（7.5→6.5），勿用锐利等宽 */
 .rv-ribbon-tag .rv-ribbon-caption {
 	position: relative;
 	flex-shrink: 0;
 	margin: 0;
-	padding: 0 1px;
-	max-width: 46px;
-	overflow: hidden;
-	text-overflow: clip;
+	padding: 0;
+	max-width: 48px;
+	/* 勿 hidden：长词（Pensées/Étoiles）会被裁尾字母 */
+	overflow: visible;
 	white-space: nowrap;
 	text-align: center;
 	font-family: var(--font-label);
-	font-size: 7.5px;
+	font-size: 6.5px;
 	font-weight: 400;
 	font-style: normal;
 	/* 固定行盒，避免 Josefin 字形溢出吃掉 flex gap */
-	line-height: 1.2;
-	height: 9px;
-	letter-spacing: 0.05em;
+	line-height: 1.15;
+	height: 8px;
+	letter-spacing: 0.03em;
 	text-transform: uppercase;
 	color: var(--sidebar-icon);
 	pointer-events: none;
+}
+.rv-ribbon-tag[data-kind="markets"] .rv-ribbon-caption,
+.rv-ribbon-tag[data-kind="files"] .rv-ribbon-caption,
+.rv-ribbon-tag[data-kind="home"] .rv-ribbon-caption {
+	letter-spacing: 0.01em;
+}
+.rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-caption {
+	letter-spacing: 0.01em;
+	/* 真机标注：文本往下 1px */
+	transform: translateY(1px);
 }
 .rv-ribbon-tag[aria-current="page"] .rv-ribbon-caption,
 .rv-ribbon-tag.is-active .rv-ribbon-caption {
@@ -686,41 +704,45 @@ body {
 
 /* 移动端缩略 */
 .rv-ribbon-mobile .rv-ribbon-stack {
-	padding: 11px 4px 10px;
-	gap: 4px;
+	padding: 12px 5px 12px;
+	gap: 3px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="tools"] .rv-ribbon-stack {
-	padding: 14px 4px 10px;
-	gap: 4px;
+	padding: 13px 6px 15px;
+	gap: 2.5px;
 }
-.rv-ribbon-mobile .rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-stack,
+.rv-ribbon-mobile .rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-stack {
+	padding: 13px 7px 14px;
+	gap: 2.5px;
+}
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="markets"] .rv-ribbon-stack {
-	padding: 12px 5px 12px;
-	gap: 4px;
+	padding: 13px 5px 15px;
+	gap: 2.5px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="admin"] .rv-ribbon-stack {
-	padding: 16px 6px 11px 9px;
-	gap: 4px;
+	padding: 17px 7px 14px 8px;
+	gap: 2.5px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag .rv-ribbon-cutout {
-	width: 20px;
-	height: 20px;
+	width: 18px;
+	height: 18px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-cutout,
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="markets"] .rv-ribbon-cutout,
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="admin"] .rv-ribbon-cutout {
-	width: 18px;
-	height: 18px;
+	width: 15px;
+	height: 15px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="tools"] .rv-ribbon-cutout {
-	width: 17px;
-	height: 20px;
+	width: 12px;
+	height: 15px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag .rv-ribbon-caption {
-	font-size: 6.5px;
+	font-size: 5.5px;
 	font-weight: 400;
-	max-width: 38px;
-	letter-spacing: 0.05em;
+	height: 7px;
+	max-width: 34px;
+	letter-spacing: 0.04em;
 }
 
 /* 贴纸吊牌轻微呼吸投影（scrapbook 暖影 / arcane 冷影） */
@@ -896,7 +918,7 @@ progress {
    双主题约定：
    - 共享结构类：.rv-paper-dialog / .rv-paper-float / .rv-paper-header / .rv-paper-overlay
    - Arcane（默认本段基线 + .theme-arcane 微调）：藏青顶栏、直角、冰蓝洗、HUD 裁切角
-   - Scrapbook：.theme-scrapbook 覆盖为本段末尾「=== Dialog scrapbook ===」——暖粉奶油纸片、白撕边 sticker；无 HUD 裁切角
+   - Scrapbook：.theme-scrapbook 覆盖为本段末尾「=== Dialog scrapbook ===」——暖粉奶油纸片、白撕边 sticker、中性黑遮罩；无 HUD 裁切角
    下拉浮层（.rv-paper-float）两主题均保持方角直角（Select 溢出约定）。
    ============================================================ */
 
@@ -937,13 +959,11 @@ progress {
 		hsl(221 46% 20% / 0.38) !important;
 }
 
-/* 遮罩：两主题共用冷蓝灰纸雾 */
+/* 遮罩：中性半透明黑（弹窗外 scrim，不洗粉/紫） */
 .rv-paper-overlay {
-	background: var(--paper-grain),
-		radial-gradient(ellipse 70% 50% at 50% 40%, hsl(214 42% 78% / 0.55), transparent 70%),
-		hsl(214 32% 52% / 0.42) !important;
-	backdrop-filter: blur(3px) saturate(1.05);
-	-webkit-backdrop-filter: blur(3px) saturate(1.05);
+	background: hsl(0 0% 0% / 0.45) !important;
+	backdrop-filter: blur(2px);
+	-webkit-backdrop-filter: blur(2px);
 }
 
 /* 藏青顶栏（Arcane / 基线；scrapbook 覆盖） */
@@ -1153,7 +1173,7 @@ progress {
 }
 
 /* === Dialog scrapbook ===
-   暖粉奶油剪纸手账：粉玫瑰点缀 + 白撕边 sticker + 粉雾遮罩。
+   暖粉奶油剪纸手账：粉玫瑰点缀 + 白撕边 sticker + 中性黑遮罩。
    保留剪纸结构（不规则纸角、邮戳顶栏、贴纸格），色调回到门户暖粉；
    scrapbook 下隐藏 HUD 裁切角与印刷 + 记号。Arcane 藏青顶栏基线不动。 */
 .theme-scrapbook .rv-paper-dialog {

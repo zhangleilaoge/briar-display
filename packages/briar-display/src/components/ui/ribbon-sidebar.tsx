@@ -99,15 +99,101 @@ export interface RibbonSidebarProps {
 	currentPath?: string
 }
 
+/** 离开热区后延迟再收起（进区立刻展开；重进取消计时） */
+const RIBBON_LEAVE_MS = 2500
+
+/** 跨组件实例记录最近指针坐标，供挂载时 elementFromPoint 使用 */
+const lastPointer = { x: Number.NaN, y: Number.NaN }
+if (typeof document !== 'undefined') {
+	document.addEventListener(
+		'pointermove',
+		(e: PointerEvent) => {
+			lastPointer.x = e.clientX
+			lastPointer.y = e.clientY
+		},
+		{ passive: true },
+	)
+}
+
+function pointerHitsRibbon(nav: HTMLElement, x: number, y: number): boolean {
+	if (!Number.isFinite(x) || !Number.isFinite(y)) return false
+	const hit = document.elementFromPoint(x, y)
+	return Boolean(hit && (hit === nav || nav.contains(hit)))
+}
+
 export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 	const { isAdmin } = usePermissions()
 	const [path, setPath] = useState(currentPath ?? '')
 	const [mounted, setMounted] = useState(false)
+	const [open, setOpen] = useState(false)
+	const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const navRef = useRef<HTMLElement>(null)
+
+	const clearLeaveTimer = useCallback(() => {
+		if (leaveTimerRef.current != null) {
+			clearTimeout(leaveTimerRef.current)
+			leaveTimerRef.current = null
+		}
+	}, [])
+
+	const openNow = useCallback(() => {
+		clearLeaveTimer()
+		setOpen(true)
+	}, [clearLeaveTimer])
+
+	const scheduleClose = useCallback(() => {
+		clearLeaveTimer()
+		leaveTimerRef.current = setTimeout(() => {
+			leaveTimerRef.current = null
+			setOpen(false)
+		}, RIBBON_LEAVE_MS)
+	}, [clearLeaveTimer])
 
 	useEffect(() => {
 		setPath(window.location.pathname)
 		setMounted(true)
 	}, [])
+
+	useEffect(() => () => clearLeaveTimer(), [clearLeaveTimer])
+
+	/** 挂载时指针已停在热区：仅 mouseenter 不够，用 :hover / elementFromPoint / 首个 pointer 补展开 */
+	useEffect(() => {
+		const nav = navRef.current
+		if (!nav) return
+
+		const tryOpenFromPointer = () => {
+			if (typeof nav.matches === 'function' && nav.matches(':hover')) {
+				openNow()
+				return true
+			}
+			if (pointerHitsRibbon(nav, lastPointer.x, lastPointer.y)) {
+				openNow()
+				return true
+			}
+			return false
+		}
+
+		if (tryOpenFromPointer()) return
+
+		const raf = requestAnimationFrame(() => {
+			tryOpenFromPointer()
+		})
+
+		const onPointer = (e: PointerEvent) => {
+			lastPointer.x = e.clientX
+			lastPointer.y = e.clientY
+			if (pointerHitsRibbon(nav, e.clientX, e.clientY)) {
+				openNow()
+				document.removeEventListener('pointermove', onPointer)
+			}
+		}
+		document.addEventListener('pointermove', onPointer, { passive: true })
+
+		return () => {
+			cancelAnimationFrame(raf)
+			document.removeEventListener('pointermove', onPointer)
+		}
+	}, [openNow])
 
 	const active = activeRibbonHref(path)
 	const items = RIBBON_ITEMS.filter((item) => !item.adminOnly || (mounted && isAdmin))
@@ -117,9 +203,19 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 	return (
 		<>
 			<nav
+				ref={navRef}
 				aria-label="全局导航"
+				data-open={open ? '' : undefined}
+				onMouseEnter={openNow}
+				onMouseLeave={scheduleClose}
+				onFocusCapture={openNow}
+				onBlurCapture={(event) => {
+					const next = event.relatedTarget
+					if (next instanceof Node && event.currentTarget.contains(next)) return
+					scheduleClose()
+				}}
 				className={cn(
-					'rv-ribbon group/ribbon fixed inset-y-0 left-0 z-[60] hidden w-3 hover:w-[5.25rem] focus-within:w-[5.25rem] md:block',
+					'rv-ribbon group/ribbon fixed inset-y-0 left-0 z-[60] hidden w-[5.25rem] md:block',
 					className,
 				)}
 			>

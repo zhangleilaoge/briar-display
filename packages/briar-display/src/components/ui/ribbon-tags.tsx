@@ -106,14 +106,15 @@ export const RIBBON_HAND_PATHS: Record<RibbonTagKind, string> = {
 		'C7.8 18.2 15.8 8.0 27.2 7.6Z',
 }
 
+/** 挂环中心：落在吊绳与牌顶轮廓的接触点（略深入牌面，结心压在顶缘） */
 export const RIBBON_HANG_CY: Record<RibbonTagKind, number> = {
-	home: 10,
-	tools: 11,
-	files: 12,
-	thoughts: 14,
-	markets: 10,
-	admin: 10,
-	profile: 8,
+	home: 6.5,
+	tools: 14.2,
+	files: 15.5,
+	thoughts: 14.5,
+	markets: 6.5,
+	admin: 15.5,
+	profile: 9.5,
 }
 
 function srcOf(m: string | { src: string }): string {
@@ -171,32 +172,21 @@ function StickerShell({
 	)
 }
 
-/** 小挂环 + 绳结（略加粗，配合 ×1.5 壳） */
-function HangBow({ cx = 28, cy = 10 }: { cx?: number; cy?: number }) {
+/** 眼孔接点（无 per-tag 短线；统一垂直吊绳由侧栏 rail 承担） */
+function HangString({ cx = 28, cy = 10 }: { cx?: number; cy?: number }) {
 	return (
-		<g fill="none" stroke={ink} strokeWidth={1.4} strokeLinecap="round">
-			<path d={`M${cx} 0 v${cy - 4}`} stroke="var(--sidebar-string)" strokeWidth={1.35} />
-			<circle cx={cx} cy={cy} r={2.5} fill={fill} />
-			<path
-				d={`M${cx - 6.2} ${cy - 0.8}c1.6-3.2 4.1-3.1 6.1-0.9 1.9-2.2 4.7-2.3 6.2 0.8-1.9 1.3-4.0.9-6.2-.1-2.3 1.1-4.4 1.5-6.1.2z`}
-				fill={soft}
-				fillOpacity={0.35}
-				stroke={ink}
-			/>
-			<path d={`M${cx} ${cy - 2}v4`} />
+		<g>
+			{/* 眼孔：主吊绳落到牌顶的接点 */}
+			<circle cx={cx} cy={cy} r={2.15} fill={fill} stroke={ink} strokeWidth={0.95} />
+			<circle cx={cx} cy={cy} r={1.0} fill="none" stroke={ink} strokeWidth={0.7} />
 		</g>
 	)
 }
 
-function TagShell({
-	kind,
-	active,
-	className,
-	...rest
-}: TagSvgProps & { kind: RibbonTagKind }) {
+function TagShell({ kind, active, className, ...rest }: TagSvgProps & { kind: RibbonTagKind }) {
 	return (
 		<StickerShell d={RIBBON_HAND_PATHS[kind]} active={active} className={className} {...rest}>
-			<HangBow cy={RIBBON_HANG_CY[kind]} />
+			<HangString cy={RIBBON_HANG_CY[kind]} />
 		</StickerShell>
 	)
 }

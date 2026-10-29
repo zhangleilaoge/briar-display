@@ -69,7 +69,7 @@ export default function LoginPage() {
 						script="Bon retour"
 						subtitle="欢迎回来"
 						className="relative z-10"
-						motif="fleur"
+						motif="none"
 					/>
 				</div>
 
