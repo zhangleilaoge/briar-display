@@ -25,7 +25,7 @@ export default function FileManagerLayout({ children }: FileManagerLayoutProps) 
 			<ThemeShell variant="arcane" className="flex flex-col">
 				<PageHeader crumbs={[{ label: '文件' }]} right={<StorageQuota />} />
 
-				<main className="flex-1 p-4 sm:p-6">
+				<main className="rv-content-inset flex-1 p-4 sm:p-6">
 					<div className="mx-auto max-w-[1200px]">
 						<PaperPanel title="RÉSULTATS · 档案柜">{children}</PaperPanel>
 					</div>

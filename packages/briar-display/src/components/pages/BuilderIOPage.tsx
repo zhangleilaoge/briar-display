@@ -4,7 +4,7 @@ import { ScrapTitle, ThemeShell } from '@/components/ui/theme-shell'
 export default function BuilderIOPage() {
 	return (
 		<ThemeShell variant="scrapbook">
-			<main className="mx-auto w-full max-w-3xl px-6 py-12">
+			<main className="rv-content-inset mx-auto w-full max-w-3xl px-6 py-12">
 				<ScrapTitle script="Brouillon" title="hello builder-io page" />
 				<Card className="mt-6">
 					<CardContent className="p-6 text-sm text-muted-foreground">
