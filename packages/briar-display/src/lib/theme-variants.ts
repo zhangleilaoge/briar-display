@@ -130,7 +130,9 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 	{
 		id: 'calendar',
 		via: 'css-theme-class',
-		status: 'todo',
+		status: 'done',
+		notes:
+			'选中态 --row-selected + --radius-control；.rv-cal-day-selected scrapbook 粉描边 / arcane 藏青；去掉 bg-primary 方角墨块',
 	},
 	{
 		id: 'breadcrumb',
