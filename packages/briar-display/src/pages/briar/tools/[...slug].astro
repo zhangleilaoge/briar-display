@@ -1,7 +1,7 @@
 ---
-// 工具箱 SPA：所有 /briar/tools/<tool> 共用同一页面壳，子路由在客户端切换（见 ToolsApp）。
-// 每个子路径都生成静态 HTML，保证刷新/深链直达。
-import ToolsApp, { TOOL_ROUTES } from '../../../components/tools/ToolsApp'
+// 每个子路径仍生成静态 HTML；进入后由全站 SiteApp 接管客户端导航。
+import SiteApp from '../../../components/common/SiteApp'
+import { TOOL_ROUTES } from '../../../components/tools/toolRoutes'
 import Layout from '../../../layouts/Layout.astro'
 
 export function getStaticPaths() {
@@ -15,5 +15,5 @@ const { path, title } = Astro.props
 ---
 
 <Layout title={title}>
-	<ToolsApp client:load initialPath={path} />
+	<SiteApp client:load initialPath={path} />
 </Layout>

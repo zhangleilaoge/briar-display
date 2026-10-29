@@ -4,6 +4,7 @@
  * 页面外壳：挂载全局吊牌导航（md+ 悬浮不占位）+ 主题背景装饰。
  * Arcane 背景保留共享星盘（Astrolabe）；不再挂载水印数字或页面专属角饰。
  */
+import { useSectionRouter } from '@/components/common/SectionRouter'
 import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
 import { Astrolabe } from './astrolabe'
@@ -30,9 +31,10 @@ export function ThemeShell({
 	decor = true,
 	currentPath,
 }: ThemeShellProps) {
+	const router = useSectionRouter()
 	return (
 		<div className={cn('relative isolate min-h-screen', className)}>
-			{sidebar && <RibbonSidebar currentPath={currentPath} />}
+			{sidebar && !router?.globalShell && <RibbonSidebar currentPath={currentPath} />}
 			{decor && (variant === 'arcane' ? <ArcaneDecor /> : <ScrapbookDecor />)}
 			{children}
 		</div>

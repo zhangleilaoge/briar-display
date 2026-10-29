@@ -1,8 +1,8 @@
 ---
-import PortalPage from '../../components/pages/PortalPage'
+import SiteApp from '../../components/common/SiteApp'
 import Layout from '../../layouts/Layout.astro'
 ---
 
 <Layout title="xiaobuzi">
-	<PortalPage client:load />
+	<SiteApp client:load initialPath="/briar" />
 </Layout>

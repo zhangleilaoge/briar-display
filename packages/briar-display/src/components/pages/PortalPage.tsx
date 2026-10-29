@@ -1,5 +1,6 @@
 'use client'
 
+import { useNavigate } from '@/components/common/SectionRouter'
 import UserMenu from '@/components/common/UserMenu'
 import { BinderPeel } from '@/components/portal/BinderPeel'
 import { PortalScrapDecor } from '@/components/portal/PortalScrapDecor'
@@ -273,6 +274,7 @@ function SubRouteRow({
 function PortalPageInner() {
 	const { isAdmin, loading } = usePermissions()
 	const { tod, greet, author, line, date, index, shuffle } = useGreeting()
+	const navigate = useNavigate()
 	const [query, setQuery] = useState('')
 
 	const visible = useMemo(() => {
@@ -316,7 +318,7 @@ function PortalPageInner() {
 		else if (e.key === 'ArrowLeft') move(-1)
 		else if (e.key === 'Enter' && query.trim()) {
 			e.preventDefault()
-			window.location.href = results[Math.max(active, 0)]
+			navigate(results[Math.max(active, 0)])
 		} else if (e.key === 'Escape') {
 			setQuery('')
 		}

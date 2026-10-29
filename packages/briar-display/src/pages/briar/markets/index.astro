@@ -1,8 +1,8 @@
 ---
-import MarketsOverviewPage from '../../../components/markets/MarketsOverviewPage'
+import SiteApp from '../../../components/common/SiteApp'
 import Layout from '../../../layouts/Layout.astro'
 ---
 
 <Layout title="行情">
-	<MarketsOverviewPage client:load />
+	<SiteApp client:load initialPath="/briar/markets" />
 </Layout>

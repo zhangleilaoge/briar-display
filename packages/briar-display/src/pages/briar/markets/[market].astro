@@ -1,6 +1,6 @@
 ---
 import { MARKET_IDS, MARKET_LABELS, type MarketId } from '@briar/shared'
-import MarketSectorsPage from '../../../components/markets/MarketSectorsPage'
+import SiteApp from '../../../components/common/SiteApp'
 import Layout from '../../../layouts/Layout.astro'
 
 export function getStaticPaths() {
@@ -11,5 +11,5 @@ const market = Astro.params.market as MarketId
 ---
 
 <Layout title={`${MARKET_LABELS[market]}板块 - 行情`}>
-	<MarketSectorsPage client:load market={market} />
+	<SiteApp client:load initialPath={`/briar/markets/${market}`} />
 </Layout>

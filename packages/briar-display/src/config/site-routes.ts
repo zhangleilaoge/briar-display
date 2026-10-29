@@ -1,6 +1,6 @@
 /**
  * 站点子路由唯一数据源（纯数据，无 React/懒加载依赖）。
- * - 工具箱/管理后台的 SPA 路由表（TOOL_ROUTES / ADMIN_ROUTES）与顶栏 tab（*_NAV_ITEMS）由此派生；
+ * - 全站 SPA 的工具/后台/行情子路由与顶栏 tab（*_NAV_ITEMS）由此派生；
  * - 首页搜索的「子路由」结果也由此派生，新增子页只需改这里。
  */
 import { MARKET_IDS, MARKET_LABELS } from '@briar/shared'

@@ -1,8 +1,8 @@
 ---
-import ProfilePage from '../../components/pages/ProfilePage'
+import SiteApp from '../../components/common/SiteApp'
 import Layout from '../../layouts/Layout.astro'
 ---
 
 <Layout title="个人中心 - xiaobuzi">
-	<ProfilePage client:load />
+	<SiteApp client:load initialPath="/briar/profile" />
 </Layout>

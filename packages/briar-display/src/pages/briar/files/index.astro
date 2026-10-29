@@ -1,8 +1,8 @@
 ---
-import FileManagerPage from '../../../components/files/FileManagerPage'
+import SiteApp from '../../../components/common/SiteApp'
 import Layout from '../../../layouts/Layout.astro'
 ---
 
 <Layout title="文件">
-	<FileManagerPage client:load />
+	<SiteApp client:load initialPath="/briar/files" />
 </Layout>

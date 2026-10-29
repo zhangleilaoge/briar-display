@@ -1,14 +1,6 @@
 'use client'
 
-import UserMenu from '@/components/common/UserMenu'
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbLink,
-	BreadcrumbList,
-	BreadcrumbPage,
-	BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
+import { useNavigate } from '@/components/common/SectionRouter'
 import { PageHeader } from '@/components/ui/page-header'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PaperPanel, ThemeShell } from '@/components/ui/theme-shell'
@@ -24,13 +16,9 @@ interface MarketsShellProps {
 
 /** 行情页面外壳：与工具箱同款 Arcane HUD 外壳，详情页带市场切换 tab */
 export default function MarketsShell({ children, market }: MarketsShellProps) {
+	const navigate = useNavigate()
 	const tabs = market ? (
-		<Tabs
-			value={market}
-			onValueChange={(v) => {
-				window.location.href = `/briar/markets/${v}`
-			}}
-		>
+		<Tabs value={market} onValueChange={(v) => navigate(`/briar/markets/${v}`)}>
 			<TabsList>
 				{MARKET_IDS.map((id) => (
 					<TabsTrigger key={id} value={id}>

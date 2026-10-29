@@ -1,8 +1,8 @@
 ---
-import ThoughtsPage from '../../../components/pages/ThoughtsPage'
+import SiteApp from '../../../components/common/SiteApp'
 import Layout from '../../../layouts/Layout.astro'
 ---
 
 <Layout title="想法 - xiaobuzi">
-	<ThoughtsPage client:load />
+	<SiteApp client:load initialPath="/briar/thoughts" />
 </Layout>

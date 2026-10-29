@@ -159,9 +159,9 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 	}, [clearLeaveTimer])
 
 	useEffect(() => {
-		setPath(window.location.pathname)
+		setPath(currentPath ?? window.location.pathname)
 		setMounted(true)
-	}, [])
+	}, [currentPath])
 
 	useEffect(() => () => clearLeaveTimer(), [clearLeaveTimer])
 

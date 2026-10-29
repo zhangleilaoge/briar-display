@@ -1,16 +1,8 @@
 ---
-// /briar/admin 重定向到上次访问的后台 tab，默认权限管理
+import SiteApp from '../../../components/common/SiteApp'
+import Layout from '../../../layouts/Layout.astro'
 ---
 
-<script>
-	const ADMIN_PATHS = [
-		'/briar/admin/permissions',
-		'/briar/admin/users',
-		'/briar/admin/logs',
-		'/briar/admin/sql',
-		'/briar/admin/deploy',
-		'/briar/admin/terminal',
-	]
-	const last = localStorage.getItem('briar_admin_last_tab')
-	window.location.replace(last && ADMIN_PATHS.includes(last) ? last : ADMIN_PATHS[0])
-</script>
+<Layout title="管理后台">
+	<SiteApp client:load initialPath="/briar/admin" />
+</Layout>

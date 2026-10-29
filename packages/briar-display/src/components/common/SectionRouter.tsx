@@ -1,9 +1,8 @@
 'use client'
 
 /**
- * 分区内 SPA 路由（工具箱 /briar/tools/*、管理后台 /briar/admin/*）：
- * 顶栏/侧栏常驻，只切换内容区；URL 用 history.pushState 同步，支持刷新、深链与前进后退。
- * 各子页组件仍包在 ToolsLayout/AdminLayout 中，处于分区壳内时这两个 Layout 退化为直通。
+ * 全站客户端路由：全局侧栏与分区壳常驻，只切换页面内容。
+ * URL 用 history 同步，支持刷新、深链与前进后退；路由表外链接保持整页跳转。
  */
 import {
 	type ComponentType,
@@ -20,7 +19,9 @@ import {
 export interface SectionRoute {
 	path: string
 	title: string
-	component: LazyExoticComponent<ComponentType>
+	component?: LazyExoticComponent<ComponentType>
+	/** 分区根路径在客户端恢复上次子页，不产生额外历史记录 */
+	redirect?: () => string
 	/** 内容区占满宽度（管理后台用） */
 	fullWidth?: boolean
 }
@@ -28,8 +29,10 @@ export interface SectionRoute {
 interface SectionRouterValue {
 	/** 当前路径（不含尾部斜杠） */
 	path: string
-	/** 能被当前分区接管则 pushState 切换并返回 true，否则返回 false */
+	/** 能被当前路由表接管则 pushState 切换并返回 true，否则返回 false */
 	navigate: (href: string) => boolean
+	/** 全局外壳已提供常驻侧栏，页面壳不再重复挂载 */
+	globalShell?: boolean
 }
 
 const SectionRouterContext = createContext<SectionRouterValue | null>(null)
@@ -38,7 +41,7 @@ export function useSectionRouter(): SectionRouterValue | null {
 	return useContext(SectionRouterContext)
 }
 
-/** 跳转：分区内走客户端路由，否则整页跳转 */
+/** 跳转：路由表内走客户端路由，否则整页跳转 */
 export function useNavigate(): (href: string) => void {
 	const router = useSectionRouter()
 	return useCallback(
@@ -52,7 +55,7 @@ export function useNavigate(): (href: string) => void {
 
 const normalize = (p: string) => (p.length > 1 ? p.replace(/\/+$/, '') : p)
 
-export function useSectionPath(initialPath: string, routes: SectionRoute[]) {
+export function useSectionPath<T extends SectionRoute>(initialPath: string, routes: T[]) {
 	const [path, setPath] = useState(() => normalize(initialPath))
 
 	const find = useCallback((p: string) => routes.find((r) => r.path === normalize(p)), [routes])
@@ -89,14 +92,22 @@ export function useSectionPath(initialPath: string, routes: SectionRoute[]) {
 	const route = find(path)
 
 	useEffect(() => {
+		if (route?.redirect) {
+			const next = route.redirect()
+			if (find(next)) {
+				window.history.replaceState({ section: true }, '', next)
+				setPath(normalize(next))
+			}
+			return
+		}
 		if (route) document.title = route.title
 		window.scrollTo({ top: 0 })
-	}, [route])
+	}, [route, find])
 
 	return { path, route, navigate }
 }
 
-/** 拦截分区内普通 <a> 点击（不含新窗口/修饰键/下载） */
+/** 拦截普通 <a> 点击（不含新窗口/修饰键/下载） */
 function onLinkClick(e: React.MouseEvent, navigate: (href: string) => boolean) {
 	if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
 		return
@@ -108,10 +119,11 @@ function onLinkClick(e: React.MouseEvent, navigate: (href: string) => boolean) {
 export function SectionRouterProvider({
 	path,
 	navigate,
+	globalShell = false,
 	children,
 }: SectionRouterValue & { children: ReactNode }) {
 	return (
-		<SectionRouterContext.Provider value={{ path, navigate }}>
+		<SectionRouterContext.Provider value={{ path, navigate, globalShell }}>
 			<div className="contents" onClickCapture={(e) => onLinkClick(e, navigate)}>
 				{children}
 			</div>
@@ -126,7 +138,7 @@ export function SectionRouterProvider({
 export function SectionOutlet({ route, fallback }: { route?: SectionRoute; fallback: ReactNode }) {
 	const [mounted, setMounted] = useState(false)
 	useEffect(() => setMounted(true), [])
-	if (!mounted || !route) return <>{fallback}</>
+	if (!mounted || !route?.component) return <>{fallback}</>
 	const Page = route.component
 	return (
 		<div key={route.path} className="rv-page-enter flex min-h-0 w-full flex-1 flex-col">
