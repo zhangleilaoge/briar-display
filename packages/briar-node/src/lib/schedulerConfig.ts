@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'url'
 import { logDal } from '../dal/logDal'
 import { certificateService } from '../services/certificateService'
+import { deploymentService } from '../services/deploymentService'
 import { fileModerationService } from '../services/fileModerationService'
 import { maintenanceService } from '../services/maintenanceService'
 import { syncCsi300EtfScale } from '../services/market/csi300EtfService'
@@ -104,5 +105,22 @@ export const schedulerTasks: SchedulerTask[] = [
 		runOnStart: false,
 		path: fileURLToPath(new URL('../jobs/sync-csi300-etf-scale.mjs', import.meta.url)),
 		run: syncCsi300EtfScale,
+	},
+	{
+		name: 'sync-deploy-runs',
+		label: '同步部署记录',
+		description:
+			'拉取 GitHub Actions / jsonl 部署记录；CDN 发布开始与失败时给管理员发站内信（成功不发）',
+		scheduleText: '每分钟',
+		cron: resolveCron('BRIAR_SYNC_DEPLOY_CRON', '* * * * *'),
+		runOnStart: false,
+		path: fileURLToPath(new URL('../jobs/sync-deploy-runs.mjs', import.meta.url)),
+		run: async () => {
+			const items = await deploymentService.listDeployRuns(30, { awaitFailureBackfill: true })
+			return {
+				message: `已同步 ${items.length} 条部署记录`,
+				detail: { total: items.length },
+			}
+		},
 	},
 ]

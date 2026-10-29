@@ -84,3 +84,17 @@ PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 SET @s = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'market_watchlist' AND COLUMN_NAME = 'type') = 0,
   'ALTER TABLE market_watchlist ADD COLUMN type VARCHAR(16) NOT NULL DEFAULT ''stock'' COMMENT ''标的类型：stock / etf / index'' AFTER code', 'SELECT 1');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+
+-- 4) 部署站内信通知：去重标记 + workflow 路径（存量一律标记已通知，避免历史刷屏）
+SET @s = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'deploy_runs' AND COLUMN_NAME = 'workflow_path') = 0,
+  'ALTER TABLE deploy_runs ADD COLUMN workflow_path VARCHAR(255) NOT NULL DEFAULT '''' COMMENT ''GitHub workflow 路径（如 .github/workflows/deploy.yml）''', 'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+SET @s = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'deploy_runs' AND COLUMN_NAME = 'start_notified_at') = 0,
+  'ALTER TABLE deploy_runs ADD COLUMN start_notified_at TIMESTAMP NULL DEFAULT NULL COMMENT ''已发「发布开始」站内信时间（NULL=未发）''', 'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+SET @s = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'deploy_runs' AND COLUMN_NAME = 'fail_notified_at') = 0,
+  'ALTER TABLE deploy_runs ADD COLUMN fail_notified_at TIMESTAMP NULL DEFAULT NULL COMMENT ''已发「发布失败」站内信时间（NULL=未发）''', 'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+UPDATE deploy_runs SET start_notified_at = COALESCE(start_notified_at, NOW()), fail_notified_at = COALESCE(fail_notified_at, NOW())
+WHERE start_notified_at IS NULL OR fail_notified_at IS NULL;
