@@ -255,8 +255,9 @@
 	--sidebar-active-icon: #3a4a6b;
 	--sidebar-active-dash: color-mix(in srgb, #c4788a 60%, #5d6f96);
 	--sidebar-string: #8ea4c6;
-	/* Arcane 保持冷蓝灰插画，不做暖色滤镜 */
-	--sidebar-cutout-filter: none;
+	/* Arcane 去除原图彩色，统一染成冷蓝灰 */
+	--sidebar-cutout-filter: grayscale(1) sepia(0.35) hue-rotate(175deg) saturate(0.8)
+		brightness(0.88) contrast(1.08);
 }
 
 body {
@@ -626,7 +627,8 @@ body {
 	pointer-events: none;
 }
 .theme-arcane .rv-ribbon-tag .rv-ribbon-cutout {
-	filter: drop-shadow(0 0 0.4px #fff) drop-shadow(0 1px 2px hsl(221 46% 20% / 0.18));
+	filter: var(--sidebar-cutout-filter, none) drop-shadow(0 0 0.4px #fff)
+		drop-shadow(0 1px 2px hsl(221 46% 20% / 0.18));
 }
 /* 易叠字/尖底的外形：略缩插画，给 caption 与描边让距 */
 .rv-ribbon-tag[data-kind="home"] .rv-ribbon-cutout {
