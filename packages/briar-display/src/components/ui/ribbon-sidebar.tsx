@@ -119,7 +119,7 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 			<nav
 				aria-label="全局导航"
 				className={cn(
-					'rv-ribbon group/ribbon fixed inset-y-0 left-0 z-[60] hidden w-3 hover:w-[5.25rem] focus-within:w-[5.25rem] md:block',
+					'rv-ribbon group/ribbon fixed inset-y-0 left-0 z-[60] hidden w-[5.25rem] md:block',
 					className,
 				)}
 			>

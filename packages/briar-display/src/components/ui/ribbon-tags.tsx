@@ -9,6 +9,7 @@ import fichiersPurse from '@/assets/decor/ribbon-stickers/fichiers-purse.png'
 import moiCameo from '@/assets/decor/ribbon-stickers/moi-cameo.png'
 import outilsInkwell from '@/assets/decor/ribbon-stickers/outils-inkwell-quill.png'
 import penseesBook from '@/assets/decor/ribbon-stickers/pensees-book.png'
+import hangBowSvg from '@/assets/decor/ribbon-stickers/hang-bow.svg'
 import { cn } from '@/lib/utils'
 import type { ReactNode, SVGProps } from 'react'
 
@@ -106,19 +107,23 @@ export const RIBBON_HAND_PATHS: Record<RibbonTagKind, string> = {
 		'C7.8 18.2 15.8 8.0 27.2 7.6Z',
 }
 
+/** 挂环中心：落在吊绳与牌顶轮廓的接触点（略深入牌面，结心压在顶缘） */
 export const RIBBON_HANG_CY: Record<RibbonTagKind, number> = {
-	home: 10,
-	tools: 11,
-	files: 12,
-	thoughts: 14,
-	markets: 10,
-	admin: 10,
-	profile: 8,
+	home: 6.5,
+	tools: 14.2,
+	files: 15.5,
+	thoughts: 14.5,
+	markets: 6.5,
+	admin: 15.5,
+	profile: 9.5,
 }
 
 function srcOf(m: string | { src: string }): string {
 	return typeof m === 'string' ? m : m.src
 }
+
+/** CC0 Classic Ribbon Bow (SVG Item) — 顶结资源 */
+const HANG_BOW_SRC = srcOf(hangBowSvg)
 
 /** 插画切图贴纸（已着色 + 白撕纸边）；避开 portal 轮播同款素材 */
 export const RIBBON_STICKER_SRC: Record<RibbonTagKind, string> = {
@@ -171,19 +176,34 @@ function StickerShell({
 	)
 }
 
-/** 小挂环 + 绳结（略加粗，配合 ×1.5 壳） */
+/** 挂绳接触点蝴蝶结：引用 CC0 SVG 资源（加大，结心对齐眼孔） */
 function HangBow({ cx = 28, cy = 10 }: { cx?: number; cy?: number }) {
+	/** viewBox 56×72 内约 ½ 牌宽，结心压在 (cx,cy) */
+	const bw = 32
+	const bh = 28
 	return (
-		<g fill="none" stroke={ink} strokeWidth={1.4} strokeLinecap="round">
-			<path d={`M${cx} 0 v${cy - 4}`} stroke="var(--sidebar-string)" strokeWidth={1.35} />
-			<circle cx={cx} cy={cy} r={2.5} fill={fill} />
+		<g>
+			{/* 吊绳落到接触点 */}
 			<path
-				d={`M${cx - 6.2} ${cy - 0.8}c1.6-3.2 4.1-3.1 6.1-0.9 1.9-2.2 4.7-2.3 6.2 0.8-1.9 1.3-4.0.9-6.2-.1-2.3 1.1-4.4 1.5-6.1.2z`}
-				fill={soft}
-				fillOpacity={0.35}
-				stroke={ink}
+				d={`M${cx} 0 V${cy}`}
+				fill="none"
+				stroke="var(--sidebar-string)"
+				strokeWidth={1.1}
+				strokeLinecap="round"
 			/>
-			<path d={`M${cx} ${cy - 2}v4`} />
+			{/* 网上 CC0 缎带蝴蝶结 */}
+			<image
+				href={HANG_BOW_SRC}
+				x={cx - bw / 2}
+				y={cy - bh / 2 + 1.2}
+				width={bw}
+				height={bh}
+				preserveAspectRatio="xMidYMid meet"
+				style={{ pointerEvents: 'none' }}
+			/>
+			{/* 眼孔：线与牌的接触点（叠在结心上） */}
+			<circle cx={cx} cy={cy} r={2.15} fill={fill} stroke={ink} strokeWidth={0.95} />
+			<circle cx={cx} cy={cy} r={1.0} fill="none" stroke={ink} strokeWidth={0.7} />
 		</g>
 	)
 }

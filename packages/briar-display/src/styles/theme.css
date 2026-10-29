@@ -587,6 +587,8 @@ body {
 .rv-ribbon-tag[data-kind="tools"] .rv-ribbon-stack {
 	padding: 16px 8px 24px;
 	gap: 3px;
+	/* 真机标注：整体右下各偏 1px */
+	transform: translate(1px, 1px);
 }
 /* 波浪顶 Fichiers */
 .rv-ribbon-tag[data-kind="files"] .rv-ribbon-stack {
@@ -637,7 +639,12 @@ body {
 	width: 21px;
 	height: 21px;
 }
-.rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-cutout,
+.rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-cutout {
+	width: 17px;
+	height: 17px;
+	/* 真机标注：书本往下 2px */
+	transform: translateY(2px);
+}
 .rv-ribbon-tag[data-kind="markets"] .rv-ribbon-cutout {
 	width: 17px;
 	height: 17px;
@@ -680,11 +687,15 @@ body {
 	color: var(--sidebar-icon);
 	pointer-events: none;
 }
-.rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-caption,
 .rv-ribbon-tag[data-kind="markets"] .rv-ribbon-caption,
 .rv-ribbon-tag[data-kind="files"] .rv-ribbon-caption,
 .rv-ribbon-tag[data-kind="home"] .rv-ribbon-caption {
 	letter-spacing: 0.01em;
+}
+.rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-caption {
+	letter-spacing: 0.01em;
+	/* 真机标注：文本往下 1px */
+	transform: translateY(1px);
 }
 .rv-ribbon-tag[aria-current="page"] .rv-ribbon-caption,
 .rv-ribbon-tag.is-active .rv-ribbon-caption {
@@ -867,7 +878,7 @@ progress {
    双主题约定：
    - 共享结构类：.rv-paper-dialog / .rv-paper-float / .rv-paper-header / .rv-paper-overlay
    - Arcane（默认本段基线 + .theme-arcane 微调）：藏青顶栏、直角、冰蓝洗、HUD 裁切角
-   - Scrapbook：.theme-scrapbook 覆盖为本段末尾「=== Dialog scrapbook ===」——暖粉奶油纸片、白撕边 sticker、粉雾遮罩；无 HUD 裁切角
+   - Scrapbook：.theme-scrapbook 覆盖为本段末尾「=== Dialog scrapbook ===」——暖粉奶油纸片、白撕边 sticker、中性黑遮罩；无 HUD 裁切角
    下拉浮层（.rv-paper-float）两主题均保持方角直角（Select 溢出约定）。
    ============================================================ */
 
@@ -908,13 +919,11 @@ progress {
 		hsl(221 46% 20% / 0.38) !important;
 }
 
-/* 遮罩：Arcane / 基线偏冷蓝灰纸雾（scrapbook 在下方覆盖为暖粉雾） */
+/* 遮罩：中性半透明黑（弹窗外 scrim，不洗粉/紫） */
 .rv-paper-overlay {
-	background: var(--paper-grain),
-		radial-gradient(ellipse 70% 50% at 50% 40%, hsl(214 42% 78% / 0.55), transparent 70%),
-		hsl(214 32% 52% / 0.42) !important;
-	backdrop-filter: blur(3px) saturate(1.05);
-	-webkit-backdrop-filter: blur(3px) saturate(1.05);
+	background: hsl(0 0% 0% / 0.45) !important;
+	backdrop-filter: blur(2px);
+	-webkit-backdrop-filter: blur(2px);
 }
 
 /* 藏青顶栏（Arcane / 基线；scrapbook 覆盖） */
@@ -1124,7 +1133,7 @@ progress {
 }
 
 /* === Dialog scrapbook ===
-   暖粉奶油剪纸手账：粉玫瑰点缀 + 白撕边 sticker + 粉雾遮罩。
+   暖粉奶油剪纸手账：粉玫瑰点缀 + 白撕边 sticker + 中性黑遮罩。
    保留剪纸结构（不规则纸角、邮戳顶栏、贴纸格），色调回到门户暖粉；
    scrapbook 下隐藏 HUD 裁切角与印刷 + 记号。Arcane 藏青顶栏基线不动。 */
 .theme-scrapbook .rv-paper-dialog {
@@ -1159,12 +1168,10 @@ progress {
 }
 
 .theme-scrapbook .rv-paper-overlay {
-	background: var(--paper-grain),
-		radial-gradient(ellipse 72% 52% at 50% 38%, hsl(345 48% 88% / 0.62), transparent 72%),
-		radial-gradient(ellipse 50% 40% at 80% 80%, hsl(36 50% 90% / 0.4), transparent 70%),
-		hsl(350 28% 62% / 0.38) !important;
-	backdrop-filter: blur(4px) saturate(1.08);
-	-webkit-backdrop-filter: blur(4px) saturate(1.08);
+	/* 与基线一致：中性黑罩，避免 scrapbook 粉雾洗屏 */
+	background: hsl(0 0% 0% / 0.45) !important;
+	backdrop-filter: blur(2px);
+	-webkit-backdrop-filter: blur(2px);
 }
 
 /* 暖粉 / 奶油纸条顶栏（邮戳感虚线底；非藏青实心条） */
