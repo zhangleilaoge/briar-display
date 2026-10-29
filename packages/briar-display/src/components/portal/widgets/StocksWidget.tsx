@@ -5,6 +5,8 @@ import { changeColorClass, formatPct, formatPrice } from '@/components/markets/m
 import { unwrap, useMarketPolling } from '@/components/markets/useMarketPolling'
 import { stockId } from '@/components/markets/watchlistOps'
 import { useWatchlist } from '@/components/markets/watchlistStore'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import type { StockQuote, StockRef } from '@briar/shared'
 import { useEffect, useMemo, useState } from 'react'
 import { WidgetChrome } from '../WidgetChrome'
@@ -129,6 +131,8 @@ export function StocksWidget({
 	const quotes = useMemo(() => new Map((data?.items ?? []).map((q) => [stockId(q), q])), [data])
 
 	const [idx, setIdx] = useState(0)
+	/** 手动点指示器后重置自动轮播计时 */
+	const [rotateEpoch, setRotateEpoch] = useState(0)
 	useEffect(() => {
 		setIdx(0)
 	}, [idsKey])
@@ -136,7 +140,12 @@ export function StocksWidget({
 		if (refs.length <= 1) return
 		const id = window.setInterval(() => setIdx((i) => (i + 1) % refs.length), 4500)
 		return () => clearInterval(id)
-	}, [refs.length])
+	}, [refs.length, rotateEpoch])
+
+	const goToSlide = (next: number) => {
+		setIdx(next)
+		setRotateEpoch((n) => n + 1)
+	}
 
 	const current = refs.length ? refs[idx % refs.length] : null
 	const currentId = current ? `${stockId(current)}:${current.type ?? 'stock'}` : ''
@@ -229,23 +238,45 @@ export function StocksWidget({
 					{formatPrice(quote?.price)}
 				</p>
 
-				{refs.length > 1 && (
-					<div className="mt-1.5 flex justify-center gap-1">
-						{refs.map((r, i) => (
-							<span
-								key={stockId(r)}
-								aria-hidden
-								className={
-									i === idx % refs.length
-										? 'h-1 w-1 rounded-full bg-[color:var(--rv-rose-deep)]'
-										: 'h-1 w-1 rounded-full bg-[color:var(--rv-navy)]/20'
-								}
-							/>
-						))}
-					</div>
-				)}
 			</>
 		)
+
+	const dots =
+		refs.length > 1 ? (
+			<div
+				className="mt-2 flex h-4 shrink-0 items-center justify-center gap-2"
+				aria-label="自选行情轮播"
+				role="tablist"
+			>
+				{refs.map((r, i) => {
+					const active = i === idx % refs.length
+					const label = r.name || r.code
+					return (
+						<Button
+							key={stockId(r)}
+							type="button"
+							size="icon-sm"
+							variant="ghost"
+							role="tab"
+							aria-selected={active}
+							aria-label={`切换到${label}`}
+							aria-current={active ? 'true' : undefined}
+							className={cn(
+								'h-2.5 min-h-0 rounded-full p-0 transition-[width,background-color] hover:opacity-100',
+								active
+									? 'w-5 bg-[color:var(--rv-rose-deep)] hover:bg-[color:var(--rv-rose-deep)]'
+									: 'w-2.5 bg-[color:var(--rv-navy)]/35 hover:bg-[color:var(--rv-navy)]/55',
+							)}
+							onClick={(e) => {
+								e.preventDefault()
+								e.stopPropagation()
+								goToSlide(i)
+							}}
+						/>
+					)
+				})}
+			</div>
+		) : null
 
 	return (
 		<WidgetChrome
@@ -258,15 +289,20 @@ export function StocksWidget({
 				<p className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
 					加载行情…
 				</p>
-			) : editing ? (
-				/* 编辑态不用 <a>，避免浏览器原生「拖链接」幽灵抢走整卡拖拽 */
-				<div className={shellClass} draggable={false}>
-					{quoteBody}
-				</div>
 			) : (
-				<a href="/briar/markets" draggable={false} className={shellClass}>
-					{quoteBody}
-				</a>
+				<>
+					{editing ? (
+						/* 编辑态不用 <a>，避免浏览器原生「拖链接」幽灵抢走整卡拖拽 */
+						<div className={shellClass} draggable={false}>
+							{quoteBody}
+						</div>
+					) : (
+						<a href="/briar/markets" draggable={false} className={shellClass}>
+							{quoteBody}
+						</a>
+					)}
+					{dots}
+				</>
 			)}
 		</WidgetChrome>
 	)
