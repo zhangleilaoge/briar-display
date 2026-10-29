@@ -237,7 +237,6 @@ export function StocksWidget({
 				>
 					{formatPrice(quote?.price)}
 				</p>
-
 			</>
 		)
 
@@ -265,7 +264,7 @@ export function StocksWidget({
 								'h-2.5 min-h-0 rounded-full p-0 transition-[width,background-color] hover:opacity-100',
 								active
 									? 'w-5 bg-[color:var(--rv-rose-deep)] hover:bg-[color:var(--rv-rose-deep)]'
-									: 'w-2.5 bg-[color:var(--rv-navy)]/35 hover:bg-[color:var(--rv-navy)]/55',
+									: 'w-2.5 bg-[#c4c4c4] hover:bg-[#a8a8a8]',
 							)}
 							onClick={(e) => {
 								e.preventDefault()

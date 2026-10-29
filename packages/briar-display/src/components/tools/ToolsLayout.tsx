@@ -76,7 +76,7 @@ export function ToolsShell({ children, currentPath }: ToolsLayoutProps) {
 				/>
 
 				{/* 内容区 */}
-				<main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
+				<main className="rv-content-inset flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
 					<PaperPanel
 						title="ATELIER · 工作台"
 						autoHeight={false}

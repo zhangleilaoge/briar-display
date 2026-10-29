@@ -41,7 +41,7 @@ function StylePageInner() {
 				crumbs={[{ label: '风格' }]}
 				right={<Badge variant="outline">29 组 UI · 2 套主题</Badge>}
 			/>
-			<main className="mx-auto max-w-[1440px] px-4 pb-24 pt-8 sm:px-6 sm:pt-10 md:pb-16">
+			<main className="rv-content-inset mx-auto max-w-[1440px] px-4 pb-24 pt-8 sm:px-6 sm:pt-10 md:pb-16">
 				<header className="mb-7 grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
 					<div className="max-w-3xl">
 						<p className="font-label text-[11px] uppercase tracking-[0.32em] text-muted-foreground">

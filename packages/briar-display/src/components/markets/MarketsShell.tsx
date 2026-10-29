@@ -52,7 +52,7 @@ export default function MarketsShell({ children, market }: MarketsShellProps) {
 					tabs={tabs ?? undefined}
 					inlineAt="md"
 				/>
-				<main className="flex-1 p-4 sm:p-6">
+				<main className="rv-content-inset flex-1 p-4 sm:p-6">
 					<div className="mx-auto w-full max-w-6xl">
 						<PaperPanel title="MARCHÉ · 星图">{children}</PaperPanel>
 					</div>

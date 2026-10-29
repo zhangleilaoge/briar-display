@@ -470,7 +470,18 @@ body {
 	opacity: 1;
 }
 
-/* 吊牌展开时顶栏左侧（面包屑等）右移，避免被遮；收起回到 0，不永久占位 */
+/* 吊牌展开时仅主内容区左侧 inset 压缩（header 全宽不动）；收起回到原 padding */
+.rv-content-inset {
+	transition: padding-left 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (min-width: 768px) {
+	html:has(.rv-ribbon[data-open]) .rv-content-inset {
+		/* 与 .rv-ribbon-rail 宽 4.75rem 对齐，略加 0.25rem 空隙 */
+		padding-left: 5rem;
+	}
+}
+
+/* 顶栏面包屑/子导航左移避让吊牌；不推动整条 header 背景 */
 .rv-header-lead {
 	transform: translateX(0);
 	transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
@@ -478,13 +489,13 @@ body {
 }
 @media (min-width: 768px) {
 	html:has(.rv-ribbon[data-open]) .rv-header-lead {
-		/* 与 .rv-ribbon-rail 宽 4.75rem 对齐，略加 0.25rem 空隙 */
 		transform: translateX(5rem);
 	}
 }
 @media (prefers-reduced-motion: reduce) {
 	.rv-ribbon-rail,
 	.rv-ribbon-item,
+	.rv-content-inset,
 	.rv-header-lead {
 		transition: none;
 		transition-delay: 0ms;

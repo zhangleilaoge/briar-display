@@ -18,6 +18,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog'
+import { LinkifiedText } from '@/components/ui/linkified-text'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import type { SiteMessage } from '@briar/shared'
@@ -291,7 +292,9 @@ export default function MessagesPanel() {
 						<DialogTitle>{detail?.title}</DialogTitle>
 						<DialogDescription>{detail ? formatTime(detail.createdAt) : ''}</DialogDescription>
 					</DialogHeader>
-					<p className="whitespace-pre-wrap text-sm leading-relaxed">{detail?.content}</p>
+					<p className="whitespace-pre-wrap text-sm leading-relaxed">
+						{detail ? <LinkifiedText text={detail.content} /> : null}
+					</p>
 				</DialogContent>
 			</Dialog>
 
