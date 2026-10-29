@@ -1,5 +1,5 @@
 import type { RunRecord, RunRecordStatus } from '@briar/shared'
-import { execute, query } from '../lib/db'
+import { execute, query, queryOne } from '../lib/db'
 import { githubRunUrl } from '../lib/deployFailure'
 import { toRunRecord } from '../lib/runHistory'
 import type { DeployHistoryItem } from '../services/deploymentService'
@@ -17,6 +17,9 @@ interface DeployRunRow {
 	failure_job?: string | null
 	failure_step?: string | null
 	failure_excerpt?: string | null
+	workflow_path?: string | null
+	start_notified_at?: Date | null
+	fail_notified_at?: Date | null
 }
 
 /** GitHub 状态 → 通用状态 */
@@ -54,19 +57,40 @@ const toDate = (at: string | undefined): Date | null => {
 	return Number.isNaN(d.getTime()) ? null : d
 }
 
+const mapRow = (row: DeployRunRow) => ({
+	runId: row.run_id,
+	commitSha: row.commit_sha,
+	ref: row.ref,
+	actor: row.actor,
+	status: row.status,
+	msg: row.msg,
+	deployedAt: row.deployed_at,
+	startedAt: row.started_at,
+	finishedAt: row.finished_at,
+	failureJob: row.failure_job ?? null,
+	failureStep: row.failure_step ?? null,
+	failureExcerpt: row.failure_excerpt ?? null,
+	workflowPath: row.workflow_path ?? '',
+	startNotifiedAt: row.start_notified_at ?? null,
+	failNotifiedAt: row.fail_notified_at ?? null,
+})
+
+export type DeployRunRecord = ReturnType<typeof mapRow>
+
 export const deployRunDal = {
 	/** 幂等 upsert（按 run_id），状态/提交信息以最新为准 */
 	async upsertMany(items: DeployHistoryItem[]): Promise<void> {
 		for (const item of items) {
 			if (!item.run) continue
 			await execute(
-				`INSERT INTO deploy_runs (run_id, commit_sha, ref, actor, status, msg, deployed_at, started_at, finished_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+				`INSERT INTO deploy_runs (run_id, commit_sha, ref, actor, status, msg, deployed_at, started_at, finished_at, workflow_path)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE status = VALUES(status), msg = COALESCE(VALUES(msg), msg),
            commit_sha = VALUES(commit_sha), ref = VALUES(ref), actor = VALUES(actor),
            deployed_at = COALESCE(VALUES(deployed_at), deployed_at),
            started_at = COALESCE(VALUES(started_at), started_at),
-           finished_at = COALESCE(VALUES(finished_at), finished_at)`,
+           finished_at = COALESCE(VALUES(finished_at), finished_at),
+           workflow_path = IF(VALUES(workflow_path) = '', workflow_path, VALUES(workflow_path))`,
 				[
 					String(item.run).slice(0, 32),
 					item.commit ?? '',
@@ -77,9 +101,37 @@ export const deployRunDal = {
 					toDate(item.at),
 					toDate(item.startedAt),
 					toDate(item.finishedAt),
+					(item.workflowPath ?? '').slice(0, 255),
 				],
 			)
 		}
+	},
+
+	async findByRunId(runId: string): Promise<DeployRunRecord | null> {
+		const row = await queryOne<DeployRunRow>('SELECT * FROM deploy_runs WHERE run_id = ?', [runId])
+		return row ? mapRow(row) : null
+	},
+
+	/**
+	 * 原子抢占「开始」通知资格；affectedRows>0 表示本次应发站内信
+	 */
+	async claimStartNotify(runId: string): Promise<boolean> {
+		const result = await execute(
+			'UPDATE deploy_runs SET start_notified_at = NOW() WHERE run_id = ? AND start_notified_at IS NULL',
+			[runId],
+		)
+		return result.affectedRows > 0
+	},
+
+	/**
+	 * 原子抢占「失败」通知资格；affectedRows>0 表示本次应发站内信
+	 */
+	async claimFailNotify(runId: string): Promise<boolean> {
+		const result = await execute(
+			'UPDATE deploy_runs SET fail_notified_at = NOW() WHERE run_id = ? AND fail_notified_at IS NULL',
+			[runId],
+		)
+		return result.affectedRows > 0
 	},
 
 	async listPaged(opts: {
