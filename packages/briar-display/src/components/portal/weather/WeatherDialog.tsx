@@ -149,13 +149,13 @@ export function WeatherDialog({
 						)}
 						{forecast && currentMeta && today && (
 							<>
-								<section className="rounded-2xl border border-[color:var(--rv-navy)]/12 bg-[color-mix(in_srgb,var(--rv-cream)_72%,white)] p-4">
+								<section className="rounded-2xl border border-[color:color-mix(in_srgb,var(--rv-rose-deep)_20%,transparent)] bg-[color-mix(in_srgb,var(--rv-cream)_72%,var(--rv-pink))] p-4">
 									<div className="flex items-center justify-between gap-4">
 										<div className="flex items-center gap-3">
 											<WeatherIcon
 												code={forecast.current.code}
 												isDay={forecast.current.isDay}
-												className="h-12 w-12 text-[color:var(--rv-navy)]"
+												className="h-12 w-12 text-[color:color-mix(in_srgb,var(--rv-ink)_70%,var(--rv-rose-deep))]"
 											/>
 											<div>
 												<p className="font-display text-5xl font-semibold leading-none tabular-nums">
@@ -194,7 +194,7 @@ export function WeatherDialog({
 												return (
 													<li
 														key={hour.time}
-														className="flex min-w-[4.5rem] flex-col items-center gap-2 rounded-xl border border-[color:var(--rv-navy)]/10 bg-[var(--rv-cream)]/65 px-2 py-3 text-center"
+														className="flex min-w-[4.5rem] flex-col items-center gap-2 rounded-xl border border-[color:color-mix(in_srgb,var(--rv-rose-deep)_16%,transparent)] bg-[color-mix(in_srgb,var(--rv-cream)_80%,white)] px-2 py-3 text-center"
 													>
 														<span
 															className={cn(
@@ -227,7 +227,7 @@ export function WeatherDialog({
 									</TabsContent>
 									<TabsContent value="daily" className="mt-3">
 										<ol
-											className="divide-y divide-[color:var(--rv-navy)]/10"
+											className="divide-y divide-[color:color-mix(in_srgb,var(--rv-rose-deep)_14%,transparent)]"
 											aria-label="未来 7 天天气"
 										>
 											{forecast.daily.map((day, index) => (
