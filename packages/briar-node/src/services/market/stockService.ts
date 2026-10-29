@@ -376,7 +376,7 @@ export function rankSearchResults(
 	return [...merged.filter(exact), ...merged.filter((i) => !exact(i))].slice(0, limit)
 }
 
-/** 跨市场搜索：腾讯 smartbox（A股/港股/美股，支持拼音首字母）+ Naver（韩国/日本） */
+/** 跨市场搜索：腾讯 smartbox（A股/港股/美股及沪深指数，支持拼音首字母）+ Naver（韩国/日本） */
 export async function searchStocks(raw: string): Promise<StockSearchResponse> {
 	const q = normalizeQuery(raw)
 	if (!q) throw new MarketInputError('请输入搜索关键词')

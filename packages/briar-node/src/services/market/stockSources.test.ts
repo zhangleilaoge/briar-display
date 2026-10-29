@@ -339,7 +339,7 @@ describe('个股报价解析', () => {
 })
 
 describe('搜索解析与排序', () => {
-	test('腾讯 smartbox：A股/港股/美股，跳过基金和指数，解 \\u 转义', () => {
+	test('腾讯 smartbox：A股/港股/美股与沪深指数，跳过基金，解 \\u 转义', () => {
 		const text =
 			'v_hint="sh~600519~\\u8d35\\u5dde\\u8305\\u53f0~gzmt~GP-A^sh~688616~\\u897f\\u529b\\u79d1\\u6280~xlkj~GP-A-KCB^sh~510300~\\u6caa\\u6df1300ETF~hs300etf~ETF^hk~00700~\\u817e\\u8baf\\u63a7\\u80a1~txkg~GP^us~aapl.oq~\\u82f9\\u679c~pg~GP^us~brk.b.n~Berkshire~*~GP^jj~007005~\\u57fa\\u91d1~x~KJ^sh~000001~\\u4e0a\\u8bc1\\u6307\\u6570~szzs~ZS"'
 		expect(parseTencentSmartbox(text)).toEqual([
@@ -349,6 +349,7 @@ describe('搜索解析与排序', () => {
 			{ market: 'hk', code: '00700', name: '腾讯控股', type: 'stock', exchange: '港交所' },
 			{ market: 'us', code: 'AAPL', name: '苹果', type: 'stock', exchange: 'NASDAQ' },
 			{ market: 'us', code: 'BRK.B', name: 'Berkshire', type: 'stock', exchange: 'NYSE' },
+			{ market: 'cn', code: 'sh000001', name: '上证指数', type: 'index', exchange: '上交所' },
 		])
 		expect(parseTencentSmartbox('v_hint="N"')).toEqual([])
 		expect(parseTencentSmartbox('')).toEqual([])
@@ -439,44 +440,63 @@ describe('搜索走全局缓存 + 单飞', () => {
 })
 
 describe('自选入参校验', () => {
-	test('市场 / 代码格式校验，美股代码转大写，名称截断', () => {
+	test('市场 / 代码 / 类型校验，美股代码转大写，名称截断', () => {
 		expect(normalizeStockRef('us', 'aapl', '苹果')).toEqual({
 			market: 'us',
 			code: 'AAPL',
 			name: '苹果',
+			type: 'stock',
 		})
 		expect(normalizeStockRef('cn', '600519')).toBeNull()
 		expect(normalizeStockRef('cn', 'sh600519')).toEqual({
 			market: 'cn',
 			code: 'sh600519',
 			name: 'sh600519',
+			type: 'stock',
 		})
+		expect(normalizeStockRef('cn', 'sh000001', '上证指数', 'index')).toEqual({
+			market: 'cn',
+			code: 'sh000001',
+			name: '上证指数',
+			type: 'index',
+		})
+		expect(normalizeStockRef('hk', '00001', '恒生指数', 'index')).toBeNull()
+		expect(normalizeStockRef('cn', 'sh000001', '上证指数', 'unknown')).toBeNull()
 		expect(normalizeStockRef('xx', '1')).toBeNull()
 		expect(normalizeStockRef('kr', '005930', 'x'.repeat(200))?.name).toHaveLength(100)
 	})
 
-	test('POST body：单个或 items 数组，去重并丢弃非法项', () => {
+	test('POST body：单个或 items 数组，去重、保留指数类型并丢弃非法项', () => {
 		expect(sanitizeWatchlistItems({ market: 'hk', code: '00700', name: '腾讯' })).toEqual([
-			{ market: 'hk', code: '00700', name: '腾讯' },
+			{ market: 'hk', code: '00700', name: '腾讯', type: 'stock' },
 		])
 		expect(
 			sanitizeWatchlistItems({
 				items: [
 					{ market: 'jp', code: '7203', name: 'Toyota' },
 					{ market: 'jp', code: '7203', name: 'dup' },
+					{ market: 'cn', code: 'sh000001', name: '上证指数', type: 'index' },
 					{ market: 'kr', code: 'bad' },
 					null,
 				],
 			}),
-		).toEqual([{ market: 'jp', code: '7203', name: 'Toyota' }])
+		).toEqual([
+			{ market: 'jp', code: '7203', name: 'Toyota', type: 'stock' },
+			{ market: 'cn', code: 'sh000001', name: '上证指数', type: 'index' },
+		])
 		expect(sanitizeWatchlistItems(null)).toEqual([])
 	})
 
-	test('GET /quotes 的 items 参数', () => {
-		expect(parseStockRefs('cn:sh600519,us:aapl,us:AAPL,kr:005930,bad,xx:1')).toEqual([
-			{ market: 'cn', code: 'sh600519' },
-			{ market: 'us', code: 'AAPL' },
-			{ market: 'kr', code: '005930' },
+	test('GET items 兼容旧格式并解析指数类型', () => {
+		expect(
+			parseStockRefs(
+				'cn:sh600519,us:aapl,us:AAPL,kr:005930,cn:index:sh000001,hk:index:00001,cn:bogus:sh000001,bad,xx:1',
+			),
+		).toEqual([
+			{ market: 'cn', code: 'sh600519', type: 'stock' },
+			{ market: 'us', code: 'AAPL', type: 'stock' },
+			{ market: 'kr', code: '005930', type: 'stock' },
+			{ market: 'cn', code: 'sh000001', type: 'index' },
 		])
 		expect(parseStockRefs(undefined)).toEqual([])
 	})

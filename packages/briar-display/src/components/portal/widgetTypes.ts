@@ -2,13 +2,7 @@
 
 export type WidgetId = 'calendar' | 'clock' | 'stocks' | 'weather' | 'greeting'
 
-/**
- * 网格占位：宽×高（列×行）
- * - 1×1 小（主尺寸，对齐 macOS small）
- * - 2×1 中（横向）
- * - 2×2 大
- * 不再提供 4×2 / 2×4 等过宽过高规格，避免过于灵活。
- */
+/** 网格占位：宽×高（列×行） */
 export type WidgetSize = '1x1' | '2x1' | '2x2'
 
 export interface SizeSpec {
@@ -18,9 +12,9 @@ export interface SizeSpec {
 }
 
 export const SIZE_SPECS: Record<WidgetSize, SizeSpec> = {
-	'1x1': { w: 1, h: 1, label: '小' },
-	'2x1': { w: 2, h: 1, label: '中' },
-	'2x2': { w: 2, h: 2, label: '大' },
+	'1x1': { w: 1, h: 1, label: '1 × 1' },
+	'2x1': { w: 2, h: 1, label: '2 × 1' },
+	'2x2': { w: 2, h: 2, label: '2 × 2' },
 }
 
 export interface WidgetPlacement {
@@ -55,7 +49,7 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
 		title: '日历',
 		caption: 'Calendrier',
 		description: '本月视图，高亮今天（上海时区）',
-		sizes: ['1x1', '2x2'],
+		sizes: ['1x1', '2x1'],
 		defaultSize: '1x1',
 	},
 	{
@@ -63,7 +57,7 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
 		title: '时钟',
 		caption: 'Horloge',
 		description: '古典指针表盘与实时数字时间',
-		sizes: ['1x1', '2x2'],
+		sizes: ['1x1'],
 		defaultSize: '1x1',
 	},
 	{
@@ -71,7 +65,7 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
 		title: '天气',
 		caption: 'Météo',
 		description: '多地区实时天气、逐小时与七日预报',
-		sizes: ['1x1', '2x1', '2x2'],
+		sizes: ['1x1'],
 		defaultSize: '1x1',
 	},
 	{
@@ -79,7 +73,7 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
 		title: '自选股',
 		caption: 'Actions',
 		description: '单标的行情轮播（价 + 涨跌 + 走势）',
-		sizes: ['1x1', '2x1'],
+		sizes: ['1x1'],
 		defaultSize: '1x1',
 	},
 ]
@@ -88,11 +82,7 @@ export const WIDGET_META: Record<WidgetId, WidgetMeta> = Object.fromEntries(
 	WIDGET_CATALOG.map((m) => [m.id, m]),
 ) as Record<WidgetId, WidgetMeta>
 
-/**
- * 默认桌面（4 列；问候由明信片承担，不在默认布局）：
- *  全部 1×1：日历 / 天气 / 时钟 / 自选
- *  编辑模式仍可选 2×1 / 2×2
- */
+/** 默认桌面（4 列）：日历 / 天气 / 时钟 / 自选全部 1×1，问候由明信片承担 */
 export const DEFAULT_LAYOUT_DESKTOP: WidgetPlacement[] = [
 	{ id: 'calendar', size: '1x1', col: 0, row: 0 },
 	{ id: 'weather', size: '1x1', col: 1, row: 0 },

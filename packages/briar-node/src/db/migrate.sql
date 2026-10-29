@@ -79,3 +79,8 @@ PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 SET @s = IF((SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_identities' AND INDEX_NAME = 'uk_provider_uid') > 0,
   'ALTER TABLE user_identities DROP INDEX uk_provider_uid', 'SELECT 1');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- 3) 自选保留指数类型，旧数据按个股处理
+SET @s = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'market_watchlist' AND COLUMN_NAME = 'type') = 0,
+  'ALTER TABLE market_watchlist ADD COLUMN type VARCHAR(16) NOT NULL DEFAULT ''stock'' COMMENT ''标的类型：stock / etf / index'' AFTER code', 'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;

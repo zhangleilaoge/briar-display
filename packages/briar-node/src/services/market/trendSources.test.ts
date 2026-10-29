@@ -336,3 +336,61 @@ describe('走势面板周期支持', () => {
 		await expect(getChart('us', 'index', 'NOPE', 'day')).rejects.toThrow('未知的指数代码')
 	})
 })
+
+describe('搜索指数走势与恐贪', () => {
+	test('非目录沪深指数使用腾讯分时并保留 index 目标', async () => {
+		const { __resetMarketCache } = await import('./cache')
+		const realFetch = globalThis.fetch
+		__resetMarketCache()
+		try {
+			globalThis.fetch = (async () =>
+				Response.json({
+					data: {
+						sh000016: {
+							data: { date: '20260930', data: ['0930 2700 100', '1500 2710 200'] },
+							qt: { sh000016: ['1', '上证50', '000016', '2710', '2690'] },
+						},
+					},
+				})) as unknown as typeof fetch
+			const chart = await getChart('cn', 'index', 'sh000016', 'intraday')
+			expect(chart).toMatchObject({
+				target: 'index',
+				code: 'sh000016',
+				name: '上证50',
+				available: true,
+				prevClose: 2690,
+			})
+			expect(chart.days[0].points.at(-1)?.[1]).toBe(2710)
+		} finally {
+			globalThis.fetch = realFetch
+			__resetMarketCache()
+		}
+	})
+
+	test('自选指数恐贪按 index 日 K 计算', async () => {
+		const [{ __resetMarketCache }, { getFearGreedBatch }] = await Promise.all([
+			import('./cache'),
+			import('./fearGreedService'),
+		])
+		const realFetch = globalThis.fetch
+		__resetMarketCache()
+		try {
+			globalThis.fetch = (async () =>
+				Response.json({
+					data: {
+						sh000016: {
+							qfqday: [
+								['2026-09-29', '2700', '2690', '2710', '2680', '100'],
+								['2026-09-30', '2690', '2710', '2720', '2685', '120'],
+							],
+						},
+					},
+				})) as unknown as typeof fetch
+			const { items } = await getFearGreedBatch([{ market: 'cn', code: 'sh000016', type: 'index' }])
+			expect(items[0]).toMatchObject({ target: 'index', code: 'sh000016', candles: 2 })
+		} finally {
+			globalThis.fetch = realFetch
+			__resetMarketCache()
+		}
+	})
+})

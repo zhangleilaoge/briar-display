@@ -13,6 +13,7 @@ import Ansi from 'ansi-to-react'
 import axios from 'axios'
 import { Check, Copy, Loader2, Maximize2, Minimize2, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { FaGithub } from 'react-icons/fa'
 import DeployProgressView from './DeployProgressView'
 
 interface DeployLogDialogProps {
@@ -231,6 +232,18 @@ export default function DeployLogDialog({ runId, open, onOpenChange }: DeployLog
 									? ((data ?? progress)!.conclusion ?? 'completed')
 									: (data ?? progress)!.runStatus}
 							</span>
+						)}
+						{runId && (
+							<a
+								href={`https://github.com/zhangleilaoge/briar-display/actions/runs/${runId}`}
+								target="_blank"
+								rel="noreferrer"
+								className="rv-term-btn"
+								title="在 GitHub 查看本次运行"
+								aria-label="在 GitHub 查看本次运行（新窗口）"
+							>
+								<FaGithub className="h-3.5 w-3.5" />
+							</a>
 						)}
 						<button
 							type="button"

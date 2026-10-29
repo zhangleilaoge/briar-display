@@ -202,14 +202,30 @@ const NO_KR_SECTOR = '该板块暂无走势数据（Naver 不提供韩国业种/
 const tencentUsKline = (code: string) => async (period: KlinePeriod) =>
 	fetchTencentKline(await resolveTencentUsKlineCode(code), period, KLINE_COUNT[period])
 
+function tencentCnChartPlan(code: string, timeZone: string): ChartPlan {
+	return {
+		name: code,
+		intraday: () => fetchTencentMinute(code, timeZone),
+		fiveDay: () => fetchTencentFiveDay(code, timeZone),
+		candles: (period) => fetchTencentKline(code, period, KLINE_COUNT[period]),
+		delayMinutes: 0,
+		reasons: {},
+	}
+}
+
 function planIndexChart(market: MarketId, code: string): ChartPlan {
+	const { timeZone } = MARKET_SESSIONS[market]
 	const defs = MARKET_INDICES[market]
 	const index = defs.findIndex((d) =>
 		[indexCode(d), d.tencent, d.naver?.code, d.name].includes(code),
 	)
-	if (index < 0) throw new MarketInputError('未知的指数代码')
+	if (index < 0) {
+		if (market === 'cn' && /^(sh|sz)\d{6}$/.test(code)) {
+			return tencentCnChartPlan(code, timeZone)
+		}
+		throw new MarketInputError('未知的指数代码')
+	}
 	const def = defs[index]
-	const { timeZone } = MARKET_SESSIONS[market]
 	const intraday = async () => (await loadIndexTrendsRaw(market)).value[index]
 	const tencent = def.tencent
 	const naver = def.naver?.code
@@ -411,14 +427,7 @@ function planStockChart(market: MarketId, code: string): ChartPlan {
 	const { timeZone } = MARKET_SESSIONS[market]
 	switch (market) {
 		case 'cn':
-			return {
-				name: code,
-				intraday: () => fetchTencentMinute(code, timeZone),
-				fiveDay: () => fetchTencentFiveDay(code, timeZone),
-				candles: (period) => fetchTencentKline(code, period, KLINE_COUNT[period]),
-				delayMinutes: 0,
-				reasons: {},
-			}
+			return tencentCnChartPlan(code, timeZone)
 		case 'hk': {
 			const secid = `116.${code}`
 			return {

@@ -4,6 +4,7 @@ import {
 	type StockRef,
 	WATCHLIST_LIMIT,
 	type WatchlistItem,
+	isStockType,
 } from '@briar/shared'
 
 /** 自选的纯函数操作（store 和单测共用） */
@@ -18,7 +19,8 @@ export const hasStock = (list: WatchlistItem[], s: Pick<StockRef, 'market' | 'co
 /** 加到末尾；已存在或超过上限不变 */
 export function addStock(list: WatchlistItem[], s: StockRef, now = Date.now()): WatchlistItem[] {
 	if (hasStock(list, s) || list.length >= WATCHLIST_LIMIT) return list
-	return [...list, { market: s.market, code: s.code, name: s.name, addedAt: now }]
+	const type = isStockType(s.type) ? s.type : 'stock'
+	return [...list, { market: s.market, code: s.code, name: s.name, type, addedAt: now }]
 }
 
 export const removeStock = (list: WatchlistItem[], s: Pick<StockRef, 'market' | 'code'>) =>
@@ -37,7 +39,8 @@ export function parseStoredWatchlist(raw: string | null): WatchlistItem[] {
 		for (const r of data) {
 			if (!r || !isMarket(r.market) || typeof r.code !== 'string' || !r.code) continue
 			const name = typeof r.name === 'string' && r.name ? r.name : r.code
-			list = addStock(list, { market: r.market, code: r.code, name }, Number(r.addedAt) || 0)
+			const type = isStockType(r.type) ? r.type : 'stock'
+			list = addStock(list, { market: r.market, code: r.code, name, type }, Number(r.addedAt) || 0)
 		}
 		return list
 	} catch {
@@ -49,4 +52,4 @@ export function parseStoredWatchlist(raw: string | null): WatchlistItem[] {
 export const itemsToImport = (local: WatchlistItem[], server: WatchlistItem[]) =>
 	local
 		.filter((i) => !hasStock(server, i))
-		.map(({ market, code, name }) => ({ market, code, name }))
+		.map(({ market, code, name, type }) => ({ market, code, name, type }))

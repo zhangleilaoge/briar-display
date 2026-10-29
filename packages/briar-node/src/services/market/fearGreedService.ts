@@ -144,11 +144,12 @@ function meta(list: Loaded[]) {
 
 /** 自选股批量恐贪（refs 已校验） */
 export async function getFearGreedBatch(
-	refs: Pick<StockRef, 'market' | 'code'>[],
+	refs: Pick<StockRef, 'market' | 'code' | 'type'>[],
 ): Promise<FearGreedBatchResponse> {
-	const loaded = await mapLimit(refs, CONCURRENCY, (r) =>
-		loadOne(r.market, 'stock', r.code, '', () => chartCandles(r.market, 'stock', r.code)),
-	)
+	const loaded = await mapLimit(refs, CONCURRENCY, (r) => {
+		const target: ChartTarget = r.type === 'index' ? 'index' : 'stock'
+		return loadOne(r.market, target, r.code, '', () => chartCandles(r.market, target, r.code))
+	})
 	return { items: loaded.map((l) => l.result), pollMs: FEAR_GREED_POLL_MS, ...meta(loaded) }
 }
 

@@ -37,7 +37,7 @@ function quoteStats(q: StockQuote): { label: string; value: string }[] {
 	return rows.flatMap(([label, v, fmt]) => (v == null ? [] : [{ label, value: fmt(v) }]))
 }
 
-/** 个股详情：报价头 + 自选按钮 + 分时/五日/日K/周K/月K（与板块共用走势面板） */
+/** 个股 / 指数详情：报价头 + 自选按钮 + 分时/五日/日K/周K/月K（与板块共用走势面板） */
 export default function StockDetailView({ market, stock }: { market: MarketId; stock: StockRef }) {
 	const watchlist = useWatchlist()
 	const inList = watchlist.has(stock)
@@ -91,7 +91,12 @@ export default function StockDetailView({ market, stock }: { market: MarketId; s
 						onClick={() =>
 							inList
 								? watchlist.remove(stock)
-								: watchlist.add({ market, code: stock.code, name: q?.name || stock.name })
+								: watchlist.add({
+										market,
+										code: stock.code,
+										name: q?.name || stock.name,
+										type: stock.type,
+									})
 						}
 						title={inList ? '移出自选' : '加入自选'}
 					>
@@ -132,7 +137,11 @@ export default function StockDetailView({ market, stock }: { market: MarketId; s
 
 			<ChartPanelBody
 				market={market}
-				subject={{ target: 'stock', code: stock.code, name: stock.name }}
+				subject={{
+					target: stock.type === 'index' ? 'index' : 'stock',
+					code: stock.code,
+					name: stock.name,
+				}}
 				showQuote={false}
 			/>
 			{q && <p className="text-[11px] text-muted-foreground/80">报价数据源 {q.source}</p>}

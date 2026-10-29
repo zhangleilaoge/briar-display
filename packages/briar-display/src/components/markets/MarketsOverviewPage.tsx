@@ -61,7 +61,7 @@ export default function MarketsOverviewPage() {
 		setDetail({
 			kind: 'stock',
 			market: s.market,
-			stock: { market: s.market, code: s.code, name: s.name },
+			stock: { market: s.market, code: s.code, name: s.name, type: s.type },
 		})
 	const { data, error, loading, refreshing, refresh } = useMarketPolling(
 		async () => unwrap(await getMarketOverview()),

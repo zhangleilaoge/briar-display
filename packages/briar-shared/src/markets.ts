@@ -262,11 +262,11 @@ export interface MarketChartResponse extends MarketDataMeta {
 	session: MarketSessionInfo
 }
 
-// ───────────────────────── 个股：成分股 / 详情 / 搜索 / 自选 ─────────────────────────
+// ───────────────────────── 标的：成分股 / 详情 / 搜索 / 自选 ─────────────────────────
 
 /**
- * 个股代码（接口与自选统一用这一套）：
- * - cn：腾讯风格带交易所前缀 sh600519 / sz000001 / bj830799
+ * 标的代码（接口与自选统一用这一套）：
+ * - cn：腾讯风格带交易所前缀 sh600519 / sz000001 / bj830799；指数如 sh000001
  * - hk：5 位数字 00700
  * - us：大写代码 AAPL（不带交易所后缀）
  * - jp：东证代码 7203（Naver 用 7203.T）
@@ -284,11 +284,17 @@ export function isStockCode(market: MarketId, code: string): boolean {
 	return STOCK_CODE_PATTERNS[market].test(code)
 }
 
-/** 个股引用（自选 / 搜索结果 / 成分股点击） */
+export type StockType = 'stock' | 'etf' | 'index'
+
+export const isStockType = (value: unknown): value is StockType =>
+	value === 'stock' || value === 'etf' || value === 'index'
+
+/** 标的引用（自选 / 搜索结果 / 成分股点击）；旧引用缺省按 stock */
 export interface StockRef {
 	market: MarketId
 	code: string
 	name: string
+	type?: StockType
 }
 
 /** 板块成分股一行 */
@@ -380,8 +386,7 @@ export interface StockQuotesResponse extends MarketDataMeta {
 }
 
 export interface StockSearchItem extends StockRef {
-	/** stock / etf */
-	type: 'stock' | 'etf'
+	type: StockType
 	/** 交易所 / 板块简称（如 科创板、KOSDAQ、东证） */
 	exchange?: string
 }
@@ -393,6 +398,7 @@ export interface StockSearchResponse {
 }
 
 export interface WatchlistItem extends StockRef {
+	type: StockType
 	addedAt: number
 }
 

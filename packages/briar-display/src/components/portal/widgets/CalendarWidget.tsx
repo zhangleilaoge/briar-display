@@ -82,7 +82,7 @@ export function CalendarWidget({
 				</div>
 			) : (
 				<>
-					<div className={`flex items-baseline gap-2 px-0.5 ${compact ? 'mb-1' : 'mb-2'}`}>
+					<div className={`flex shrink-0 items-baseline gap-2 px-0.5 ${compact ? 'mb-1' : 'mb-2'}`}>
 						<span
 							className={
 								compact
@@ -96,7 +96,14 @@ export function CalendarWidget({
 							<span className="truncate text-xs text-muted-foreground">{lunar}</span>
 						)}
 					</div>
-					<div className={`grid grid-cols-7 text-center ${compact ? 'gap-y-0' : 'gap-y-0.5'}`}>
+					<div
+						className={`grid grid-cols-7 text-center ${compact ? 'gap-y-0' : 'min-h-0 flex-1 gap-y-0.5'}`}
+						style={
+							compact
+								? undefined
+								: { gridTemplateRows: `auto repeat(${cells.length / 7}, minmax(0, 1fr))` }
+						}
+					>
 						{WEEK.map((w) => (
 							<span
 								key={w}
@@ -116,8 +123,8 @@ export function CalendarWidget({
 									? 'mx-auto flex h-5 w-5 items-center justify-center rounded-full bg-[color:var(--rv-rose-deep)] text-[10px] font-semibold text-[var(--rv-cream)]'
 									: 'mx-auto flex h-5 w-5 items-center justify-center text-[10px] tabular-nums text-foreground/85'
 								: isToday
-									? 'mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--rv-rose-deep)] text-[11px] font-semibold text-[var(--rv-cream)] sm:h-7 sm:w-7 sm:text-xs'
-									: 'mx-auto flex h-6 w-6 items-center justify-center text-[11px] tabular-nums text-foreground/85 sm:h-7 sm:w-7 sm:text-xs'
+									? 'mx-auto flex aspect-square h-full max-h-7 w-auto items-center justify-center rounded-full bg-[color:var(--rv-rose-deep)] text-[11px] font-semibold text-[var(--rv-cream)] sm:text-xs'
+									: 'mx-auto flex aspect-square h-full max-h-7 w-auto items-center justify-center text-[11px] tabular-nums text-foreground/85 sm:text-xs'
 							return (
 								<span key={i} className={cell}>
 									{c?.day ?? ''}

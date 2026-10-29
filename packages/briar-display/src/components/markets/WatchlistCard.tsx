@@ -48,7 +48,7 @@ function MarketTag({ market }: { market: StockRef['market'] }) {
 	)
 }
 
-/** 搜索框 + 结果下拉：跨市场搜所有个股（不只是自选），可直接加自选或打开详情 */
+/** 搜索框 + 结果下拉：跨市场搜个股与沪深指数，可直接加自选或打开详情 */
 function StockSearch({ onOpen }: { onOpen: (s: StockRef) => void }) {
 	const watchlist = useWatchlist()
 	const [input, setInput] = useState('')
@@ -130,73 +130,74 @@ function StockSearch({ onOpen }: { onOpen: (s: StockRef) => void }) {
 						style={{ top: panelPos.top, left: panelPos.left, width: panelPos.width }}
 						className="rv-paper-float fixed z-[200] max-h-80 overflow-y-auto p-1"
 					>
-
-					{searching && !results ? (
-						<div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
-							<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-							搜索中…
-						</div>
-					) : error ? (
-						<div className="py-6 text-center text-sm text-muted-foreground">{error}</div>
-					) : results && results.length === 0 ? (
-						<div className="py-6 text-center text-sm text-muted-foreground">没有找到匹配的个股</div>
-					) : (
-						(results ?? []).map((r) => {
-							const inList = watchlist.has(r)
-							return (
-								<div
-									key={stockId(r)}
-									className="flex min-h-10 items-center gap-2 rounded-none border border-transparent px-2 py-1.5 transition-colors hover:border-foreground/15 hover:bg-[hsl(214_55%_92%/0.55)] hover:shadow-[inset_3px_0_0_var(--rv-navy)]"
-								>
-									<button
-										type="button"
-										className="flex min-h-7 min-w-0 flex-1 items-center gap-2 text-left"
-										onClick={() => {
-											setOpen(false)
-											onOpen(r)
-										}}
+						{searching && !results ? (
+							<div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								搜索中…
+							</div>
+						) : error ? (
+							<div className="py-6 text-center text-sm text-muted-foreground">{error}</div>
+						) : results && results.length === 0 ? (
+							<div className="py-6 text-center text-sm text-muted-foreground">
+								没有找到匹配的个股 / 指数
+							</div>
+						) : (
+							(results ?? []).map((r) => {
+								const inList = watchlist.has(r)
+								const typeLabel = r.type === 'etf' ? 'ETF' : r.type === 'index' ? '指数' : ''
+								return (
+									<div
+										key={stockId(r)}
+										className="flex min-h-10 items-center gap-2 rounded-none border border-transparent px-2 py-1.5 transition-colors hover:border-foreground/15 hover:bg-[hsl(214_55%_92%/0.55)] hover:shadow-[inset_3px_0_0_var(--rv-navy)]"
 									>
-										<MarketTag market={r.market} />
-										<span className="shrink-0 text-xs leading-none text-muted-foreground tabular-nums">
-											{displayCode(r.code)}
-										</span>
-										<span className="truncate text-sm leading-none">{r.name}</span>
-										{(r.type === 'etf' || r.exchange) && (
-											<span className="hidden shrink-0 text-[11px] leading-none text-muted-foreground/80 sm:inline">
-												{[r.exchange, r.type === 'etf' ? 'ETF' : ''].filter(Boolean).join(' · ')}
+										<button
+											type="button"
+											className="flex min-h-7 min-w-0 flex-1 items-center gap-2 text-left"
+											onClick={() => {
+												setOpen(false)
+												onOpen(r)
+											}}
+										>
+											<MarketTag market={r.market} />
+											<span className="shrink-0 text-xs leading-none text-muted-foreground tabular-nums">
+												{displayCode(r.code)}
 											</span>
-										)}
-									</button>
-									<Button
-										variant={inList ? 'secondary' : 'outline'}
-										size="sm"
-										className={cn(
-											'h-7 shrink-0 gap-1 border px-2 text-xs transition-colors',
-											inList
-												? 'border-warning/45 bg-warning/10 hover:border-warning hover:bg-warning/25'
-												: 'hover:border-primary/60 hover:bg-primary/10 hover:text-primary',
-										)}
-										disabled={!watchlist.ready}
-										onClick={() => (inList ? watchlist.remove(r) : watchlist.add(r))}
-										title={inList ? '移出自选' : '加入自选'}
-									>
-										{inList ? (
-											<>
-												<Star className="h-3.5 w-3.5 fill-warning text-warning" />
-												已自选
-											</>
-										) : (
-											<>
-												<Plus className="h-3.5 w-3.5" />
-												自选
-											</>
-										)}
-									</Button>
-								</div>
-							)
-						})
-					)}
-
+											<span className="truncate text-sm leading-none">{r.name}</span>
+											{(typeLabel || r.exchange) && (
+												<span className="hidden shrink-0 text-[11px] leading-none text-muted-foreground/80 sm:inline">
+													{[r.exchange, typeLabel].filter(Boolean).join(' · ')}
+												</span>
+											)}
+										</button>
+										<Button
+											variant={inList ? 'secondary' : 'outline'}
+											size="sm"
+											className={cn(
+												'h-7 shrink-0 gap-1 border px-2 text-xs transition-colors',
+												inList
+													? 'border-warning/45 bg-warning/10 hover:border-warning hover:bg-warning/25'
+													: 'hover:border-primary/60 hover:bg-primary/10 hover:text-primary',
+											)}
+											disabled={!watchlist.ready}
+											onClick={() => (inList ? watchlist.remove(r) : watchlist.add(r))}
+											title={inList ? '移出自选' : '加入自选'}
+										>
+											{inList ? (
+												<>
+													<Star className="h-3.5 w-3.5 fill-warning text-warning" />
+													已自选
+												</>
+											) : (
+												<>
+													<Plus className="h-3.5 w-3.5" />
+													自选
+												</>
+											)}
+										</Button>
+									</div>
+								)
+							})
+						)}
 					</div>,
 					document.body,
 				)
@@ -215,9 +216,9 @@ function StockSearch({ onOpen }: { onOpen: (s: StockRef) => void }) {
 				onKeyDown={(e) => {
 					if (e.key === 'Escape') setOpen(false)
 				}}
-				placeholder="搜索全部市场个股：代码 / 名称 / 拼音首字母（如 gzmt、AAPL、00700、삼성）"
+				placeholder="搜索全部市场个股 / 指数：代码 / 名称 / 拼音首字母（如 上证、gzmt、AAPL）"
 				className="bg-card/70 pl-9"
-				aria-label="搜索个股"
+				aria-label="搜索个股 / 指数"
 			/>
 			{panel}
 		</div>
@@ -294,7 +295,7 @@ export default function WatchlistCard({ onOpen }: { onOpen: (s: StockRef) => voi
 					</div>
 				) : refs.length === 0 ? (
 					<p className="py-6 text-center text-sm text-muted-foreground">
-						还没有自选股。在上方搜索个股，或在板块详情的成分股里点开个股后「加自选」
+						还没有自选。在上方搜索个股或沪深指数，或在板块详情的成分股里点开个股后「加自选」
 					</p>
 				) : (
 					<div className="divide-y rounded-xl border bg-card/40">

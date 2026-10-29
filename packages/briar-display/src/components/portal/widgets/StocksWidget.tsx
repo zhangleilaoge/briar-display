@@ -9,6 +9,7 @@ import type { StockQuote, StockRef } from '@briar/shared'
 import { useEffect, useMemo, useState } from 'react'
 import { WidgetChrome } from '../WidgetChrome'
 import type { WidgetSize } from '../widgetTypes'
+import { sparklineGeometry } from './stockSparkline'
 
 /** 自选为空时的展示用默认标的（不写入自选） */
 const DEFAULT_REFS: StockRef[] = [
@@ -47,29 +48,19 @@ function downsample(values: number[], n = 28): number[] {
 
 function Sparkline({
 	values,
+	baseline,
 	up,
 	className,
 }: {
 	values: number[]
+	baseline?: number | null
 	up: boolean | null
 	className?: string
 }) {
 	if (values.length < 2) {
 		return <div className={className} aria-hidden />
 	}
-	const min = Math.min(...values)
-	const max = Math.max(...values)
-	const span = max - min || 1
-	const w = 100
-	const h = 36
-	const pad = 2
-	const pts = values
-		.map((v, i) => {
-			const x = pad + (i / (values.length - 1)) * (w - pad * 2)
-			const y = pad + (1 - (v - min) / span) * (h - pad * 2)
-			return `${x.toFixed(2)},${y.toFixed(2)}`
-		})
-		.join(' ')
+	const geometry = sparklineGeometry(values, baseline)
 	const stroke =
 		up == null
 			? 'color-mix(in srgb, var(--rv-navy) 45%, transparent)'
@@ -77,14 +68,26 @@ function Sparkline({
 				? 'var(--rv-rose-deep)'
 				: 'hsl(152 45% 38%)'
 	return (
-		<svg viewBox={`0 0 ${w} ${h}`} className={className} preserveAspectRatio="none" aria-hidden>
+		<svg viewBox="0 0 100 36" className={className} preserveAspectRatio="none" aria-hidden>
+			{geometry.baselineY != null && (
+				<line
+					x1="0"
+					x2="100"
+					y1={geometry.baselineY}
+					y2={geometry.baselineY}
+					stroke="color-mix(in srgb, var(--rv-navy) 30%, transparent)"
+					strokeWidth="0.75"
+					strokeDasharray="3 3"
+					vectorEffect="non-scaling-stroke"
+				/>
+			)}
 			<polyline
 				fill="none"
 				stroke={stroke}
 				strokeWidth="1.75"
 				strokeLinecap="round"
 				strokeLinejoin="round"
-				points={pts}
+				points={geometry.points}
 			/>
 		</svg>
 	)
@@ -104,7 +107,7 @@ export function StocksWidget({
 	const usingDefaults = watchlist.ready && items.length === 0
 	const refs: StockRef[] = usingDefaults
 		? DEFAULT_REFS
-		: items.map(({ market, code, name }) => ({ market, code, name }))
+		: items.map(({ market, code, name, type }) => ({ market, code, name, type }))
 	const idsKey = refs.map(stockId).join(',')
 
 	const { data, loading } = useMarketPolling(
@@ -136,40 +139,57 @@ export function StocksWidget({
 	}, [refs.length])
 
 	const current = refs.length ? refs[idx % refs.length] : null
+	const currentId = current ? `${stockId(current)}:${current.type ?? 'stock'}` : ''
 	const quote = current ? quotes.get(stockId(current)) : undefined
 
-	const [spark, setSpark] = useState<number[]>([])
+	const [spark, setSpark] = useState<{ id: string; values: number[]; baseline: number | null }>({
+		id: '',
+		values: [],
+		baseline: null,
+	})
 	useEffect(() => {
 		if (!current) {
-			setSpark([])
+			setSpark({ id: '', values: [], baseline: null })
 			return
 		}
 		let cancelled = false
 		;(async () => {
 			try {
-				const body = unwrap(await getMarketChart(current.market, 'stock', current.code, 'intraday'))
+				const target = current.type === 'index' ? 'index' : 'stock'
+				const body = unwrap(await getMarketChart(current.market, target, current.code, 'intraday'))
 				const days = body.days ?? []
 				const pts = days.flatMap((d) => d.points.map((p) => p[1])).filter((n) => Number.isFinite(n))
 				if (!cancelled && pts.length >= 2) {
-					setSpark(downsample(pts))
+					setSpark({
+						id: currentId,
+						values: downsample(pts),
+						baseline: body.prevClose ?? quote?.prevClose ?? null,
+					})
 					return
 				}
 			} catch {
 				/* fall through */
 			}
-			if (!cancelled) setSpark(syntheticSpark(quote))
+			if (!cancelled) {
+				setSpark({
+					id: currentId,
+					values: syntheticSpark(quote),
+					baseline: quote?.prevClose ?? null,
+				})
+			}
 		})()
 		return () => {
 			cancelled = true
 		}
 		// quote 变化时用最新报价兜底；主依赖是当前标的
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [current?.market, current?.code, idx, quote?.price])
+	}, [current?.market, current?.code, current?.type, idx, quote?.price, quote?.prevClose])
 
 	const up = quote?.changePct == null ? null : quote.changePct === 0 ? null : quote.changePct > 0
 	const wide = size === '2x1'
 	const shellClass = 'flex min-h-0 flex-1 flex-col outline-none transition hover:opacity-95'
 	const showLoading = !watchlist.ready || (loading && !data) || !current
+	const hasSpark = spark.id === currentId && spark.values.length >= 2
 
 	const quoteBody =
 		current == null ? null : (
@@ -194,7 +214,8 @@ export function StocksWidget({
 
 				<div className={`my-1.5 min-h-0 flex-1 ${wide ? 'px-0.5' : ''}`}>
 					<Sparkline
-						values={spark.length >= 2 ? spark : syntheticSpark(quote)}
+						values={hasSpark ? spark.values : syntheticSpark(quote)}
+						baseline={hasSpark ? spark.baseline : quote?.prevClose}
 						up={up}
 						className="h-full w-full min-h-[2.25rem]"
 					/>

@@ -22,7 +22,7 @@ import { takeEastmoneyTrendSlot } from './trendSources'
  * - Naver polling domestic/stock（韩国实时）+ m.stock.naver.com/api/stock/{code}/integration（PER/PBR）
  * - Naver api.stock.naver.com/stock/{code}.T/basic（日本，延迟 15 分钟，含英文名 / PER / PBR）
  * 搜索
- * - 腾讯 smartbox.gtimg.cn/s3：A股 / 港股 / 美股，支持代码、中文名、拼音首字母（gzmt → 贵州茅台）
+ * - 腾讯 smartbox.gtimg.cn/s3：A股 / 港股 / 美股及沪深指数，支持代码、中文名、拼音首字母（gzmt → 贵州茅台）
  * - Naver ac.stock.naver.com/ac：韩国 / 日本（代码、韩文、英文名）
  */
 
@@ -566,13 +566,16 @@ export function parseTencentSmartbox(text: string): StockSearchItem[] {
 	for (const entry of decoded.split('^')) {
 		const [prefix, rawCode, name, , type = ''] = entry.split('~')
 		if (!prefix || !rawCode || !name) continue
-		if ((prefix === 'sh' || prefix === 'sz' || prefix === 'bj') && /^(GP-A|ETF)/.test(type)) {
+		if (
+			(prefix === 'sh' || prefix === 'sz' || prefix === 'bj') &&
+			(/^(GP-A|ETF)/.test(type) || (type === 'ZS' && prefix !== 'bj'))
+		) {
 			if (!/^\d{6}$/.test(rawCode)) continue
 			out.push({
 				market: 'cn',
 				code: `${prefix}${rawCode}`,
 				name,
-				type: type === 'ETF' ? 'etf' : 'stock',
+				type: type === 'ZS' ? 'index' : type === 'ETF' ? 'etf' : 'stock',
 				exchange:
 					prefix === 'bj' ? '北交所' : CN_EXCHANGE[type] || (prefix === 'sh' ? '上交所' : '深交所'),
 			})

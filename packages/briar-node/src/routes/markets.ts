@@ -188,7 +188,7 @@ marketRoutes.get('/:market/stock', async (c) => {
 	}
 })
 
-/** GET /search?q=… — 跨市场搜索个股 / ETF（代码、名称、拼音首字母），后端缓存 10 分钟 */
+/** GET /search?q=… — 跨市场搜索个股 / ETF / 沪深指数（代码、名称、拼音首字母），后端缓存 10 分钟 */
 marketRoutes.get('/search', async (c) => {
 	const q = c.req.query('q') || ''
 	if (!q.trim()) return badRequest(c, '请输入搜索关键词')
@@ -215,7 +215,7 @@ marketRoutes.get('/quotes', async (c) => {
 	}
 })
 
-/** GET /fear-greed?items=cn:sh600519,us:AAPL — 自选股恐贪指数（批量，最多 100 个，按标的缓存 8 分钟） */
+/** GET /fear-greed?items=cn:sh600519,cn:index:sh000001,us:AAPL — 自选标的恐贪指数（批量，最多 100 个，按标的缓存 8 分钟） */
 marketRoutes.get('/fear-greed', async (c) => {
 	const refs = parseStockRefs(c.req.query('items'))
 	if (refs.length === 0) return badRequest(c, '参数错误')

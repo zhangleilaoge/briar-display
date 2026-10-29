@@ -143,12 +143,13 @@
 
 ## 自选股与搜索
 
-`/briar/markets` 市场卡片下方「自选股」卡片：搜索框 + 自选列表（名称、市场、代码、现价、涨跌幅红涨绿跌、移除按钮；点行打开个股弹窗）。列表用 `/quotes` 批量报价，按 `pollMs` 轮询（交易中约 20s），页面隐藏暂停。上限 100 只（`WATCHLIST_LIMIT`）。
+`/briar/markets` 市场卡片下方「自选股」卡片：搜索框 + 自选列表（名称、市场、代码、现价、涨跌幅红涨绿跌、移除按钮；点行打开个股 / ETF / 指数详情）。列表用 `/quotes` 批量报价，按 `pollMs` 轮询（交易中约 20s），页面隐藏暂停。上限 100 只（`WATCHLIST_LIMIT`）。
 
-- **存储**：登录用户存服务端表 `market_watchlist`（`user_id + market + code` 唯一，随用户删除级联），多设备同步；未登录存 `localStorage`（`briar_market_watchlist`），登录后首次打开把本机自选合并进账号再清掉本地。与「媒体历史」同一模式。`/briar/markets` 本身免登录，所以不能强制登录。
+- **存储**：登录用户存服务端表 `market_watchlist`（`user_id + market + code` 唯一，随用户删除级联），多设备同步；未登录存 `localStorage`（`briar_market_watchlist`），登录后首次打开把本机自选合并进账号再清掉本地。与「媒体历史」同一模式。`/briar/markets` 本身免登录，所以不能强制登录。`type` 区分 `stock / etf / index`，旧数据缺省为 `stock`，本地与服务端存储、登录合并均保留类型。
 - `GET /watchlist` 在公开前缀下（GET 不过 authMiddleware），路由里自行用 Bearer / `briar_token` cookie 校验，未登录 401；`POST` / `DELETE` 走 authMiddleware，已在 `apiPermissions.ts` 声明（登录即可）
-- **搜索**：搜全部个股（不限自选），代码 / 名称 / 拼音首字母。前端输入防抖 300ms，新输入会 abort 旧请求；后端按规范化后的查询词缓存 10 分钟（`search:{q}`，单飞）。来源：腾讯 smartbox `smartbox.gtimg.cn/s3/?t=all&q=`（A股个股+ETF、港股、美股，支持 `gzmt` 这类拼音首字母）+ Naver 自动补全 `ac.stock.naver.com/ac?target=stock`（韩国、日本；纯中文查询不打 Naver）。结果代码完全匹配的排最前，去重后最多 30 条。
-- 缓存 key：`constituents:{market}:{kind}:{code}`、`stock:quote:{market}:{code}`、`stock:quotes:{hk|tencent|kr|jp}:{ids}`、`stock:valuation:kr:{code}`、`chart:{market}:stock:{code}:{period}`、`search:{q}`；报价 / 成分股 TTL 同板块（交易中 20s / 午休盘前 60s / 收盘 5min），东财方案 ≥ 30s
+- **搜索**：搜全部个股与沪深指数（不限自选），代码 / 名称 / 拼音首字母。前端输入防抖 300ms，新输入会 abort 旧请求；后端按规范化后的查询词缓存 10 分钟（`search:{q}`，单飞）。来源：腾讯 smartbox `smartbox.gtimg.cn/s3/?t=all&q=`（A股个股+ETF+沪深指数、港股、美股，支持 `gzmt` 这类拼音首字母）+ Naver 自动补全 `ac.stock.naver.com/ac?target=stock`（韩国、日本；纯中文查询不打 Naver）。结果代码完全匹配的排最前，去重后最多 30 条。
+- **指数走势**：目录内指数继续复用大盘分时缓存；搜索到的其他沪深指数使用腾讯分时、五日、K 线，`target=index`，报价复用个股 / 指数统一的腾讯 qt 解析。自选批量请求的 `items` 兼容 `market:code`，指数等新格式为 `market:type:code`。
+- 缓存 key：`constituents:{market}:{kind}:{code}`、`stock:quote:{market}:{code}`、`stock:quotes:{hk|tencent|kr|jp}:{ids}`、`stock:valuation:kr:{code}`、`chart:{market}:{stock|index}:{code}:{period}`、`search:{q}`；报价 / 成分股 TTL 同板块（交易中 20s / 午休盘前 60s / 收盘 5min），东财方案 ≥ 30s
 
 ## 恐贪指数（0 恐惧 – 100 贪婪）
 
@@ -177,7 +178,7 @@
 
 **接口与缓存**：
 
-- `GET /api/markets/fear-greed?items=cn:sh600519,us:AAPL`：自选批量（最多 100 个），每个标的单独缓存 `feargreed:{market}:stock:{code}`，单飞，**TTL 8 分钟**；单个失败返回 `score: null` + `reason`，不影响其他。并发上限 6
+- `GET /api/markets/fear-greed?items=cn:sh600519,cn:index:sh000001,us:AAPL`：自选批量（最多 100 个），每个标的单独缓存 `feargreed:{market}:{stock|index}:{code}`，单飞，**TTL 8 分钟**；单个失败返回 `score: null` + `reason`，不影响其他。并发上限 6
 - `GET /api/markets/fear-greed/board`：看板整体缓存 `feargreed:board`（8 分钟，单飞），内部每个指数 / 行业也各自缓存 `feargreed:{market}:{index|sector}:{code}`。不在大盘卡片目录里的指数（沪深300 / 上证50 / 中证500）日 K 直接取腾讯 `newfqkline`，缓存 `kline:day:cn:{code}`
 - 行业只在腾讯 `pt01*` 板块时计算；A股行业列表落到东财兜底（`BK*`）时不算（日 K 要走东财 push2his，31 个板块会撞 6 次/分钟限流），卡片显示原因
 - 前端每 5 分钟刷新（`pollMs`）
@@ -215,6 +216,6 @@
 - 节假日只靠行情日期推断；美股指数（东财）收盘后无法确认是否有延迟，按实时标注
 - 成分股：港股恒生行业、日本 TOPIX-17 行业指数仍不支持（见上）；港美股概念板块名单是人工维护的静态数据（有滞后，新热点需改 catalog）；美股行业按 GICS 行业口径，与 SPDR ETF 实际持仓略有差异；A股腾讯源没有个股净流入；大板块只展示 400 只
 - 个股：日本没有五日分时；港股报价优先新浪 rt_hk（降级腾讯仍标 15 分钟），港股分时优先新浪、东财兜底，五日仅使用东财；日/周/月 K 优先东财，失败回退腾讯并标 15 分钟；东财全局限流时五日仍可能暂不可用；美股 / 日股报价延迟 15 分钟；美股只有常规时段（无盘前盘后）
-- 搜索：日韩个股依赖 Naver 自动补全（中文名搜不到日韩股，需用代码 / 英文 / 韩文）；只收股票（A股另含 ETF），不含场外基金、债券、期权、期货。头部沪深300ETF规模占比是固定样本快照，不是通用基金目录
+- 搜索：日韩个股依赖 Naver 自动补全（中文名搜不到日韩股，需用代码 / 英文 / 韩文）；只收股票（A股另含 ETF 和沪深指数），不含场外基金、债券、期权、期货。头部沪深300ETF规模占比是固定样本快照，不是通用基金目录
 - 恐贪指数：个股 / 指数没有资金流项；A股行业依赖腾讯板块（东财兜底时不算）；固定阈值不随标的波动率自适应；美股日 K 只有常规时段
 - 每次轮询都经过 logger 写入 `request_logs`（公开接口，访问量大时注意表增长）

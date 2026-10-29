@@ -81,7 +81,7 @@ export const getSectorConstituents = async (market: MarketId, code: string, kind
 	return response.data
 }
 
-/** 个股报价 */
+/** 个股 / 指数报价 */
 export const getStockQuote = async (market: MarketId, code: string) => {
 	const response = await apiClient.get<ApiResponse<StockQuoteResponse>>(
 		`/markets/${market}/stock`,
@@ -93,16 +93,19 @@ export const getStockQuote = async (market: MarketId, code: string) => {
 	return response.data
 }
 
+const serializeStockRef = (ref: Pick<StockRef, 'market' | 'code' | 'type'>) =>
+	`${ref.market}:${ref.type && ref.type !== 'stock' ? `${ref.type}:` : ''}${ref.code}`
+
 /** 自选列表批量报价 */
-export const getStockQuotes = async (refs: Pick<StockRef, 'market' | 'code'>[]) => {
+export const getStockQuotes = async (refs: Pick<StockRef, 'market' | 'code' | 'type'>[]) => {
 	const response = await apiClient.get<ApiResponse<StockQuotesResponse>>('/markets/quotes', {
-		params: { items: refs.map((r) => `${r.market}:${r.code}`).join(',') },
+		params: { items: refs.map(serializeStockRef).join(',') },
 		timeout: 20_000,
 	})
 	return response.data
 }
 
-/** 跨市场搜索个股（后端代理 + 缓存） */
+/** 跨市场搜索个股 / ETF / 沪深指数（后端代理 + 缓存） */
 export const searchStocks = async (q: string, signal?: AbortSignal) => {
 	const response = await apiClient.get<ApiResponse<StockSearchResponse>>('/markets/search', {
 		params: { q },
@@ -133,9 +136,9 @@ export const removeWatchlist = async (market: MarketId, code: string) => {
 }
 
 /** 自选股恐贪指数（批量，后端按标的缓存 8 分钟） */
-export const getFearGreed = async (refs: Pick<StockRef, 'market' | 'code'>[]) => {
+export const getFearGreed = async (refs: Pick<StockRef, 'market' | 'code' | 'type'>[]) => {
 	const response = await apiClient.get<ApiResponse<FearGreedBatchResponse>>('/markets/fear-greed', {
-		params: { items: refs.map((r) => `${r.market}:${r.code}`).join(',') },
+		params: { items: refs.map(serializeStockRef).join(',') },
 		timeout: 30_000,
 	})
 	return response.data
