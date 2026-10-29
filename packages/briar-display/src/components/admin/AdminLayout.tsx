@@ -73,7 +73,7 @@ export function AdminShell({ children, currentPath, fullWidth }: AdminLayoutProp
 						inlineAt="xl"
 					/>
 
-					<main className="flex-1 p-4 sm:p-6">
+					<main className="rv-content-inset flex-1 p-4 sm:p-6">
 						<div className={fullWidth ? 'w-full' : 'mx-auto w-full max-w-[1200px]'}>
 							<PaperPanel title="CLEF · 机要室">{children}</PaperPanel>
 						</div>

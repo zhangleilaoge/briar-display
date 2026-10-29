@@ -199,7 +199,7 @@ function ThoughtsPageInner() {
 			<ScrapStickerDecor page="thoughts" seedKey="thoughts" />
 			<PageHeader crumbs={[{ label: '想法' }]} />
 
-			<main className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
+			<main className="rv-content-inset mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
 				<header className="mb-6">
 					<span className="rv-script text-2xl text-[color:var(--rv-rose-deep)]">Pensées</span>
 					<h1 className="text-3xl font-semibold tracking-tight">想法</h1>

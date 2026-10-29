@@ -337,7 +337,7 @@ function PortalPageInner() {
 			/>
 
 			{/* Main */}
-			<main className="flex flex-1 items-center justify-center p-4 sm:p-6">
+			<main className="rv-content-inset flex flex-1 items-center justify-center p-4 sm:p-6">
 				<div className="w-full max-w-3xl space-y-8 sm:max-w-4xl">
 					{/* 问候区：活页纸（binder），与想法页撕边/邮票错开 */}
 					<div className="relative mx-auto max-w-xl overflow-visible px-5 pb-7 pt-9 sm:px-9 sm:pb-10 sm:pt-12">

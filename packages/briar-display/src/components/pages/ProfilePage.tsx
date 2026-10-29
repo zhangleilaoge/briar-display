@@ -161,7 +161,7 @@ function ProfilePageInner() {
 			{/* 顶部导航 */}
 			<PageHeader crumbs={[{ label: '个人中心' }]} />
 
-			<main className="mx-auto max-w-5xl p-4 sm:p-6">
+			<main className="rv-content-inset mx-auto max-w-5xl p-4 sm:p-6">
 				<div>
 					<span className="rv-script text-2xl text-[color:var(--rv-rose-deep)]">Mon carnet</span>
 					<h1 className="text-3xl font-semibold tracking-tight">个人中心</h1>
