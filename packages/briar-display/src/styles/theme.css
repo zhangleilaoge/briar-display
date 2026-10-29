@@ -468,9 +468,23 @@ body {
 	transform: translateX(0);
 	opacity: 1;
 }
+
+/* 吊牌展开时顶栏左侧（面包屑等）右移，避免被遮；收起回到 0，不永久占位 */
+.rv-header-lead {
+	transform: translateX(0);
+	transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+	will-change: transform;
+}
+@media (min-width: 768px) {
+	html:has(.rv-ribbon[data-open]) .rv-header-lead {
+		/* 与 .rv-ribbon-rail 宽 4.75rem 对齐，略加 0.25rem 空隙 */
+		transform: translateX(5rem);
+	}
+}
 @media (prefers-reduced-motion: reduce) {
 	.rv-ribbon-rail,
-	.rv-ribbon-item {
+	.rv-ribbon-item,
+	.rv-header-lead {
 		transition: none;
 		transition-delay: 0ms;
 	}
