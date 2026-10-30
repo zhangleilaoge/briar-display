@@ -92,7 +92,7 @@
 
 	--btn-primary-image: linear-gradient(180deg, #f9e9ee 0%, #eccbd2 100%);
 	--btn-primary-fg: 222 25% 23%;
-	--btn-default-image: linear-gradient(180deg, #f4f6fb 0%, #d9e1ef 100%);
+	--btn-default-image: linear-gradient(180deg, #fffdf8 0%, #efe3d7 100%);
 
 	/* 纸标签感：暖粉奶油（门户 scrapbook 主色） */
 	--tabs-list-bg: hsl(24 33% 93% / 0.85);

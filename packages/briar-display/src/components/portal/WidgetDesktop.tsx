@@ -168,8 +168,13 @@ export function WidgetDesktop() {
 	)
 
 	const startDrag = (e: ReactPointerEvent, id: WidgetId) => {
-		/* 只放过真正的控件；链接不再 early-return，否则股票卡会触发浏览器「拖链接」 */
-		if ((e.target as HTMLElement).closest('button,input,textarea,select,[data-no-drag]')) return
+		/* 链接不再 early-return，否则股票卡会触发浏览器「拖链接」 */
+		if (
+			(e.target as HTMLElement).closest(
+				'button:not([data-widget-action]),input,textarea,select,[data-no-drag]',
+			)
+		)
+			return
 		const item = layout.find((p) => p.id === id)
 		if (!item) return
 		const rect = e.currentTarget.getBoundingClientRect()
@@ -195,8 +200,13 @@ export function WidgetDesktop() {
 
 	const onPointerDown = (e: ReactPointerEvent, id: WidgetId) => {
 		if (e.button !== undefined && e.button !== 0) return
-		/* 控件本身仍可点；长按也允许从卡片空白处启动 */
-		if ((e.target as HTMLElement).closest('button,input,textarea,select,[data-no-drag]')) return
+		/* 整卡动作按钮参与长按；其他控件保留自身事件 */
+		if (
+			(e.target as HTMLElement).closest(
+				'button:not([data-widget-action]),input,textarea,select,[data-no-drag]',
+			)
+		)
+			return
 
 		if (!editing) {
 			clearLongPress()
@@ -205,11 +215,6 @@ export function WidgetDesktop() {
 			const y = e.clientY
 			/* 触摸长按：拦住默认滚动/选中，鼠标仍可正常点链接 */
 			if (e.pointerType === 'touch') e.preventDefault()
-			try {
-				e.currentTarget.setPointerCapture(pointerId)
-			} catch {
-				/* ignore */
-			}
 			longPressRef.current = {
 				pointerId,
 				x,
@@ -329,6 +334,7 @@ export function WidgetDesktop() {
 					onPointerMove={onPointerMove}
 					onPointerUp={onPointerUp}
 					onPointerCancel={onPointerUp}
+					onPointerLeave={clearLongPress}
 				>
 					{layout.map((p) => {
 						const isDragging = draggingId === p.id

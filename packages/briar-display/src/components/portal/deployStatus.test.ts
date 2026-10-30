@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import type { DeployHistoryItem } from '@/api/deploy'
 import type { SiteVersion } from '@/api/version'
-import { buildDeployStatus, formatDeployAge, isCdnDeploy } from './deployStatus'
+import {
+	buildDeployStatus,
+	formatDeployAge,
+	formatDeployDuration,
+	isCdnDeploy,
+} from './deployStatus'
 
 const NOW = Date.parse('2026-10-30T12:00:00.000Z')
 const CURRENT = '111111122222223333333444444455555556666666'
@@ -35,14 +40,16 @@ describe('首页部署状态', () => {
 		})
 	})
 
-	test('发布中显示本次发布的 commit', () => {
+	test('发布中显示本次发布的 commit 和已用时间', () => {
 		const status = buildDeployStatus(version(), run('in_progress', NEXT), NOW)
 		expect(status).toMatchObject({
 			commit: 'abcdef0',
 			fullCommit: NEXT,
 			light: '🟡',
-			label: '发布中',
+			label: '发布中 · 10m 00s',
 		})
+		expect(formatDeployDuration('2026-10-30T11:58:35.000Z', NOW)).toBe('1m 25s')
+		expect(formatDeployDuration('invalid', NOW)).toBe('')
 	})
 
 	test('失败与取消使用红灯，并显示对应 run 的 commit', () => {

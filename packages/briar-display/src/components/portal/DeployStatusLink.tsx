@@ -45,9 +45,11 @@ export function DeployStatusLink() {
 	}, [isAdmin, loading])
 
 	useEffect(() => {
-		const timer = setInterval(() => setNow(Date.now()), 30000)
+		if (loading || !isAdmin) return
+		const interval = latest && isDeployRunning(latest.status) ? 1000 : 30000
+		const timer = setInterval(() => setNow(Date.now()), interval)
 		return () => clearInterval(timer)
-	}, [])
+	}, [isAdmin, latest, loading])
 
 	if (loading || !isAdmin) return null
 	const status = buildDeployStatus(version, latest, now)

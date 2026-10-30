@@ -47,23 +47,19 @@ const STICKERS = [
 
 /** 每次进入页面随机留一枚蓝白贴纸，低透明度融入背景。 */
 export function ArcaneDecor() {
-	const [decor, setDecor] = useState<{ src: string; rotation: number } | null>(null)
+	const [decor, setDecor] = useState<string | null>(null)
 
 	useEffect(() => {
-		setDecor({
-			src: STICKERS[Math.floor(Math.random() * STICKERS.length)],
-			rotation: Math.random() * 16 - 8,
-		})
+		setDecor(STICKERS[Math.floor(Math.random() * STICKERS.length)])
 	}, [])
 
 	return (
 		<div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
 			{decor && (
 				<img
-					src={decor.src}
+					src={decor}
 					alt=""
-					className="absolute -bottom-16 -right-12 h-[340px] w-[340px] select-none object-contain opacity-[0.14] blur-[0.35px] md:h-[420px] md:w-[420px]"
-					style={{ transform: `rotate(${decor.rotation.toFixed(1)}deg)` }}
+					className="absolute bottom-10 right-2 h-auto w-auto select-none opacity-[0.14] md:right-6"
 					draggable={false}
 				/>
 			)}

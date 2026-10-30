@@ -21,6 +21,13 @@ export function formatDeployAge(value: string, now: number): string {
 	return `${Math.floor(hours / 24)} 天前`
 }
 
+export function formatDeployDuration(value: string, now: number): string {
+	const timestamp = Date.parse(value)
+	if (!Number.isFinite(timestamp)) return ''
+	const seconds = Math.max(0, Math.floor((now - timestamp) / 1000))
+	return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`
+}
+
 export interface DeployStatusModel {
 	commit: string
 	fullCommit: string
@@ -47,7 +54,8 @@ export function buildDeployStatus(
 	const base = { commit: fullCommit.slice(0, 7), fullCommit, href }
 
 	if (latest && isDeployRunning(latest.status)) {
-		return { ...base, light: '🟡', label: '发布中' }
+		const elapsed = formatDeployDuration(latest.startedAt || latest.at, now)
+		return { ...base, light: '🟡', label: elapsed ? `发布中 · ${elapsed}` : '发布中' }
 	}
 	if (frontendCommit && backendCommit && frontendCommit !== backendCommit) {
 		return { ...base, light: '🟡', label: '版本同步中' }
