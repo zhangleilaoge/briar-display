@@ -1,6 +1,11 @@
 import { addDays, startOfMonth } from 'date-fns'
-
-const TZ = 'Asia/Shanghai'
+import {
+	CALENDAR_TIME_ZONE,
+	type CalendarDate,
+	calendarAnnotation as annotationForDate,
+	lunarLabel as lunarDayLabel,
+	lunarFullLabel,
+} from './calendar/calendar'
 
 export interface CalendarDateParts {
 	year: number
@@ -10,7 +15,7 @@ export interface CalendarDateParts {
 
 export function shanghaiParts(date = new Date()): CalendarDateParts {
 	const parts = new Intl.DateTimeFormat('en-CA', {
-		timeZone: TZ,
+		timeZone: CALENDAR_TIME_ZONE,
 		year: 'numeric',
 		month: '2-digit',
 		day: '2-digit',
@@ -36,18 +41,18 @@ export function toDateKey(date: Date): string {
 	return `${date.getFullYear()}-${month}-${day}`
 }
 
-/** 简易农历月日，用于桌面与月历辅助展示 */
+export function dateParts(date: Date): CalendarDate {
+	return { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() }
+}
+
 export function lunarLabel(year: number, month: number, day: number): string {
-	try {
-		const date = new Date(Date.UTC(year, month - 1, day, 4))
-		return new Intl.DateTimeFormat('zh-CN-u-ca-chinese', {
-			timeZone: TZ,
-			month: 'long',
-			day: 'numeric',
-		})
-			.format(date)
-			.replace(/年/, '')
-	} catch {
-		return ''
-	}
+	return lunarFullLabel({ year, month, day })
+}
+
+export function lunarDay(date: Date): string {
+	return lunarDayLabel(dateParts(date))
+}
+
+export function calendarAnnotation(date: Date) {
+	return annotationForDate(dateParts(date))
 }

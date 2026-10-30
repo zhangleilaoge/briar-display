@@ -61,7 +61,7 @@ const TabsList = React.forwardRef<
 			ref={setRefs}
 			data-tab-indicator={ready ? 'ready' : undefined}
 			className={cn(
-				'relative inline-flex h-10 items-center justify-center rounded-control bg-[var(--tabs-list-bg)] p-1 text-muted-foreground',
+				'relative inline-flex h-10 items-center justify-center gap-0.5 rounded-control border border-[color:hsl(var(--border))] bg-[var(--tabs-list-bg)] p-1 text-muted-foreground shadow-sm',
 				className,
 			)}
 			{...props}
@@ -80,7 +80,7 @@ const TabsTrigger = React.forwardRef<
 	<TabsPrimitive.Trigger
 		ref={ref}
 		className={cn(
-			'inline-flex items-center justify-center whitespace-nowrap h-8 gap-1.5 rounded-control px-3 font-control text-sm font-medium leading-none tracking-control transition-all hover:text-foreground focus-visible:outline-none focus-visible:shadow-focus [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:[background-image:var(--tab-active-image)] data-[state=active]:text-[color:var(--tab-active-fg)] data-[state=active]:shadow-[var(--tab-active-shadow)]',
+			'inline-flex items-center justify-center whitespace-nowrap h-8 gap-1.5 rounded-control px-3 pb-1.5 pt-2 font-control text-sm font-medium leading-none tracking-control transition-all hover:text-foreground focus-visible:outline-none focus-visible:shadow-focus [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:[background-image:var(--tab-active-image)] data-[state=active]:text-[color:var(--tab-active-fg)] data-[state=active]:shadow-[var(--tab-active-shadow)]',
 			className,
 		)}
 		{...props}
