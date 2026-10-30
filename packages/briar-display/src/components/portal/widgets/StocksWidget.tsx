@@ -86,9 +86,10 @@ function Sparkline({
 			<polyline
 				fill="none"
 				stroke={stroke}
-				strokeWidth="1.75"
+				strokeWidth="1.5"
 				strokeLinecap="round"
 				strokeLinejoin="round"
+				vectorEffect="non-scaling-stroke"
 				points={geometry.points}
 			/>
 		</svg>
