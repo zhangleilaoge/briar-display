@@ -106,7 +106,7 @@
 
 	/* 原生 textarea 缩放手柄不接受自定义光标；可缩输入框使用 ResizableTextarea 的覆盖手柄。 */
 	:is(.theme-scrapbook, .theme-arcane) .rv-textarea-resizer {
-		cursor: var(--cursor-nwse-resize);
+		cursor: var(--cursor-nwse-resize) !important;
 	}
 
 	:is(.theme-scrapbook, .theme-arcane) :is([data-cursor="crosshair"], .cursor-crosshair) {
