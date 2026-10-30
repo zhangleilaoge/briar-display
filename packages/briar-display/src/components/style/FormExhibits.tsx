@@ -27,7 +27,7 @@ import {
 import { Slider } from '@/components/ui/slider'
 import { StampInputBar } from '@/components/ui/stamp-input-bar'
 import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
+import { ResizableTextarea } from '@/components/ui/textarea'
 import { useState } from 'react'
 import { StyleExhibit, StyleSection } from './StyleSection'
 
@@ -57,7 +57,7 @@ export function FormExhibits() {
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="style-note">备注</Label>
-							<Textarea id="style-note" placeholder="记录一些设计笔记…" rows={3} />
+							<ResizableTextarea id="style-note" placeholder="记录一些设计笔记…" rows={3} />
 						</div>
 						<Input disabled value="禁用输入框" readOnly aria-label="禁用输入框" />
 					</div>
