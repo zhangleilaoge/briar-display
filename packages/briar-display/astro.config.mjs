@@ -89,6 +89,9 @@ export default defineConfig({
 	],
 	build: assetsPrefix ? { assetsPrefix } : undefined,
 	vite: {
+		optimizeDeps: {
+			include: ['upng-js'],
+		},
 		resolve: {
 			alias: [
 				{ find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
