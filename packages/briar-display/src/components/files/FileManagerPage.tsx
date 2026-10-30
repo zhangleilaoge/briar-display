@@ -419,6 +419,8 @@ function FileManagerPageInner() {
 		)
 	}
 
+	const detailIndex = detailFile ? files.findIndex((file) => file.id === detailFile.id) : -1
+
 	return (
 		<FileManagerLayout>
 			<div className="space-y-4">
@@ -491,6 +493,9 @@ function FileManagerPageInner() {
 			{detailFile && (
 				<FileDetailModal
 					file={detailFile}
+					previousFile={detailIndex > 0 ? files[detailIndex - 1] : null}
+					nextFile={detailIndex >= 0 ? (files[detailIndex + 1] ?? null) : null}
+					onNavigate={setDetailFile}
 					onClose={() => setDetailFile(null)}
 					onDelete={() => confirmDeleteFile(detailFile, () => setDetailFile(null))}
 				/>

@@ -4,7 +4,7 @@ import { type FileItem, getFileContent } from '@/api/files'
 import { Button } from '@/components/ui/button'
 import { useExitAnimation } from '@/components/ui/motion'
 import { cn } from '@/lib/utils'
-import { Check, Clipboard, Download, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Clipboard, Download, X } from 'lucide-react'
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import DocxPreview from './DocxPreview'
@@ -112,28 +112,65 @@ function previewLabel(kind: PreviewKind): { fr: string; zh: string } {
 
 interface Props {
 	file: FileItem
+	previousFile: FileItem | null
+	nextFile: FileItem | null
+	onNavigate: (file: FileItem) => void
 	onClose: () => void
 	onDelete: (id: string) => void
 }
 
-export default function FileDetailModal({ file, onClose: closeNow, onDelete }: Props) {
+export default function FileDetailModal({
+	file,
+	previousFile,
+	nextFile,
+	onNavigate,
+	onClose: closeNow,
+	onDelete,
+}: Props) {
 	// 先播放「电视关机」退场，再真正卸载
 	const { requestClose: onClose, state } = useExitAnimation(closeNow)
 	const [copied, setCopied] = useState(false)
 	const [previewOpen, setPreviewOpen] = useState(false)
-	useEffect(() => {
-		const onKey = (e: KeyboardEvent) => {
-			if (e.key === 'Escape' && !previewOpen) onClose()
-		}
-		window.addEventListener('keydown', onKey)
-		return () => window.removeEventListener('keydown', onKey)
-	}, [onClose, previewOpen])
 	const [textContent, setTextContent] = useState<string | null>(null)
 	const [textError, setTextError] = useState<string | null>(null)
-
 	const kind = getPreviewKind(file)
 
 	useEffect(() => {
+		const onKey = (e: KeyboardEvent) => {
+			if (document.querySelector('[role="dialog"]')) return
+			if (e.key === 'Escape') {
+				e.preventDefault()
+				if (previewOpen) setPreviewOpen(false)
+				else onClose()
+				return
+			}
+			if (e.altKey || e.ctrlKey || e.metaKey) return
+			if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+			const target = e.target
+			if (
+				target instanceof HTMLElement &&
+				(target.isContentEditable ||
+					target.closest('input, textarea, select, video, audio, [contenteditable]'))
+			) {
+				return
+			}
+			const adjacentFile = e.key === 'ArrowLeft' ? previousFile : nextFile
+			if (!adjacentFile) return
+			e.preventDefault()
+			onNavigate(adjacentFile)
+		}
+		window.addEventListener('keydown', onKey)
+		return () => window.removeEventListener('keydown', onKey)
+	}, [nextFile, onClose, onNavigate, previewOpen, previousFile])
+
+	useEffect(() => {
+		setCopied(false)
+		if (kind !== 'image') setPreviewOpen(false)
+	}, [file.id, kind])
+
+	useEffect(() => {
+		setTextContent(null)
+		setTextError(null)
 		if (kind !== 'markdown' && kind !== 'text') return
 		let cancelled = false
 		getFileContent(file.id)
@@ -226,7 +263,31 @@ export default function FileDetailModal({ file, onClose: closeNow, onDelete }: P
 
 				<div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pt-5 sm:px-6 sm:pt-6">
 					{/* Preview */}
-					<div className="mb-5">
+					<div className="relative mb-5">
+						<Button
+							type="button"
+							variant="default"
+							size="icon"
+							aria-label="上一个文件"
+							aria-keyshortcuts="ArrowLeft"
+							disabled={!previousFile}
+							className="absolute left-2 top-1/2 z-10 -translate-y-1/2"
+							onClick={() => previousFile && onNavigate(previousFile)}
+						>
+							<ChevronLeft className="h-5 w-5" />
+						</Button>
+						<Button
+							type="button"
+							variant="default"
+							size="icon"
+							aria-label="下一个文件"
+							aria-keyshortcuts="ArrowRight"
+							disabled={!nextFile}
+							className="absolute right-2 top-1/2 z-10 -translate-y-1/2"
+							onClick={() => nextFile && onNavigate(nextFile)}
+						>
+							<ChevronRight className="h-5 w-5" />
+						</Button>
 						{kind === 'image' && (
 							<div className="flex justify-center border border-[color:var(--rv-navy)]/20 bg-[var(--rv-beige)] p-3">
 								<img
