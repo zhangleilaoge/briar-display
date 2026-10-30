@@ -27,11 +27,8 @@ import {
 	WaxSeal,
 } from '@/components/ui/ornaments'
 import { PaperSheet, type PaperSheetVariant } from '@/components/ui/paper-sheet'
-import {
-	RIBBON_STICKER_SRC,
-	RIBBON_TAG_BY_KIND,
-	type RibbonTagKind,
-} from '@/components/ui/ribbon-tags'
+import { RIBBON_ITEMS } from '@/components/ui/ribbon-sidebar'
+import { RibbonTag } from '@/components/ui/ribbon-tags'
 import { BrandCollage, HudTitle, ScrapTitle } from '@/components/ui/theme-shell'
 import type { ComponentType } from 'react'
 import { StyleExhibit, StyleSection } from './StyleSection'
@@ -77,16 +74,6 @@ const ICONS = [
 	ProfileIcon,
 	StyleIcon,
 ]
-const RIBBON_KINDS: RibbonTagKind[] = [
-	'home',
-	'style',
-	'tools',
-	'files',
-	'thoughts',
-	'markets',
-	'admin',
-	'profile',
-]
 
 export function ThemeExhibits() {
 	return (
@@ -124,22 +111,19 @@ export function ThemeExhibits() {
 
 			<StyleExhibit title="Ribbon Tags 吊牌系统" source="ui/ribbon-tags.tsx">
 				<div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-8">
-					{RIBBON_KINDS.map((kind) => {
-						const Tag = RIBBON_TAG_BY_KIND[kind]
-						return (
-							<div key={kind} className="flex flex-col items-center gap-2">
-								<div className="relative h-[76px] w-[60px]">
-									<Tag />
-									<img
-										src={RIBBON_STICKER_SRC[kind]}
-										alt=""
-										className="rv-ribbon-cutout pointer-events-none absolute left-1/2 top-[17px] h-8 w-10 -translate-x-1/2 object-contain"
-									/>
-								</div>
-								<code className="text-[10px] text-muted-foreground">{kind}</code>
+					{RIBBON_ITEMS.map(({ kind, caption }) => (
+						<div key={kind} className="flex flex-col items-center gap-2">
+							<div className="rv-ribbon-tag" data-kind={kind}>
+								<RibbonTag
+									kind={kind}
+									caption={caption}
+									active={kind === 'style'}
+									stickerLoading="lazy"
+								/>
 							</div>
-						)
-					})}
+							<code className="text-[10px] text-muted-foreground">{kind}</code>
+						</div>
+					))}
 				</div>
 			</StyleExhibit>
 

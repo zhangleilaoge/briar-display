@@ -35,7 +35,7 @@ export function ConfirmDialog({
 				</DialogHeader>
 				<p className="text-sm text-muted-foreground">{confirm?.description}</p>
 				<div className="flex justify-end gap-2">
-					<Button variant="outline" size="sm" onClick={onClose}>
+					<Button variant="default" size="sm" onClick={onClose}>
 						取消
 					</Button>
 					<Button
@@ -172,7 +172,7 @@ export function MoveFileDialog({
 					{/* Select 在 Dialog 里会被焦点圈拦截导致 hover 不高亮，改用 Popover+Command */}
 					<Popover open={pickerOpen} onOpenChange={setPickerOpen}>
 						<PopoverTrigger asChild>
-							<Button variant="outline" className="w-full justify-between font-normal">
+							<Button variant="default" className="w-full justify-between font-normal">
 								{selectedName}
 								<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 							</Button>

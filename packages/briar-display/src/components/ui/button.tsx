@@ -11,15 +11,11 @@ const buttonVariants = cva(
 		variants: {
 			variant: {
 				default:
-					'bg-primary [background-image:var(--btn-primary-image)] text-[hsl(var(--btn-primary-fg))] shadow-control hover:shadow-control-hover hover:brightness-[1.03]',
+					'bg-secondary [background-image:var(--btn-default-image)] text-secondary-foreground shadow-control hover:shadow-control-hover',
 				primary:
 					'rv-btn-primary bg-primary [background-image:var(--btn-primary-image)] text-[hsl(var(--btn-primary-fg))] shadow-control hover:shadow-control-hover hover:brightness-[1.03]',
 				destructive:
 					'bg-destructive text-destructive-foreground shadow-control hover:bg-destructive/90 hover:shadow-control-hover',
-				secondary:
-					'bg-secondary [background-image:var(--btn-secondary-image)] text-secondary-foreground shadow-control hover:shadow-control-hover',
-				outline:
-					'border border-input bg-background [background-image:var(--btn-outline-image)] text-foreground hover:border-foreground/50 hover:bg-accent hover:text-accent-foreground hover:shadow-control-hover',
 				ghost: 'text-foreground hover:bg-accent hover:text-accent-foreground',
 				link: 'text-primary underline-offset-4 hover:underline',
 			},

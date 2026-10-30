@@ -288,7 +288,7 @@ export default function SectorConstituents({
 			{sorted.length > PAGE && (
 				<div className="flex justify-center gap-2">
 					{limit < sorted.length && (
-						<Button variant="outline" size="sm" onClick={() => setLimit((l) => l + PAGE)}>
+						<Button variant="default" size="sm" onClick={() => setLimit((l) => l + PAGE)}>
 							再显示 {Math.min(PAGE, sorted.length - limit)} 只
 						</Button>
 					)}

@@ -97,7 +97,7 @@ export default function ToolRegexPage() {
 							Regexper 风格
 						</Badge>
 					</div>
-					<Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5">
+					<Button variant="default" size="sm" onClick={handleReset} className="gap-1.5">
 						<RotateCcw className="h-4 w-4" />
 						重置示例
 					</Button>

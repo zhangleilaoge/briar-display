@@ -69,7 +69,7 @@ export default function PrivacySettingsDialog({
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex justify-end gap-2">
-					<Button variant="outline" size="sm" onClick={onClose}>
+					<Button variant="default" size="sm" onClick={onClose}>
 						取消
 					</Button>
 					<Button size="sm" onClick={handleSubmit} disabled={submitting}>

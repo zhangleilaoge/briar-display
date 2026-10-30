@@ -176,7 +176,7 @@ export default function SchedulerTasksCard() {
 										{task.manual && (
 											<Button
 												size="sm"
-												variant="outline"
+												variant="default"
 												onClick={() => handleRun(task)}
 												disabled={busy}
 												className="shrink-0 gap-1.5"

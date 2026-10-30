@@ -89,7 +89,7 @@ export default function LoginMethodsCard({ email }: { email?: string | null }) {
 							</div>
 							{google ? (
 								<Button
-									variant="outline"
+									variant="default"
 									size="sm"
 									disabled={busy || !canUnbind}
 									onClick={unbind}

@@ -151,7 +151,7 @@ export function ToolSectionSandbox() {
 								</div>
 								<Button
 									size="sm"
-									variant="outline"
+									variant="default"
 									className="gap-1"
 									onClick={() =>
 										loadSolid(randomSolid(Math.random, 5 + Math.floor(Math.random() * 6)))
@@ -160,12 +160,12 @@ export function ToolSectionSandbox() {
 									<Shuffle className="h-3.5 w-3.5" />
 									随机生成
 								</Button>
-								<Button size="sm" variant="outline" onClick={() => loadSolid({ voxels: [] })}>
+								<Button size="sm" variant="default" onClick={() => loadSolid({ voxels: [] })}>
 									清空模型
 								</Button>
 								<Button
 									size="sm"
-									variant="outline"
+									variant="default"
 									className="gap-1"
 									onClick={() => loadSolid(solidLTetromino())}
 								>
@@ -205,7 +205,7 @@ export function ToolSectionSandbox() {
 						<div className="grid grid-cols-2 gap-2 pt-2">
 							<Button
 								size="sm"
-								variant="outline"
+								variant="default"
 								className="h-8 flex-1 gap-1 px-2 text-xs"
 								aria-label="截面逆时针旋转 90°"
 								onClick={() => setRotation((current) => (current + 1) % 4)}
@@ -215,7 +215,7 @@ export function ToolSectionSandbox() {
 							</Button>
 							<Button
 								size="sm"
-								variant="outline"
+								variant="default"
 								className="h-8 flex-1 gap-1 px-2 text-xs"
 								aria-label="截面顺时针旋转 90°"
 								onClick={() => setRotation((current) => (current + 3) % 4)}
@@ -225,7 +225,7 @@ export function ToolSectionSandbox() {
 							</Button>
 							<Button
 								size="sm"
-								variant={reflection.x ? 'default' : 'outline'}
+								variant={reflection.x ? 'primary' : 'default'}
 								className="h-8 flex-1 gap-1 px-2 text-xs"
 								aria-label="以 X 轴为对称轴上下翻转"
 								aria-pressed={reflection.x}
@@ -235,7 +235,7 @@ export function ToolSectionSandbox() {
 							</Button>
 							<Button
 								size="sm"
-								variant={reflection.y ? 'default' : 'outline'}
+								variant={reflection.y ? 'primary' : 'default'}
 								className="h-8 flex-1 gap-1 px-2 text-xs"
 								aria-label="以 Y 轴为对称轴左右翻转"
 								aria-pressed={reflection.y}

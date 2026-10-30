@@ -78,7 +78,7 @@ export default function MarketsOverviewPage() {
 						A股、港股、美股、日本、韩国主要市场的大盘、板块与个股，红涨绿跌；时间均为北京时间
 					</p>
 				</div>
-				<Button variant="outline" size="sm" onClick={refresh} disabled={refreshing}>
+				<Button variant="default" size="sm" onClick={refresh} disabled={refreshing}>
 					<RefreshCw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
 					刷新
 				</Button>

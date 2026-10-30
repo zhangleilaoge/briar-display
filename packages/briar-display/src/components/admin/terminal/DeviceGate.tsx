@@ -95,7 +95,7 @@ export default function DeviceGate({ onVerified }: DeviceGateProps) {
 				</CardHeader>
 				<CardContent className="space-y-3">
 					<Button
-						variant="outline"
+						variant="default"
 						className="w-full gap-2"
 						onClick={handleSend}
 						disabled={sending || countdown > 0}

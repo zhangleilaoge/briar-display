@@ -155,7 +155,7 @@ export default function MessagesPanel() {
 				actions={
 					<div className="flex items-center gap-2">
 						<Button
-							variant="outline"
+							variant="default"
 							size="sm"
 							className="gap-1.5"
 							disabled={total === 0}
@@ -164,7 +164,7 @@ export default function MessagesPanel() {
 							<Trash2 className="h-3.5 w-3.5" />
 							清空已读
 						</Button>
-						<Button variant="outline" size="sm" className="gap-1.5" onClick={handleReadAll}>
+						<Button variant="default" size="sm" className="gap-1.5" onClick={handleReadAll}>
 							<CheckCheck className="h-3.5 w-3.5" />
 							全部已读
 						</Button>
@@ -257,7 +257,7 @@ export default function MessagesPanel() {
 						{totalPages > 1 && (
 							<div className="mt-3 flex items-center justify-between">
 								<Button
-									variant="outline"
+									variant="default"
 									size="sm"
 									className="gap-1"
 									disabled={page <= 1}
@@ -270,7 +270,7 @@ export default function MessagesPanel() {
 									第 {page} / {totalPages} 页
 								</span>
 								<Button
-									variant="outline"
+									variant="default"
 									size="sm"
 									className="gap-1"
 									disabled={page >= totalPages}
@@ -308,7 +308,7 @@ export default function MessagesPanel() {
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
-						<Button variant="outline" disabled={busy} onClick={() => setClearOpen(false)}>
+						<Button variant="default" disabled={busy} onClick={() => setClearOpen(false)}>
 							取消
 						</Button>
 						<Button variant="destructive" disabled={busy} onClick={handleClearRead}>

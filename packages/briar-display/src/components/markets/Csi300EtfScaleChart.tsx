@@ -166,7 +166,7 @@ export default function Csi300EtfScaleChart({
 						<div className="flex flex-col items-center gap-2">
 							<span>图表组件加载失败</span>
 							<Button
-								variant="outline"
+								variant="default"
 								size="sm"
 								onClick={() => {
 									setLibError(false)

@@ -67,7 +67,7 @@ function ItemActions({
 	return (
 		<div className="flex items-center gap-1.5">
 			<Button
-				variant="outline"
+				variant="default"
 				size="sm"
 				disabled={downloading || disabled}
 				onClick={() => onDownload(item)}
@@ -81,7 +81,7 @@ function ItemActions({
 			</Button>
 			{canAddTo && (
 				<Button
-					variant="outline"
+					variant="default"
 					size="sm"
 					disabled={downloading || disabled}
 					onClick={() => onAddTo([item])}
@@ -204,7 +204,7 @@ export default function ToolMediaResult({
 						</h2>
 						<div className="flex flex-wrap items-center gap-2">
 							<Button
-								variant="outline"
+								variant="default"
 								size="sm"
 								onClick={() => onToggleAll('videos')}
 								disabled={zipping}
@@ -213,7 +213,7 @@ export default function ToolMediaResult({
 							</Button>
 							{canAddTo && (
 								<Button
-									variant="outline"
+									variant="default"
 									size="sm"
 									onClick={() => onAddTo(selectedVideos)}
 									disabled={zipping || selectedVideos.length === 0}
@@ -287,7 +287,7 @@ export default function ToolMediaResult({
 						</h2>
 						<div className="flex flex-wrap items-center gap-2">
 							<Button
-								variant="outline"
+								variant="default"
 								size="sm"
 								onClick={() => onToggleAll('images')}
 								disabled={zipping}
@@ -296,7 +296,7 @@ export default function ToolMediaResult({
 							</Button>
 							{canAddTo && (
 								<Button
-									variant="outline"
+									variant="default"
 									size="sm"
 									onClick={() => onAddTo(selectedImages)}
 									disabled={zipping || selectedImages.length === 0}
@@ -368,7 +368,7 @@ export default function ToolMediaResult({
 						</h2>
 						<div className="flex flex-wrap items-center gap-2">
 							<Button
-								variant="outline"
+								variant="default"
 								size="sm"
 								onClick={() => onToggleAll('livePhotos')}
 								disabled={zipping}
@@ -377,7 +377,7 @@ export default function ToolMediaResult({
 							</Button>
 							{canAddTo && (
 								<Button
-									variant="outline"
+									variant="default"
 									size="sm"
 									onClick={() => onAddTo(selectedLivePhotos)}
 									disabled={zipping || selectedLivePhotos.length === 0}

@@ -247,7 +247,7 @@ export default function ForgotPasswordPage() {
 								{loading ? '重置中...' : '重置密码'}
 							</Button>
 							<Button
-								variant="outline"
+								variant="default"
 								className="w-full"
 								type="button"
 								onClick={handleBackToEmail}

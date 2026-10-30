@@ -101,7 +101,7 @@ export function DataExhibits() {
 					</AutoHeight>
 					<Button
 						className="mt-4"
-						variant="outline"
+						variant="default"
 						size="sm"
 						onClick={() => setExpanded((v) => !v)}
 					>

@@ -26,7 +26,7 @@ export function EmojiInsertButton({ onPick, disabled, className }: Props) {
 			<PopoverTrigger asChild>
 				<Button
 					type="button"
-					variant="outline"
+					variant="default"
 					size="sm"
 					disabled={disabled}
 					className={className ?? 'h-8 gap-1 rounded-none px-2 text-xs'}

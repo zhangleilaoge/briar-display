@@ -348,7 +348,7 @@ export default function FileDetailModal({ file, onClose: closeNow, onDelete }: P
 
 				{/* Actions：固定在底部，不随内容滚动 */}
 				<div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-[color:var(--rv-navy)]/15 px-5 py-4 sm:px-6">
-					<Button variant="outline" size="sm" className="gap-1.5" onClick={copyLink}>
+					<Button variant="default" size="sm" className="gap-1.5" onClick={copyLink}>
 						{copied ? (
 							<Check className="h-4 w-4 text-success" />
 						) : (
@@ -356,7 +356,7 @@ export default function FileDetailModal({ file, onClose: closeNow, onDelete }: P
 						)}
 						复制链接
 					</Button>
-					<Button variant="outline" size="sm" className="gap-1.5" onClick={download}>
+					<Button variant="default" size="sm" className="gap-1.5" onClick={download}>
 						<Download className="h-4 w-4" /> 下载
 					</Button>
 					<Button

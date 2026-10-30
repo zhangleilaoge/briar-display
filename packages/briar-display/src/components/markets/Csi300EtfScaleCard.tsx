@@ -54,7 +54,7 @@ export default function Csi300EtfScaleCard() {
 						</p>
 					</div>
 					<Button
-						variant="outline"
+						variant="default"
 						size="sm"
 						onClick={refresh}
 						disabled={refreshing}
@@ -88,7 +88,7 @@ export default function Csi300EtfScaleCard() {
 				) : !data ? (
 					<div className="flex h-[280px] flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
 						<p>{error || '暂无头部沪深300ETF历史快照'}</p>
-						<Button variant="outline" size="sm" onClick={refresh} disabled={refreshing}>
+						<Button variant="default" size="sm" onClick={refresh} disabled={refreshing}>
 							重试
 						</Button>
 					</div>

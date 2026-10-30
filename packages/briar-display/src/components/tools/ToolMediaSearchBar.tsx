@@ -48,7 +48,7 @@ export default function ToolMediaSearchBar({
 					</span>
 				</div>
 				{hasResult && (
-					<Button variant="outline" size="sm" onClick={onClear}>
+					<Button variant="default" size="sm" onClick={onClear}>
 						<RotateCcw className="mr-1.5 h-4 w-4" />
 						清空
 					</Button>

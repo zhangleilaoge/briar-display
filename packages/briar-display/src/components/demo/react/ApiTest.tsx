@@ -60,7 +60,7 @@ export default function ApiTest() {
 					{endpoints.map(([endpoint, label]) => (
 						<Button
 							key={endpoint}
-							variant="secondary"
+							variant="default"
 							onClick={() => testApi(endpoint)}
 							disabled={loading}
 						>

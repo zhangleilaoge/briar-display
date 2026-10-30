@@ -226,7 +226,7 @@ export default function RunHistoryDialog({
 							<Button
 								key={f.value}
 								size="sm"
-								variant={status === f.value ? 'secondary' : 'ghost'}
+								variant={status === f.value ? 'default' : 'ghost'}
 								className="h-7 px-2.5 text-xs"
 								onClick={() => {
 									setStatus(f.value)

@@ -144,11 +144,11 @@ export default function ToolMagnetPage() {
 					/>
 					<div className="flex flex-wrap items-center justify-between gap-2">
 						<div className="flex items-center gap-2">
-							<Button variant="outline" size="sm" onClick={handleCopy}>
+							<Button variant="default" size="sm" onClick={handleCopy}>
 								<Copy className="mr-1.5 h-4 w-4" />
 								复制
 							</Button>
-							<Button variant="outline" size="sm" onClick={handleClear}>
+							<Button variant="default" size="sm" onClick={handleClear}>
 								<RotateCcw className="mr-1.5 h-4 w-4" />
 								清除
 							</Button>

@@ -44,7 +44,7 @@ export default function AdminPagination({
 			className={cn('flex flex-wrap items-center justify-center gap-1 pt-4', className)}
 		>
 			<Button
-				variant="outline"
+				variant="default"
 				size="sm"
 				disabled={currentPage <= 1}
 				onClick={() => handlePageChange(currentPage - 1)}
@@ -56,7 +56,7 @@ export default function AdminPagination({
 
 			{start > 1 && (
 				<>
-					<Button variant="outline" size="sm" onClick={() => handlePageChange(1)}>
+					<Button variant="default" size="sm" onClick={() => handlePageChange(1)}>
 						1
 					</Button>
 					{start > 2 && <span className="px-1 text-sm text-muted-foreground">...</span>}
@@ -66,7 +66,7 @@ export default function AdminPagination({
 			{pages.map((page) => (
 				<Button
 					key={page}
-					variant={page === currentPage ? 'default' : 'outline'}
+					variant={page === currentPage ? 'primary' : 'default'}
 					size="sm"
 					aria-current={page === currentPage ? 'page' : undefined}
 					onClick={() => handlePageChange(page)}
@@ -78,14 +78,14 @@ export default function AdminPagination({
 			{end < totalPages && (
 				<>
 					{end < totalPages - 1 && <span className="px-1 text-sm text-muted-foreground">...</span>}
-					<Button variant="outline" size="sm" onClick={() => handlePageChange(totalPages)}>
+					<Button variant="default" size="sm" onClick={() => handlePageChange(totalPages)}>
 						{totalPages}
 					</Button>
 				</>
 			)}
 
 			<Button
-				variant="outline"
+				variant="default"
 				size="sm"
 				disabled={currentPage >= totalPages}
 				onClick={() => handlePageChange(currentPage + 1)}

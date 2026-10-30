@@ -11,8 +11,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from './hover-card'
 import { useFlip } from './motion'
 import {
 	RIBBON_JITTER,
-	RIBBON_STICKER_SRC,
-	RIBBON_TAG_BY_KIND,
+	RibbonTag,
 	type RibbonTagKind,
 	TagAdmin,
 	TagFiles,
@@ -239,7 +238,6 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 					/>
 					<ul ref={listRef} className="relative flex flex-col items-center gap-0.5">
 						{items.map((item, i) => {
-							const Tag = RIBBON_TAG_BY_KIND[item.kind]
 							const isActive = active === item.href
 							const jitter = RIBBON_JITTER[i % RIBBON_JITTER.length]
 							return (
@@ -263,19 +261,7 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 													transform: `translateX(${jitter.x}px) rotate(${jitter.rotate}deg)`,
 												}}
 											>
-												<Tag active={isActive} />
-												<span className="rv-ribbon-stack" aria-hidden>
-													<img
-														src={RIBBON_STICKER_SRC[item.kind]}
-														alt=""
-														draggable={false}
-														decoding="async"
-														className="rv-ribbon-cutout select-none object-contain"
-													/>
-													<span className="rv-ribbon-caption rv-tag-label font-label text-[7.5px] uppercase tracking-[0.05em]">
-														{item.caption}
-													</span>
-												</span>
+												<RibbonTag kind={item.kind} active={isActive} caption={item.caption} />
 												<span className="sr-only">
 													{item.label} · {item.caption}
 												</span>
@@ -380,7 +366,6 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 					className="rv-ribbon-mobile-track relative flex h-[4.5rem] items-start gap-0.5 overflow-x-auto overflow-y-hidden overscroll-x-contain px-2 scroll-smooth"
 				>
 					{items.map((item, i) => {
-						const Tag = RIBBON_TAG_BY_KIND[item.kind]
 						const isActive = active === item.href
 						const jitter = RIBBON_JITTER[i % RIBBON_JITTER.length]
 						return (
@@ -402,21 +387,12 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 									}}
 								>
 									<span aria-hidden className="h-1.5 w-px bg-[var(--sidebar-string)]" />
-									<span className="relative h-[58px] w-[48px]">
-										<Tag active={isActive} />
-										<span className="rv-ribbon-stack" aria-hidden>
-											<img
-												src={RIBBON_STICKER_SRC[item.kind]}
-												alt=""
-												draggable={false}
-												decoding="async"
-												className="rv-ribbon-cutout select-none object-contain"
-											/>
-											<span className="rv-ribbon-caption rv-tag-label font-label text-[6.5px] uppercase tracking-[0.04em]">
-												{item.caption}
-											</span>
-										</span>
-									</span>
+									<RibbonTag
+										kind={item.kind}
+										active={isActive}
+										caption={item.caption}
+										className="h-[58px] w-[48px]"
+									/>
 									<span className="sr-only">{item.label}</span>
 								</a>
 							</li>

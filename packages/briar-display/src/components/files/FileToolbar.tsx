@@ -137,7 +137,7 @@ export default function FileToolbar({
 				</Select>
 				<Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
 					<DialogTrigger asChild>
-						<Button variant="outline" size="sm" className="gap-1.5">
+						<Button variant="default" size="sm" className="gap-1.5">
 							<FolderPlus className="h-4 w-4" />
 							新建文件夹
 						</Button>

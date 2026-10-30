@@ -175,7 +175,7 @@ function AdminUsersPageInner() {
 					<div className="flex w-full items-center gap-2 sm:w-auto">
 						{isAdmin && (
 							<Button
-								variant="outline"
+								variant="default"
 								size="sm"
 								className="h-9 shrink-0 gap-1"
 								onClick={() => setMergeLogsOpen(true)}
@@ -308,7 +308,7 @@ function AdminUsersPageInner() {
 													</div>
 												) : (
 													<div className="flex gap-1">
-														<Button size="sm" variant="outline" onClick={() => startEditing(user)}>
+														<Button size="sm" variant="default" onClick={() => startEditing(user)}>
 															编辑角色
 														</Button>
 														{isAdmin && (

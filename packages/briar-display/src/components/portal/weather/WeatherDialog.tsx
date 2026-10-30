@@ -140,7 +140,7 @@ export function WeatherDialog({
 												<Button
 													key={item.id}
 													type="button"
-													variant={item.id === location.id ? 'secondary' : 'ghost'}
+													variant={item.id === location.id ? 'default' : 'ghost'}
 													size="sm"
 													className="h-7 shrink-0 px-2.5 text-xs"
 													aria-pressed={item.id === location.id}
@@ -174,7 +174,7 @@ export function WeatherDialog({
 										<p className="text-sm text-muted-foreground">{error}</p>
 										<Button
 											type="button"
-											variant="outline"
+											variant="default"
 											size="sm"
 											onClick={() => onRetry(location.id)}
 										>

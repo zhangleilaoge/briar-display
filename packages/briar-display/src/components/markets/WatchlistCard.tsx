@@ -170,7 +170,7 @@ function StockSearch({ onOpen }: { onOpen: (s: StockRef) => void }) {
 											)}
 										</button>
 										<Button
-											variant={inList ? 'secondary' : 'outline'}
+											variant="default"
 											size="sm"
 											className={cn(
 												'h-7 shrink-0 gap-1 border px-2 text-xs transition-colors',

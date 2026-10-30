@@ -360,7 +360,7 @@ export default function ToolCompressPage() {
 									).map(([val, label]) => (
 										<Button
 											key={val}
-											variant={format === val ? 'default' : 'outline'}
+											variant={format === val ? 'primary' : 'default'}
 											size="sm"
 											aria-pressed={format === val}
 											onClick={() => setFormat(val)}
@@ -465,7 +465,7 @@ export default function ToolCompressPage() {
 								<span className="ml-2 text-muted-foreground">({pending.length})</span>
 							</h3>
 							<div className="flex items-center gap-2">
-								<Button variant="outline" size="sm" onClick={clearPending} disabled={compressing}>
+								<Button variant="default" size="sm" onClick={clearPending} disabled={compressing}>
 									清空
 								</Button>
 								<Button
@@ -556,7 +556,7 @@ export default function ToolCompressPage() {
 
 										<div className="flex items-center gap-1">
 											<Button
-												variant="outline"
+												variant="default"
 												size="sm"
 												onClick={() => handleDownload(r)}
 												className="gap-1"
@@ -635,7 +635,7 @@ export default function ToolCompressPage() {
 											{/* 操作按钮（hover 显示） */}
 											<div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
 												<Button
-													variant="secondary"
+													variant="default"
 													size="sm"
 													className="h-7 w-7 p-0"
 													title="下载"
@@ -644,7 +644,7 @@ export default function ToolCompressPage() {
 													<Download className="h-3.5 w-3.5" />
 												</Button>
 												<Button
-													variant="secondary"
+													variant="default"
 													size="sm"
 													className="h-7 w-7 p-0"
 													title="上传到图床"
@@ -658,7 +658,7 @@ export default function ToolCompressPage() {
 													)}
 												</Button>
 												<Button
-													variant="secondary"
+													variant="default"
 													size="sm"
 													className="h-7 w-7 p-0"
 													title="删除"

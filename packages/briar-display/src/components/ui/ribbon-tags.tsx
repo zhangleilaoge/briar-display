@@ -1,6 +1,6 @@
 /**
  * 左侧吊牌：每项独立手绘异形壳 + 插画切图贴纸（Wikimedia PD/CC0/CC BY-SA，见 assets/decor/ribbon-stickers/SOURCES.md）。
- * 禁止共用同一矩形外壳只换图标；法文 caption 由 ribbon-sidebar 以 font-label 可见渲染，图文一组居中。
+ * 禁止共用同一矩形外壳只换图标；RibbonTag 统一叠放插画与法文 caption，图文一组居中。
  */
 import accueilHouse from '@/assets/decor/ribbon-stickers/accueil-house.png'
 import clefKey from '@/assets/decor/ribbon-stickers/clef-key.png'
@@ -138,7 +138,7 @@ export const RIBBON_STICKER_SRC: Record<RibbonTagKind, string> = {
 	profile: srcOf(moiCameo),
 }
 
-/** 白描边贴纸外壳：外白边 + 内线（无内嵌图案，图案由 sidebar 叠图） */
+/** 白描边贴纸外壳：外白边 + 内线（无内嵌图案，图案由 RibbonTag 叠图） */
 function StickerShell({
 	d,
 	active,
@@ -231,6 +231,40 @@ export const RIBBON_TAG_BY_KIND: Record<RibbonTagKind, (p: TagSvgProps) => React
 	markets: TagMarkets,
 	admin: TagAdmin,
 	profile: TagProfile,
+}
+
+interface RibbonTagProps {
+	kind: RibbonTagKind
+	active?: boolean
+	caption?: string
+	className?: string
+	stickerLoading?: 'eager' | 'lazy'
+}
+
+export function RibbonTag({
+	kind,
+	active = false,
+	caption,
+	className,
+	stickerLoading = 'eager',
+}: RibbonTagProps) {
+	const Tag = RIBBON_TAG_BY_KIND[kind]
+	return (
+		<span aria-hidden className={cn('relative block h-[70px] w-[58px]', className)}>
+			<Tag active={active} />
+			<span className="rv-ribbon-stack">
+				<img
+					src={RIBBON_STICKER_SRC[kind]}
+					alt=""
+					draggable={false}
+					decoding="async"
+					loading={stickerLoading}
+					className="rv-ribbon-cutout select-none object-contain"
+				/>
+				{caption && <span className="rv-ribbon-caption rv-tag-label">{caption}</span>}
+			</span>
+		</span>
+	)
 }
 
 /** 轻微错落：旋转 + 水平微偏 */

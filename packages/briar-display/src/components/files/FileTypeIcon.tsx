@@ -1,69 +1,5 @@
-import {
-	FaFile,
-	FaFileAlt,
-	FaFileArchive,
-	FaFileAudio,
-	FaFileCode,
-	FaFileCsv,
-	FaFileExcel,
-	FaFilePdf,
-	FaFilePowerpoint,
-	FaFileWord,
-} from 'react-icons/fa'
-
-const CODE_EXTENSIONS = new Set([
-	'js',
-	'jsx',
-	'ts',
-	'tsx',
-	'html',
-	'css',
-	'vue',
-	'py',
-	'java',
-	'c',
-	'cpp',
-	'go',
-	'rs',
-	'sh',
-	'php',
-	'rb',
-	'swift',
-	'kt',
-	'sql',
-	'yaml',
-	'yml',
-	'xml',
-])
-
-const ARCHIVE_EXTENSIONS = new Set(['zip', 'rar', '7z', 'tar', 'gz', 'bz2'])
-
-const AUDIO_EXTENSIONS = new Set(['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'])
-
-const getExtension = (name: string): string => {
-	const idx = name.lastIndexOf('.')
-	return idx > 0 ? name.slice(idx + 1).toLowerCase() : ''
-}
-
-const pickIcon = (fileName: string, mimeType: string) => {
-	const ext = getExtension(fileName)
-	if (mimeType === 'application/pdf' || ext === 'pdf') {
-		return { Icon: FaFilePdf, color: 'text-danger' }
-	}
-	if (['doc', 'docx'].includes(ext)) return { Icon: FaFileWord, color: 'text-info' }
-	if (['xls', 'xlsx'].includes(ext)) return { Icon: FaFileExcel, color: 'text-success' }
-	if (ext === 'csv') return { Icon: FaFileCsv, color: 'text-success' }
-	if (['ppt', 'pptx'].includes(ext)) return { Icon: FaFilePowerpoint, color: 'text-warning' }
-	if (ARCHIVE_EXTENSIONS.has(ext)) return { Icon: FaFileArchive, color: 'text-warning' }
-	if (mimeType.startsWith('audio/') || AUDIO_EXTENSIONS.has(ext)) {
-		return { Icon: FaFileAudio, color: 'text-plum' }
-	}
-	if (CODE_EXTENSIONS.has(ext)) return { Icon: FaFileCode, color: 'text-muted-foreground' }
-	if (mimeType === 'application/json' || mimeType.startsWith('text/')) {
-		return { Icon: FaFileAlt, color: 'text-muted-foreground' }
-	}
-	return { Icon: FaFile, color: 'text-muted-foreground' }
-}
+import { cn } from '@/lib/utils'
+import { getFileTypeIconPath } from './fileTypeIconPath'
 
 interface FileTypeIconProps {
 	fileName: string
@@ -71,10 +7,17 @@ interface FileTypeIconProps {
 	className?: string
 }
 
-/** 不可预览文件的默认图标：文件轮廓中间带类型标识（Font Awesome 文件系列） */
 const FileTypeIcon = ({ fileName, mimeType, className = 'h-12 w-12' }: FileTypeIconProps) => {
-	const { Icon, color } = pickIcon(fileName, mimeType)
-	return <Icon className={`${className} ${color}`} aria-hidden />
+	return (
+		<img
+			src={getFileTypeIconPath(fileName, mimeType)}
+			alt=""
+			aria-hidden
+			draggable={false}
+			loading="lazy"
+			className={cn(className, 'shrink-0 select-none')}
+		/>
+	)
 }
 
 export default FileTypeIcon

@@ -80,7 +80,7 @@ function DatePicker({
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
 				<Button
-					variant="outline"
+					variant="default"
 					className={cn(
 						'h-8 w-full justify-start text-left font-normal text-xs',
 						!value && 'text-muted-foreground',

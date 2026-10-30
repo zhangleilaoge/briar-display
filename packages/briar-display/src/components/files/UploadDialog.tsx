@@ -486,7 +486,7 @@ export default function UploadDialog({ folderId, onUploaded }: UploadDialogProps
 								))}
 							</div>
 							<div className="flex justify-end gap-2">
-								<Button variant="outline" size="sm" onClick={clearPending}>
+								<Button variant="default" size="sm" onClick={clearPending}>
 									清空
 								</Button>
 								<Button size="sm" onClick={handleConfirmUpload}>

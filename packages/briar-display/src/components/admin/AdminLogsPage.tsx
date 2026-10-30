@@ -314,7 +314,7 @@ function AdminLogsPageInner() {
 							showTime
 						/>
 						<Button
-							variant="outline"
+							variant="default"
 							size="sm"
 							onClick={() => {
 								const d = new Date()
@@ -327,7 +327,7 @@ function AdminLogsPageInner() {
 							1h
 						</Button>
 						<Button
-							variant="outline"
+							variant="default"
 							size="sm"
 							onClick={() => {
 								const d = new Date()
@@ -340,7 +340,7 @@ function AdminLogsPageInner() {
 							6h
 						</Button>
 						<Button
-							variant="outline"
+							variant="default"
 							size="sm"
 							onClick={() => {
 								const d = new Date()
@@ -353,7 +353,7 @@ function AdminLogsPageInner() {
 							1d
 						</Button>
 						<Button
-							variant="outline"
+							variant="default"
 							size="sm"
 							onClick={() => {
 								const d = new Date()
@@ -366,7 +366,7 @@ function AdminLogsPageInner() {
 							7d
 						</Button>
 						<Button
-							variant="outline"
+							variant="default"
 							size="sm"
 							onClick={() => {
 								setStartDate(undefined)
@@ -382,7 +382,7 @@ function AdminLogsPageInner() {
 				{/* Action buttons — separate row */}
 				<div className="mt-6 flex items-center justify-end gap-2 border-t pt-4">
 					<Button
-						variant="outline"
+						variant="default"
 						size="sm"
 						title="全部展开"
 						onClick={() => setCollapsedIds(new Set())}
@@ -391,7 +391,7 @@ function AdminLogsPageInner() {
 						<UnfoldVertical className="h-3.5 w-3.5" />
 					</Button>
 					<Button
-						variant="outline"
+						variant="default"
 						size="sm"
 						title="全部折叠"
 						onClick={() => setCollapsedIds(new Set(logs.map((l) => l.id)))}
@@ -400,7 +400,7 @@ function AdminLogsPageInner() {
 						<FoldVertical className="h-3.5 w-3.5" />
 					</Button>
 					<Button
-						variant="outline"
+						variant="default"
 						size="sm"
 						onClick={() => {
 							setTraceId('')

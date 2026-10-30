@@ -95,14 +95,14 @@ function QuizPanel() {
 					<Button
 						key={quizKind}
 						size="sm"
-						variant={kind === quizKind ? 'default' : 'outline'}
+						variant={kind === quizKind ? 'primary' : 'default'}
 						aria-pressed={kind === quizKind}
 						onClick={() => reload(quizKind)}
 					>
 						{QUIZ_LABELS[quizKind]}
 					</Button>
 				))}
-				<Button size="sm" variant="outline" className="gap-1" onClick={() => reload(kind)}>
+				<Button size="sm" variant="default" className="gap-1" onClick={() => reload(kind)}>
 					<RefreshCw className="h-3.5 w-3.5" />
 					换一题
 				</Button>
@@ -156,7 +156,7 @@ function QuizPanel() {
 						)}
 						{assembly ? (
 							<div className="mt-3 flex flex-wrap items-center gap-2" data-assembly-controls>
-								<Button size="sm" variant="outline" className="gap-1" onClick={startAssembly}>
+								<Button size="sm" variant="default" className="gap-1" onClick={startAssembly}>
 									<Play className="h-3.5 w-3.5" />
 									{assemblyRunId > 0 ? '重新演示' : '演示拼合'}
 								</Button>

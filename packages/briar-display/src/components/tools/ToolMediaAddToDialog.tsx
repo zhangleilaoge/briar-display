@@ -111,7 +111,7 @@ export default function ToolMediaAddToDialog({ items, onClose }: ToolMediaAddToD
 					<Popover open={pickerOpen} onOpenChange={setPickerOpen}>
 						<PopoverTrigger asChild>
 							<Button
-								variant="outline"
+								variant="default"
 								disabled={uploading}
 								className="w-full justify-between font-normal"
 							>

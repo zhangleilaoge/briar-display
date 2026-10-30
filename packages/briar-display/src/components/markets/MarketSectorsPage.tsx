@@ -186,7 +186,7 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 								)}
 								{sectors?.stale && <StaleBadge error={sectors.error} />}
 							</div>
-							<Button variant="outline" size="sm" onClick={refresh} disabled={refreshing}>
+							<Button variant="default" size="sm" onClick={refresh} disabled={refreshing}>
 								<RefreshCw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
 								刷新
 							</Button>
@@ -278,7 +278,7 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 						</Select>
 					)}
 					<Button
-						variant="outline"
+						variant="default"
 						size="sm"
 						className="h-9 bg-card/60"
 						onClick={() => setDirection((d) => (d === 'desc' ? 'asc' : 'desc'))}

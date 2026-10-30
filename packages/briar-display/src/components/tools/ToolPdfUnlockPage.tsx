@@ -186,7 +186,7 @@ export default function ToolPdfUnlockPage() {
 								<span className="ml-2 text-muted-foreground">({pending.length})</span>
 							</h3>
 							<div className="flex items-center gap-2">
-								<Button variant="outline" size="sm" onClick={clearPending} disabled={unlocking}>
+								<Button variant="default" size="sm" onClick={clearPending} disabled={unlocking}>
 									清空
 								</Button>
 								<Button size="sm" onClick={handleStart} disabled={unlocking} className="gap-1.5">
@@ -249,7 +249,7 @@ export default function ToolPdfUnlockPage() {
 
 									<div className="flex items-center gap-1">
 										<Button
-											variant="outline"
+											variant="default"
 											size="sm"
 											onClick={() => handleDownload(r)}
 											className="gap-1"

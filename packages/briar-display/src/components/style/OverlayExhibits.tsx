@@ -46,7 +46,7 @@ export function OverlayExhibits() {
 							</div>
 							<DialogFooter>
 								<DialogClose asChild>
-									<Button variant="outline">返回展览</Button>
+									<Button variant="default">返回展览</Button>
 								</DialogClose>
 								<DialogClose asChild>
 									<Button>完成</Button>
@@ -57,7 +57,7 @@ export function OverlayExhibits() {
 
 					<Dialog>
 						<DialogTrigger asChild>
-							<Button variant="outline">打开终端变体</Button>
+							<Button variant="default">打开终端变体</Button>
 						</DialogTrigger>
 						<DialogContent variant="terminal">
 							<DialogHeader>
@@ -76,7 +76,7 @@ export function OverlayExhibits() {
 				<StyleExhibit title="Popover 点击浮层" source="ui/popover.tsx">
 					<Popover>
 						<PopoverTrigger asChild>
-							<Button variant="outline">点击调整展品</Button>
+							<Button variant="default">点击调整展品</Button>
 						</PopoverTrigger>
 						<PopoverContent className="w-80">
 							<div className="space-y-3">
@@ -100,7 +100,7 @@ export function OverlayExhibits() {
 				<StyleExhibit title="HoverCard 悬停浮层" source="ui/hover-card.tsx">
 					<HoverCard openDelay={120} closeDelay={0}>
 						<HoverCardTrigger asChild>
-							<Button variant="outline">悬停查看组件信息</Button>
+							<Button variant="default">悬停查看组件信息</Button>
 						</HoverCardTrigger>
 						<HoverCardContent className="w-80" align="start">
 							<p className="font-label text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -119,14 +119,14 @@ export function OverlayExhibits() {
 
 			<StyleExhibit title="Sonner 消息反馈" source="ui/sonner.tsx">
 				<div className="flex flex-wrap gap-3">
-					<Button variant="outline" onClick={() => toast.success('展品已加入清单')}>
+					<Button variant="default" onClick={() => toast.success('展品已加入清单')}>
 						成功提示
 					</Button>
-					<Button variant="outline" onClick={() => toast.error('这是一件错误提示展品')}>
+					<Button variant="default" onClick={() => toast.error('这是一件错误提示展品')}>
 						错误提示
 					</Button>
 					<Button
-						variant="outline"
+						variant="default"
 						onClick={() =>
 							toast('已收藏这件组件', {
 								description: '仅展示 Toast 交互，不会写入任何数据。',

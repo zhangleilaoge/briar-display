@@ -21,11 +21,11 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
 				caption_label: 'text-sm font-medium',
 				nav: 'space-x-1 flex items-center',
 				button_previous: cn(
-					buttonVariants({ variant: 'outline' }),
+					buttonVariants({ variant: 'default' }),
 					'h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1',
 				),
 				button_next: cn(
-					buttonVariants({ variant: 'outline' }),
+					buttonVariants({ variant: 'default' }),
 					'h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1',
 				),
 				weekdays: 'flex',

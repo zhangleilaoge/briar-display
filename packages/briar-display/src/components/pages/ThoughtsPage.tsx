@@ -484,7 +484,7 @@ function ThoughtCard({
 						<div className="flex items-center gap-2">
 							<Button
 								type="button"
-								variant="outline"
+								variant="default"
 								size="sm"
 								className="gap-1 rounded-none"
 								onClick={() => {

@@ -209,7 +209,7 @@ export default function ToolDiffPage() {
 								)}
 							</Button>
 						)}
-						<Button variant="outline" size="sm" onClick={handleClear} className="gap-1.5">
+						<Button variant="default" size="sm" onClick={handleClear} className="gap-1.5">
 							<RotateCcw className="h-4 w-4" />
 							清空
 						</Button>

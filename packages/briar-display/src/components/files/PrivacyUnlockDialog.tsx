@@ -175,7 +175,7 @@ export default function PrivacyUnlockDialog({
 
 	const sendCodeButton = (
 		<Button
-			variant="outline"
+			variant="default"
 			className="w-full gap-2"
 			onClick={handleSendCode}
 			disabled={sending || countdown > 0}

@@ -236,7 +236,7 @@ function AdminPermissionsPageInner() {
 						<CardTitle className="text-sm">角色列表</CardTitle>
 						<Button
 							size="sm"
-							variant="outline"
+							variant="default"
 							onClick={() => setShowCreateForm(true)}
 							className="h-7 gap-1 text-xs"
 						>

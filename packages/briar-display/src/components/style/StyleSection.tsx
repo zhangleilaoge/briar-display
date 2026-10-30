@@ -59,7 +59,12 @@ export function StyleExhibit({
 	contentClassName,
 }: StyleExhibitProps) {
 	return (
-		<Card className={cn('overflow-visible', className)}>
+		<Card
+			className={cn(
+				'overflow-visible [contain-intrinsic-size:auto_360px] [content-visibility:auto]',
+				className,
+			)}
+		>
 			<CardHeader className="flex-row items-baseline justify-between gap-3 space-y-0 p-4 pb-3">
 				<CardTitle className="text-base">{title}</CardTitle>
 				<code className="truncate text-[10px] text-muted-foreground">{source}</code>

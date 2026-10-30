@@ -239,7 +239,7 @@ export default function SectorList({
 			</Table>
 			{items.length > pageSize && (
 				<div className="mt-3 flex justify-center">
-					<Button variant="outline" size="sm" onClick={() => setShowAll((v) => !v)}>
+					<Button variant="default" size="sm" onClick={() => setShowAll((v) => !v)}>
 						{showAll ? `收起，只看前 ${pageSize} 个` : `显示全部 ${items.length} 个板块`}
 					</Button>
 				</div>

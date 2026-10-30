@@ -241,7 +241,7 @@ export default function ToolJsonPage() {
 							<FileUp className="h-4 w-4" />
 							上传文件
 						</Button>
-						<Button variant="outline" size="sm" onClick={handleClear} className="gap-1.5">
+						<Button variant="default" size="sm" onClick={handleClear} className="gap-1.5">
 							<RotateCcw className="h-4 w-4" />
 							清空
 						</Button>
@@ -260,7 +260,7 @@ export default function ToolJsonPage() {
 										<Button
 											key={action.key}
 											size="sm"
-											variant="secondary"
+											variant="default"
 											onClick={() => handleAction(action.key)}
 											disabled={!input.trim()}
 											className="gap-1.5"

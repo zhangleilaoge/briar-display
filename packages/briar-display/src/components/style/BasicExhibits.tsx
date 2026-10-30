@@ -21,15 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus } from 'lucide-react'
 import { StyleExhibit, StyleSection } from './StyleSection'
 
-const BUTTON_VARIANTS = [
-	'default',
-	'primary',
-	'secondary',
-	'outline',
-	'ghost',
-	'link',
-	'destructive',
-] as const
+const BUTTON_VARIANTS = ['default', 'primary', 'ghost', 'link', 'destructive'] as const
 const BADGE_VARIANTS = [
 	'default',
 	'secondary',

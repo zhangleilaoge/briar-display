@@ -84,7 +84,7 @@ export default function StockDetailView({ market, stock }: { market: MarketId; s
 						</div>
 					)}
 					<Button
-						variant={inList ? 'secondary' : 'outline'}
+						variant="default"
 						size="sm"
 						className={watchBtnClass}
 						disabled={!watchlist.ready}

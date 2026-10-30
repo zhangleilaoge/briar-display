@@ -365,7 +365,7 @@ export default function TerminalTabs() {
 					>
 						<p className="text-sm">没有打开的会话</p>
 						<Button
-							variant="outline"
+							variant="default"
 							size="sm"
 							className="gap-1.5 border-[var(--term-border)] bg-transparent text-[var(--term-fg)] hover:bg-white/10 hover:text-[var(--term-title)]"
 							onClick={addSession}

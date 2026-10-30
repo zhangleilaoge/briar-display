@@ -464,7 +464,7 @@ function SqlConsoleContent() {
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
-						<Button variant="outline" onClick={() => setConfirmOpen(false)}>
+						<Button variant="default" onClick={() => setConfirmOpen(false)}>
 							取消
 						</Button>
 						<Button variant="destructive" onClick={handleConfirmExecute}>
