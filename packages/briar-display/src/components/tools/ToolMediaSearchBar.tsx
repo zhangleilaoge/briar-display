@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
+import { ResizableTextarea } from '@/components/ui/textarea'
 import { Link2, Loader2, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import { WEB_MEDIA_PLATFORMS, platformIcon } from './toolMediaUtils'
@@ -54,7 +54,7 @@ export default function ToolMediaSearchBar({
 					</Button>
 				)}
 			</div>
-			<Textarea
+			<ResizableTextarea
 				value={input}
 				onChange={(e) => onInputChange(e.target.value)}
 				placeholder="粘贴分享链接，也支持整段分享文案…"

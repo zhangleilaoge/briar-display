@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { LinkifiedText } from '@/components/ui/linkified-text'
 import { PageHeader } from '@/components/ui/page-header'
 import { PaperSheet, type PaperSheetVariant } from '@/components/ui/paper-sheet'
-import { Textarea } from '@/components/ui/textarea'
+import { ResizableTextarea } from '@/components/ui/textarea'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
@@ -224,7 +224,7 @@ function ThoughtsPageInner() {
 							<span className="inline-block h-2 w-2 rotate-45 bg-[color:var(--rv-rose)]" />
 							记一笔
 						</div>
-						<Textarea
+						<ResizableTextarea
 							value={draft}
 							onChange={(e) => setDraft(e.target.value.slice(0, MAX_BODY))}
 							placeholder="写点什么… 支持 emoji 😊"
@@ -464,7 +464,7 @@ function ThoughtCard({
 
 			{editing ? (
 				<div className="space-y-3">
-					<Textarea
+					<ResizableTextarea
 						value={editDraft}
 						onChange={(e) => setEditDraft(e.target.value.slice(0, MAX_BODY))}
 						rows={4}

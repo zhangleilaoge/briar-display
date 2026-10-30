@@ -3,7 +3,7 @@
 import { parseMagnet } from '@/api/magnet'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
+import { ResizableTextarea } from '@/components/ui/textarea'
 import type { MagnetParseResult } from '@briar/shared'
 import { Copy, Loader2, Magnet, RotateCcw, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -130,7 +130,7 @@ export default function ToolMagnetPage() {
 							下载前先看一眼，避免「葫芦娃」
 						</span>
 					</div>
-					<Textarea
+					<ResizableTextarea
 						value={input}
 						onChange={(e) => setInput(e.target.value)}
 						placeholder="请输入 magnet、ed2k 或 40 位磁力 hash…"

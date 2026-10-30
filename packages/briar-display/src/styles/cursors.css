@@ -104,9 +104,9 @@
 		cursor: var(--cursor-text);
 	}
 
-	/* textarea 右下角的原生缩放手柄独立于文本输入区域。 */
-	:is(.theme-scrapbook, .theme-arcane) textarea::-webkit-resizer {
-		cursor: var(--cursor-nwse-resize) !important;
+	/* 原生 textarea 缩放手柄不接受自定义光标；可缩输入框使用 ResizableTextarea 的覆盖手柄。 */
+	:is(.theme-scrapbook, .theme-arcane) .rv-textarea-resizer {
+		cursor: var(--cursor-nwse-resize);
 	}
 
 	:is(.theme-scrapbook, .theme-arcane) :is([data-cursor="crosshair"], .cursor-crosshair) {
@@ -222,4 +222,26 @@
 	:is(.theme-scrapbook, .theme-arcane) [aria-busy="true"] * {
 		cursor: var(--cursor-wait);
 	}
+}
+
+.rv-textarea-resizer::before,
+.rv-textarea-resizer::after {
+	content: "";
+	position: absolute;
+	right: 3px;
+	bottom: 3px;
+	width: 7px;
+	height: 7px;
+	border-right: 1px solid currentColor;
+	border-bottom: 1px solid currentColor;
+	transform: rotate(-45deg);
+	transform-origin: center;
+	pointer-events: none;
+}
+
+.rv-textarea-resizer::after {
+	right: 6px;
+	bottom: 6px;
+	width: 4px;
+	height: 4px;
 }
