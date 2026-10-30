@@ -70,6 +70,12 @@ export function useSectionPath<T extends SectionRoute>(initialPath: string, rout
 			}
 			if (url.origin !== window.location.origin || !find(url.pathname)) return false
 			const next = normalize(url.pathname)
+			const isSamePageAnchor =
+				next === normalize(window.location.pathname) &&
+				url.search === window.location.search &&
+				Boolean(url.hash)
+			// 同页锚点交给浏览器原生定位；拦截后 preventDefault 会让点击完全不滚动。
+			if (isSamePageAnchor) return false
 			if (next !== normalize(window.location.pathname) || url.search !== window.location.search) {
 				window.history.pushState({ section: true }, '', `${next}${url.search}${url.hash}`)
 			}

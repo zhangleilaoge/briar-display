@@ -3,7 +3,6 @@
 import { useNavigate } from '@/components/common/SectionRouter'
 import UserMenu from '@/components/common/UserMenu'
 import { BinderPeel } from '@/components/portal/BinderPeel'
-import { PortalScrapDecor } from '@/components/portal/PortalScrapDecor'
 import { WidgetDesktop } from '@/components/portal/WidgetDesktop'
 import { useGreeting } from '@/components/portal/greetingStore'
 import { Card, CardContent } from '@/components/ui/card'
@@ -328,8 +327,6 @@ function PortalPageInner() {
 
 	return (
 		<ThemeShell variant="scrapbook" className="flex flex-col overflow-hidden">
-			{/* 首页背景剪纸：按日种子 + 问候 index 稀疏随机落边 */}
-			<PortalScrapDecor greetingIndex={Math.max(index, 0)} />
 			{/* Top bar */}
 			<PageHeader
 				hideBrand
@@ -407,7 +404,7 @@ function PortalPageInner() {
 									</div>
 								</div>
 								<Postmark
-									className="absolute -top-6 right-2 h-24 w-24 rotate-12 sm:right-4"
+									className="rv-binder-postmark absolute -top-6 right-2 h-24 w-24 rotate-12 sm:right-4"
 									date={date.slice(-2) || '27'}
 								/>
 							</PaperSheet>

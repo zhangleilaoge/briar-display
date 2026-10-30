@@ -7,7 +7,7 @@
 import { useSectionRouter } from '@/components/common/SectionRouter'
 import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
-import { Astrolabe } from './astrolabe'
+import { ArcaneDecor } from './arcane-decor'
 import { AutoHeight } from './motion'
 import { FloralRound } from './ornaments'
 import { RibbonSidebar } from './ribbon-sidebar'
@@ -37,24 +37,6 @@ export function ThemeShell({
 			{sidebar && !router?.globalShell && <RibbonSidebar currentPath={currentPath} />}
 			{decor && (variant === 'arcane' ? <ArcaneDecor /> : <ScrapbookDecor />)}
 			{children}
-		</div>
-	)
-}
-
-function ArcaneDecor() {
-	return (
-		<div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-			{/* 星盘为 Arcane HUD 系统件，各 Arcane 页共享 */}
-			<Astrolabe
-				className="absolute -bottom-40 -right-32 h-[560px] w-[560px] opacity-[0.2]"
-				showWord={false}
-			/>
-			<div className="absolute left-3 right-3 top-3 hidden h-px bg-[var(--rv-line)] opacity-40 md:block" />
-			<div className="absolute bottom-4 left-3 right-3 hidden h-px bg-[var(--rv-line)] opacity-25 md:block" />
-			<div className="absolute bottom-5 right-6 hidden items-center gap-2 font-label text-[9px] uppercase tracking-[0.22em] text-[color:var(--rv-navy)]/55 xl:flex">
-				<span className="rv-barcode" />
-				<span>XIAOBUZI · ARCHIVE</span>
-			</div>
 		</div>
 	)
 }

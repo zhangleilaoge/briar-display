@@ -78,7 +78,7 @@ export function GreetingWidget({
 						</div>
 					</div>
 					<Postmark
-						className="pointer-events-none !absolute -right-1 -top-1 z-[1] h-16 w-16 rotate-12 opacity-90 sm:h-20 sm:w-20"
+						className="rv-binder-postmark pointer-events-none !absolute -right-1 -top-1 z-[1] h-16 w-16 rotate-12 opacity-90 sm:h-20 sm:w-20"
 						date={state.date.slice(-2) || '28'}
 					/>
 				</PaperSheet>

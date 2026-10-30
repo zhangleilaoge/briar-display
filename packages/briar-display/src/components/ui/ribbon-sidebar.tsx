@@ -283,7 +283,7 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 										</HoverCardTrigger>
 										<HoverCardContent
 											side="right"
-											sideOffset={10}
+											sideOffset={2}
 											className="w-auto whitespace-nowrap px-3 py-2 text-xs"
 										>
 											{item.label} · {item.caption}

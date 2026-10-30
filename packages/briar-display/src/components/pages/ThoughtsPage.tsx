@@ -9,7 +9,6 @@ import {
 	unlikeThought,
 	updateThought,
 } from '@/api/thoughts'
-import { ScrapStickerDecor } from '@/components/portal/ScrapStickerDecor'
 import { EmojiInsertButton } from '@/components/thoughts/EmojiInsertButton'
 import { Button } from '@/components/ui/button'
 import { LinkifiedText } from '@/components/ui/linkified-text'
@@ -21,6 +20,7 @@ import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext
 import { cn } from '@/lib/utils'
 import { Heart, Loader2, Pencil, Send, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 
 const MAX_BODY = 2000
 
@@ -173,17 +173,28 @@ function ThoughtsPageInner() {
 		}
 	}
 
-	const handleDelete = async (id: string) => {
-		if (!confirm('确定删除这条想法？')) return
+	const confirmDelete = async (id: string) => {
 		try {
 			const res = await deleteThought(id)
 			if (res.success) {
 				setItems((prev) => prev.filter((t) => t.id !== id))
 				setTotal((t) => Math.max(0, t - 1))
+				toast.success('想法已删除')
+			} else {
+				toast.error(res.message || '删除失败，请稍后重试')
 			}
-		} catch {
-			/* ignore */
+		} catch (e: any) {
+			toast.error(e?.response?.data?.message || e?.message || '删除失败，请稍后重试')
 		}
+	}
+
+	const handleDelete = (id: string) => {
+		toast('确定删除这条想法？', {
+			description: '删除后无法恢复。',
+			duration: 10000,
+			action: { label: '删除', onClick: () => void confirmDelete(id) },
+			cancel: { label: '取消', onClick: () => {} },
+		})
 	}
 
 	const handleUpdated = (updated: Thought) => {
@@ -196,7 +207,6 @@ function ThoughtsPageInner() {
 
 	return (
 		<ThemeShell variant="scrapbook">
-			<ScrapStickerDecor page="thoughts" seedKey="thoughts" />
 			<PageHeader crumbs={[{ label: '想法' }]} />
 
 			<main className="rv-content-inset mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">

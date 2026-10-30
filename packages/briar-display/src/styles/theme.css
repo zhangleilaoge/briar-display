@@ -655,6 +655,10 @@ body {
 	filter: var(--sidebar-cutout-filter, none) drop-shadow(0 0 0.4px #fff)
 		drop-shadow(0 1px 2px hsl(221 46% 20% / 0.18));
 }
+/* 鸢尾花主体偏右，向左校正光学中心 */
+.rv-ribbon-tag[data-kind="style"] .rv-ribbon-cutout {
+	transform: translateX(-2px);
+}
 /* 易叠字/尖底的外形：略缩插画，给 caption 与描边让距 */
 .rv-ribbon-tag[data-kind="home"] .rv-ribbon-cutout {
 	width: 22px;
@@ -2866,28 +2870,19 @@ progress {
 }
 .rv-binder-peel__paper {
 	height: 100%;
+	transform-style: preserve-3d;
 }
 .rv-binder-peel__paper > .rv-paper-sheet--binder {
 	box-sizing: border-box;
 	height: 100%;
 	filter: none;
 	box-shadow: 0 10px 22px -8px hsl(221 46% 20% / 0.28);
+	transform-style: preserve-3d;
+}
+.rv-binder-peel__paper .rv-binder-postmark {
+	backface-visibility: hidden;
+	transform-origin: center;
 }
 .rv-binder-peel__book .opf-page--turning .rv-paper-sheet--binder {
 	box-shadow: none;
-}
-
-/* 背景贴纸：翻页结束后淡出换一批再淡入 */
-.rv-scrap-decor {
-	transition: opacity 0.32s ease;
-	opacity: 1;
-}
-.rv-scrap-decor.is-fading {
-	opacity: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.rv-scrap-decor {
-		transition: none !important;
-	}
 }

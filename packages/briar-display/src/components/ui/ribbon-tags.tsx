@@ -1,4 +1,3 @@
-import styleFlower from '@/assets/decor/flower-psf.svg'
 /**
  * 左侧吊牌：每项独立手绘异形壳 + 插画切图贴纸（Wikimedia PD/CC0/CC BY-SA，见 assets/decor/ribbon-stickers/SOURCES.md）。
  * 禁止共用同一矩形外壳只换图标；法文 caption 由 ribbon-sidebar 以 font-label 可见渲染，图文一组居中。
@@ -10,6 +9,7 @@ import fichiersPurse from '@/assets/decor/ribbon-stickers/fichiers-purse.png'
 import moiCameo from '@/assets/decor/ribbon-stickers/moi-cameo.png'
 import outilsInkwell from '@/assets/decor/ribbon-stickers/outils-inkwell-quill.png'
 import penseesBook from '@/assets/decor/ribbon-stickers/pensees-book.png'
+import styleFlower from '@/assets/decor/stationery-stickers/01-00-iris.png'
 import { cn } from '@/lib/utils'
 import type { ReactNode, SVGProps } from 'react'
 

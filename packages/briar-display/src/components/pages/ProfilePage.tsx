@@ -5,7 +5,6 @@ import UserMenu from '@/components/common/UserMenu'
 import LoginMethodsCard from '@/components/profile/LoginMethodsCard'
 import MergeHistoryCard from '@/components/profile/MergeHistoryCard'
 import MessagesPanel from '@/components/profile/MessagesPanel'
-import { ScrapStickerDecor } from '@/components/portal/ScrapStickerDecor'
 import { ProfileSheet, ProfileSheetHeader } from '@/components/profile/ProfileSheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -156,8 +155,6 @@ function ProfilePageInner() {
 
 	return (
 		<ThemeShell variant="scrapbook">
-			{/* 背景剪纸：与门户/想法同规则，落左右 gutter */}
-			<ScrapStickerDecor page="profile" seedKey="profile" />
 			{/* 顶部导航 */}
 			<PageHeader crumbs={[{ label: '个人中心' }]} />
 

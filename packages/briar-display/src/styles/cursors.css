@@ -1,0 +1,225 @@
+/* 法式复古光标：套 3 复古票据（手账）/ 套 8 航海罗盘（奥术）。 */
+:root,
+.theme-scrapbook,
+.theme-arcane {
+	--cursor-default: url("../assets/cursors/scrapbook/default-32.png") 5 3, default;
+	--cursor-pointer: url("../assets/cursors/scrapbook/pointer-32.png") 9 3, pointer;
+	--cursor-text: url("../assets/cursors/scrapbook/text-32.png") 16 16, text;
+	--cursor-wait: url("../assets/cursors/scrapbook/wait-32.png") 16 16, wait;
+	--cursor-progress: url("../assets/cursors/scrapbook/progress-32.png") 5 3, progress;
+	--cursor-crosshair: url("../assets/cursors/scrapbook/crosshair-32.png") 16 16, crosshair;
+	--cursor-move: url("../assets/cursors/scrapbook/move-32.png") 16 16, move;
+	--cursor-not-allowed: url("../assets/cursors/scrapbook/not-allowed-32.png") 16 16, not-allowed;
+	--cursor-help: url("../assets/cursors/scrapbook/help-32.png") 5 3, help;
+	--cursor-grab: url("../assets/cursors/scrapbook/grab-32.png") 16 16, grab;
+	--cursor-grabbing: url("../assets/cursors/scrapbook/grabbing-32.png") 16 16, grabbing;
+	--cursor-ew-resize: url("../assets/cursors/scrapbook/ew-resize-32.png") 16 16, ew-resize;
+	--cursor-ns-resize: url("../assets/cursors/scrapbook/ns-resize-32.png") 16 16, ns-resize;
+	--cursor-nesw-resize: url("../assets/cursors/scrapbook/nesw-resize-32.png") 16 16, nesw-resize;
+	--cursor-nwse-resize: url("../assets/cursors/scrapbook/nwse-resize-32.png") 16 16, nwse-resize;
+}
+
+.theme-arcane {
+	--cursor-default: url("../assets/cursors/arcane/default-32.png") 5 3, default;
+	--cursor-pointer: url("../assets/cursors/arcane/pointer-32.png") 9 3, pointer;
+	--cursor-text: url("../assets/cursors/arcane/text-32.png") 16 16, text;
+	--cursor-wait: url("../assets/cursors/arcane/wait-32.png") 16 16, wait;
+	--cursor-progress: url("../assets/cursors/arcane/progress-32.png") 5 3, progress;
+	--cursor-crosshair: url("../assets/cursors/arcane/crosshair-32.png") 16 16, crosshair;
+	--cursor-move: url("../assets/cursors/arcane/move-32.png") 16 16, move;
+	--cursor-not-allowed: url("../assets/cursors/arcane/not-allowed-32.png") 16 16, not-allowed;
+	--cursor-help: url("../assets/cursors/arcane/help-32.png") 5 3, help;
+	--cursor-grab: url("../assets/cursors/arcane/grab-32.png") 16 16, grab;
+	--cursor-grabbing: url("../assets/cursors/arcane/grabbing-32.png") 16 16, grabbing;
+	--cursor-ew-resize: url("../assets/cursors/arcane/ew-resize-32.png") 16 16, ew-resize;
+	--cursor-ns-resize: url("../assets/cursors/arcane/ns-resize-32.png") 16 16, ns-resize;
+	--cursor-nesw-resize: url("../assets/cursors/arcane/nesw-resize-32.png") 16 16, nesw-resize;
+	--cursor-nwse-resize: url("../assets/cursors/arcane/nwse-resize-32.png") 16 16, nwse-resize;
+}
+
+:root,
+.theme-scrapbook,
+.theme-arcane {
+	--cursor-zoom-in: url("../assets/cursors/scrapbook/zoom-in-32.png") 16 16, zoom-in;
+	--cursor-zoom-out: url("../assets/cursors/scrapbook/zoom-out-32.png") 16 16, zoom-out;
+}
+
+.theme-arcane {
+	--cursor-zoom-in: url("../assets/cursors/arcane/zoom-in-32.png") 16 16, zoom-in;
+	--cursor-zoom-out: url("../assets/cursors/arcane/zoom-out-32.png") 16 16, zoom-out;
+}
+
+@media (pointer: fine) {
+	.theme-scrapbook,
+	.theme-arcane {
+		cursor: var(--cursor-default);
+	}
+
+	:is(.theme-scrapbook, .theme-arcane)
+		:is(
+			a[href],
+			button,
+			summary,
+			select,
+			label[for],
+			[role="button"],
+			[role="link"],
+			[role="tab"],
+			[role="menuitem"],
+			[role="option"],
+			input[type="checkbox"],
+			input[type="radio"],
+			input[type="range"],
+			input[type="color"],
+			input[type="file"],
+			input[type="button"],
+			input[type="submit"],
+			input[type="reset"],
+			[data-cursor="pointer"],
+			.cursor-pointer
+		) {
+		cursor: var(--cursor-pointer);
+	}
+
+	:is(.theme-scrapbook, .theme-arcane) :is(.cursor-default, [data-cursor="default"]) {
+		cursor: var(--cursor-default);
+	}
+
+	:is(.theme-scrapbook, .theme-arcane) :is(.cursor-zoom-in, [data-cursor="zoom-in"]) {
+		cursor: var(--cursor-zoom-in);
+	}
+
+	:is(.theme-scrapbook, .theme-arcane) :is(.cursor-zoom-out, [data-cursor="zoom-out"]) {
+		cursor: var(--cursor-zoom-out);
+	}
+
+	:is(.theme-scrapbook, .theme-arcane)
+		:is(
+			input:not([type="button"]):not([type="submit"]):not([type="reset"]):not(
+					[type="checkbox"]
+				):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+			textarea,
+			[contenteditable="true"]
+		) {
+		cursor: var(--cursor-text);
+	}
+
+	/* textarea 右下角的原生缩放手柄独立于文本输入区域。 */
+	:is(.theme-scrapbook, .theme-arcane) textarea::-webkit-resizer {
+		cursor: var(--cursor-nwse-resize) !important;
+	}
+
+	:is(.theme-scrapbook, .theme-arcane) :is([data-cursor="crosshair"], .cursor-crosshair) {
+		cursor: var(--cursor-crosshair);
+	}
+	:is(.theme-scrapbook, .theme-arcane) :is([data-cursor="move"], .cursor-move) {
+		cursor: var(--cursor-move);
+	}
+	:is(.theme-scrapbook, .theme-arcane) :is([data-cursor="help"], .cursor-help) {
+		cursor: var(--cursor-help);
+	}
+	:is(.theme-scrapbook, .theme-arcane) :is([draggable="true"], [data-cursor="grab"], .cursor-grab) {
+		cursor: var(--cursor-grab);
+	}
+	:is(.theme-scrapbook, .theme-arcane)
+		:is([data-dragging="true"], [data-cursor="grabbing"], .cursor-grabbing) {
+		cursor: var(--cursor-grabbing);
+	}
+	:is(.theme-scrapbook, .theme-arcane) :is([data-cursor="progress"], .cursor-progress) {
+		cursor: var(--cursor-progress);
+	}
+
+	:is(.theme-scrapbook, .theme-arcane)
+		:is(
+			[data-cursor="ew-resize"],
+			[data-cursor="e-resize"],
+			[data-cursor="w-resize"],
+			.cursor-ew-resize,
+			.cursor-e-resize,
+			.cursor-w-resize
+		) {
+		cursor: var(--cursor-ew-resize);
+	}
+	:is(.theme-scrapbook, .theme-arcane)
+		:is(
+			[data-cursor="ns-resize"],
+			[data-cursor="n-resize"],
+			[data-cursor="s-resize"],
+			.cursor-ns-resize,
+			.cursor-n-resize,
+			.cursor-s-resize
+		) {
+		cursor: var(--cursor-ns-resize);
+	}
+	:is(.theme-scrapbook, .theme-arcane)
+		:is(
+			[data-cursor="nesw-resize"],
+			[data-cursor="ne-resize"],
+			[data-cursor="sw-resize"],
+			.cursor-nesw-resize,
+			.cursor-ne-resize,
+			.cursor-sw-resize
+		) {
+		cursor: var(--cursor-nesw-resize);
+	}
+	:is(.theme-scrapbook, .theme-arcane)
+		:is(
+			[data-cursor="nwse-resize"],
+			[data-cursor="nw-resize"],
+			[data-cursor="se-resize"],
+			.cursor-nwse-resize,
+			.cursor-nw-resize,
+			.cursor-se-resize
+		) {
+		cursor: var(--cursor-nwse-resize);
+	}
+
+	/* 禁用规则必须覆盖按钮自身 hover、工具类以及内部图标/文字的光标。 */
+	:is(.theme-scrapbook, .theme-arcane)
+		:is(
+			button:disabled,
+			input:disabled,
+			textarea:disabled,
+			select:disabled,
+			:disabled,
+			[aria-disabled="true"],
+			[data-disabled],
+			[data-disabled="true"],
+			[data-cursor="not-allowed"],
+			.cursor-not-allowed
+		),
+	:is(.theme-scrapbook, .theme-arcane)
+		:is(
+			:disabled,
+			[aria-disabled="true"],
+			[data-disabled],
+			[data-disabled="true"],
+			.cursor-not-allowed
+		)
+		:is(*, *:hover),
+	:is(.theme-scrapbook, .theme-arcane) .peer:disabled ~ * {
+		cursor: var(--cursor-not-allowed) !important;
+	}
+
+	/* pointer-events:none 会让浏览器命中底层元素，从而显示错误的光标。 */
+	:is(.theme-scrapbook, .theme-arcane)
+		:is(
+			button:disabled,
+			:disabled,
+			[aria-disabled="true"],
+			[data-disabled],
+			[data-disabled="true"],
+			.cursor-not-allowed
+		) {
+		pointer-events: auto !important;
+	}
+
+	:is(.theme-scrapbook, .theme-arcane) .cursor-grab:active {
+		cursor: var(--cursor-grabbing);
+	}
+
+	:is(.theme-scrapbook, .theme-arcane) :is([aria-busy="true"], [data-cursor="wait"], .cursor-wait),
+	:is(.theme-scrapbook, .theme-arcane) [aria-busy="true"] * {
+		cursor: var(--cursor-wait);
+	}
+}

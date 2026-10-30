@@ -4,22 +4,23 @@
  * - 背景/角饰：仅平面线稿 / 剪影 SVG（Wikimedia PD/CC0/CC BY），各素材全站至多出现一次；
  *   禁止 Fluent Emoji 3D / 茶壶 / 小天使。
  */
-import antiqueKeyImg from '@/assets/decor/antique-key.svg'
-import compassImg from '@/assets/decor/compass-rose.svg'
-import doveOliveImg from '@/assets/decor/dove-olive.svg'
-import fleurImg from '@/assets/decor/fleur-de-lis.svg'
 import floral1913Img from '@/assets/decor/floral-1913.svg'
-import floralLilienImg from '@/assets/decor/floral-lilien.svg'
-import floralRoundImg from '@/assets/decor/floral-round.svg'
-import floralSecessionImg from '@/assets/decor/floral-secession.svg'
-import flowerPsfImg from '@/assets/decor/flower-psf.svg'
 import gothicArchImg from '@/assets/decor/gothic-arch.svg'
-import inkwellImg from '@/assets/decor/inkwell-pen.svg'
 import columnImg from '@/assets/decor/ionic-column.svg'
-import lanternImg from '@/assets/decor/lantern.svg'
-import watchImg from '@/assets/decor/pocket-watch.svg'
-import scissorsImg from '@/assets/decor/scissors-psf.svg'
-import waxSealImg from '@/assets/decor/wax-seal.svg'
+import flowerPsfImg from '@/assets/decor/stationery-stickers/01-00-iris.png'
+import waxSealImg from '@/assets/decor/stationery-stickers/01-02-wax-seal.png'
+import floralSecessionImg from '@/assets/decor/stationery-stickers/01-05-postcard.png'
+import doveOliveImg from '@/assets/decor/stationery-stickers/01-06-paper-plane.png'
+import scissorsImg from '@/assets/decor/stationery-stickers/01-08-binder-clip.png'
+import floralRoundImg from '@/assets/decor/stationery-stickers/01-11-lace-doily.png'
+import inkwellImg from '@/assets/decor/stationery-stickers/01-13-inkwell.png'
+import antiqueKeyImg from '@/assets/decor/stationery-stickers/01-14-brass-key.png'
+import watchImg from '@/assets/decor/stationery-stickers/01-15-pocket-watch.png'
+import floralLilienImg from '@/assets/decor/stationery-stickers/01-16-lavender.png'
+import fleurImg from '@/assets/decor/stationery-stickers/01-18-bow.png'
+import compassImg from '@/assets/decor/stationery-stickers/02-07-blue-pocket-watch.png'
+import lanternImg from '@/assets/decor/stationery-stickers/02-16-candelabrum.png'
+import { dailyIndex, shanghaiDateKey } from '@/data/daily-greetings'
 import { cn } from '@/lib/utils'
 import {
 	BookOpenText,
@@ -32,7 +33,8 @@ import {
 	Toolbox,
 	UserCircle,
 } from '@phosphor-icons/react'
-import { type ImgHTMLAttributes, useId } from 'react'
+import type { ImgHTMLAttributes } from 'react'
+import { SCRAPBOOK_STICKERS } from './scrapbook-stickers'
 
 export type OrnamentIconProps = Omit<PhIconProps, 'ref'>
 type ImgProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'>
@@ -173,42 +175,20 @@ export function Lantern({ className, ...props }: ImgProps) {
 	return <Sticker src={srcOf(lanternImg)} className={className} {...props} />
 }
 
-/** 邮戳（自绘）— 仅门户问候卡 */
+/** 问候卡角贴：按上海时区日历日固定随机，同日刷新不变。 */
 export function Postmark({
 	className,
-	text = 'XIAOBUZI · PARIS · 1999',
-	date = '27',
-}: { className?: string; text?: string; date?: string }) {
-	const arcId = `rv-postmark-${useId().replace(/:/g, '')}`
+	text: _text,
+	date: _date,
+	...props
+}: ImgProps & { text?: string; date?: string }) {
+	const index = dailyIndex(`${shanghaiDateKey()}-postmark`, SCRAPBOOK_STICKERS.length)
 	return (
-		<svg viewBox="0 0 120 120" className={cn('rv-cutout-soft', className)} aria-hidden>
-			<defs>
-				<path id={arcId} d="M60 60m-42 0a42 42 0 1 1 84 0a42 42 0 1 1-84 0" />
-			</defs>
-			<g fill="none" stroke="#3b4a72" strokeWidth="1.6" opacity=".8">
-				<circle cx="60" cy="60" r="50" />
-				<circle cx="60" cy="60" r="34" />
-			</g>
-			<text
-				fontFamily="var(--font-label)"
-				fontSize="9"
-				letterSpacing="2.5"
-				fill="#3b4a72"
-				opacity=".85"
-			>
-				<textPath href={`#${arcId}`}>{text}</textPath>
-			</text>
-			<text
-				x="60"
-				y="68"
-				textAnchor="middle"
-				fontFamily="var(--font-display)"
-				fontSize="24"
-				fill="#3b4a72"
-				opacity=".85"
-			>
-				{date}
-			</text>
-		</svg>
+		<Sticker
+			src={SCRAPBOOK_STICKERS[index]}
+			className={cn('rv-cutout-soft', className)}
+			cutout={false}
+			{...props}
+		/>
 	)
 }
