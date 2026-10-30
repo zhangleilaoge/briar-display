@@ -16,8 +16,6 @@ function forms(text: string) {
 			const first = pinyin(ch, { pattern: 'first', toneType: 'none', type: 'array' })
 			fullParts.push(...full.map((s) => s.toLowerCase()))
 			initialParts.push(...first.map((s) => s.toLowerCase()))
-		} else if (/\s/.test(ch)) {
-			continue
 		} else {
 			const c = ch.toLowerCase()
 			fullParts.push(c)

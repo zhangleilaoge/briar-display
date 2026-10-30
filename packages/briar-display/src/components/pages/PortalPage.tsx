@@ -3,6 +3,7 @@
 import { useNavigate } from '@/components/common/SectionRouter'
 import UserMenu from '@/components/common/UserMenu'
 import { BinderPeel } from '@/components/portal/BinderPeel'
+import { DeployStatusLink } from '@/components/portal/DeployStatusLink'
 import { WidgetDesktop } from '@/components/portal/WidgetDesktop'
 import { useGreeting } from '@/components/portal/greetingStore'
 import { Card, CardContent } from '@/components/ui/card'
@@ -334,6 +335,7 @@ function PortalPageInner() {
 					loading ? <div className="h-4 w-16 animate-pulse rounded-control bg-muted" /> : undefined
 				}
 			/>
+			<DeployStatusLink />
 
 			{/* Main */}
 			<main className="rv-content-inset flex flex-1 items-center justify-center p-4 sm:p-6">

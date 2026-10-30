@@ -363,7 +363,7 @@ export const preferencesHandler: UserMergeHandler = {
 		if (!ctx.tables.has('user_preferences')) return { moved: 0, notes: [] }
 		const moved = await exec(
 			ctx.conn,
-			`UPDATE IGNORE user_preferences SET user_id = ? WHERE user_id = ?`,
+			'UPDATE IGNORE user_preferences SET user_id = ? WHERE user_id = ?',
 			[ctx.target.id, ctx.source.id],
 		)
 		const dropped = await exec(ctx.conn, 'DELETE FROM user_preferences WHERE user_id = ?', [
@@ -440,7 +440,7 @@ export const thoughtLikesHandler: UserMergeHandler = {
 		if (!ctx.tables.has('thought_likes')) return { moved: 0, notes: [] }
 		const moved = await exec(
 			ctx.conn,
-			`UPDATE IGNORE thought_likes SET user_id = ? WHERE user_id = ?`,
+			'UPDATE IGNORE thought_likes SET user_id = ? WHERE user_id = ?',
 			[ctx.target.id, ctx.source.id],
 		)
 		const dropped = await exec(ctx.conn, 'DELETE FROM thought_likes WHERE user_id = ?', [

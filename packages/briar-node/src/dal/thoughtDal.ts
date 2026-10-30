@@ -59,8 +59,8 @@ export const thoughtDal = {
 
 	async findById(id: string, viewerId?: string | null): Promise<ThoughtRecord | null> {
 		const likedExpr = viewerId
-			? `(SELECT COUNT(*) FROM thought_likes tl2 WHERE tl2.thought_id = t.id AND tl2.user_id = ?) AS liked_by_me`
-			: `0 AS liked_by_me`
+			? '(SELECT COUNT(*) FROM thought_likes tl2 WHERE tl2.thought_id = t.id AND tl2.user_id = ?) AS liked_by_me'
+			: '0 AS liked_by_me'
 		const params: unknown[] = viewerId ? [viewerId, id] : [id]
 		const row = await queryOne<ThoughtRow>(
 			`${SELECT_COLS}, ${likedExpr}
@@ -82,8 +82,8 @@ export const thoughtDal = {
 		const total = countRow?.cnt ?? 0
 		const offset = (params.page - 1) * params.pageSize
 		const likedExpr = params.viewerId
-			? `(SELECT COUNT(*) FROM thought_likes tl2 WHERE tl2.thought_id = t.id AND tl2.user_id = ?) AS liked_by_me`
-			: `0 AS liked_by_me`
+			? '(SELECT COUNT(*) FROM thought_likes tl2 WHERE tl2.thought_id = t.id AND tl2.user_id = ?) AS liked_by_me'
+			: '0 AS liked_by_me'
 		const sqlParams: unknown[] = params.viewerId
 			? [params.viewerId, params.pageSize, offset]
 			: [params.pageSize, offset]

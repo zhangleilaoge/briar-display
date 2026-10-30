@@ -1,10 +1,7 @@
 ---
 /** 旧博客文章 URL 一律跳到想法流 */
 export function getStaticPaths() {
-	return [
-		{ params: { slug: 'welcome' } },
-		{ params: { slug: 'why-blog' } },
-	]
+	return [{ params: { slug: 'welcome' } }, { params: { slug: 'why-blog' } }]
 }
 return Astro.redirect('/briar/thoughts/', 301)
 ---

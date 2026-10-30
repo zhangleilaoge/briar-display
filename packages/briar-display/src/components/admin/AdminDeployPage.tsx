@@ -32,8 +32,8 @@ import {
 	History,
 	Loader2,
 	RefreshCw,
-	RotateCcw,
 	Rocket,
+	RotateCcw,
 	Server,
 	ShieldCheck,
 } from 'lucide-react'
@@ -540,9 +540,7 @@ function AdminDeployPageInner() {
 																			return
 																		}
 																		toast.success(
-																			res.data?.cancelled
-																				? '已取消并重新排队'
-																				: '已触发重试',
+																			res.data?.cancelled ? '已取消并重新排队' : '已触发重试',
 																		)
 																		await fetchHistory()
 																	} catch (err) {

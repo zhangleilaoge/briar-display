@@ -1,4 +1,4 @@
-import { queryOne, execute } from '../lib/db'
+import { execute, queryOne } from '../lib/db'
 
 interface PrefRow {
 	pref_value: unknown

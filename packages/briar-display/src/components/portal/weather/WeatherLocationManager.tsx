@@ -85,7 +85,10 @@ export function WeatherLocationManager() {
 				</ul>
 			</section>
 
-			<Command shouldFilter={false} className="rv-wx-search border border-[color:var(--rv-navy)]/15">
+			<Command
+				shouldFilter={false}
+				className="rv-wx-search border border-[color:var(--rv-navy)]/15"
+			>
 				<CommandInput
 					value={query}
 					onValueChange={setQuery}

@@ -192,7 +192,6 @@ userRoutes.get('/me/merge-logs', async (c) => {
 	return c.json<ApiResponse>({ success: true, data })
 })
 
-
 const PREF_KEY_RE = /^[a-z][a-z0-9-]{0,63}$/
 
 /** GET /me/preferences/:key — 读当前用户偏好 */
@@ -223,7 +222,10 @@ userRoutes.put('/me/preferences/:key', async (c) => {
 	try {
 		value = await c.req.json()
 	} catch {
-		return c.json<ApiResponse>({ success: false, message: '请求体须为 JSON' }, HTTP_STATUS.BAD_REQUEST)
+		return c.json<ApiResponse>(
+			{ success: false, message: '请求体须为 JSON' },
+			HTTP_STATUS.BAD_REQUEST,
+		)
 	}
 	await userPreferenceDal.set(user.id, key, value)
 	return c.json<ApiResponse>({ success: true, data: { key, value } })
