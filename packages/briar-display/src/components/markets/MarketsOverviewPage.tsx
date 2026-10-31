@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import type { MarketOverviewItem, StockRef } from '@briar/shared'
 import { ChevronRight, Loader2, RefreshCw } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import Csi300EtfScaleCard from './Csi300EtfScaleCard'
 import FearGreedBoardCard from './FearGreedBoardCard'
 import MarketDetailDialog from './MarketDetailDialog'
@@ -14,6 +14,7 @@ import MarketsShell from './MarketsShell'
 import WatchlistCard from './WatchlistCard'
 import type { DetailView } from './dialogStack'
 import { formatShanghaiTime } from './marketUtils'
+import { parseStockDeepLink } from './stockDeepLink'
 import { unwrap, useMarketPolling } from './useMarketPolling'
 
 /** 各市场入口卡片里简述板块口径 */
@@ -57,12 +58,18 @@ function MarketCard({ item }: { item: MarketOverviewItem }) {
 
 export default function MarketsOverviewPage() {
 	const [detail, setDetail] = useState<DetailView | null>(null)
-	const openStock = (s: StockRef) =>
-		setDetail({
-			kind: 'stock',
-			market: s.market,
-			stock: { market: s.market, code: s.code, name: s.name, type: s.type },
-		})
+	const [focusTarget] = useState<StockRef | null>(() =>
+		typeof window === 'undefined' ? null : parseStockDeepLink(window.location.search),
+	)
+	const openStock = useCallback(
+		(s: StockRef) =>
+			setDetail({
+				kind: 'stock',
+				market: s.market,
+				stock: { market: s.market, code: s.code, name: s.name, type: s.type },
+			}),
+		[],
+	)
 	const { data, error, loading, refreshing, refresh } = useMarketPolling(
 		async () => unwrap(await getMarketOverview()),
 		(d) => Math.min(...d.markets.map((m) => m.session.pollMs)),
@@ -100,7 +107,7 @@ export default function MarketsOverviewPage() {
 				</div>
 			)}
 			<div className="mt-4">
-				<WatchlistCard onOpen={openStock} />
+				<WatchlistCard onOpen={openStock} focusTarget={focusTarget} />
 			</div>
 			<div className="mt-4">
 				<Csi300EtfScaleCard />

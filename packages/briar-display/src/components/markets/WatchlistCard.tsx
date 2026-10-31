@@ -226,9 +226,26 @@ function StockSearch({ onOpen }: { onOpen: (s: StockRef) => void }) {
 }
 
 /** 概览页「自选股」卡片：搜索 + 自选列表（与大盘同一套轮询节奏） */
-export default function WatchlistCard({ onOpen }: { onOpen: (s: StockRef) => void }) {
+export default function WatchlistCard({
+	onOpen,
+	focusTarget,
+}: {
+	onOpen: (s: StockRef) => void
+	focusTarget?: StockRef | null
+}) {
 	const watchlist = useWatchlist()
 	const refs = watchlist.items
+	useEffect(() => {
+		if (!focusTarget || !watchlist.ready) return
+		const element =
+			document.getElementById(`watchlist-${stockId(focusTarget)}`) ??
+			document.getElementById('watchlist-card')
+		if (!element) return
+		const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+		element.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
+		const timer = window.setTimeout(() => onOpen(focusTarget), reduceMotion ? 0 : 500)
+		return () => window.clearTimeout(timer)
+	}, [focusTarget, watchlist.ready, onOpen])
 	const idsKey = refs.map(stockId).join(',')
 	const { data, error, loading } = useMarketPolling(
 		async () => {
@@ -265,7 +282,7 @@ export default function WatchlistCard({ onOpen }: { onOpen: (s: StockRef) => voi
 	)
 
 	return (
-		<Card className="rv-tile glass rounded-2xl">
+		<Card id="watchlist-card" className="rv-tile glass rounded-2xl">
 			<CardContent className="space-y-3 p-4 sm:p-5">
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
@@ -304,6 +321,7 @@ export default function WatchlistCard({ onOpen }: { onOpen: (s: StockRef) => voi
 							return (
 								<div
 									key={stockId(item)}
+									id={`watchlist-${stockId(item)}`}
 									className="flex items-center gap-2 px-3 py-2 hover:bg-card/60"
 								>
 									<button

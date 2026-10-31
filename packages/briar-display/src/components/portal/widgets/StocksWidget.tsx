@@ -2,6 +2,7 @@
 
 import { getMarketChart, getStockQuotes } from '@/api/markets'
 import { changeColorClass, formatPct, formatPrice } from '@/components/markets/marketUtils'
+import { stockDeepLinkHref } from '@/components/markets/stockDeepLink'
 import { unwrap, useMarketPolling } from '@/components/markets/useMarketPolling'
 import { stockId } from '@/components/markets/watchlistOps'
 import { useWatchlist } from '@/components/markets/watchlistStore'
@@ -297,7 +298,11 @@ export function StocksWidget({
 							{quoteBody}
 						</div>
 					) : (
-						<a href="/briar/markets" draggable={false} className={shellClass}>
+						<a
+							href={current ? stockDeepLinkHref(current) : '/briar/markets'}
+							draggable={false}
+							className={shellClass}
+						>
 							{quoteBody}
 						</a>
 					)}
