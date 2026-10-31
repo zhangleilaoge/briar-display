@@ -100,7 +100,7 @@ build:
 
 # 构建前端并上传到 CDN
 build-cdn:
-	bun run build && bun run --filter @briar/node upload:cdn
+	bun run --filter @briar/node upload:assets && bun run build && bun run --filter @briar/node upload:cdn
 
 # 上传前端构建产物到 CDN
 upload-cdn:

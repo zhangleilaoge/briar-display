@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
+  disabled_at TIMESTAMP NULL DEFAULT NULL COMMENT '账号禁用时间（NULL 为正常，禁用时吊销全部登录 token）',
   email_active VARCHAR(255) GENERATED ALWAYS AS (IF(deleted_at IS NULL, email, NULL)) STORED COMMENT '未删除时=email，删除后为 NULL（唯一约束只作用于未删除用户）',
 
   UNIQUE KEY uk_email_active (email_active),
@@ -127,10 +128,10 @@ CREATE TABLE IF NOT EXISTS user_roles (
   FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户-角色关联表';
 
--- 初始化 4 级角色
+-- 初始化系统角色
 INSERT INTO roles (id, name, display_name, description, level, is_system) VALUES
   ('role-user', 'user', '普通用户', '可访问业务页面', 10, TRUE),
-  ('role-moderator', 'moderator', '管理员', '可访问业务页面，预留扩展管理能力', 50, TRUE),
+  ('role-moderator', 'moderator', '管理员', '可访问业务页面，可禁用或启用普通用户', 50, TRUE),
   ('role-admin', 'admin', '超级管理员', '拥有所有权限，可管理用户、角色和系统配置', 100, TRUE)
 ON DUPLICATE KEY UPDATE display_name=display_name;
 
@@ -144,6 +145,7 @@ INSERT INTO permissions (id, code, name, type, module) VALUES
   ('perm-admin-permission-manage', 'admin:permission:manage', '管理权限', 'api', 'admin'),
   ('perm-admin-user-manage', 'admin:user:manage', '管理用户', 'api', 'admin'),
   ('perm-admin-user-role-assign', 'admin:user-role:assign', '分配用户角色', 'api', 'admin'),
+  ('perm-admin-user-status', 'admin:user:status', '禁用或启用下级账号', 'api', 'admin'),
   ('perm-page-sql-console', 'page:sql-console', '访问 SQL 控制台', 'page', 'admin'),
   ('perm-admin-sql-execute', 'admin:sql:execute', '执行 SQL', 'api', 'admin'),
   ('perm-admin-deploy-manage', 'admin:deploy:manage', '应用部署与证书', 'api', 'admin'),
@@ -157,10 +159,11 @@ INSERT INTO role_permissions (role_id, permission_id)
 SELECT 'role-admin', id FROM permissions
 ON DUPLICATE KEY UPDATE role_id=role_id;
 
--- 管理员：业务页面访问（不含 admin:* 超级管理权限）
+-- 管理员：业务页面访问 + 禁用或启用更低等级账号
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT 'role-moderator', id FROM permissions WHERE code IN (
-  'page:business'
+  'page:business',
+  'admin:user:status'
 )
 ON DUPLICATE KEY UPDATE role_id=role_id;
 

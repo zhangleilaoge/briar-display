@@ -95,7 +95,7 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 | 角色 | 标识 | 权限范围 |
 | :--- | :--- | :--- |
 | 普通用户 | `user` | 访问业务页面（`page:business`） |
-| 管理员 | `moderator` | 预留（当前无额外权限） |
+| 管理员 | `moderator` | + 禁用/启用比自己等级低的账号（`admin:user:status`），无角色编辑/用户合并权限 |
 | 超级管理员 | `admin` | + 管理后台，自动放行所有检查 |
 
 前端使用 `useRequirePermission` hook 或 `<PermissionGuard>` 组件。
@@ -105,7 +105,8 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 **第一层：authMiddleware + routes.ts（谁能访问）**
 - `routes.ts` 中的 `API_UNRESTRICTED_PATHS` 控制哪些路径跳过 JWT 验证（如登录/注册）
 - `API_PUBLIC_PATHS` / `API_PUBLIC_PREFIXES` 控制 GET 请求的公开访问（如 `/api/version`）
-- 登录 token 校验走 `authService.verifyLoginToken`：JWT 签名 + 用户存在 + `users.token_version` 与 token 的 `tv` 一致（改密码自增，旧 token 立即失效）；带 `purpose` 的专用 token（设备令牌/隐私解锁）不能当登录态
+- 登录 token 校验走 `authService.verifyLoginToken`：JWT 签名 + 用户存在且未禁用 + `users.token_version` 与 token 的 `tv` 一致（改密码/禁用账号自增，旧 token 立即失效）；带 `purpose` 的专用 token（设备令牌/隐私解锁）不能当登录态
+- 密码与 Google 注册都在 `userDal.create` 的同一事务中分配 `user` 角色；账号禁用/启用由 `accountService` 按双方最高角色 `level` 校验，只允许操作更低等级账号且不能操作自己
 - 滑动续期：token 剩余有效期过半时响应头带 `x-auth-token` 新 token，前端 `request.ts` 拦截器就地替换 localStorage/cookie；本地 dev 跨端口靠 CORS `exposeHeaders` 暴露该头
 
 **第二层：apiWriteGuard + apiPermissions.ts（能做什么）**
@@ -125,7 +126,7 @@ RBAC 模型：`用户 → 角色 → 权限`（`user_roles` + `role_permissions`
 
 ## 部署
 
-`git push` 到 master/main → GitHub Actions 一条流水线：后端测试 → 构建前端 + 上传 CDN → rsync 到服务器 `web/` → SSH 调 `deploy.sh`（build shared+node、migrate、PM2 重启）→ 健康检查 `/api/version`。
+`git push` 到 master/main → GitHub Actions 一条流水线：后端测试 → 上传 `src/assets` 图片到 COS + 构建前端 + 上传 CDN → rsync 到服务器 `web/` → SSH 调 `deploy.sh`（build shared+node、migrate、PM2 重启）→ 健康检查 `/api/version`。
 
 | 修改内容 | 执行 |
 | :--- | :--- |

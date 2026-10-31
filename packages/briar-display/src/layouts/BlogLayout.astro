@@ -4,8 +4,8 @@ import '../styles/theme.css'
 import '../styles/cursors.css'
 import '../styles/fonts'
 import '../styles/blog.css'
-import floralSecession from '../assets/decor/stationery-stickers/01-05-postcard.png'
 import { RibbonSidebar } from '../components/ui/ribbon-sidebar'
+import { assetUrl } from '../lib/assets'
 
 interface Props {
 	title?: string
@@ -29,7 +29,7 @@ const { title = '博客', description } = Astro.props
 		<RibbonSidebar client:load currentPath={Astro.url.pathname} />
 		<div aria-hidden class="rv-blog-decor pointer-events-none fixed inset-0 -z-10 overflow-hidden">
 			<span class="rv-watermark-num absolute -left-4 top-8 text-[10rem] opacity-35 md:left-4 md:text-[12rem]">04</span>
-			<img src={floralSecession.src ?? floralSecession} alt="" class="rv-cutout absolute bottom-10 right-8 hidden h-28 w-auto opacity-[0.14] xl:block" />
+			<img src={assetUrl('decor/stationery-stickers/01-05-postcard.png')} alt="" class="rv-cutout absolute bottom-10 right-8 hidden h-28 w-auto opacity-[0.14] xl:block" />
 		</div>
 		<div>
 			<slot />

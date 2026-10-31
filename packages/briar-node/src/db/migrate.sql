@@ -98,3 +98,13 @@ SET @s = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA 
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 UPDATE deploy_runs SET start_notified_at = COALESCE(start_notified_at, NOW()), fail_notified_at = COALESCE(fail_notified_at, NOW())
 WHERE start_notified_at IS NULL OR fail_notified_at IS NULL;
+
+-- 5) 账号禁用 + 为没有任何有效角色的存量用户补普通用户角色
+SET @s = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'disabled_at') = 0,
+  'ALTER TABLE users ADD COLUMN disabled_at TIMESTAMP NULL DEFAULT NULL COMMENT ''账号禁用时间（NULL 为正常，禁用时吊销全部登录 token）'' AFTER deleted_at', 'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+INSERT INTO user_roles (user_id, role_id)
+SELECT u.id, 'role-user' FROM users u
+WHERE u.deleted_at IS NULL
+  AND NOT EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.deleted_at IS NULL)
+ON DUPLICATE KEY UPDATE deleted_at = NULL;

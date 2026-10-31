@@ -14,6 +14,7 @@
 		"generate:csi300-etf-scale": "tsx scripts/generate-csi300-etf-scale.ts",
 		"test": "bun test",
 		"upload:cdn": "tsx scripts/upload-cdn.ts",
+		"upload:assets": "tsx scripts/upload-static-assets.ts",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {

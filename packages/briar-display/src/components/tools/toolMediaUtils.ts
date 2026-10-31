@@ -1,10 +1,5 @@
 import { getApiBaseUrl } from '@/api/request'
-import bilibiliIcon from '@/assets/platforms/bilibili.png'
-import douyinIcon from '@/assets/platforms/douyin.png'
-import pornhubIcon from '@/assets/platforms/pornhub.png'
-import wechatIcon from '@/assets/platforms/wechat.png'
-import xIcon from '@/assets/platforms/x.png'
-import xiaohongshuIcon from '@/assets/platforms/xiaohongshu.png'
+import { assetUrl } from '@/lib/assets'
 import { toArrayBuffer } from '@/lib/binary'
 import type { MediaParseResult } from '@briar/shared'
 
@@ -80,16 +75,14 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 export const platformLabel = (platform: string) => PLATFORM_LABELS[platform] || platform
 
-const PLATFORM_ICONS: Record<string, string> = {
-	xiaohongshu: xiaohongshuIcon.src,
-	douyin: douyinIcon.src,
-	wechat: wechatIcon.src,
-	x: xIcon.src,
-	bilibili: bilibiliIcon.src,
-	pornhub: pornhubIcon.src,
-}
+const PLATFORM_ICONS: Record<string, string> = Object.fromEntries(
+	['xiaohongshu', 'douyin', 'wechat', 'x', 'bilibili', 'pornhub'].map((name) => [
+		name,
+		assetUrl(`platforms/${name}.png`),
+	]),
+)
 
-/** 平台 favicon（取自官网 favicon，本地资源避免跨域/防盗链问题） */
+/** 平台 favicon（取自官网 favicon，托管在站点对象存储） */
 export const platformIcon = (platform: string) => PLATFORM_ICONS[platform]
 
 /** 从链接推断平台（历史记录未存平台字段，按 URL 推导） */

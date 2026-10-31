@@ -4,23 +4,8 @@
  * - 背景/角饰：仅平面线稿 / 剪影 SVG（Wikimedia PD/CC0/CC BY），各素材全站至多出现一次；
  *   禁止 Fluent Emoji 3D / 茶壶 / 小天使。
  */
-import floral1913Img from '@/assets/decor/floral-1913.svg'
-import gothicArchImg from '@/assets/decor/gothic-arch.svg'
-import columnImg from '@/assets/decor/ionic-column.svg'
-import flowerPsfImg from '@/assets/decor/stationery-stickers/01-00-iris.png'
-import waxSealImg from '@/assets/decor/stationery-stickers/01-02-wax-seal.png'
-import floralSecessionImg from '@/assets/decor/stationery-stickers/01-05-postcard.png'
-import doveOliveImg from '@/assets/decor/stationery-stickers/01-06-paper-plane.png'
-import scissorsImg from '@/assets/decor/stationery-stickers/01-08-binder-clip.png'
-import floralRoundImg from '@/assets/decor/stationery-stickers/01-11-lace-doily.png'
-import inkwellImg from '@/assets/decor/stationery-stickers/01-13-inkwell.png'
-import antiqueKeyImg from '@/assets/decor/stationery-stickers/01-14-brass-key.png'
-import watchImg from '@/assets/decor/stationery-stickers/01-15-pocket-watch.png'
-import floralLilienImg from '@/assets/decor/stationery-stickers/01-16-lavender.png'
-import fleurImg from '@/assets/decor/stationery-stickers/01-18-bow.png'
-import compassImg from '@/assets/decor/stationery-stickers/02-07-blue-pocket-watch.png'
-import lanternImg from '@/assets/decor/stationery-stickers/02-16-candelabrum.png'
 import { dailyIndex, shanghaiDateKey } from '@/data/daily-greetings'
+import { assetUrl } from '@/lib/assets'
 import { cn } from '@/lib/utils'
 import {
 	BookOpenText,
@@ -39,8 +24,25 @@ import { SCRAPBOOK_STICKERS } from './scrapbook-stickers'
 export type OrnamentIconProps = Omit<PhIconProps, 'ref'>
 type ImgProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'>
 
-function srcOf(m: string | { src: string }): string {
-	return typeof m === 'string' ? m : m.src
+const floral1913Img = assetUrl('decor/floral-1913.svg')
+const gothicArchImg = assetUrl('decor/gothic-arch.svg')
+const columnImg = assetUrl('decor/ionic-column.svg')
+const flowerPsfImg = assetUrl('decor/stationery-stickers/01-00-iris.png')
+const waxSealImg = assetUrl('decor/stationery-stickers/01-02-wax-seal.png')
+const floralSecessionImg = assetUrl('decor/stationery-stickers/01-05-postcard.png')
+const doveOliveImg = assetUrl('decor/stationery-stickers/01-06-paper-plane.png')
+const scissorsImg = assetUrl('decor/stationery-stickers/01-08-binder-clip.png')
+const floralRoundImg = assetUrl('decor/stationery-stickers/01-11-lace-doily.png')
+const inkwellImg = assetUrl('decor/stationery-stickers/01-13-inkwell.png')
+const antiqueKeyImg = assetUrl('decor/stationery-stickers/01-14-brass-key.png')
+const watchImg = assetUrl('decor/stationery-stickers/01-15-pocket-watch.png')
+const floralLilienImg = assetUrl('decor/stationery-stickers/01-16-lavender.png')
+const fleurImg = assetUrl('decor/stationery-stickers/01-18-bow.png')
+const compassImg = assetUrl('decor/stationery-stickers/02-07-blue-pocket-watch.png')
+const lanternImg = assetUrl('decor/stationery-stickers/02-16-candelabrum.png')
+
+function srcOf(src: string): string {
+	return src
 }
 
 /* ---------------- 导航小图标（Phosphor duotone） ---------------- */

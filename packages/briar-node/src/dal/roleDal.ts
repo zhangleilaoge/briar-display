@@ -6,6 +6,7 @@ export interface RoleRecord {
 	name: string
 	displayName: string
 	description: string | null
+	level: number
 	isSystem: boolean
 	createdAt: Date
 	updatedAt: Date
@@ -16,6 +17,7 @@ interface RoleRow {
 	name: string
 	display_name: string
 	description: string | null
+	level: number
 	is_system: boolean | number
 	created_at: Date
 	updated_at: Date
@@ -26,6 +28,7 @@ const mapRowToRecord = (row: RoleRow): RoleRecord => ({
 	name: row.name,
 	displayName: row.display_name,
 	description: row.description,
+	level: row.level,
 	isSystem: Boolean(row.is_system),
 	createdAt: row.created_at,
 	updatedAt: row.updated_at,
@@ -34,14 +37,14 @@ const mapRowToRecord = (row: RoleRow): RoleRecord => ({
 export const roleDal = {
 	async list(): Promise<RoleRecord[]> {
 		const rows = await query<RoleRow>(
-			'SELECT id, name, display_name, description, is_system, created_at, updated_at FROM roles WHERE deleted_at IS NULL ORDER BY created_at ASC',
+			'SELECT id, name, display_name, description, level, is_system, created_at, updated_at FROM roles WHERE deleted_at IS NULL ORDER BY created_at ASC',
 		)
 		return rows.map(mapRowToRecord)
 	},
 
 	async findById(id: string): Promise<RoleRecord | null> {
 		const row = await queryOne<RoleRow>(
-			'SELECT id, name, display_name, description, is_system, created_at, updated_at FROM roles WHERE id = ? AND deleted_at IS NULL',
+			'SELECT id, name, display_name, description, level, is_system, created_at, updated_at FROM roles WHERE id = ? AND deleted_at IS NULL',
 			[id],
 		)
 		return row ? mapRowToRecord(row) : null
@@ -49,7 +52,7 @@ export const roleDal = {
 
 	async findByName(name: string): Promise<RoleRecord | null> {
 		const row = await queryOne<RoleRow>(
-			'SELECT id, name, display_name, description, is_system, created_at, updated_at FROM roles WHERE name = ? AND deleted_at IS NULL',
+			'SELECT id, name, display_name, description, level, is_system, created_at, updated_at FROM roles WHERE name = ? AND deleted_at IS NULL',
 			[name],
 		)
 		return row ? mapRowToRecord(row) : null
@@ -59,7 +62,7 @@ export const roleDal = {
 		if (ids.length === 0) return []
 		const placeholders = ids.map(() => '?').join(', ')
 		const rows = await query<RoleRow>(
-			`SELECT id, name, display_name, description, is_system, created_at, updated_at FROM roles WHERE id IN (${placeholders}) AND deleted_at IS NULL`,
+			`SELECT id, name, display_name, description, level, is_system, created_at, updated_at FROM roles WHERE id IN (${placeholders}) AND deleted_at IS NULL`,
 			ids,
 		)
 		return rows.map(mapRowToRecord)

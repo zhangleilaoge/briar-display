@@ -19,6 +19,7 @@ import { useRequirePermission } from '@/hooks/useRequirePermission'
 import type { Role } from '@briar/shared'
 import { AlertCircle, Check, History, Loader2, Search, Shield, User, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import AccountStatusDialog, { type AccountStatusTarget } from './AccountStatusDialog'
 import AdminLayout from './AdminLayout'
 import AdminPagination from './AdminPagination'
 import MergeLogsDialog from './MergeLogsDialog'
@@ -28,8 +29,12 @@ interface UserWithRoles {
 	userId: string
 	userName: string
 	userEmail: string
+	disabledAt: string | null
 	roles: Role[]
 }
+
+const highestRoleLevel = (roles: Role[]) =>
+	roles.reduce((highest, role) => Math.max(highest, role.level), 0)
 
 const PAGE_SIZE = 20
 
@@ -46,7 +51,7 @@ function AdminUsersPageInner() {
 		loading: permLoading,
 		authorized,
 		denied,
-	} = useRequirePermission('admin:user-role:assign')
+	} = useRequirePermission(undefined, ['admin:user-role:assign', 'admin:user:status'])
 	const [users, setUsers] = useState<UserWithRoles[]>([])
 	const [allRoles, setAllRoles] = useState<Role[]>([])
 	const [loading, setLoading] = useState(true)
@@ -58,7 +63,15 @@ function AdminUsersPageInner() {
 	const [total, setTotal] = useState(0)
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-	const { isAdmin } = usePermissions()
+	const { isAdmin, hasPermission, roles: currentRoles, user: currentUser } = usePermissions()
+	const canAssignRoles = isAdmin || hasPermission('admin:user-role:assign')
+	const canChangeStatus = isAdmin || hasPermission('admin:user:status')
+	const currentLevel = highestRoleLevel(currentRoles)
+	const canChangeUserStatus = (user: UserWithRoles) =>
+		canChangeStatus &&
+		currentUser?.id !== user.userId &&
+		currentLevel > highestRoleLevel(user.roles)
+	const [statusTarget, setStatusTarget] = useState<AccountStatusTarget | null>(null)
 	const [mergeSource, setMergeSource] = useState<UserWithRoles | null>(null)
 	const [notice, setNotice] = useState<string | null>(null)
 	const [mergeLogsOpen, setMergeLogsOpen] = useState(false)
@@ -82,6 +95,7 @@ function AdminUsersPageInner() {
 	}, [])
 
 	useEffect(() => {
+		if (!authorized || !canAssignRoles) return
 		;(async () => {
 			try {
 				const rolesRes = await getRoles()
@@ -90,11 +104,12 @@ function AdminUsersPageInner() {
 				// ignore
 			}
 		})()
-	}, [])
+	}, [authorized, canAssignRoles])
 
 	useEffect(() => {
+		if (permLoading || !authorized) return
 		fetchUsers(keyword, page)
-	}, [keyword, page, fetchUsers])
+	}, [authorized, permLoading, keyword, page, fetchUsers])
 
 	const handleSearchChange = (value: string) => {
 		setSearch(value)
@@ -246,11 +261,12 @@ function AdminUsersPageInner() {
 									{users.map((user) => (
 										<TableRow key={user.userId}>
 											<TableCell>
-												<div className="flex items-center gap-2">
+												<div className="flex flex-wrap items-center gap-2">
 													<div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
 														<User className="h-4 w-4 text-muted-foreground" />
 													</div>
 													<span className="font-medium">{user.userName}</span>
+													{user.disabledAt && <Badge variant="destructive">已禁用</Badge>}
 												</div>
 											</TableCell>
 											<TableCell className="text-muted-foreground">{user.userEmail}</TableCell>
@@ -308,9 +324,24 @@ function AdminUsersPageInner() {
 													</div>
 												) : (
 													<div className="flex gap-1">
-														<Button size="sm" variant="default" onClick={() => startEditing(user)}>
-															编辑角色
-														</Button>
+														{canChangeUserStatus(user) && (
+															<Button
+																size="sm"
+																variant="ghost"
+																onClick={() => setStatusTarget(user)}
+															>
+																{user.disabledAt ? '启用' : '禁用'}
+															</Button>
+														)}
+														{canAssignRoles && (
+															<Button
+																size="sm"
+																variant="default"
+																onClick={() => startEditing(user)}
+															>
+																编辑角色
+															</Button>
+														)}
 														{isAdmin && (
 															<Button
 																size="sm"
@@ -345,6 +376,18 @@ function AdminUsersPageInner() {
 					)}
 				</CardContent>
 			</Card>
+			<AccountStatusDialog
+				target={statusTarget}
+				onOpenChange={(open) => !open && setStatusTarget(null)}
+				onChanged={(disabledAt) => {
+					if (!statusTarget) return
+					setUsers((items) =>
+						items.map((item) =>
+							item.userId === statusTarget.userId ? { ...item, disabledAt } : item,
+						),
+					)
+				}}
+			/>
 			<MergeLogsDialog open={mergeLogsOpen} onOpenChange={setMergeLogsOpen} />
 			<MergeUserDialog
 				source={mergeSource}

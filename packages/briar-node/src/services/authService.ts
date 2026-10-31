@@ -140,6 +140,7 @@ export const authService = {
 		if (!record) {
 			throw new Error('USER_NOT_FOUND')
 		}
+		if (record.disabledAt) throw new Error('ACCOUNT_DISABLED')
 
 		const match = await bcrypt.compare(password, record.passwordHash)
 		if (!match) {
@@ -152,9 +153,9 @@ export const authService = {
 	},
 
 	async sendPasswordResetCode(email: string) {
-		// 验证用户是否存在，不存在则静默返回（防止枚举攻击）
+		// 不存在或已禁用都静默返回，避免枚举账号状态，也不发送重置邮件
 		const user = await userDal.findByEmail(email)
-		if (!user) {
+		if (!user || user.disabledAt) {
 			return
 		}
 
@@ -185,6 +186,8 @@ export const authService = {
 		if (!user) {
 			throw new Error('USER_NOT_FOUND')
 		}
+
+		if (user.disabledAt) throw new Error('ACCOUNT_DISABLED')
 
 		// 验证验证码
 		const resetCode = await verificationCodeDal.findValidByTargetTypeAndCode(
@@ -231,8 +234,8 @@ export const authService = {
 	},
 
 	/**
-	 * 校验登录 token（JWT 签名 + 用户存在 + token_version 匹配）：
-	 * 改密码后旧 token 立即失效；带 purpose 的专用 token（设备令牌/隐私解锁）不能当登录态用
+	 * 校验登录 token（JWT 签名 + 用户存在且未禁用 + token_version 匹配）：
+	 * 改密码或禁用账号后旧 token 立即失效；带 purpose 的专用 token（设备令牌/隐私解锁）不能当登录态用
 	 */
 	async verifyLoginToken(
 		token: string,
@@ -245,7 +248,7 @@ export const authService = {
 		}
 		if (payload.purpose) return null
 		const user = await userDal.findById(payload.sub)
-		if (!user || (payload.tv ?? 0) !== user.tokenVersion) return null
+		if (!user || user.disabledAt || (payload.tv ?? 0) !== user.tokenVersion) return null
 		return { payload, user }
 	},
 
@@ -289,6 +292,12 @@ export const authService = {
 			emailVerified: profile.emailVerified,
 		})
 
+		if (
+			(decision.action === 'login' && record?.disabledAt) ||
+			(decision.action === 'link' && emailUser?.disabledAt)
+		) {
+			throw new Error('ACCOUNT_DISABLED')
+		}
 		if (decision.action === 'conflict') {
 			throw new Error('GOOGLE_EMAIL_CONFLICT')
 		}

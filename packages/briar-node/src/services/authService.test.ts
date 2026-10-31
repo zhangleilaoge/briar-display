@@ -17,6 +17,7 @@ const fakeUser = (overrides: Partial<UserRecord> = {}): UserRecord => ({
 	securityPasswordHash: null,
 	hasPassword: true,
 	tokenVersion: 3,
+	disabledAt: null,
 	createdAt: new Date(),
 	...overrides,
 })

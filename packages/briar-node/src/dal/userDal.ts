@@ -1,5 +1,6 @@
 import { generateId } from '@briar/shared'
-import { execute, query, queryOne } from '../lib/db'
+import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise'
+import { execute, query, queryOne, transaction } from '../lib/db'
 
 export interface UserRecord {
 	id: string
@@ -12,6 +13,7 @@ export interface UserRecord {
 	hasPassword: boolean
 	/** 令牌版本号：JWT tv 与其不一致即失效（改密码自增，吊销全部旧 token） */
 	tokenVersion: number
+	disabledAt: Date | null
 	createdAt: Date
 	updatedAt?: Date
 }
@@ -25,12 +27,13 @@ interface UserRow {
 	security_password_hash: string | null
 	has_password: number | null
 	token_version: number
+	disabled_at: Date | null
 	created_at: Date
 	updated_at: Date
 }
 
 const USER_COLUMNS =
-	'id, name, email, avatar, password_hash, has_password, security_password_hash, token_version, created_at, updated_at'
+	'id, name, email, avatar, password_hash, has_password, security_password_hash, token_version, disabled_at, created_at, updated_at'
 
 const mapRowToRecord = (row: UserRow): UserRecord => ({
 	id: row.id,
@@ -42,6 +45,7 @@ const mapRowToRecord = (row: UserRow): UserRecord => ({
 	hasPassword:
 		row.has_password === null || row.has_password === undefined ? true : !!row.has_password,
 	tokenVersion: row.token_version ?? 0,
+	disabledAt: row.disabled_at,
 	createdAt: row.created_at,
 	updatedAt: row.updated_at,
 })
@@ -77,7 +81,7 @@ export const userDal = {
 		const total = countRow?.cnt ?? 0
 
 		const rows = await query<UserRow>(
-			`SELECT u.id, u.name, u.email, u.avatar, u.password_hash, u.has_password, u.security_password_hash, u.token_version, u.created_at, u.updated_at
+			`SELECT u.id, u.name, u.email, u.avatar, u.password_hash, u.has_password, u.security_password_hash, u.token_version, u.disabled_at, u.created_at, u.updated_at
 			 FROM users u ${where} ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
 			[...values, params.limit, params.offset],
 		)
@@ -112,23 +116,33 @@ export const userDal = {
 	async create(
 		data: Omit<
 			UserRecord,
-			'id' | 'createdAt' | 'securityPasswordHash' | 'tokenVersion' | 'hasPassword'
+			'id' | 'createdAt' | 'securityPasswordHash' | 'tokenVersion' | 'hasPassword' | 'disabledAt'
 		> & {
 			hasPassword?: boolean
 		},
 	): Promise<UserRecord> {
 		const id = generateId()
-		await execute(
-			'INSERT INTO users (id, name, email, password_hash, has_password, avatar) VALUES (?, ?, ?, ?, ?, ?)',
-			[
-				id,
-				data.name,
-				data.email,
-				data.passwordHash,
-				data.hasPassword === false ? 0 : 1,
-				data.avatar ?? null,
-			],
-		)
+		await transaction(async (conn) => {
+			await conn.execute<ResultSetHeader>(
+				'INSERT INTO users (id, name, email, password_hash, has_password, avatar) VALUES (?, ?, ?, ?, ?, ?)',
+				[
+					id,
+					data.name,
+					data.email,
+					data.passwordHash,
+					data.hasPassword === false ? 0 : 1,
+					data.avatar ?? null,
+				],
+			)
+			const [roles] = await conn.execute<RowDataPacket[]>(
+				"SELECT id FROM roles WHERE name = 'user' AND deleted_at IS NULL",
+			)
+			if (!roles[0]) throw new Error('DEFAULT_ROLE_NOT_FOUND')
+			await conn.execute(
+				'INSERT INTO user_roles (user_id, role_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE deleted_at = NULL',
+				[id, roles[0].id],
+			)
+		})
 
 		const record = await userDal.findById(id)
 		if (!record) {

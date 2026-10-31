@@ -96,12 +96,26 @@ export const getUsers = async (params?: {
 	const qs = searchParams.toString()
 	const response = await apiClient.get<
 		ApiResponse<{
-			items: { userId: string; userName: string; userEmail: string; roles: Role[] }[]
+			items: {
+				userId: string
+				userName: string
+				userEmail: string
+				disabledAt: string | null
+				roles: Role[]
+			}[]
 			total: number
 			page: number
 			pageSize: number
 		}>
 	>(`/admin/users${qs ? `?${qs}` : ''}`)
+	return response.data
+}
+
+export const setUserStatus = async (userId: string, disabled: boolean) => {
+	const response = await apiClient.patch<ApiResponse<{ disabledAt: string | null }>>(
+		`/admin/users/${userId}/status`,
+		{ disabled },
+	)
 	return response.data
 }
 

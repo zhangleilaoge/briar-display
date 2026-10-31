@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 import { logDal } from '../dal/logDal'
 import { userMergeLogDal } from '../dal/userMergeLogDal'
 import { requirePermission } from '../middleware/permissionMiddleware'
+import { accountService } from '../services/accountService'
 import { permissionService } from '../services/permissionService'
 import { userMergeService, validateMerge } from '../services/userMergeService'
 
@@ -173,23 +174,66 @@ adminRoutes.delete(
 // ==================== 用户角色分配 ====================
 
 /** 获取所有用户及其角色（支持搜索+分页） */
-adminRoutes.get('/users', requirePermission(PERMISSIONS.ADMIN_USER_ROLE_ASSIGN), async (c) => {
-	const keyword = c.req.query('keyword') || undefined
-	const page = Math.max(1, Number(c.req.query('page')) || 1)
-	const pageSize = Math.min(100, Math.max(1, Number(c.req.query('pageSize')) || 20))
-	const offset = (page - 1) * pageSize
+adminRoutes.get(
+	'/users',
+	requirePermission([PERMISSIONS.ADMIN_USER_ROLE_ASSIGN, PERMISSIONS.ADMIN_USER_STATUS]),
+	async (c) => {
+		const keyword = c.req.query('keyword') || undefined
+		const page = Math.max(1, Number(c.req.query('page')) || 1)
+		const pageSize = Math.min(100, Math.max(1, Number(c.req.query('pageSize')) || 20))
+		const offset = (page - 1) * pageSize
 
-	const { items, total } = await permissionService.searchUsersWithRoles({
-		keyword,
-		limit: pageSize,
-		offset,
-	})
+		const { items, total } = await permissionService.searchUsersWithRoles({
+			keyword,
+			limit: pageSize,
+			offset,
+		})
 
-	return c.json<ApiResponse>({
-		success: true,
-		data: { items, total, page, pageSize },
-	})
-})
+		return c.json<ApiResponse>({
+			success: true,
+			data: { items, total, page, pageSize },
+		})
+	},
+)
+
+adminRoutes.patch(
+	'/users/:userId/status',
+	requirePermission(PERMISSIONS.ADMIN_USER_STATUS),
+	async (c) => {
+		const body = await c.req.json<{ disabled?: unknown }>().catch(() => null)
+		if (typeof body?.disabled !== 'boolean') {
+			return c.json<ApiResponse>(
+				{ success: false, message: 'disabled 必须是布尔值' },
+				HTTP_STATUS.BAD_REQUEST,
+			)
+		}
+		const operator = (c as any).get('user') as { id: string }
+		try {
+			const record = await accountService.setStatus(
+				operator.id,
+				c.req.param('userId'),
+				body.disabled,
+			)
+			return c.json<ApiResponse>({
+				success: true,
+				data: { disabledAt: record?.disabledAt ?? null },
+				message: body.disabled ? '账号已禁用' : '账号已启用',
+			})
+		} catch (error) {
+			const code = error instanceof Error ? error.message : ''
+			if (code === 'USER_NOT_FOUND') {
+				return c.json<ApiResponse>({ success: false, message: '用户不存在' }, HTTP_STATUS.NOT_FOUND)
+			}
+			if (code === 'ACCOUNT_STATUS_FORBIDDEN') {
+				return c.json<ApiResponse>(
+					{ success: false, message: '只能操作比自己等级低的账号，不能操作自己' },
+					HTTP_STATUS.FORBIDDEN,
+				)
+			}
+			throw error
+		}
+	},
+)
 
 /** 获取指定用户的角色 */
 adminRoutes.get(

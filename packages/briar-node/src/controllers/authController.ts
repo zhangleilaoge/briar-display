@@ -25,6 +25,7 @@ const GOOGLE_ERRORS: Record<string, [number, string]> = {
 		'Google 是你唯一的登录方式，请先通过「忘记密码」设置登录密码再解绑',
 	],
 	USER_NOT_FOUND: [HTTP_STATUS.NOT_FOUND, '用户不存在'],
+	ACCOUNT_DISABLED: [HTTP_STATUS.FORBIDDEN, '账号已被禁用，请联系管理员'],
 }
 
 const googleErrorResponse = (c: Context, err: unknown, fallback: string) => {
@@ -34,7 +35,7 @@ const googleErrorResponse = (c: Context, err: unknown, fallback: string) => {
 	const [status, message] = known ?? [HTTP_STATUS.INTERNAL_SERVER_ERROR, `${fallback}，请稍后再试`]
 	return c.json<ApiResponse>(
 		{ success: false, message, code: status },
-		status as 400 | 401 | 404 | 409 | 500,
+		status as 400 | 401 | 403 | 404 | 409 | 500,
 	)
 }
 
@@ -112,20 +113,24 @@ export const authController = {
 			})
 		} catch (error) {
 			let message = '登录失败，请稍后再试'
+			let status: number = HTTP_STATUS.UNAUTHORIZED
 			if (error instanceof Error) {
 				if (error.message === 'USER_NOT_FOUND') {
 					message = '该邮箱尚未注册'
 				} else if (error.message === 'INVALID_PASSWORD') {
 					message = '密码错误，请重新输入'
+				} else if (error.message === 'ACCOUNT_DISABLED') {
+					message = '账号已被禁用，请联系管理员'
+					status = HTTP_STATUS.FORBIDDEN
 				}
 			}
 			return c.json<ApiResponse>(
 				{
 					success: false,
 					message,
-					code: HTTP_STATUS.UNAUTHORIZED,
+					code: status,
 				},
-				HTTP_STATUS.UNAUTHORIZED,
+				status as 401 | 403,
 			)
 		}
 	},
@@ -196,6 +201,9 @@ export const authController = {
 				} else if (error.message === 'USER_NOT_FOUND') {
 					message = 'User not found'
 					statusCode = HTTP_STATUS.NOT_FOUND
+				} else if (error.message === 'ACCOUNT_DISABLED') {
+					message = '账号已被禁用，请联系管理员'
+					statusCode = HTTP_STATUS.FORBIDDEN
 				}
 			}
 

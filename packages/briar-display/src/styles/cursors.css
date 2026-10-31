@@ -2,51 +2,85 @@
 :root,
 .theme-scrapbook,
 .theme-arcane {
-	--cursor-default: url("../assets/cursors/scrapbook/default-32.png") 5 3, default;
-	--cursor-pointer: url("../assets/cursors/scrapbook/pointer-32.png") 9 3, pointer;
-	--cursor-text: url("../assets/cursors/scrapbook/text-32.png") 16 16, text;
-	--cursor-wait: url("../assets/cursors/scrapbook/wait-32.png") 16 16, wait;
-	--cursor-progress: url("../assets/cursors/scrapbook/progress-32.png") 5 3, progress;
-	--cursor-crosshair: url("../assets/cursors/scrapbook/crosshair-32.png") 16 16, crosshair;
-	--cursor-move: url("../assets/cursors/scrapbook/move-32.png") 16 16, move;
-	--cursor-not-allowed: url("../assets/cursors/scrapbook/not-allowed-32.png") 16 16, not-allowed;
-	--cursor-help: url("../assets/cursors/scrapbook/help-32.png") 5 3, help;
-	--cursor-grab: url("../assets/cursors/scrapbook/grab-32.png") 16 16, grab;
-	--cursor-grabbing: url("../assets/cursors/scrapbook/grabbing-32.png") 16 16, grabbing;
-	--cursor-ew-resize: url("../assets/cursors/scrapbook/ew-resize-32.png") 16 16, ew-resize;
-	--cursor-ns-resize: url("../assets/cursors/scrapbook/ns-resize-32.png") 16 16, ns-resize;
-	--cursor-nesw-resize: url("../assets/cursors/scrapbook/nesw-resize-32.png") 16 16, nesw-resize;
-	--cursor-nwse-resize: url("../assets/cursors/scrapbook/nwse-resize-32.png") 16 16, nwse-resize;
+	--cursor-default: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/default-32.png")
+		5 3, default;
+	--cursor-pointer: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/pointer-32.png")
+		9 3, pointer;
+	--cursor-text: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/text-32.png")
+		16 16, text;
+	--cursor-wait: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/wait-32.png")
+		16 16, wait;
+	--cursor-progress: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/progress-32.png")
+		5 3, progress;
+	--cursor-crosshair: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/crosshair-32.png")
+		16 16, crosshair;
+	--cursor-move: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/move-32.png")
+		16 16, move;
+	--cursor-not-allowed: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/not-allowed-32.png")
+		16 16, not-allowed;
+	--cursor-help: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/help-32.png")
+		5 3, help;
+	--cursor-grab: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/grab-32.png")
+		16 16, grab;
+	--cursor-grabbing: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/grabbing-32.png")
+		16 16, grabbing;
+	--cursor-ew-resize: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/ew-resize-32.png")
+		16 16, ew-resize;
+	--cursor-ns-resize: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/ns-resize-32.png")
+		16 16, ns-resize;
+	--cursor-nesw-resize: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/nesw-resize-32.png")
+		16 16, nesw-resize;
+	--cursor-nwse-resize: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/nwse-resize-32.png")
+		16 16, nwse-resize;
 }
 
 .theme-arcane {
-	--cursor-default: url("../assets/cursors/arcane/default-32.png") 5 3, default;
-	--cursor-pointer: url("../assets/cursors/arcane/pointer-32.png") 9 3, pointer;
-	--cursor-text: url("../assets/cursors/arcane/text-32.png") 16 16, text;
-	--cursor-wait: url("../assets/cursors/arcane/wait-32.png") 16 16, wait;
-	--cursor-progress: url("../assets/cursors/arcane/progress-32.png") 5 3, progress;
-	--cursor-crosshair: url("../assets/cursors/arcane/crosshair-32.png") 16 16, crosshair;
-	--cursor-move: url("../assets/cursors/arcane/move-32.png") 16 16, move;
-	--cursor-not-allowed: url("../assets/cursors/arcane/not-allowed-32.png") 16 16, not-allowed;
-	--cursor-help: url("../assets/cursors/arcane/help-32.png") 5 3, help;
-	--cursor-grab: url("../assets/cursors/arcane/grab-32.png") 16 16, grab;
-	--cursor-grabbing: url("../assets/cursors/arcane/grabbing-32.png") 16 16, grabbing;
-	--cursor-ew-resize: url("../assets/cursors/arcane/ew-resize-32.png") 16 16, ew-resize;
-	--cursor-ns-resize: url("../assets/cursors/arcane/ns-resize-32.png") 16 16, ns-resize;
-	--cursor-nesw-resize: url("../assets/cursors/arcane/nesw-resize-32.png") 16 16, nesw-resize;
-	--cursor-nwse-resize: url("../assets/cursors/arcane/nwse-resize-32.png") 16 16, nwse-resize;
+	--cursor-default: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/default-32.png")
+		5 3, default;
+	--cursor-pointer: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/pointer-32.png")
+		9 3, pointer;
+	--cursor-text: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/text-32.png")
+		16 16, text;
+	--cursor-wait: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/wait-32.png")
+		16 16, wait;
+	--cursor-progress: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/progress-32.png")
+		5 3, progress;
+	--cursor-crosshair: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/crosshair-32.png")
+		16 16, crosshair;
+	--cursor-move: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/move-32.png")
+		16 16, move;
+	--cursor-not-allowed: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/not-allowed-32.png")
+		16 16, not-allowed;
+	--cursor-help: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/help-32.png")
+		5 3, help;
+	--cursor-grab: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/grab-32.png")
+		16 16, grab;
+	--cursor-grabbing: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/grabbing-32.png")
+		16 16, grabbing;
+	--cursor-ew-resize: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/ew-resize-32.png")
+		16 16, ew-resize;
+	--cursor-ns-resize: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/ns-resize-32.png")
+		16 16, ns-resize;
+	--cursor-nesw-resize: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/nesw-resize-32.png")
+		16 16, nesw-resize;
+	--cursor-nwse-resize: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/nwse-resize-32.png")
+		16 16, nwse-resize;
 }
 
 :root,
 .theme-scrapbook,
 .theme-arcane {
-	--cursor-zoom-in: url("../assets/cursors/scrapbook/zoom-in-32.png") 16 16, zoom-in;
-	--cursor-zoom-out: url("../assets/cursors/scrapbook/zoom-out-32.png") 16 16, zoom-out;
+	--cursor-zoom-in: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/zoom-in-32.png")
+		16 16, zoom-in;
+	--cursor-zoom-out: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/scrapbook/zoom-out-32.png")
+		16 16, zoom-out;
 }
 
 .theme-arcane {
-	--cursor-zoom-in: url("../assets/cursors/arcane/zoom-in-32.png") 16 16, zoom-in;
-	--cursor-zoom-out: url("../assets/cursors/arcane/zoom-out-32.png") 16 16, zoom-out;
+	--cursor-zoom-in: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/zoom-in-32.png")
+		16 16, zoom-in;
+	--cursor-zoom-out: url("https://briar-shanghai-1309736035.cos.ap-shanghai.myqcloud.com/static/assets/cursors/arcane/zoom-out-32.png")
+		16 16, zoom-out;
 }
 
 @media (pointer: fine) {
@@ -224,24 +258,15 @@
 	}
 }
 
-.rv-textarea-resizer::before,
-.rv-textarea-resizer::after {
+.rv-textarea-resizer::before {
 	content: "";
 	position: absolute;
-	right: 3px;
-	bottom: 3px;
-	width: 7px;
-	height: 7px;
-	border-right: 1px solid currentColor;
-	border-bottom: 1px solid currentColor;
-	transform: rotate(-45deg);
-	transform-origin: center;
+	right: 2px;
+	bottom: 2px;
+	width: 12px;
+	height: 12px;
+	background: currentColor;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M1 11L11 1M5 11L11 5M9 11L11 9' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E")
+		center / 12px 12px no-repeat;
 	pointer-events: none;
-}
-
-.rv-textarea-resizer::after {
-	right: 6px;
-	bottom: 6px;
-	width: 4px;
-	height: 4px;
 }

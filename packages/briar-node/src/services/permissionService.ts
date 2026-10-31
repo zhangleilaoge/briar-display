@@ -37,6 +37,7 @@ const toRole = (r: RoleRecord): Role => ({
 	name: r.name,
 	displayName: r.displayName,
 	description: r.description ?? undefined,
+	level: r.level,
 	isSystem: r.isSystem,
 	createdAt: r.createdAt,
 })
@@ -333,7 +334,13 @@ export const permissionService = {
 		limit: number
 		offset: number
 	}): Promise<{
-		items: { userId: string; userName: string; userEmail: string; roles: Role[] }[]
+		items: {
+			userId: string
+			userName: string
+			userEmail: string
+			disabledAt: Date | null
+			roles: Role[]
+		}[]
 		total: number
 	}> {
 		const { rows: users, total } = await userDal.search(params)
@@ -359,6 +366,7 @@ export const permissionService = {
 				userId: user.id,
 				userName: user.name,
 				userEmail: user.email,
+				disabledAt: user.disabledAt,
 				roles: info
 					? info.roles
 							.map((r) => roleMap.get(r.roleId))

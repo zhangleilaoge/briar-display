@@ -63,6 +63,7 @@ export interface Role {
 	name: string
 	displayName: string
 	description?: string
+	level: number
 	isSystem: boolean
 	createdAt: Date
 }

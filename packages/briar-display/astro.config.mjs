@@ -1,4 +1,6 @@
+import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
+import { parseEnv } from 'util'
 import react from '@astrojs/react'
 import tailwind from '@astrojs/tailwind'
 import vue from '@astrojs/vue'
@@ -35,6 +37,25 @@ const isDev = process.argv.includes('dev')
 const cdnBase = process.env.BRIAR_TX_BUCKET_DOMAIN?.replace(/\/+$/, '')
 const cdnPrefix = 'static'
 const assetsPrefix = !isDev && !isBuildDev && cdnBase ? `${cdnBase}/${cdnPrefix}` : undefined
+
+let devAdminEmail = ''
+let devAdminPassword = ''
+if (isDev && !isBuildDev) {
+	try {
+		const privateEnv = parseEnv(
+			readFileSync(
+				fileURLToPath(new URL('../../briar-assets/briar/dev-admin.env', import.meta.url)),
+				'utf8',
+			),
+		)
+		devAdminEmail = privateEnv.BRIAR_DEV_ADMIN_EMAIL ?? privateEnv.BRIAR_ADMIN_EMAIL ?? ''
+		devAdminPassword = privateEnv.BRIAR_DEV_ADMIN_PASSWORD ?? privateEnv.BRIAR_ADMIN_PASSWORD ?? ''
+	} catch (error) {
+		const isMissing = error instanceof Error && 'code' in error && error.code === 'ENOENT'
+		if (!isMissing) console.warn('Dev admin auto login: unable to load private credentials')
+	}
+	console.log('Dev admin auto login:', devAdminEmail && devAdminPassword ? 'enabled' : 'disabled')
+}
 
 console.log('CDN Base:', assetsPrefix)
 
@@ -89,6 +110,10 @@ export default defineConfig({
 	],
 	build: assetsPrefix ? { assetsPrefix } : undefined,
 	vite: {
+		define: {
+			'import.meta.env.BRIAR_DEV_ADMIN_EMAIL': JSON.stringify(devAdminEmail),
+			'import.meta.env.BRIAR_DEV_ADMIN_PASSWORD': JSON.stringify(devAdminPassword),
+		},
 		optimizeDeps: {
 			// 启动时扫描全部懒加载路由，避免首次导航重新预构建导致旧依赖 URL 返回 504。
 			entries: ['src/components/common/SiteApp.tsx'],

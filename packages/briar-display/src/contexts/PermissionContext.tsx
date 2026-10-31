@@ -2,6 +2,7 @@
 
 import { getMyPermissions } from '@/api/admin'
 import { Toaster } from '@/components/ui/sonner'
+import { ensureDevAdminSession } from '@/lib/devAdminAuth'
 import type { Role, UserWithRoles } from '@briar/shared'
 import {
 	type ReactNode,
@@ -89,6 +90,7 @@ function PermissionProviderRoot({ children }: { children: ReactNode }) {
 			return
 		}
 
+		await ensureDevAdminSession()
 		const token = localStorage.getItem('briar_token')
 		if (!token) {
 			setPermissions([])

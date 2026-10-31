@@ -2,14 +2,7 @@
  * 左侧吊牌：每项独立手绘异形壳 + 插画切图贴纸（Wikimedia PD/CC0/CC BY-SA，见 assets/decor/ribbon-stickers/SOURCES.md）。
  * 禁止共用同一矩形外壳只换图标；RibbonTag 统一叠放插画与法文 caption，图文一组居中。
  */
-import accueilHouse from '@/assets/decor/ribbon-stickers/accueil-house.png'
-import clefKey from '@/assets/decor/ribbon-stickers/clef-key.png'
-import etoilesEstoile from '@/assets/decor/ribbon-stickers/etoiles-estoile.png'
-import fichiersPurse from '@/assets/decor/ribbon-stickers/fichiers-purse.png'
-import moiCameo from '@/assets/decor/ribbon-stickers/moi-cameo.png'
-import outilsInkwell from '@/assets/decor/ribbon-stickers/outils-inkwell-quill.png'
-import penseesBook from '@/assets/decor/ribbon-stickers/pensees-book.png'
-import styleFlower from '@/assets/decor/stationery-stickers/01-00-iris.png'
+import { assetUrl } from '@/lib/assets'
 import { cn } from '@/lib/utils'
 import type { ReactNode, SVGProps } from 'react'
 
@@ -122,20 +115,16 @@ export const RIBBON_HANG_CY: Record<RibbonTagKind, number> = {
 	profile: 9.5,
 }
 
-function srcOf(m: string | { src: string }): string {
-	return typeof m === 'string' ? m : m.src
-}
-
 /** 插画切图贴纸（已着色 + 白撕纸边）；避开 portal 轮播同款素材 */
 export const RIBBON_STICKER_SRC: Record<RibbonTagKind, string> = {
-	home: srcOf(accueilHouse),
-	style: srcOf(styleFlower),
-	tools: srcOf(outilsInkwell),
-	files: srcOf(fichiersPurse),
-	thoughts: srcOf(penseesBook),
-	markets: srcOf(etoilesEstoile),
-	admin: srcOf(clefKey),
-	profile: srcOf(moiCameo),
+	home: assetUrl('decor/ribbon-stickers/accueil-house.png'),
+	style: assetUrl('decor/stationery-stickers/01-00-iris.png'),
+	tools: assetUrl('decor/ribbon-stickers/outils-inkwell-quill.png'),
+	files: assetUrl('decor/ribbon-stickers/fichiers-purse.png'),
+	thoughts: assetUrl('decor/ribbon-stickers/pensees-book.png'),
+	markets: assetUrl('decor/ribbon-stickers/etoiles-estoile.png'),
+	admin: assetUrl('decor/ribbon-stickers/clef-key.png'),
+	profile: assetUrl('decor/ribbon-stickers/moi-cameo.png'),
 }
 
 /** 白描边贴纸外壳：外白边 + 内线（无内嵌图案，图案由 RibbonTag 叠图） */
