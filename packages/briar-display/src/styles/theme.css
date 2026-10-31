@@ -2211,6 +2211,9 @@ progress {
 	transition: translate var(--motion-base) var(--ease-paper), width var(--motion-base)
 		var(--ease-paper), height var(--motion-base) var(--ease-paper);
 }
+.theme-arcane [data-tab-indicator] > [role="tab"] {
+	padding: 0.5rem;
+}
 [data-tab-indicator="ready"] > [role="tab"] {
 	position: relative;
 	z-index: 1;

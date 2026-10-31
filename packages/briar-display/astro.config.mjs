@@ -90,6 +90,8 @@ export default defineConfig({
 	build: assetsPrefix ? { assetsPrefix } : undefined,
 	vite: {
 		optimizeDeps: {
+			// 启动时扫描全部懒加载路由，避免首次导航重新预构建导致旧依赖 URL 返回 504。
+			entries: ['src/components/common/SiteApp.tsx'],
 			include: ['upng-js'],
 		},
 		resolve: {

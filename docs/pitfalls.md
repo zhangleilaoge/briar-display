@@ -66,3 +66,9 @@ BUILD_DEV=true PUBLIC_API_BASE_URL=http://127.0.0.1:43888/api bun run --filter @
 旧 a_bogus 签名栈失效时也可能报 `403 Blocked by ArgusSecurityPlugin Uifid Not Found`，不能只补参数。当前 detail 接口需要 a_bogus、`x-secsdk-web-signature` 和真实浏览器签发的 `UIFID_TEMP` / `UIFID` cookie（配置 `BRIAR_DOUYIN_COOKIE`）共同通过校验。
 
 修改签名时先对照当前上游参考实现。`aBogus.test.ts` 的 golden 必须用 Python 参考实现重新生成，不能拿旧输出改期望值。
+
+## 9. Vite 懒加载路由必须进入启动依赖扫描
+
+只在首次导航时才遇到的依赖会触发新一轮预构建；页面仍持有的旧 `?v=` 依赖 URL 随后返回 `504 (Outdated Optimize Dep)`，连带动态 import 失败、React 卸载和整页白屏。清缓存或反复刷新不能防止下一个懒加载依赖再次触发。
+
+`astro.config.mjs` 的 `optimizeDeps.entries` 已指向集中登记路由的 `src/components/common/SiteApp.tsx`，扫描会跟随路由及文件预览等下游动态 import。新增绕过该入口的懒加载页面时，要把它纳入 entries；不要加自动刷新循环，也不要把白屏当作业务组件错误来改。
