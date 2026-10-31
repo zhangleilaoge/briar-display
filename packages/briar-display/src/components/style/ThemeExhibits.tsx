@@ -1,36 +1,19 @@
 import { Astrolabe } from '@/components/ui/astrolabe'
 import {
-	AntiqueKey,
-	CompassRose,
-	DoveOlive,
 	FilesIcon,
-	FleurDeLis,
-	FloralLilien,
-	FloralRound,
-	FloralSecession,
-	FloralStamp,
-	FlowerPsf,
-	GothicArch,
-	GreekColumn,
 	HomeIcon,
-	InkwellPen,
 	JournalIcon,
 	KeyIcon,
-	Lantern,
 	MarketsIcon,
-	PocketWatch,
-	Postmark,
 	ProfileIcon,
-	ScissorsCut,
 	StyleIcon,
 	ToolsIcon,
-	WaxSeal,
 } from '@/components/ui/ornaments'
 import { PaperSheet, type PaperSheetVariant } from '@/components/ui/paper-sheet'
 import { RIBBON_ITEMS } from '@/components/ui/ribbon-sidebar'
 import { RibbonTag } from '@/components/ui/ribbon-tags'
 import { BrandCollage, HudTitle, ScrapTitle } from '@/components/ui/theme-shell'
-import type { ComponentType } from 'react'
+import { DECOR_GROUPS } from '@/data/decor-assets'
 import { StyleExhibit, StyleSection } from './StyleSection'
 
 const PAPER_VARIANTS: PaperSheetVariant[] = [
@@ -42,26 +25,6 @@ const PAPER_VARIANTS: PaperSheetVariant[] = [
 	'kraft',
 	'ticket',
 	'index',
-]
-
-const DECOR: [string, ComponentType<{ className?: string }>][] = [
-	['PocketWatch', PocketWatch],
-	['InkwellPen', InkwellPen],
-	['DoveOlive', DoveOlive],
-	['FloralStamp', FloralStamp],
-	['FloralRound', FloralRound],
-	['FloralSecession', FloralSecession],
-	['FloralLilien', FloralLilien],
-	['FlowerPsf', FlowerPsf],
-	['GothicArch', GothicArch],
-	['GreekColumn', GreekColumn],
-	['ScissorsCut', ScissorsCut],
-	['FleurDeLis', FleurDeLis],
-	['AntiqueKey', AntiqueKey],
-	['CompassRose', CompassRose],
-	['WaxSeal', WaxSeal],
-	['Lantern', Lantern],
-	['Postmark', Postmark],
 ]
 
 const ICONS = [
@@ -127,25 +90,45 @@ export function ThemeExhibits() {
 				</div>
 			</StyleExhibit>
 
-			<StyleExhibit title="Ornaments 装饰与图标" source="ui/ornaments.tsx">
-				<div className="space-y-6">
+			<StyleExhibit title="Ornaments 装饰与图标" source="data/decor-assets.ts">
+				<div className="space-y-7">
 					<div className="flex flex-wrap items-center gap-5 border-b border-border/60 pb-5">
 						{ICONS.map((Icon, index) => (
 							<Icon key={index} className="h-8 w-8 text-[color:var(--rv-navy)]" />
 						))}
 						<span className="text-xs text-muted-foreground">Phosphor duotone 图标</span>
 					</div>
-					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-						{DECOR.map(([name, Decor]) => (
-							<div
-								key={name}
-								className="flex min-h-32 flex-col items-center justify-between gap-3 rounded-control border border-border/60 bg-card/40 p-3"
-							>
-								<Decor className="h-20 w-20 text-[color:var(--rv-navy)]" />
-								<code className="text-[10px] text-muted-foreground">{name}</code>
+					{DECOR_GROUPS.map(({ title, caption, assets }) => (
+						<section key={title} aria-label={title}>
+							<header className="mb-3 flex items-baseline justify-between gap-3">
+								<h3 className="font-heading text-sm font-semibold">{title}</h3>
+								<span className="font-label text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+									{caption} · {assets.length}
+								</span>
+							</header>
+							<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+								{assets.map(({ name, path, src }) => (
+									<div
+										key={path}
+										title={path}
+										className="flex min-h-32 flex-col items-center justify-between gap-3 rounded-control border border-border/60 bg-card/40 p-3"
+									>
+										<img
+											src={src}
+											alt={name}
+											loading="lazy"
+											decoding="async"
+											draggable={false}
+											className="h-20 w-20 select-none object-contain"
+										/>
+										<code className="break-all text-center text-[10px] leading-4 text-muted-foreground">
+											{name}
+										</code>
+									</div>
+								))}
 							</div>
-						))}
-					</div>
+						</section>
+					))}
 				</div>
 			</StyleExhibit>
 

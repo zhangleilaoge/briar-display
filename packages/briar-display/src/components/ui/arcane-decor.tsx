@@ -1,37 +1,14 @@
 'use client'
 
-import { assetUrl } from '@/lib/assets'
+import { ARCANE_STICKERS } from '@/data/decor-assets'
 import { useEffect, useState } from 'react'
-
-const STICKERS = [
-	'02-00-roman-column',
-	'02-01-greek-temple',
-	'02-02-venus-statue',
-	'02-03-stone-arch',
-	'02-04-church-window',
-	'02-05-porcelain-teapot',
-	'02-06-porcelain-vase',
-	'02-07-blue-pocket-watch',
-	'02-08-teacup',
-	'02-09-porcelain-plate',
-	'02-10-arc-de-triomphe',
-	'02-11-obelisk',
-	'02-12-fountain',
-	'02-13-stone-bridge',
-	'02-14-classical-urn',
-	'02-15-ginger-jar',
-	'02-16-candelabrum',
-	'02-17-porcelain-bowl',
-	'02-18-mantel-clock',
-	'02-19-chandelier',
-].map((name) => assetUrl(`decor/stationery-stickers/${name}.png`))
 
 /** 每次进入页面随机留一枚蓝白贴纸，低透明度融入背景。 */
 export function ArcaneDecor() {
 	const [decor, setDecor] = useState<string | null>(null)
 
 	useEffect(() => {
-		setDecor(STICKERS[Math.floor(Math.random() * STICKERS.length)])
+		setDecor(ARCANE_STICKERS[Math.floor(Math.random() * ARCANE_STICKERS.length)])
 	}, [])
 
 	return (
