@@ -2211,8 +2211,17 @@ progress {
 	transition: translate var(--motion-base) var(--ease-paper), width var(--motion-base)
 		var(--ease-paper), height var(--motion-base) var(--ease-paper);
 }
+[data-tab-indicator] {
+	--tab-indicator-inset-y: 0px;
+}
+.theme-arcane [data-tab-indicator] {
+	--tab-indicator-inset-y: 2px;
+}
 .theme-arcane [data-tab-indicator] > [role="tab"] {
 	padding: 0.5rem;
+}
+.theme-arcane .rv-control-label {
+	transform: translateY(1px);
 }
 [data-tab-indicator="ready"] > [role="tab"] {
 	position: relative;

@@ -20,6 +20,8 @@ export interface SectionRoute {
 	path: string
 	title: string
 	component?: LazyExoticComponent<ComponentType>
+	/** 同组详情页共用视图实例，避免仅参数变化时重挂整个页面 */
+	viewKey?: string
 	/** 分区根路径在客户端恢复上次子页，不产生额外历史记录 */
 	redirect?: () => string
 	/** 内容区占满宽度（管理后台用） */
@@ -139,7 +141,7 @@ export function SectionRouterProvider({
 
 /**
  * 内容区：首屏（SSR + 水合）只渲染占位，挂载后再按需懒加载当前子页，避免水合不一致；
- * 切换时以 key 重挂外层容器，复用 rv-page-enter 入场动效（--motion-slow / --ease-paper）。
+ * 默认按路径重挂并播放入场动效，同组详情页可通过 viewKey 保留页面外壳。
  */
 export function SectionOutlet({ route, fallback }: { route?: SectionRoute; fallback: ReactNode }) {
 	const [mounted, setMounted] = useState(false)
@@ -147,7 +149,10 @@ export function SectionOutlet({ route, fallback }: { route?: SectionRoute; fallb
 	if (!mounted || !route?.component) return <>{fallback}</>
 	const Page = route.component
 	return (
-		<div key={route.path} className="rv-page-enter flex min-h-0 w-full flex-1 flex-col">
+		<div
+			key={route.viewKey ?? route.path}
+			className="rv-page-enter flex min-h-0 w-full flex-1 flex-col"
+		>
 			<Suspense fallback={fallback}>
 				<Page />
 			</Suspense>

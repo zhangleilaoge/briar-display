@@ -7,6 +7,7 @@ import {
 	type SectionRoute,
 	SectionRouterProvider,
 	useSectionPath,
+	useSectionRouter,
 } from '@/components/common/SectionRouter'
 import { TOOLS_LAST_TAB_KEY, ToolsShell } from '@/components/tools/ToolsLayout'
 import { TOOL_ROUTES } from '@/components/tools/toolRoutes'
@@ -14,7 +15,7 @@ import { RibbonSidebar } from '@/components/ui/ribbon-sidebar'
 import { MARKETS_SECTION, sectionTitle } from '@/config/site-routes'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { themeClass, themeForPath } from '@/lib/theme'
-import type { MarketId } from '@briar/shared'
+import { MARKET_IDS } from '@briar/shared'
 import { lazy, useEffect } from 'react'
 
 interface SiteRoute extends SectionRoute {
@@ -31,17 +32,23 @@ function restoreLastRoute(key: string, routes: SectionRoute[], fallback: string)
 	return fallback
 }
 
-const MARKET_ROUTES: SiteRoute[] = MARKETS_SECTION.children.map((sub) => {
-	const market = sub.path.slice('/briar/markets/'.length) as MarketId
+const MarketSectorsRoute = lazy(async () => {
+	const { default: MarketSectorsPage } = await import('../markets/MarketSectorsPage')
 	return {
-		path: sub.path,
-		title: sectionTitle(MARKETS_SECTION, sub),
-		component: lazy(async () => {
-			const { default: MarketSectorsPage } = await import('../markets/MarketSectorsPage')
-			return { default: () => <MarketSectorsPage market={market} /> }
-		}),
+		default: function MarketSectorsRoute() {
+			const router = useSectionRouter()
+			const market = MARKET_IDS.find((id) => router?.path === `/briar/markets/${id}`)
+			return market ? <MarketSectorsPage market={market} /> : null
+		},
 	}
 })
+
+const MARKET_ROUTES: SiteRoute[] = MARKETS_SECTION.children.map((sub) => ({
+	path: sub.path,
+	title: sectionTitle(MARKETS_SECTION, sub),
+	component: MarketSectorsRoute,
+	viewKey: 'market-sectors',
+}))
 
 export const SITE_ROUTES: SiteRoute[] = [
 	{ path: '/briar', title: 'xiaobuzi', component: lazy(() => import('../pages/PortalPage')) },

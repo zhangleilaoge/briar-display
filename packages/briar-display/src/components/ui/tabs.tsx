@@ -33,11 +33,13 @@ const TabsList = React.forwardRef<
 				ind.style.opacity = '0'
 				return
 			}
+			const insetY =
+				Number.parseFloat(getComputedStyle(list).getPropertyValue('--tab-indicator-inset-y')) || 0
 			if (first) ind.style.transition = 'none'
 			ind.style.opacity = '1'
 			ind.style.width = `${active.offsetWidth}px`
-			ind.style.height = `${active.offsetHeight}px`
-			ind.style.translate = `${active.offsetLeft}px ${active.offsetTop}px`
+			ind.style.height = `${Math.max(0, active.offsetHeight - insetY * 2)}px`
+			ind.style.translate = `${active.offsetLeft}px ${active.offsetTop + insetY}px`
 			if (first) {
 				void ind.offsetWidth
 				ind.style.transition = ''
@@ -76,7 +78,7 @@ TabsList.displayName = TabsPrimitive.List.displayName
 const TabsTrigger = React.forwardRef<
 	React.ElementRef<typeof TabsPrimitive.Trigger>,
 	React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(({ className, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
 	<TabsPrimitive.Trigger
 		ref={ref}
 		className={cn(
@@ -84,7 +86,11 @@ const TabsTrigger = React.forwardRef<
 			className,
 		)}
 		{...props}
-	/>
+	>
+		<span className="rv-control-label inline-flex items-center justify-center gap-[inherit]">
+			{children}
+		</span>
+	</TabsPrimitive.Trigger>
 ))
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
 

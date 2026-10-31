@@ -72,3 +72,7 @@ BUILD_DEV=true PUBLIC_API_BASE_URL=http://127.0.0.1:43888/api bun run --filter @
 只在首次导航时才遇到的依赖会触发新一轮预构建；页面仍持有的旧 `?v=` 依赖 URL 随后返回 `504 (Outdated Optimize Dep)`，连带动态 import 失败、React 卸载和整页白屏。清缓存或反复刷新不能防止下一个懒加载依赖再次触发。
 
 `astro.config.mjs` 的 `optimizeDeps.entries` 已指向集中登记路由的 `src/components/common/SiteApp.tsx`，扫描会跟随路由及文件预览等下游动态 import。新增绕过该入口的懒加载页面时，要把它纳入 entries；不要加自动刷新循环，也不要把白屏当作业务组件错误来改。
+
+## 10. shared 的 watch 构建不能清空 dist
+
+根目录 `dev` 在预先构建 shared 后会并行启动 `tsup --watch` 与 node；watch 若沿用 `clean: true`，启动时再次清空 `dist/index.js`，node 就可能报 `ERR_MODULE_NOT_FOUND`。`@briar/shared` 的 `dev` 脚本因此使用 `tsup --watch --no-clean`，普通 `build` 仍保留 clean。不要删掉这个差异，也不需要用启动延时掩盖竞态。

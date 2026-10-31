@@ -39,9 +39,13 @@ export interface ButtonProps
 		VariantProps<typeof buttonVariants> {}
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-	({ className, variant, size, ...props }, ref) => {
+	({ className, variant, size, children, ...props }, ref) => {
 		return (
-			<button className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+			<button className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props}>
+				<span className="rv-control-label inline-flex items-center justify-center gap-[inherit]">
+					{children}
+				</span>
+			</button>
 		)
 	},
 )

@@ -89,6 +89,14 @@ async function loadBundle(
 }
 
 export default function MarketSectorsPage({ market }: { market: MarketId }) {
+	return (
+		<MarketsShell market={market}>
+			<MarketSectorsContent key={market} market={market} />
+		</MarketsShell>
+	)
+}
+
+function MarketSectorsContent({ market }: { market: MarketId }) {
 	const [kind, setKind] = useState<SectorKind>('industry')
 	const [level, setLevel] = useState<string | undefined>(market === 'cn' ? '1' : undefined)
 	// 排序状态只在用户操作时变：轮询刷新数据不会重置；表头点击、下拉、方向按钮共用
@@ -155,216 +163,212 @@ export default function MarketSectorsPage({ market }: { market: MarketId }) {
 		})
 
 	return (
-		<MarketsShell market={market}>
-			<div className="space-y-4">
-				{/* 大盘 + 状态 */}
-				<Card className="glass rounded-2xl">
-					<CardContent className="space-y-3 p-4 sm:p-5">
-						<div className="flex flex-wrap items-center justify-between gap-2">
-							<div className="flex flex-wrap items-center gap-2">
-								<h1 className="text-lg font-semibold tracking-tight">
-									{MARKET_LABELS[market]}板块
-								</h1>
-								{sectors && <SessionBadge session={sectors.session} />}
-								{sectors &&
-									(sectors.realtime ? (
-										<Badge variant="outline" className="border-transparent bg-info/10 text-info">
-											实时
-										</Badge>
-									) : (
-										<Badge
-											variant="outline"
-											className="border-transparent bg-warning/10 text-warning"
-										>
-											延迟 {sectors.delayMinutes} 分钟
-										</Badge>
-									))}
-								{sectors && sectors.listMode !== 'dynamic' && sectors.proxyNote && (
-									<Badge variant="outline" className="border-transparent bg-plum/10 text-plum">
-										{sectors.proxyNote}
+		<div className="space-y-4">
+			{/* 大盘 + 状态 */}
+			<Card className="glass rounded-2xl">
+				<CardContent className="space-y-3 p-4 sm:p-5">
+					<div className="flex flex-wrap items-center justify-between gap-2">
+						<div className="flex flex-wrap items-center gap-2">
+							<h1 className="text-lg font-semibold tracking-tight">{MARKET_LABELS[market]}板块</h1>
+							{sectors && <SessionBadge session={sectors.session} />}
+							{sectors &&
+								(sectors.realtime ? (
+									<Badge variant="outline" className="border-transparent bg-info/10 text-info">
+										实时
 									</Badge>
-								)}
-								{sectors?.stale && <StaleBadge error={sectors.error} />}
-							</div>
-							<Button variant="default" size="sm" onClick={refresh} disabled={refreshing}>
-								<RefreshCw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
-								刷新
-							</Button>
+								) : (
+									<Badge
+										variant="outline"
+										className="border-transparent bg-warning/10 text-warning"
+									>
+										延迟 {sectors.delayMinutes} 分钟
+									</Badge>
+								))}
+							{sectors && sectors.listMode !== 'dynamic' && sectors.proxyNote && (
+								<Badge variant="outline" className="border-transparent bg-plum/10 text-plum">
+									{sectors.proxyNote}
+								</Badge>
+							)}
+							{sectors?.stale && <StaleBadge error={sectors.error} />}
 						</div>
-						{data?.overview ? (
-							<IndexTrendCards
-								market={market}
-								indices={data.overview.indices}
-								trends={data.trends}
-								loading={loading}
-								onSelect={(idx, code) =>
-									setDetail({
-										kind: 'chart',
-										market,
-										subject: {
-											target: 'index',
-											code,
-											name: idx.name,
-											price: idx.price,
-											changePct: idx.changePct,
-										},
-									})
-								}
-							/>
-						) : (
-							!loading && <p className="text-sm text-muted-foreground">指数暂不可用</p>
-						)}
-						{sectors && (
-							<div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-								<span>行情时间 {formatShanghaiTime(sectors.quoteTime)}（北京时间）</span>
-								<span>页面刷新 {formatShanghaiTime(data?.fetchedAt)}</span>
-								<span>当地时段 {sectors.session.sessionText}</span>
-								<span>数据源 {sectors.source}</span>
-								<span>净流入口径 {sectors.netInflowBasis ?? '该市场数据源不提供资金流'}</span>
-								<span>
-									{sectors.listMode === 'dynamic'
-										? '板块列表从数据源实时拉取'
-										: sectors.listMode === 'curated'
-											? '人工维护题材名单，行情按成分股聚合'
-											: market === 'jp'
-												? '固定指数列表'
-												: '固定代理列表'}{' '}
-									· 共 {sectors.items.length} 个
-								</span>
-							</div>
-						)}
-					</CardContent>
-				</Card>
+						<Button variant="default" size="sm" onClick={refresh} disabled={refreshing}>
+							<RefreshCw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
+							刷新
+						</Button>
+					</div>
+					{data?.overview ? (
+						<IndexTrendCards
+							market={market}
+							indices={data.overview.indices}
+							trends={data.trends}
+							loading={loading}
+							onSelect={(idx, code) =>
+								setDetail({
+									kind: 'chart',
+									market,
+									subject: {
+										target: 'index',
+										code,
+										name: idx.name,
+										price: idx.price,
+										changePct: idx.changePct,
+									},
+								})
+							}
+						/>
+					) : (
+						!loading && <p className="text-sm text-muted-foreground">指数暂不可用</p>
+					)}
+					{sectors && (
+						<div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+							<span>行情时间 {formatShanghaiTime(sectors.quoteTime)}（北京时间）</span>
+							<span>页面刷新 {formatShanghaiTime(data?.fetchedAt)}</span>
+							<span>当地时段 {sectors.session.sessionText}</span>
+							<span>数据源 {sectors.source}</span>
+							<span>净流入口径 {sectors.netInflowBasis ?? '该市场数据源不提供资金流'}</span>
+							<span>
+								{sectors.listMode === 'dynamic'
+									? '板块列表从数据源实时拉取'
+									: sectors.listMode === 'curated'
+										? '人工维护题材名单，行情按成分股聚合'
+										: market === 'jp'
+											? '固定指数列表'
+											: '固定代理列表'}{' '}
+								· 共 {sectors.items.length} 个
+							</span>
+						</div>
+					)}
+				</CardContent>
+			</Card>
 
-				{/* 控制条 */}
-				<div className="flex flex-wrap items-center gap-2">
-					{sectors && sectors.kinds.length > 1 && (
-						<Tabs value={kind} onValueChange={(v) => setKind(v as SectorKind)}>
-							<TabsList>
-								{sectors.kinds.map((k) => (
-									<TabsTrigger key={k.kind} value={k.kind}>
-										{k.label}
-									</TabsTrigger>
-								))}
-							</TabsList>
-						</Tabs>
-					)}
-					{kind === 'industry' && kindOption?.levels && (
-						<Select value={level} onValueChange={setLevel}>
-							<SelectTrigger className="h-9 w-[132px] bg-card/60">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{kindOption.levels.map((l) => (
-									<SelectItem key={l.value} value={l.value}>
-										{l.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					)}
-					{sectors && sortOptions.length > 1 && (
-						<Select value={effectiveSort} onValueChange={(v) => setSortKey(v as ListSortKey)}>
-							<SelectTrigger className="h-9 w-[140px] bg-card/60">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{sortOptions.map((k) => (
-									<SelectItem key={k} value={k}>
-										按{SORT_LABELS[k]}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					)}
-					<Button
-						variant="default"
-						size="sm"
-						className="h-9 bg-card/60"
-						onClick={() => setDirection((d) => (d === 'desc' ? 'asc' : 'desc'))}
-						title="切换排序方向"
-					>
-						{direction === 'desc' ? (
-							<ArrowDownWideNarrow className="h-4 w-4" />
-						) : (
-							<ArrowUpNarrowWide className="h-4 w-4" />
-						)}
-						{effectiveSort === 'changePct'
-							? direction === 'desc'
-								? '涨幅榜'
-								: '跌幅榜'
-							: effectiveSort === 'name'
-								? direction === 'desc'
-									? '名称降序'
-									: '名称升序'
-								: direction === 'desc'
-									? '从高到低'
-									: '从低到高'}
-					</Button>
-					<Tabs value={view} onValueChange={(v) => setView(v as ViewMode)} className="ml-auto">
+			{/* 控制条 */}
+			<div className="flex flex-wrap items-center gap-2">
+				{sectors && sectors.kinds.length > 1 && (
+					<Tabs value={kind} onValueChange={(v) => setKind(v as SectorKind)}>
 						<TabsList>
-							<TabsTrigger value="both">全部</TabsTrigger>
-							<TabsTrigger value="heatmap">热力图</TabsTrigger>
-							<TabsTrigger value="list">列表</TabsTrigger>
+							{sectors.kinds.map((k) => (
+								<TabsTrigger key={k.kind} value={k.kind}>
+									{k.label}
+								</TabsTrigger>
+							))}
 						</TabsList>
 					</Tabs>
-				</div>
-
-				{/* 主体 */}
-				{!sectors ? (
-					loading ? (
-						<div className="rv-fade-in flex items-center justify-center py-24 text-muted-foreground">
-							<Loader2 className="mr-2 h-5 w-5 animate-spin" />
-							加载板块中…
-						</div>
-					) : (
-						<div className="rv-fade-in py-24 text-center text-sm text-muted-foreground">
-							{error || '加载失败'}，稍后会自动重试
-						</div>
-					)
-				) : (
-					<div
-						className={
-							switching ? 'pointer-events-none opacity-60 transition-opacity' : 'transition-opacity'
-						}
-					>
-						{view !== 'list' && (
-							<Card className="glass mb-4 rounded-2xl">
-								<CardContent className="p-3 sm:p-4">
-									<SectorHeatmap
-										items={sorted}
-										sortKey={effectiveSort}
-										amountCurrency={sectors.amountCurrency}
-										onSelect={openSector}
-									/>
-								</CardContent>
-							</Card>
-						)}
-						{view !== 'heatmap' && (
-							<Card className="glass rounded-2xl">
-								<CardContent className="p-2 sm:p-4">
-									<SectorList
-										key={`${sectors.kind}-${sectors.level ?? ''}`}
-										items={sorted}
-										sortKey={effectiveSort}
-										amountCurrency={sectors.amountCurrency}
-										netInflowBasis={sectors.netInflowBasis}
-										direction={direction}
-										sortableKeys={sortOptions}
-										onSort={onHeaderSort}
-										onSelect={openSector}
-									/>
-								</CardContent>
-							</Card>
-						)}
-					</div>
 				)}
-				<MarketDetailDialog view={detail} onClose={() => setDetail(null)} />
-				<p className="text-center text-xs text-muted-foreground/80">
-					红涨绿跌 · 点击指数或板块看分时 / K 线，板块里可看成分股和个股详情 · 交易时段约每 20
-					秒自动刷新，休市时显示最近收盘数据 · 仅供参考，不构成投资建议
-				</p>
+				{kind === 'industry' && kindOption?.levels && (
+					<Select value={level} onValueChange={setLevel}>
+						<SelectTrigger className="h-9 w-[132px] bg-card/60">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{kindOption.levels.map((l) => (
+								<SelectItem key={l.value} value={l.value}>
+									{l.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				)}
+				{sectors && sortOptions.length > 1 && (
+					<Select value={effectiveSort} onValueChange={(v) => setSortKey(v as ListSortKey)}>
+						<SelectTrigger className="h-9 w-[140px] bg-card/60">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{sortOptions.map((k) => (
+								<SelectItem key={k} value={k}>
+									按{SORT_LABELS[k]}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				)}
+				<Button
+					variant="default"
+					size="sm"
+					className="h-9 bg-card/60"
+					onClick={() => setDirection((d) => (d === 'desc' ? 'asc' : 'desc'))}
+					title="切换排序方向"
+				>
+					{direction === 'desc' ? (
+						<ArrowDownWideNarrow className="h-4 w-4" />
+					) : (
+						<ArrowUpNarrowWide className="h-4 w-4" />
+					)}
+					{effectiveSort === 'changePct'
+						? direction === 'desc'
+							? '涨幅榜'
+							: '跌幅榜'
+						: effectiveSort === 'name'
+							? direction === 'desc'
+								? '名称降序'
+								: '名称升序'
+							: direction === 'desc'
+								? '从高到低'
+								: '从低到高'}
+				</Button>
+				<Tabs value={view} onValueChange={(v) => setView(v as ViewMode)} className="ml-auto">
+					<TabsList>
+						<TabsTrigger value="both">全部</TabsTrigger>
+						<TabsTrigger value="heatmap">热力图</TabsTrigger>
+						<TabsTrigger value="list">列表</TabsTrigger>
+					</TabsList>
+				</Tabs>
 			</div>
-		</MarketsShell>
+
+			{/* 主体 */}
+			{!sectors ? (
+				loading ? (
+					<div className="rv-fade-in flex items-center justify-center py-24 text-muted-foreground">
+						<Loader2 className="mr-2 h-5 w-5 animate-spin" />
+						加载板块中…
+					</div>
+				) : (
+					<div className="rv-fade-in py-24 text-center text-sm text-muted-foreground">
+						{error || '加载失败'}，稍后会自动重试
+					</div>
+				)
+			) : (
+				<div
+					className={
+						switching ? 'pointer-events-none opacity-60 transition-opacity' : 'transition-opacity'
+					}
+				>
+					{view !== 'list' && (
+						<Card className="glass mb-4 rounded-2xl">
+							<CardContent className="p-3 sm:p-4">
+								<SectorHeatmap
+									items={sorted}
+									sortKey={effectiveSort}
+									amountCurrency={sectors.amountCurrency}
+									onSelect={openSector}
+								/>
+							</CardContent>
+						</Card>
+					)}
+					{view !== 'heatmap' && (
+						<Card className="glass rounded-2xl">
+							<CardContent className="p-2 sm:p-4">
+								<SectorList
+									key={`${sectors.kind}-${sectors.level ?? ''}`}
+									items={sorted}
+									sortKey={effectiveSort}
+									amountCurrency={sectors.amountCurrency}
+									netInflowBasis={sectors.netInflowBasis}
+									direction={direction}
+									sortableKeys={sortOptions}
+									onSort={onHeaderSort}
+									onSelect={openSector}
+								/>
+							</CardContent>
+						</Card>
+					)}
+				</div>
+			)}
+			<MarketDetailDialog view={detail} onClose={() => setDetail(null)} />
+			<p className="text-center text-xs text-muted-foreground/80">
+				红涨绿跌 · 点击指数或板块看分时 / K 线，板块里可看成分股和个股详情 · 交易时段约每 20
+				秒自动刷新，休市时显示最近收盘数据 · 仅供参考，不构成投资建议
+			</p>
+		</div>
 	)
 }
