@@ -43,6 +43,8 @@ export function buildDeployStatus(
 ): DeployStatusModel | null {
 	const frontendCommit = version?.frontend?.commit ?? ''
 	const backendCommit = version?.backend?.commit ?? ''
+	const frontendSource = version?.frontend?.sourceCommit || frontendCommit
+	const backendSource = version?.backend?.sourceCommit || backendCommit
 	const currentCommit = frontendCommit || backendCommit
 	const fullCommit =
 		latest && isDeployRunning(latest.status) ? latest.commit : currentCommit || latest?.commit || ''
@@ -57,7 +59,7 @@ export function buildDeployStatus(
 		const elapsed = formatDeployDuration(latest.startedAt || latest.at, now)
 		return { ...base, light: '🟡', label: elapsed ? `发布中 · ${elapsed}` : '发布中' }
 	}
-	if (frontendCommit && backendCommit && frontendCommit !== backendCommit) {
+	if (frontendSource && backendSource && frontendSource !== backendSource) {
 		return { ...base, light: '🟡', label: '版本同步中' }
 	}
 	if (latest && FAILED_STATUSES.has(latest.status.toLowerCase())) {

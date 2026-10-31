@@ -67,6 +67,24 @@ describe('首页部署状态', () => {
 		expect(buildDeployStatus(value, run('success'), NOW)?.label).toBe('版本同步中')
 	})
 
+	test('仅构建提交不同但部署源码一致时，不显示同步中', () => {
+		const value = version()
+		value.frontend = { ...value.frontend!, sourceCommit: CURRENT }
+		value.backend = { ...value.backend!, commit: NEXT, sourceCommit: CURRENT }
+		expect(buildDeployStatus(value, run('success'), NOW)).toMatchObject({
+			commit: CURRENT.slice(0, 7),
+			light: '🟢',
+			label: '3 分钟前上线',
+		})
+	})
+
+	test('部署源码不同仍提示同步中，即使构建提交相同', () => {
+		const value = version()
+		value.frontend = { ...value.frontend!, sourceCommit: CURRENT }
+		value.backend = { ...value.backend!, sourceCommit: NEXT }
+		expect(buildDeployStatus(value, run('success'), NOW)?.label).toBe('版本同步中')
+	})
+
 	test('只采用主部署 workflow，并格式化相对时间', () => {
 		expect(isCdnDeploy(run('success'))).toBe(true)
 		expect(

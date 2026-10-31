@@ -3,6 +3,8 @@ import { apiClient } from './request'
 
 export interface VersionFingerprint {
 	commit: string
+	/** 最后一次影响部署产物的源码提交；旧版本指纹没有此字段 */
+	sourceCommit?: string
 	branch: string
 	dirty: boolean
 	builtAt: string
