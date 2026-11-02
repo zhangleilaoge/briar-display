@@ -1,5 +1,6 @@
 'use client'
 
+import { useNavigate } from '@/components/common/SectionRouter'
 import { cn } from '@/lib/utils'
 import { Plus, X } from 'lucide-react'
 import { type KeyboardEvent, type PointerEvent, useEffect, useRef, useState } from 'react'
@@ -67,6 +68,7 @@ export function DesktopRibbonNav({
 	} | null>(null)
 	const expandedRef = useRef(expanded)
 	expandedRef.current = expanded
+	const navigate = useNavigate()
 	useFlip(listRef, [items.map((item) => item.kind).join(',')], skipNextFlipRef, 'y')
 
 	const clearPress = () => {
@@ -235,7 +237,7 @@ export function DesktopRibbonNav({
 		if (event.currentTarget.hasPointerCapture(event.pointerId)) {
 			event.currentTarget.releasePointerCapture(event.pointerId)
 		}
-		if (shouldNavigate && href) window.location.assign(href)
+		if (shouldNavigate && href) navigate(href)
 	}
 
 	const remove = (kind: RibbonTagKind) => {
