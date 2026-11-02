@@ -54,6 +54,7 @@ export function DesktopRibbonNav({
 	const pressTimerRef = useRef<number | null>(null)
 	const removeTimerRef = useRef<number | null>(null)
 	const pressPointRef = useRef({ x: 0, y: 0 })
+	const pressStartedAtRef = useRef(0)
 	const suppressClickRef = useRef(false)
 	const draggedRef = useRef<RibbonTagKind | null>(null)
 	const dragPositionRef = useRef<{ from: number; to: number } | null>(null)
@@ -66,7 +67,7 @@ export function DesktopRibbonNav({
 	} | null>(null)
 	const expandedRef = useRef(expanded)
 	expandedRef.current = expanded
-	useFlip(listRef, [items.map((item) => item.kind).join(',')], skipNextFlipRef)
+	useFlip(listRef, [items.map((item) => item.kind).join(',')], skipNextFlipRef, 'y')
 
 	const clearPress = () => {
 		if (pressTimerRef.current !== null) window.clearTimeout(pressTimerRef.current)
@@ -154,6 +155,7 @@ export function DesktopRibbonNav({
 		suppressClickRef.current = false
 		target.setPointerCapture(pointerId)
 		pressPointRef.current = { x, y }
+		pressStartedAtRef.current = performance.now()
 		if (editing) {
 			dragCandidateRef.current = { pointerId, kind, x, y }
 			return
@@ -197,7 +199,23 @@ export function DesktopRibbonNav({
 		}
 	}
 
-	const finishPointer = (event: PointerEvent<HTMLAnchorElement>, persist: boolean) => {
+	const finishPointer = (
+		event: PointerEvent<HTMLAnchorElement>,
+		persist: boolean,
+		href?: string,
+	) => {
+		const shouldNavigate =
+			persist &&
+			canEdit &&
+			!editing &&
+			!suppressClickRef.current &&
+			!draggedRef.current &&
+			event.button === 0 &&
+			!event.metaKey &&
+			!event.ctrlKey &&
+			!event.shiftKey &&
+			!event.altKey &&
+			performance.now() - pressStartedAtRef.current < LONG_PRESS_MS
 		clearPress()
 		if (dragCandidateRef.current?.pointerId === event.pointerId) dragCandidateRef.current = null
 		if (draggedRef.current) {
@@ -217,10 +235,11 @@ export function DesktopRibbonNav({
 		if (event.currentTarget.hasPointerCapture(event.pointerId)) {
 			event.currentTarget.releasePointerCapture(event.pointerId)
 		}
+		if (shouldNavigate && href) window.location.assign(href)
 	}
 
 	const remove = (kind: RibbonTagKind) => {
-		if (removing) return
+		if (removing || items.length <= 1) return
 		clearPress()
 		if (prefersReducedMotion()) {
 			onRemove(kind)
@@ -256,7 +275,16 @@ export function DesktopRibbonNav({
 				onPointerMoveCapture={movePointer}
 				onClickCapture={(event) => {
 					if (!(event.target instanceof Element) || !event.target.closest('a')) return
-					if (!editing && !suppressClickRef.current) return
+					const allowNativeClick =
+						!canEdit ||
+						(!editing &&
+							!suppressClickRef.current &&
+							(event.detail === 0 ||
+								event.metaKey ||
+								event.ctrlKey ||
+								event.shiftKey ||
+								event.altKey))
+					if (allowNativeClick) return
 					event.preventDefault()
 					event.stopPropagation()
 					suppressClickRef.current = false
@@ -312,7 +340,7 @@ export function DesktopRibbonNav({
 											isActive && 'is-active',
 										)}
 										onPointerDown={(event) => startLongPress(event, item.kind)}
-										onPointerUp={(event) => finishPointer(event, true)}
+										onPointerUp={(event) => finishPointer(event, true, item.href)}
 										onPointerCancel={(event) => finishPointer(event, false)}
 										onLostPointerCapture={(event) => finishPointer(event, false)}
 										onKeyDown={(event) => moveWithKeyboard(event, index)}
@@ -340,7 +368,7 @@ export function DesktopRibbonNav({
 									{item.label} · {item.caption}
 								</HoverCardContent>
 							</HoverCard>
-							{editing && dragged !== item.kind && (
+							{editing && items.length > 1 && dragged !== item.kind && (
 								<button
 									type="button"
 									aria-label={`移除${item.label}标签`}

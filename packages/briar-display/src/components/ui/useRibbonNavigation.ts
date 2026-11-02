@@ -94,7 +94,10 @@ export function useRibbonNavigation() {
 
 	const add = useCallback((kind: RibbonTagKind) => commit([...orderRef.current, kind]), [commit])
 	const remove = useCallback(
-		(kind: RibbonTagKind) => commit(orderRef.current.filter((key) => key !== kind)),
+		(kind: RibbonTagKind) => {
+			if (orderRef.current.length <= 1 || !orderRef.current.includes(kind)) return false
+			return commit(orderRef.current.filter((key) => key !== kind))
+		},
 		[commit],
 	)
 	const move = useCallback(

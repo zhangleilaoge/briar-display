@@ -22,8 +22,8 @@ describe('左侧标签偏好', () => {
 		expect(normalizeRibbonOrder(normalizeRibbonOrder(saved, available), available)).toEqual(saved)
 	})
 
-	test('空数组表示删除全部标签，损坏数据回退默认顺序', () => {
-		expect(normalizeRibbonOrder([], available)).toEqual([])
+	test('空数组恢复首个标签，损坏数据回退默认顺序', () => {
+		expect(normalizeRibbonOrder([], available)).toEqual(['home'])
 		expect(normalizeRibbonOrder(null, available)).toEqual([...available])
 		expect(normalizeRibbonOrder({ order: ['files'] }, available)).toEqual([...available])
 		expect(normalizeRibbonOrder(['unknown', 42], available)).toEqual([...available])

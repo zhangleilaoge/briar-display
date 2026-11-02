@@ -12,6 +12,7 @@ export function normalizeRibbonOrder<T extends string>(
 		order.push(key as T)
 	}
 	if (value.length > 0 && order.length === 0) return [...available]
+	if (order.length === 0 && available.length > 0) return [available[0]]
 	return order
 }
 

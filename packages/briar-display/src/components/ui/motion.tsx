@@ -42,6 +42,7 @@ export function useFlip(
 	containerRef: RefObject<HTMLElement | null>,
 	deps: unknown[],
 	skipNext?: RefObject<boolean>,
+	axis: 'both' | 'x' | 'y' = 'both',
 ) {
 	const rects = useRef<Map<string, DOMRect> | null>(null)
 	useIsoLayoutEffect(() => {
@@ -67,8 +68,8 @@ export function useFlip(
 				continue
 			}
 			if (!now) continue
-			const dx = old.left - now.left
-			const dy = old.top - now.top
+			const dx = axis === 'y' ? 0 : old.left - now.left
+			const dy = axis === 'x' ? 0 : old.top - now.top
 			if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue
 			n.animate([{ translate: `${dx}px ${dy}px` }, { translate: '0 0' }], {
 				duration: MOTION.slow,
