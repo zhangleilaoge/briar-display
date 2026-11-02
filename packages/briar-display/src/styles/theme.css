@@ -248,10 +248,10 @@
 	--sidebar-tag-fill: #f7fafd;
 	--sidebar-tag-stroke: #5d6f96;
 	--sidebar-icon: #42557f;
-	/* 柔粉/淡蓝 glow 选中，禁止实心藏青条 */
-	--sidebar-active-fill: color-mix(in srgb, #f3d6de 72%, #e8f0f8);
+	/* 浅蓝 glow 选中，禁止实心藏青条 */
+	--sidebar-active-fill: color-mix(in srgb, #8ea4c6 48%, #f7fafd);
 	--sidebar-active-icon: #3a4a6b;
-	--sidebar-active-dash: color-mix(in srgb, #c4788a 60%, #5d6f96);
+	--sidebar-active-dash: #5d6f96;
 	--sidebar-string: #8ea4c6;
 	/* Arcane 去除原图彩色，统一染成冷蓝灰 */
 	--sidebar-cutout-filter: grayscale(1) sepia(0.35) hue-rotate(175deg) saturate(0.8)
@@ -519,6 +519,64 @@ body {
 	}
 }
 
+.rv-ribbon-item.is-editing .rv-ribbon-tag {
+	cursor: grab;
+	animation: rv-ribbon-wiggle 0.26s ease-in-out var(--rv-wiggle-delay, 0ms) infinite;
+}
+.rv-ribbon-remove {
+	animation: rv-fade-in 0.16s ease-out both;
+}
+.rv-ribbon-item.is-removing {
+	pointer-events: none;
+	animation: rv-ribbon-remove 0.18s ease-in both;
+}
+.rv-ribbon-item.is-dragging {
+	z-index: 1;
+	transition-delay: 0ms;
+	transition-duration: 0s;
+}
+.rv-ribbon-item.is-dragging .rv-ribbon-tag {
+	cursor: grabbing;
+	animation: none;
+}
+.rv-ribbon-list.is-settling .rv-ribbon-item {
+	transition: none;
+}
+.rv-ribbon-item.is-settling .rv-ribbon-tag {
+	animation: rv-ribbon-settle 0.18s ease-out both;
+}
+@keyframes rv-ribbon-wiggle {
+	0%,
+	100% {
+		rotate: -1.6deg;
+	}
+	50% {
+		rotate: 1.6deg;
+	}
+}
+@keyframes rv-ribbon-remove {
+	to {
+		opacity: 0;
+		transform: translateX(-16px) scale(0.55);
+	}
+}
+@keyframes rv-ribbon-settle {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.rv-ribbon-item.is-editing .rv-ribbon-tag,
+	.rv-ribbon-remove,
+	.rv-ribbon-item.is-removing,
+	.rv-ribbon-item.is-settling .rv-ribbon-tag {
+		animation: none;
+	}
+}
+
 .rv-ribbon-tag {
 	transform-origin: 50% 0;
 	transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -566,7 +624,7 @@ body {
 	color: var(--sidebar-active-icon);
 }
 
-/* 选中时内轮廓略偏玫瑰/粉，保持贴纸白边 */
+/* 选中时内轮廓使用主题强调色，保持贴纸白边 */
 .rv-ribbon-tag[aria-current="page"] .rv-tag-outline,
 .rv-ribbon-tag.is-active .rv-tag-outline {
 	stroke: var(--sidebar-active-dash, var(--sidebar-tag-stroke));

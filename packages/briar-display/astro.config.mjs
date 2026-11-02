@@ -110,14 +110,28 @@ export default defineConfig({
 	],
 	build: assetsPrefix ? { assetsPrefix } : undefined,
 	vite: {
+		// astro check / build 与 dev 分开缓存，避免生产模式优化覆盖浏览器正在用的依赖版本。
+		cacheDir: isDev ? 'node_modules/.vite-dev' : 'node_modules/.vite',
 		define: {
 			'import.meta.env.BRIAR_DEV_ADMIN_EMAIL': JSON.stringify(devAdminEmail),
 			'import.meta.env.BRIAR_DEV_ADMIN_PASSWORD': JSON.stringify(devAdminPassword),
 		},
 		optimizeDeps: {
-			// 启动时扫描全部懒加载路由，避免首次导航重新预构建导致旧依赖 URL 返回 504。
-			entries: ['src/components/common/SiteApp.tsx'],
-			include: ['upng-js'],
+			entries: ['src/**/*.{ts,tsx,js,jsx}'],
+			// 懒加载依赖必须在首批优化中，不能等访问页面后再更换缓存版本。
+			include: [
+				'@neslinesli93/qpdf-wasm',
+				'@openpageflip/react',
+				'@xterm/addon-fit',
+				'@xterm/xterm',
+				'emoji-picker-react',
+				'lightweight-charts',
+				'mammoth',
+				'pinyin-pro',
+				'react-json-view',
+				'upng-js',
+				'xlsx',
+			],
 		},
 		resolve: {
 			alias: [

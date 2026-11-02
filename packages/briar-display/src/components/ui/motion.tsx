@@ -38,7 +38,11 @@ export function prefersReducedMotion(): boolean {
  * FLIP 列表动画：子元素按 data-flip-key 标识；列表变化后已有项从旧位置平滑滑到新位置，
  * 新出现的项打上 data-flip-enter（由 CSS 播放入场，如吊牌垂落）。首帧不播放。
  */
-export function useFlip(containerRef: RefObject<HTMLElement | null>, deps: unknown[]) {
+export function useFlip(
+	containerRef: RefObject<HTMLElement | null>,
+	deps: unknown[],
+	skipNext?: RefObject<boolean>,
+) {
 	const rects = useRef<Map<string, DOMRect> | null>(null)
 	useIsoLayoutEffect(() => {
 		const el = containerRef.current
@@ -48,7 +52,9 @@ export function useFlip(containerRef: RefObject<HTMLElement | null>, deps: unkno
 		const next = new Map<string, DOMRect>()
 		for (const n of nodes) next.set(n.dataset.flipKey as string, n.getBoundingClientRect())
 		rects.current = next
-		if (!prev || prefersReducedMotion()) return
+		const skip = skipNext?.current ?? false
+		if (skipNext) skipNext.current = false
+		if (!prev || skip || prefersReducedMotion()) return
 		for (const n of nodes) {
 			const key = n.dataset.flipKey as string
 			const old = prev.get(key)

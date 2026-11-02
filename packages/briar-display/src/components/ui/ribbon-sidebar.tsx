@@ -7,12 +7,12 @@
 import { usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from './hover-card'
+import { DesktopRibbonNav } from './desktop-ribbon-nav'
 import { useFlip } from './motion'
+import { RIBBON_ITEMS, type RibbonItem } from './ribbon-items'
 import {
 	RIBBON_JITTER,
 	RibbonTag,
-	type RibbonTagKind,
 	TagAdmin,
 	TagFiles,
 	TagHome,
@@ -22,69 +22,10 @@ import {
 	TagThoughts,
 	TagTools,
 } from './ribbon-tags'
+import { useRibbonNavigation } from './useRibbonNavigation'
 
-interface RibbonItem {
-	href: string
-	match: string
-	label: string
-	caption: string
-	kind: RibbonTagKind
-	adminOnly?: boolean
-}
-
-export const RIBBON_ITEMS: RibbonItem[] = [
-	{ href: '/briar/', match: '/briar', label: '首页', caption: 'Accueil', kind: 'home' },
-	{
-		href: '/briar/style',
-		match: '/briar/style',
-		label: '风格',
-		caption: 'Style',
-		kind: 'style',
-	},
-	{
-		href: '/briar/tools',
-		match: '/briar/tools',
-		label: '工具箱',
-		caption: 'Outils',
-		kind: 'tools',
-	},
-	{
-		href: '/briar/files',
-		match: '/briar/files',
-		label: '文件',
-		caption: 'Fichiers',
-		kind: 'files',
-	},
-	{
-		href: '/briar/thoughts/',
-		match: '/briar/thoughts',
-		label: '想法',
-		caption: 'Pensées',
-		kind: 'thoughts',
-	},
-	{
-		href: '/briar/markets',
-		match: '/briar/markets',
-		label: '行情',
-		caption: 'Étoiles',
-		kind: 'markets',
-	},
-	{
-		href: '/briar/admin',
-		match: '/briar/admin',
-		label: '管理',
-		caption: 'Clef',
-		kind: 'admin',
-		adminOnly: true,
-	},
-	{
-		href: '/briar/profile',
-		match: '/briar/profile',
-		label: '个人',
-		caption: 'Moi',
-		kind: 'profile',
-	},
-]
+export { RIBBON_ITEMS } from './ribbon-items'
+export type { RibbonItem } from './ribbon-items'
 
 /** 找出最长前缀匹配的项；首页仅精确匹配 */
 export function activeRibbonHref(pathname: string): string | null {
@@ -135,6 +76,7 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 	const [mounted, setMounted] = useState(false)
 	const [open, setOpen] = useState(false)
 	const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const draggingRef = useRef(false)
 	const navRef = useRef<HTMLElement>(null)
 
 	const clearLeaveTimer = useCallback(() => {
@@ -151,11 +93,30 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 
 	const scheduleClose = useCallback(() => {
 		clearLeaveTimer()
+		if (draggingRef.current) return
 		leaveTimerRef.current = setTimeout(() => {
 			leaveTimerRef.current = null
 			setOpen(false)
 		}, RIBBON_LEAVE_MS)
 	}, [clearLeaveTimer])
+
+	const handleDraggingChange = useCallback(
+		(dragging: boolean) => {
+			draggingRef.current = dragging
+			if (dragging) {
+				clearLeaveTimer()
+				setOpen(true)
+				return
+			}
+			const nav = navRef.current
+			if (nav && pointerHitsRibbon(nav, lastPointer.x, lastPointer.y)) {
+				openNow()
+			} else {
+				scheduleClose()
+			}
+		},
+		[clearLeaveTimer, openNow, scheduleClose],
+	)
 
 	useEffect(() => {
 		setPath(currentPath ?? window.location.pathname)
@@ -204,9 +165,11 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 	}, [openNow])
 
 	const active = activeRibbonHref(path)
-	const items = RIBBON_ITEMS.filter((item) => !item.adminOnly || (mounted && isAdmin))
-	const listRef = useRef<HTMLUListElement>(null)
-	useFlip(listRef, [items.length])
+	const { order, canEdit, add, remove, move, discard } = useRibbonNavigation()
+	const candidates = RIBBON_ITEMS.filter((item) => !item.adminOnly || (mounted && isAdmin))
+	const items = order
+		.map((kind) => candidates.find((item) => item.kind === kind))
+		.filter((item): item is RibbonItem => Boolean(item))
 
 	return (
 		<>
@@ -236,49 +199,18 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 						aria-hidden
 						className="relative mb-1 h-2.5 w-2.5 rotate-45 border border-[color:var(--sidebar-tag-stroke)] bg-[var(--sidebar-tag-fill)]"
 					/>
-					<ul ref={listRef} className="relative flex flex-col items-center gap-0.5">
-						{items.map((item, i) => {
-							const isActive = active === item.href
-							const jitter = RIBBON_JITTER[i % RIBBON_JITTER.length]
-							return (
-								<li
-									key={item.href}
-									data-flip-key={item.href}
-									className="rv-ribbon-item"
-									style={{ ['--rv-ribbon-i' as string]: i }}
-								>
-									<HoverCard openDelay={120} closeDelay={0}>
-										<HoverCardTrigger asChild>
-											<a
-												href={item.href}
-												aria-current={isActive ? 'page' : undefined}
-												data-kind={item.kind}
-												className={cn(
-													'rv-ribbon-tag relative flex h-[70px] w-[58px] flex-col items-center outline-none',
-													isActive && 'is-active',
-												)}
-												style={{
-													transform: `translateX(${jitter.x}px) rotate(${jitter.rotate}deg)`,
-												}}
-											>
-												<RibbonTag kind={item.kind} active={isActive} caption={item.caption} />
-												<span className="sr-only">
-													{item.label} · {item.caption}
-												</span>
-											</a>
-										</HoverCardTrigger>
-										<HoverCardContent
-											side="right"
-											sideOffset={2}
-											className="w-auto whitespace-nowrap px-3 py-2 text-xs"
-										>
-											{item.label} · {item.caption}
-										</HoverCardContent>
-									</HoverCard>
-								</li>
-							)
-						})}
-					</ul>
+					<DesktopRibbonNav
+						items={items}
+						candidates={candidates}
+						active={active}
+						expanded={open}
+						canEdit={canEdit}
+						onAdd={add}
+						onRemove={remove}
+						onMove={move}
+						onDiscard={discard}
+						onDraggingChange={handleDraggingChange}
+					/>
 				</div>
 			</nav>
 			<MobileRibbonNav items={items} active={active} />
@@ -295,7 +227,7 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 	const trackRef = useRef<HTMLUListElement>(null)
 	const [edge, setEdge] = useState({ left: false, right: false })
 	const nudgedRef = useRef(false)
-	useFlip(trackRef, [items.length])
+	useFlip(trackRef, [items.map((item) => item.kind).join(',')])
 
 	const updateEdge = useCallback(() => {
 		const el = trackRef.current
