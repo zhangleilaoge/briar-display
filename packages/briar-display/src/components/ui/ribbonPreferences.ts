@@ -2,20 +2,16 @@ export function normalizeRibbonOrder<T extends string>(
 	value: unknown,
 	available: readonly T[],
 ): T[] {
-	if (Array.isArray(value) && value.length === 0) return []
+	if (!Array.isArray(value)) return [...available]
 	const allowed = new Set(available)
 	const selected = new Set<T>()
 	const order: T[] = []
-	if (Array.isArray(value)) {
-		for (const key of value) {
-			if (typeof key !== 'string' || !allowed.has(key as T) || selected.has(key as T)) continue
-			selected.add(key as T)
-			order.push(key as T)
-		}
+	for (const key of value) {
+		if (typeof key !== 'string' || !allowed.has(key as T) || selected.has(key as T)) continue
+		selected.add(key as T)
+		order.push(key as T)
 	}
-	for (const key of available) {
-		if (!selected.has(key)) order.push(key)
-	}
+	if (value.length > 0 && order.length === 0) return [...available]
 	return order
 }
 

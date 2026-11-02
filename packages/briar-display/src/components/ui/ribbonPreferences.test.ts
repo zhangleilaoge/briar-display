@@ -13,15 +13,20 @@ describe('左侧标签偏好', () => {
 		expect(normalizeRibbonOrder(['files', 'files', 'unknown', 'home'], available)).toEqual([
 			'files',
 			'home',
-			'style',
-			'tools',
 		])
+	})
+
+	test('删除后的子集保存与再次读取都不会回填', () => {
+		const saved = available.filter((kind) => kind !== 'style')
+		expect(normalizeRibbonOrder(saved, available)).toEqual(['home', 'tools', 'files'])
+		expect(normalizeRibbonOrder(normalizeRibbonOrder(saved, available), available)).toEqual(saved)
 	})
 
 	test('空数组表示删除全部标签，损坏数据回退默认顺序', () => {
 		expect(normalizeRibbonOrder([], available)).toEqual([])
 		expect(normalizeRibbonOrder(null, available)).toEqual([...available])
 		expect(normalizeRibbonOrder({ order: ['files'] }, available)).toEqual([...available])
+		expect(normalizeRibbonOrder(['unknown', 42], available)).toEqual([...available])
 	})
 
 	test('拖动向前或向后调换位置，无效位置不改动', () => {
