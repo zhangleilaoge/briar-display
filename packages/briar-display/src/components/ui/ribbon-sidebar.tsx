@@ -297,9 +297,9 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 					ref={trackRef}
 					className="rv-ribbon-mobile-track relative flex h-[4.5rem] items-start gap-0.5 overflow-x-auto overflow-y-hidden overscroll-x-contain px-2 scroll-smooth"
 				>
-					{items.map((item, i) => {
+					{items.map((item) => {
 						const isActive = active === item.href
-						const jitter = RIBBON_JITTER[i % RIBBON_JITTER.length]
+						const jitter = RIBBON_JITTER[item.kind]
 						return (
 							<li
 								key={item.href}

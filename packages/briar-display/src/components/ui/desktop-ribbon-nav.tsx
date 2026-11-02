@@ -9,7 +9,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from './hover-card'
 import { prefersReducedMotion, useFlip } from './motion'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 import type { RibbonItem } from './ribbon-items'
-import { RIBBON_JITTER, RibbonTag, type RibbonTagKind } from './ribbon-tags'
+import { type RibbonTagKind, RibbonTagPreview } from './ribbon-tags'
 import { ribbonDragOffset, ribbonInsertionIndex } from './ribbonPreferences'
 
 const LONG_PRESS_MS = 500
@@ -151,22 +151,22 @@ export function DesktopRibbonNav({
 		const pointerId = event.pointerId
 		const x = event.clientX
 		const y = event.clientY
+		suppressClickRef.current = false
+		target.setPointerCapture(pointerId)
+		pressPointRef.current = { x, y }
 		if (editing) {
 			dragCandidateRef.current = { pointerId, kind, x, y }
-			target.setPointerCapture(pointerId)
 			return
 		}
-		pressPointRef.current = { x, y }
 		pressTimerRef.current = window.setTimeout(() => {
 			pressTimerRef.current = null
 			dragCandidateRef.current = { pointerId, kind, x, y }
-			target.setPointerCapture(pointerId)
 			suppressClickRef.current = true
 			setEditing(true)
 		}, LONG_PRESS_MS)
 	}
 
-	const movePointer = (event: PointerEvent<HTMLAnchorElement>) => {
+	const movePointer = (event: PointerEvent<HTMLElement>) => {
 		const candidate = dragCandidateRef.current
 		if (candidate?.pointerId === event.pointerId) {
 			if (draggedRef.current !== candidate.kind) {
@@ -188,7 +188,13 @@ export function DesktopRibbonNav({
 			return
 		}
 		const point = pressPointRef.current
-		if (Math.hypot(event.clientX - point.x, event.clientY - point.y) > 8) clearPress()
+		if (
+			(event.buttons & 1) === 1 &&
+			Math.hypot(event.clientX - point.x, event.clientY - point.y) > 8
+		) {
+			clearPress()
+			suppressClickRef.current = true
+		}
 	}
 
 	const finishPointer = (event: PointerEvent<HTMLAnchorElement>, persist: boolean) => {
@@ -247,10 +253,17 @@ export function DesktopRibbonNav({
 				className={cn('rv-ribbon-list relative flex flex-col items-center gap-0.5', {
 					'is-settling': settling !== null,
 				})}
+				onPointerMoveCapture={movePointer}
+				onClickCapture={(event) => {
+					if (!(event.target instanceof Element) || !event.target.closest('a')) return
+					if (!editing && !suppressClickRef.current) return
+					event.preventDefault()
+					event.stopPropagation()
+					suppressClickRef.current = false
+				}}
 			>
 				{items.map((item, index) => {
 					const isActive = active === item.href
-					const jitter = RIBBON_JITTER[index % RIBBON_JITTER.length]
 					const dragOffset = dragPosition
 						? ribbonDragOffset(index, dragPosition.from, dragPosition.to)
 						: 0
@@ -298,19 +311,10 @@ export function DesktopRibbonNav({
 											'rv-ribbon-tag relative flex h-[70px] w-[58px] select-none flex-col items-center outline-none [touch-action:none]',
 											isActive && 'is-active',
 										)}
-										style={{
-											transform: `translateX(${jitter.x}px) rotate(${jitter.rotate}deg)`,
-										}}
 										onPointerDown={(event) => startLongPress(event, item.kind)}
-										onPointerMove={movePointer}
 										onPointerUp={(event) => finishPointer(event, true)}
 										onPointerCancel={(event) => finishPointer(event, false)}
 										onLostPointerCapture={(event) => finishPointer(event, false)}
-										onClick={(event) => {
-											if (!editing && !suppressClickRef.current) return
-											event.preventDefault()
-											suppressClickRef.current = false
-										}}
 										onKeyDown={(event) => moveWithKeyboard(event, index)}
 									>
 										{dragged === item.kind ? (
@@ -318,11 +322,14 @@ export function DesktopRibbonNav({
 												insert here
 											</Badge>
 										) : (
-											<RibbonTag kind={item.kind} active={isActive} caption={item.caption} />
+											<RibbonTagPreview
+												kind={item.kind}
+												active={isActive}
+												caption={item.caption}
+												label={item.label}
+												interactive
+											/>
 										)}
-										<span className="sr-only">
-											{item.label} · {item.caption}
-										</span>
 									</a>
 								</HoverCardTrigger>
 								<HoverCardContent
@@ -374,7 +381,11 @@ export function DesktopRibbonNav({
 													if (onAdd(item.kind)) setAddOpen(false)
 												}}
 											>
-												<RibbonTag kind={item.kind} className="h-12 w-10" />
+												<RibbonTagPreview
+													kind={item.kind}
+													caption={item.caption}
+													label={item.label}
+												/>
 												<span>{item.label}</span>
 											</button>
 										</li>
@@ -402,10 +413,12 @@ export function DesktopRibbonNav({
 							transform: 'translate(-50%, -50%)',
 						}}
 					>
-						<RibbonTag
+						<RibbonTagPreview
 							kind={draggedItem.kind}
 							active={active === draggedItem.href}
 							caption={draggedItem.caption}
+							label={draggedItem.label}
+							interactive
 						/>
 					</div>,
 					document.body,

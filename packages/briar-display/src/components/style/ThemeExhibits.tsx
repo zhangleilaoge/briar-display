@@ -10,8 +10,8 @@ import {
 	ToolsIcon,
 } from '@/components/ui/ornaments'
 import { PaperSheet, type PaperSheetVariant } from '@/components/ui/paper-sheet'
-import { RIBBON_ITEMS } from '@/components/ui/ribbon-sidebar'
-import { RibbonTag } from '@/components/ui/ribbon-tags'
+import { RIBBON_ITEMS } from '@/components/ui/ribbon-items'
+import { RibbonTagPreview } from '@/components/ui/ribbon-tags'
 import { BrandCollage, HudTitle, ScrapTitle } from '@/components/ui/theme-shell'
 import { DECOR_GROUPS } from '@/data/decor-assets'
 import { StyleExhibit, StyleSection } from './StyleSection'
@@ -74,17 +74,16 @@ export function ThemeExhibits() {
 
 			<StyleExhibit title="Ribbon Tags 吊牌系统" source="ui/ribbon-tags.tsx">
 				<div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-8">
-					{RIBBON_ITEMS.map(({ kind, caption }) => (
-						<div key={kind} className="flex flex-col items-center gap-2">
-							<div className="rv-ribbon-tag" data-kind={kind}>
-								<RibbonTag
-									kind={kind}
-									caption={caption}
-									active={kind === 'style'}
-									stickerLoading="lazy"
-								/>
-							</div>
-							<code className="text-[10px] text-muted-foreground">{kind}</code>
+					{RIBBON_ITEMS.map((item) => (
+						<div key={item.kind} className="flex flex-col items-center gap-2">
+							<RibbonTagPreview
+								kind={item.kind}
+								caption={item.caption}
+								label={item.label}
+								active={item.kind === 'style'}
+								stickerLoading="lazy"
+							/>
+							<span className="text-xs text-muted-foreground">{item.label}</span>
 						</div>
 					))}
 				</div>

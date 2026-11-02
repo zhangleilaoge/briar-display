@@ -256,13 +256,43 @@ export function RibbonTag({
 	)
 }
 
+interface RibbonTagPreviewProps extends RibbonTagProps {
+	label: string
+	interactive?: boolean
+}
+
+export function RibbonTagPreview({
+	kind,
+	caption,
+	label,
+	active,
+	stickerLoading,
+	interactive = false,
+}: RibbonTagPreviewProps) {
+	const jitter = RIBBON_JITTER[kind]
+	return (
+		<span
+			className={cn('relative flex h-[70px] w-[58px] flex-col items-center', {
+				'rv-ribbon-tag': !interactive,
+			})}
+			style={{ transform: `translateX(${jitter.x}px) rotate(${jitter.rotate}deg)` }}
+		>
+			<RibbonTag kind={kind} caption={caption} active={active} stickerLoading={stickerLoading} />
+			<span className="sr-only">
+				{label} · {caption}
+			</span>
+		</span>
+	)
+}
+
 /** 轻微错落：旋转 + 水平微偏 */
-export const RIBBON_JITTER: { rotate: number; x: number }[] = [
-	{ rotate: -5, x: -2 },
-	{ rotate: 4, x: 3 },
-	{ rotate: -3, x: 1 },
-	{ rotate: 6, x: -3 },
-	{ rotate: -4, x: 2 },
-	{ rotate: 3, x: -1 },
-	{ rotate: -6, x: 2 },
-]
+export const RIBBON_JITTER: Record<RibbonTagKind, { rotate: number; x: number }> = {
+	home: { rotate: -5, x: -2 },
+	style: { rotate: 4, x: 3 },
+	tools: { rotate: -3, x: 1 },
+	files: { rotate: 6, x: -3 },
+	thoughts: { rotate: -4, x: 2 },
+	markets: { rotate: 3, x: -1 },
+	admin: { rotate: -6, x: 2 },
+	profile: { rotate: -5, x: -2 },
+}
