@@ -6,6 +6,7 @@ import LoginMethodsCard from '@/components/profile/LoginMethodsCard'
 import MergeHistoryCard from '@/components/profile/MergeHistoryCard'
 import MessagesPanel from '@/components/profile/MessagesPanel'
 import { ProfileSheet, ProfileSheetHeader } from '@/components/profile/ProfileSheet'
+import { CountBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
@@ -186,9 +187,7 @@ function ProfilePageInner() {
 							<Mail className="h-3.5 w-3.5" />
 							站内信
 							{unread > 0 && (
-								<span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-white">
-									{unread > 99 ? '99+' : unread}
-								</span>
+								<CountBadge variant="danger">{unread > 99 ? '99+' : unread}</CountBadge>
 							)}
 						</TabsTrigger>
 					</TabsList>
@@ -368,11 +367,7 @@ function ProfilePageInner() {
 									icon={<KeyRound className="h-4 w-4" />}
 									title={
 										<>
-											权限{' '}
-											<span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-												{' '}
-												{permissions.length}{' '}
-											</span>
+											权限 <CountBadge className="ml-1">{permissions.length}</CountBadge>
 										</>
 									}
 									description="你拥有的全部权限编码（管理员拥有所有权限）"

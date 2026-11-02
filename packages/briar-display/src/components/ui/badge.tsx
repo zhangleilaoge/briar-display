@@ -36,4 +36,21 @@ function Badge({ className, variant, ...props }: BadgeProps) {
 	return <span className={cn(badgeVariants({ variant }), className)} {...props} />
 }
 
-export { Badge, badgeVariants }
+interface CountBadgeProps extends HTMLAttributes<HTMLSpanElement> {
+	variant?: 'danger' | 'muted'
+}
+
+function CountBadge({ className, variant = 'muted', ...props }: CountBadgeProps) {
+	return (
+		<span
+			className={cn(
+				'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 font-sans text-xs font-semibold leading-none tracking-normal tabular-nums',
+				variant === 'danger' ? 'bg-danger text-white' : 'bg-muted text-foreground',
+				className,
+			)}
+			{...props}
+		/>
+	)
+}
+
+export { Badge, badgeVariants, CountBadge }

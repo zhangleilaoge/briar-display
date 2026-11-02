@@ -1,5 +1,6 @@
 'use client'
 
+import { CountBadge } from '@/components/ui/badge'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { usePermissions } from '@/contexts/PermissionContext'
 import { useUnreadMessages } from '@/hooks/useUnreadMessages'
@@ -193,11 +194,7 @@ export default function UserMenu() {
 							<Mail className="h-3.5 w-3.5" />
 							站内信
 						</span>
-						{unread > 0 && (
-							<span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-white">
-								{unread > 99 ? '99+' : unread}
-							</span>
-						)}
+						{unread > 0 && <CountBadge variant="danger">{unread > 99 ? '99+' : unread}</CountBadge>}
 					</a>
 					<a
 						href="/briar/"

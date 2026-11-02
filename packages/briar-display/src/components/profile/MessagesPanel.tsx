@@ -9,6 +9,7 @@ import {
 	notifyMessagesChanged,
 } from '@/api/messages'
 import { ProfileSheet, ProfileSheetHeader } from '@/components/profile/ProfileSheet'
+import { CountBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,
@@ -144,11 +145,7 @@ export default function MessagesPanel() {
 				title={
 					<>
 						站内信
-						{total > 0 && (
-							<span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-								{total}
-							</span>
-						)}
+						{total > 0 && <CountBadge className="ml-1">{total}</CountBadge>}
 					</>
 				}
 				description="系统通知与消息"

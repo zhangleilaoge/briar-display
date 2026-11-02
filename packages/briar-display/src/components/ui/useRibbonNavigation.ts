@@ -2,13 +2,15 @@
 
 import { getPreference, putPreference } from '@/api/users'
 import { usePermissions } from '@/contexts/PermissionContext'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { DEFAULT_RIBBON_ORDER } from './ribbon-items'
 import type { RibbonTagKind } from './ribbon-tags'
+import { readRibbonOrderCache, writeRibbonOrderCache } from './ribbonOrderCache'
 import { moveRibbonItem, normalizeRibbonOrder } from './ribbonPreferences'
 
 const PREFERENCE_KEY = 'ribbon-navigation'
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
 export function useRibbonNavigation() {
 	const { isLoggedIn, loading, user } = usePermissions()
@@ -21,9 +23,19 @@ export function useRibbonNavigation() {
 	const writeQueueRef = useRef<Promise<void>>(Promise.resolve())
 
 	const replaceOrder = useCallback((next: RibbonTagKind[]) => {
+		const current = orderRef.current
+		if (current.length === next.length && current.every((kind, index) => kind === next[index]))
+			return
 		orderRef.current = next
 		setOrder(next)
 	}, [])
+
+	useIsomorphicLayoutEffect(() => {
+		const cached = readRibbonOrderCache(window.localStorage)
+		if (!cached) return
+		savedOrderRef.current = cached
+		replaceOrder(cached)
+	}, [replaceOrder])
 
 	useEffect(() => {
 		let active = true
@@ -50,6 +62,7 @@ export function useRibbonNavigation() {
 				if (!response.success) throw new Error(response.message)
 				const next = normalizeRibbonOrder(response.data?.value, DEFAULT_RIBBON_ORDER)
 				if (!active || revisionRef.current !== revision) return
+				writeRibbonOrderCache(window.localStorage, user.id, next)
 				savedOrderRef.current = next
 				replaceOrder(next)
 				setStatus('ready')
@@ -69,6 +82,7 @@ export function useRibbonNavigation() {
 			if (status !== 'ready' || !isLoggedIn) return false
 			const normalized = normalizeRibbonOrder(next, DEFAULT_RIBBON_ORDER)
 			const revision = ++revisionRef.current
+			if (user?.id) writeRibbonOrderCache(window.localStorage, user.id, normalized)
 			replaceOrder(normalized)
 			setSaving(true)
 			writeQueueRef.current = writeQueueRef.current
@@ -80,6 +94,9 @@ export function useRibbonNavigation() {
 						savedOrderRef.current = normalized
 					} catch {
 						if (revisionRef.current === revision) {
+							if (user?.id) {
+								writeRibbonOrderCache(window.localStorage, user.id, savedOrderRef.current)
+							}
 							replaceOrder(savedOrderRef.current)
 							toast.error('标签设置保存失败，请重试')
 						}
@@ -89,7 +106,7 @@ export function useRibbonNavigation() {
 				})
 			return true
 		},
-		[isLoggedIn, replaceOrder, status],
+		[isLoggedIn, replaceOrder, status, user?.id],
 	)
 
 	const add = useCallback((kind: RibbonTagKind) => commit([...orderRef.current, kind]), [commit])

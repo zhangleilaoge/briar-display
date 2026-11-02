@@ -45,6 +45,13 @@ export function useFlip(
 	axis: 'both' | 'x' | 'y' = 'both',
 ) {
 	const rects = useRef<Map<string, DOMRect> | null>(null)
+	const ready = useRef(false)
+	useEffect(() => {
+		const frame = window.requestAnimationFrame(() => {
+			ready.current = true
+		})
+		return () => window.cancelAnimationFrame(frame)
+	}, [])
 	useIsoLayoutEffect(() => {
 		const el = containerRef.current
 		if (!el) return
@@ -55,7 +62,7 @@ export function useFlip(
 		rects.current = next
 		const skip = skipNext?.current ?? false
 		if (skipNext) skipNext.current = false
-		if (!prev || skip || prefersReducedMotion()) return
+		if (!prev || !ready.current || skip || prefersReducedMotion()) return
 		for (const n of nodes) {
 			const key = n.dataset.flipKey as string
 			const old = prev.get(key)
