@@ -44,7 +44,7 @@ export function LinkifiedText({
 						className={cn(
 							'rv-thought-tag mx-0.5 inline-flex items-baseline rounded-sm border border-dashed px-1.5 py-px align-baseline text-[0.88em] leading-snug transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose-deep)]/30',
 							activeTag === part.tag
-								? 'border-solid border-[color:var(--rv-rose-deep)]/45 bg-[color:var(--rv-rose)]/55 text-[color:var(--rv-rose-deep)]'
+								? 'border-solid border-[color:var(--rv-rose-deep)]/45 bg-[color:color-mix(in_srgb,var(--rv-rose)_65%,transparent)] text-[color:var(--rv-rose-deep)]'
 								: 'border-[color:var(--rv-rose-deep)]/30 bg-[var(--rv-pink)]/30 text-[color:var(--rv-rose-deep)] hover:border-[color:var(--rv-rose-deep)]/55 hover:bg-[var(--rv-pink)]/65',
 						)}
 						title={`查看 ${part.value} 的想法`}

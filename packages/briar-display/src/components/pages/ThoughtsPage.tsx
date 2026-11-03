@@ -13,6 +13,7 @@ import {
 import type { ThoughtTagCount } from '@/api/thoughts'
 import { EmojiInsertButton } from '@/components/thoughts/EmojiInsertButton'
 import { TagTextarea, type TagTextareaHandle } from '@/components/thoughts/TagTextarea'
+import { ThoughtsAsideBlock } from '@/components/thoughts/ThoughtsAsideBlock'
 import { Button } from '@/components/ui/button'
 import { LinkifiedText } from '@/components/ui/linkified-text'
 import { PageHeader } from '@/components/ui/page-header'
@@ -145,27 +146,13 @@ function TagInsertButton({ onClick, disabled }: { onClick: () => void; disabled?
 	)
 }
 
-/** 侧栏卡片统一标题：花体法文 + 小号 Josefin 中文副标 */
-function SideCardTitle({ script, label }: { script: string; label: string }) {
-	return (
-		<div className="flex items-baseline gap-2">
-			<span className="rv-script text-lg leading-none text-[color:var(--rv-rose-deep)]">
-				{script}
-			</span>
-			<span className="font-label text-[10px] uppercase tracking-[0.22em] text-[color:var(--rv-navy)]/55">
-				{label}
-			</span>
-		</div>
-	)
-}
-
 /** 标签 chip：侧栏筛选 / 正文共用一套视觉 */
 const tagChipBase =
 	'inline-flex items-center gap-1 whitespace-nowrap rounded-sm border border-dashed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose-deep)]/30'
 const tagChipIdle =
 	'border-[color:var(--rv-rose-deep)]/30 bg-[var(--rv-pink)]/30 text-[color:var(--rv-rose-deep)] hover:border-[color:var(--rv-rose-deep)]/55 hover:bg-[var(--rv-pink)]/65'
 const tagChipActive =
-	'border-solid border-[color:var(--rv-rose-deep)]/45 bg-[color:var(--rv-rose)]/55 text-[color:var(--rv-rose-deep)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.6)]'
+	'border-solid border-[color:var(--rv-rose-deep)]/45 bg-[color:color-mix(in_srgb,var(--rv-rose)_65%,transparent)] text-[color:var(--rv-rose-deep)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.6)]'
 
 /** 标签筛选条：热门标签 + 当前筛选 */
 function TagFilterBar({
@@ -184,10 +171,11 @@ function TagFilterBar({
 	const filtered = q ? tags.filter((t) => t.tag.includes(q)) : tags
 	const shown = expanded || q ? filtered : filtered.slice(0, 12)
 	return (
-		<PaperSheet variant="stamp" className="min-w-0" bodyClassName="!px-4 !py-4 space-y-3">
-			<div className="flex items-center justify-between gap-2">
-				<SideCardTitle script="mots-clés" label="热门标签" />
-				{tags.length > 8 && (
+		<ThoughtsAsideBlock
+			script="mots-clés"
+			label="热门标签"
+			action={
+				tags.length > 8 && (
 					<input
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
@@ -200,56 +188,59 @@ function TagFilterBar({
 						placeholder="搜标签…"
 						className="h-8 w-24 min-w-0 rounded-sm border border-dashed border-[color:var(--rv-rose-deep)]/30 bg-[var(--rv-beige)]/80 px-2 text-[12px] outline-none placeholder:text-muted-foreground/70 focus:border-[color:var(--rv-rose-deep)]/60"
 					/>
-				)}
-			</div>
-			<div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden">
-				{shown.map((t) => {
-					const active = t.tag === activeTag
-					return (
+				)
+			}
+		>
+			<div className="space-y-3">
+				<div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden">
+					{shown.map((t) => {
+						const active = t.tag === activeTag
+						return (
+							<button
+								key={t.tag}
+								type="button"
+								onClick={() => onSelect(active ? null : t.tag)}
+								aria-pressed={active}
+								className={cn(
+									tagChipBase,
+									'h-8 shrink-0 px-2.5 text-[13px] leading-none lg:h-7',
+									active ? tagChipActive : tagChipIdle,
+								)}
+							>
+								<span>#{t.tag}</span>
+								<span className="font-label text-[10px] tabular-nums text-[color:var(--rv-navy)]/45">
+									{t.count}
+								</span>
+							</button>
+						)
+					})}
+					{!q && filtered.length > 12 && (
 						<button
-							key={t.tag}
 							type="button"
-							onClick={() => onSelect(active ? null : t.tag)}
-							aria-pressed={active}
-							className={cn(
-								tagChipBase,
-								'h-8 shrink-0 px-2.5 text-[13px] leading-none lg:h-7',
-								active ? tagChipActive : tagChipIdle,
-							)}
+							onClick={() => setExpanded((v) => !v)}
+							className="h-8 shrink-0 px-1 font-label text-[11px] tracking-[0.06em] text-muted-foreground underline-offset-4 hover:text-[color:var(--rv-rose-deep)] hover:underline lg:h-7"
 						>
-							<span>#{t.tag}</span>
-							<span className="font-label text-[10px] tabular-nums text-[color:var(--rv-navy)]/45">
-								{t.count}
-							</span>
+							{expanded ? '收起' : `更多 ${filtered.length - 12}`}
 						</button>
-					)
-				})}
-				{!q && filtered.length > 12 && (
-					<button
-						type="button"
-						onClick={() => setExpanded((v) => !v)}
-						className="h-8 shrink-0 px-1 font-label text-[11px] tracking-[0.06em] text-muted-foreground underline-offset-4 hover:text-[color:var(--rv-rose-deep)] hover:underline lg:h-7"
-					>
-						{expanded ? '收起' : `更多 ${filtered.length - 12}`}
-					</button>
+					)}
+				</div>
+				{activeTag && (
+					<div className="flex min-h-8 items-center justify-between gap-2 border-t border-dashed border-[color:var(--rv-navy)]/12 pt-2.5">
+						<span className="min-w-0 truncate text-[13px] text-muted-foreground">
+							正在看 <span className="text-[color:var(--rv-rose-deep)]">#{activeTag}</span>
+						</span>
+						<button
+							type="button"
+							onClick={() => onSelect(null)}
+							className="inline-flex h-8 shrink-0 items-center gap-1 px-1 font-label text-[11px] tracking-[0.06em] text-muted-foreground underline-offset-4 transition-colors hover:text-[color:var(--rv-rose-deep)] hover:underline lg:h-7"
+						>
+							<X className="h-3 w-3" />
+							清除筛选
+						</button>
+					</div>
 				)}
 			</div>
-			{activeTag && (
-				<div className="flex min-h-8 items-center justify-between gap-2 border-t border-dashed border-[color:var(--rv-navy)]/12 pt-2.5">
-					<span className="min-w-0 truncate text-[13px] text-muted-foreground">
-						正在看 <span className="text-[color:var(--rv-rose-deep)]">#{activeTag}</span>
-					</span>
-					<button
-						type="button"
-						onClick={() => onSelect(null)}
-						className="inline-flex h-8 shrink-0 items-center gap-1 px-1 font-label text-[11px] tracking-[0.06em] text-muted-foreground underline-offset-4 transition-colors hover:text-[color:var(--rv-rose-deep)] hover:underline lg:h-7"
-					>
-						<X className="h-3 w-3" />
-						清除筛选
-					</button>
-				</div>
-			)}
-		</PaperSheet>
+		</ThoughtsAsideBlock>
 	)
 }
 
@@ -272,9 +263,8 @@ function StatsCard({
 		['获赞', likes],
 	]
 	return (
-		<PaperSheet variant="kraft" className="hidden lg:block" bodyClassName="!px-4 !py-4">
-			<SideCardTitle script="en bref" label="小统计" />
-			<dl className="mt-3 grid grid-cols-3 divide-x divide-dashed divide-[color:var(--rv-navy)]/15 text-center">
+		<ThoughtsAsideBlock script="en bref" label="小统计" className="hidden lg:block">
+			<dl className="grid grid-cols-3 divide-x divide-dashed divide-[color:var(--rv-navy)]/15 text-center">
 				{cells.map(([k, v]) => (
 					<div key={k} className="min-w-0 px-1">
 						<dd className="font-display text-2xl font-semibold leading-none tabular-nums text-[color:var(--rv-navy)]">
@@ -286,7 +276,7 @@ function StatsCard({
 					</div>
 				))}
 			</dl>
-		</PaperSheet>
+		</ThoughtsAsideBlock>
 	)
 }
 
