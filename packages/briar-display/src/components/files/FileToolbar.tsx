@@ -1,6 +1,6 @@
 'use client'
 
-import { type FileTypeFilter, createFolder } from '@/api/files'
+import { type FileTypeCounts, type FileTypeFilter, createFolder } from '@/api/files'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,
@@ -46,6 +46,7 @@ interface FileToolbarProps {
 	onSearchChange: (value: string) => void
 	typeFilter: '' | FileTypeFilter
 	onTypeFilterChange: (value: '' | FileTypeFilter) => void
+	typeCounts: FileTypeCounts
 	sortValue: FileSortValue
 	onSortChange: (value: FileSortValue) => void
 	selectedCount: number
@@ -61,6 +62,7 @@ export default function FileToolbar({
 	onSearchChange,
 	typeFilter,
 	onTypeFilterChange,
+	typeCounts,
 	sortValue,
 	onSortChange,
 	selectedCount,
@@ -109,7 +111,7 @@ export default function FileToolbar({
 					<TabsList className="h-9">
 						{TYPE_TABS.map((t) => (
 							<TabsTrigger key={t.value} value={t.value} className="px-3 text-xs">
-								{t.label}
+								{t.label} {typeCounts[t.value || 'all']}
 							</TabsTrigger>
 						))}
 					</TabsList>

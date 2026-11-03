@@ -46,6 +46,7 @@ export interface FileStats {
 }
 
 export type FileTypeFilter = 'image' | 'video' | 'text' | 'other'
+export type FileTypeCounts = Record<'all' | FileTypeFilter, number>
 
 export type FileSortField = 'createdAt' | 'name' | 'size'
 export type FileSortOrder = 'asc' | 'desc'
@@ -334,7 +335,13 @@ export const getFiles = async (params?: {
 	if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize))
 	const qs = searchParams.toString()
 	const response = await apiClient.get<
-		ApiResponse<{ items: FileItem[]; total: number; page: number; pageSize: number }>
+		ApiResponse<{
+			items: FileItem[]
+			total: number
+			typeCounts: FileTypeCounts
+			page: number
+			pageSize: number
+		}>
 	>(`/files${qs ? `?${qs}` : ''}`)
 	return response.data
 }

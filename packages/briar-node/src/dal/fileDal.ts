@@ -195,7 +195,11 @@ export const fileDal = {
 			sort?: FileSortField
 			order?: 'asc' | 'desc'
 		},
-	): Promise<{ items: FileRecord[]; total: number }> {
+	): Promise<{
+		items: FileRecord[]
+		total: number
+		typeCounts: Record<'all' | FileType, number>
+	}> {
 		const conditions = ['user_id = ?', 'deleted_at IS NULL']
 		const values: any[] = [userId]
 
@@ -210,24 +214,32 @@ export const fileDal = {
 			conditions.push('folder_id IS NULL')
 		}
 
-		if (params.type) {
-			const { clause } = typeCondition(params.type)
-			conditions.push(clause)
-		}
-
 		if (params.excludeFolderIds && params.excludeFolderIds.length > 0) {
 			const placeholders = params.excludeFolderIds.map(() => '?').join(',')
 			conditions.push(`(folder_id IS NULL OR folder_id NOT IN (${placeholders}))`)
 			values.push(...params.excludeFolderIds)
 		}
 
-		const where = `WHERE ${conditions.join(' AND ')}`
+		const baseWhere = `WHERE ${conditions.join(' AND ')}`
+		const where = params.type ? `${baseWhere} AND ${typeCondition(params.type).clause}` : baseWhere
 
-		const countRow = await queryOne<{ cnt: number }>(
-			`SELECT COUNT(*) AS cnt FROM files ${where}`,
+		const countRow = await queryOne<Record<'total_count' | FileType, number>>(
+			`SELECT COUNT(*) AS total_count,
+				COUNT(CASE WHEN ${typeCondition('image').clause} THEN 1 END) AS image,
+				COUNT(CASE WHEN ${typeCondition('video').clause} THEN 1 END) AS video,
+				COUNT(CASE WHEN ${typeCondition('text').clause} THEN 1 END) AS text,
+				COUNT(CASE WHEN ${typeCondition('other').clause} THEN 1 END) AS other
+			FROM files ${baseWhere}`,
 			values,
 		)
-		const total = countRow?.cnt ?? 0
+		const total = params.type ? (countRow?.[params.type] ?? 0) : (countRow?.total_count ?? 0)
+		const typeCounts = {
+			all: countRow?.total_count ?? 0,
+			image: countRow?.image ?? 0,
+			video: countRow?.video ?? 0,
+			text: countRow?.text ?? 0,
+			other: countRow?.other ?? 0,
+		}
 
 		const offset = (params.page - 1) * params.pageSize
 		const sortColumn = SORT_COLUMNS[params.sort ?? 'createdAt'] ?? SORT_COLUMNS.createdAt
@@ -237,7 +249,7 @@ export const fileDal = {
 			[...values, params.pageSize, offset],
 		)
 
-		return { items: rows.map(mapRow), total }
+		return { items: rows.map(mapRow), total, typeCounts }
 	},
 
 	async moveToFolder(id: string, userId: string, folderId: string | null): Promise<boolean> {

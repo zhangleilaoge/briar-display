@@ -4,6 +4,7 @@ import {
 	type FileItem,
 	type FileSortField,
 	type FileSortOrder,
+	type FileTypeCounts,
 	type FileTypeFilter,
 	getFiles,
 } from '@/api/files'
@@ -36,6 +37,13 @@ function readFolderFromPath(): string | null {
 export function useFileList() {
 	const [files, setFiles] = useState<FileItem[]>([])
 	const [total, setTotal] = useState(0)
+	const [typeCounts, setTypeCounts] = useState<FileTypeCounts>({
+		all: 0,
+		image: 0,
+		video: 0,
+		text: 0,
+		other: 0,
+	})
 	const [loading, setLoading] = useState(true)
 	const [search, setSearch] = useState('')
 	const [keyword, setKeyword] = useState('')
@@ -81,6 +89,7 @@ export function useFileList() {
 				if (res.success && res.data) {
 					setFiles(res.data.items)
 					setTotal(res.data.total)
+					setTypeCounts(res.data.typeCounts)
 				}
 			} catch {
 				/* ignore */
@@ -120,6 +129,7 @@ export function useFileList() {
 	return {
 		files,
 		total,
+		typeCounts,
 		loading,
 		search,
 		keyword,

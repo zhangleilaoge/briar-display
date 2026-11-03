@@ -207,7 +207,7 @@ fileRoutes.get('/', async (c) => {
 		excludeFolderIds = await privacyService.privateScopeFolderIds(user.id)
 	}
 
-	const { items, total } = await fileDal.listByUser(user.id, {
+	const { items, total, typeCounts } = await fileDal.listByUser(user.id, {
 		page,
 		pageSize,
 		keyword,
@@ -224,6 +224,7 @@ fileRoutes.get('/', async (c) => {
 		data: {
 			items: items.map((f) => ({ ...f, ...cosService.signFileUrls(f) })),
 			total,
+			typeCounts,
 			page,
 			pageSize,
 		},

@@ -69,6 +69,7 @@ function FileManagerPageInner() {
 	const {
 		files,
 		total,
+		typeCounts,
 		loading,
 		search,
 		keyword,
@@ -429,6 +430,7 @@ function FileManagerPageInner() {
 					onSearchChange={handleSearchChange}
 					typeFilter={typeFilter}
 					onTypeFilterChange={setTypeFilter}
+					typeCounts={typeCounts}
 					sortValue={sortValue}
 					onSortChange={setSortValue}
 					selectedCount={selected.size}
