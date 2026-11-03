@@ -4,10 +4,7 @@
 	--foreground: 27 31% 27%;
 	--popover-foreground: 27 31% 27%;
 	--muted-foreground: 31 23% 40%;
-	--accent: 40 25% 93%;
-	--accent-foreground: 27 31% 27%;
 	--border: 34 29% 67%;
-	--row-hover: #f5efe4;
 	--row-selected: #f0e7d7;
 	--row-selected-fg: #594132;
 	isolation: isolate;

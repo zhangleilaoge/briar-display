@@ -153,7 +153,7 @@ export default function UserMenu() {
 						/>
 					</button>
 				</PopoverTrigger>
-				<PopoverContent className="w-56 bg-popover p-1" align="end" sideOffset={6}>
+				<PopoverContent className="w-56 bg-popover px-2 py-1" align="end" sideOffset={6}>
 					{/* 头部：用户信息 */}
 					<div className="mb-1 border-b border-border px-3 py-2">
 						{/* 名字与角色 */}
