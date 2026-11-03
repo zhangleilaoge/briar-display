@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom'
 import DocxPreview from './DocxPreview'
 import ExcelPreview from './ExcelPreview'
 import FileTypeIcon from './FileTypeIcon'
+import PdfPreview from './PdfPreview'
 
 // BlockNote 体积大（~1MB），仅预览 md 时才加载
 const MarkdownPreview = lazy(() => import('./MarkdownPreview'))
@@ -335,13 +336,7 @@ export default function FileDetailModal({
 								)}
 							</>
 						)}
-						{kind === 'pdf' && (
-							<iframe
-								src={file.cdnUrl}
-								title={file.originalName}
-								className="h-[60vh] w-full border border-[color:var(--rv-navy)]/20 bg-[var(--rv-beige)]"
-							/>
-						)}
+						{kind === 'pdf' && <PdfPreview file={file} onDownload={download} />}
 						{kind === 'excel' && <ExcelPreview file={file} />}
 						{kind === 'docx' && <DocxPreview file={file} />}
 						{kind === 'audio' && (
