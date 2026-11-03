@@ -1,4 +1,4 @@
-import { extractThoughtTags, generateId, normalizeThoughtTag } from '@briar/shared'
+import { extractThoughtTags, generateId, parseThoughtTagList } from '@briar/shared'
 import { execute, query, queryOne } from '../lib/db'
 
 export interface ThoughtRecord {
@@ -80,13 +80,14 @@ export const thoughtDal = {
 		page: number
 		pageSize: number
 		viewerId?: string | null
-		tag?: string | null
+		/** 任一命中（OR） */
+		tags?: string[]
 	}): Promise<{ items: ThoughtRecord[]; total: number }> {
-		const tag = params.tag ? normalizeThoughtTag(params.tag) : ''
-		const tagWhere = tag
-			? ' AND EXISTS (SELECT 1 FROM thought_tags tt WHERE tt.thought_id = t.id AND tt.tag = ? AND tt.deleted_at IS NULL)'
+		const tags = parseThoughtTagList(params.tags ?? [])
+		const tagWhere = tags.length
+			? ` AND EXISTS (SELECT 1 FROM thought_tags tt WHERE tt.thought_id = t.id AND tt.tag IN (${tags.map(() => '?').join(', ')}) AND tt.deleted_at IS NULL)`
 			: ''
-		const tagParams: unknown[] = tag ? [tag] : []
+		const tagParams: unknown[] = tags
 		const countRow = await queryOne<{ cnt: number }>(
 			`SELECT COUNT(*) AS cnt ${FROM_JOIN} WHERE t.deleted_at IS NULL${tagWhere}`,
 			tagParams,

@@ -36,9 +36,10 @@ export interface ThoughtTagCount {
 	count: number
 }
 
-export const listThoughts = async (page = 1, pageSize = 20, tag?: string | null) => {
+/** tags：多标签 OR 筛选，以逗号拼接传给后端（后端也接受重复 ?tag=） */
+export const listThoughts = async (page = 1, pageSize = 20, tags?: readonly string[] | null) => {
 	const response = await apiClient.get<ApiResponse<ThoughtList>>('/thoughts', {
-		params: tag ? { page, pageSize, tag } : { page, pageSize },
+		params: tags?.length ? { page, pageSize, tag: tags.join(',') } : { page, pageSize },
 	})
 	return response.data
 }

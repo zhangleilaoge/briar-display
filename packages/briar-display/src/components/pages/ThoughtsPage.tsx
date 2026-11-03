@@ -20,8 +20,9 @@ import { PageHeader } from '@/components/ui/page-header'
 import { PaperSheet, type PaperSheetVariant } from '@/components/ui/paper-sheet'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
+import { formatTagList, toggleTagInList } from '@/lib/thoughtTagFilter'
 import { cn } from '@/lib/utils'
-import { normalizeThoughtTag } from '@briar/shared'
+import { normalizeThoughtTag, parseThoughtTagList } from '@briar/shared'
 import { Hash, Heart, Loader2, Pencil, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -116,16 +117,16 @@ function ThoughtScrapDecor({ preset }: { preset: PaperSheetVariant }) {
 	)
 }
 
-function readTagFromUrl(): string | null {
-	if (typeof window === 'undefined') return null
-	const raw = new URLSearchParams(window.location.search).get('tag')
-	return raw ? normalizeThoughtTag(raw) || null : null
+/** URL 形如 ?tag=a&tag=b；兼容旧的单个 ?tag=a 与逗号分隔 */
+function readTagsFromUrl(): string[] {
+	if (typeof window === 'undefined') return []
+	return parseThoughtTagList(new URLSearchParams(window.location.search).getAll('tag'))
 }
 
-function writeTagToUrl(tag: string | null, push: boolean) {
+function writeTagsToUrl(tags: readonly string[], push: boolean) {
 	const url = new URL(window.location.href)
-	if (tag) url.searchParams.set('tag', tag)
-	else url.searchParams.delete('tag')
+	url.searchParams.delete('tag')
+	for (const t of tags) url.searchParams.append('tag', t)
 	if (url.href === window.location.href) return
 	window.history[push ? 'pushState' : 'replaceState'](null, '', url)
 }
@@ -155,19 +156,19 @@ const tagChipIdle =
 const tagChipActive =
 	'border-solid border-[color:var(--rv-rose-deep)]/45 bg-[color:color-mix(in_srgb,var(--rv-rose)_65%,transparent)] text-[color:var(--rv-rose-deep)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.6)]'
 
-/** 标签筛选条：热门标签 + 当前筛选 */
+/** 标签筛选条：热门标签，可多选；点一次选中、再点取消 */
 function TagFilterBar({
 	tags,
-	activeTag,
-	onSelect,
+	activeTags,
+	onToggle,
 }: {
 	tags: ThoughtTagCount[]
-	activeTag: string | null
-	onSelect: (tag: string | null) => void
+	activeTags: readonly string[]
+	onToggle: (tag: string) => void
 }) {
 	const [query, setQuery] = useState('')
 	const [expanded, setExpanded] = useState(false)
-	if (tags.length === 0 && !activeTag) return null
+	if (tags.length === 0 && activeTags.length === 0) return null
 	const q = normalizeThoughtTag(query)
 	const filtered = q ? tags.filter((t) => t.tag.includes(q)) : tags
 	const shown = expanded || q ? filtered : filtered.slice(0, 12)
@@ -181,7 +182,7 @@ function TagFilterBar({
 						onChange={(e) => setQuery(e.target.value)}
 						onKeyDown={(e) => {
 							if (e.key === 'Enter' && filtered[0]) {
-								onSelect(filtered[0].tag)
+								onToggle(filtered[0].tag)
 								setQuery('')
 							}
 						}}
@@ -194,12 +195,13 @@ function TagFilterBar({
 			<div className="space-y-3">
 				<div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden">
 					{shown.map((t) => {
-						const active = t.tag === activeTag
+						const active = activeTags.includes(t.tag)
 						return (
 							<button
 								key={t.tag}
 								type="button"
-								onClick={() => onSelect(active ? null : t.tag)}
+								onClick={() => onToggle(t.tag)}
+								title={active ? `再点一次取消 #${t.tag}` : `筛选 #${t.tag}`}
 								aria-pressed={active}
 								className={cn(
 									tagChipBase,
@@ -211,6 +213,7 @@ function TagFilterBar({
 								<span className="font-label text-[10px] tabular-nums text-[color:var(--rv-navy)]/45">
 									{t.count}
 								</span>
+								{active && <X aria-hidden className="-mr-0.5 h-3 w-3 opacity-70" />}
 							</button>
 						)
 					})}
@@ -224,21 +227,6 @@ function TagFilterBar({
 						</button>
 					)}
 				</div>
-				{activeTag && (
-					<div className="flex min-h-8 items-center justify-between gap-2 border-t border-dashed border-[color:var(--rv-navy)]/12 pt-2.5">
-						<span className="min-w-0 truncate text-[13px] text-muted-foreground">
-							正在看 <span className="text-[color:var(--rv-rose-deep)]">#{activeTag}</span>
-						</span>
-						<button
-							type="button"
-							onClick={() => onSelect(null)}
-							className="inline-flex h-8 shrink-0 items-center gap-1 px-1 font-label text-[11px] tracking-[0.06em] text-muted-foreground underline-offset-4 transition-colors hover:text-[color:var(--rv-rose-deep)] hover:underline lg:h-7"
-						>
-							<X className="h-3 w-3" />
-							清除筛选
-						</button>
-					</div>
-				)}
 			</div>
 		</ThoughtsAsideBlock>
 	)
@@ -249,16 +237,19 @@ function StatsCard({
 	total,
 	tagCount,
 	items,
-	activeTag,
+	activeTags,
 }: {
 	total: number
 	tagCount: number
 	items: Thought[]
-	activeTag: string | null
+	activeTags: readonly string[]
 }) {
 	const likes = items.reduce((n, t) => n + (t.likeCount ?? 0), 0)
 	const cells: [string, number][] = [
-		[activeTag ? `#${activeTag}` : '想法', total],
+		[
+			activeTags.length === 0 ? '想法' : activeTags.length === 1 ? `#${activeTags[0]}` : '筛选结果',
+			total,
+		],
 		['标签', tagCount],
 		['获赞', likes],
 	]
@@ -297,7 +288,7 @@ function ThoughtsPageInner() {
 	const [draft, setDraft] = useState('')
 	const [publishing, setPublishing] = useState(false)
 	const [publishError, setPublishError] = useState<string | null>(null)
-	const [activeTag, setActiveTag] = useState<string | null>(() => readTagFromUrl())
+	const [activeTags, setActiveTags] = useState<string[]>(() => readTagsFromUrl())
 	const [tagCounts, setTagCounts] = useState<ThoughtTagCount[]>([])
 	const composeRef = useRef<TagTextareaHandle>(null)
 	const knownTags = useMemo(() => tagCounts.map((t) => t.tag), [tagCounts])
@@ -313,22 +304,36 @@ function ThoughtsPageInner() {
 
 	useEffect(() => {
 		void loadTags()
-		const onPop = () => setActiveTag(readTagFromUrl())
+		const onPop = () => setActiveTags(readTagsFromUrl())
 		window.addEventListener('popstate', onPop)
 		return () => window.removeEventListener('popstate', onPop)
 	}, [loadTags])
 
-	const selectTag = useCallback((tag: string | null) => {
-		setActiveTag(tag)
-		writeTagToUrl(tag, true)
+	/** 多选：未选中则加入，已选中则移除 */
+	const toggleTag = useCallback((tag: string) => {
+		setActiveTags((prev) => {
+			const next = toggleTagInList(prev, tag)
+			writeTagsToUrl(next, true)
+			return next
+		})
+	}, [])
+	/** 正文里点标签：只加入选择（已选中则不动），并回到顶部看结果 */
+	const addTag = useCallback((tag: string) => {
+		setActiveTags((prev) => {
+			if (prev.includes(tag)) return prev
+			const next = [...prev, tag]
+			writeTagsToUrl(next, true)
+			return next
+		})
 		window.scrollTo({ top: 0, behavior: 'smooth' })
 	}, [])
+	const activeKey = activeTags.join(',')
 
 	const load = useCallback(async () => {
 		setLoading(true)
 		setError(null)
 		try {
-			const res = await listThoughts(1, 50, activeTag)
+			const res = await listThoughts(1, 50, activeKey ? activeKey.split(',') : [])
 			if (res.success && res.data) {
 				setItems(res.data.items)
 				setTotal(res.data.total)
@@ -340,7 +345,7 @@ function ThoughtsPageInner() {
 		} finally {
 			setLoading(false)
 		}
-	}, [activeTag])
+	}, [activeKey])
 
 	useEffect(() => {
 		void load()
@@ -355,7 +360,8 @@ function ThoughtsPageInner() {
 			const res = await createThought(text)
 			if (res.success && res.data) {
 				setDraft('')
-				const matches = !activeTag || (res.data.tags ?? []).includes(activeTag)
+				const matches =
+					activeTags.length === 0 || (res.data.tags ?? []).some((t) => activeTags.includes(t))
 				if (matches) {
 					setItems((prev) => [res.data!, ...prev])
 					setTotal((t) => t + 1)
@@ -433,20 +439,20 @@ function ThoughtsPageInner() {
 			<main className="rv-content-inset mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
 				<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-8">
 					<aside className="order-first min-w-0 space-y-4 lg:sticky lg:top-24 lg:order-last lg:self-start">
-						<TagFilterBar tags={tagCounts} activeTag={activeTag} onSelect={selectTag} />
+						<TagFilterBar tags={tagCounts} activeTags={activeTags} onToggle={toggleTag} />
 						<StatsCard
 							total={total}
 							tagCount={tagCounts.length}
 							items={items}
-							activeTag={activeTag}
+							activeTags={activeTags}
 						/>
 					</aside>
 					<section className="min-w-0">
 						<header className="mb-6">
 							<h1 className="text-3xl font-semibold tracking-tight">想法</h1>
 							<p className="mt-1 text-sm text-muted-foreground">
-								一小段话就好 · 纯文本、emoji 与 #标签 · {activeTag ? `#${activeTag} ` : ''}共{' '}
-								{total} 条
+								一小段话就好 · 纯文本、emoji 与 #标签 ·{' '}
+								{activeTags.length ? `${formatTagList(activeTags)} ` : ''}共 {total} 条
 							</p>
 						</header>
 
@@ -510,8 +516,8 @@ function ThoughtsPageInner() {
 								variant="torn"
 								bodyClassName="py-12 text-center text-sm text-muted-foreground"
 							>
-								{activeTag
-									? `还没有带 #${activeTag} 的想法。`
+								{activeTags.length
+									? `还没有带 ${formatTagList(activeTags, ' 或 ')} 的想法。`
 									: `还没有想法，${isAdmin ? '在上面写一条吧。' : '等管理员记一笔。'}`}
 							</PaperSheet>
 						)}
@@ -532,8 +538,8 @@ function ThoughtsPageInner() {
 											onUpdated={handleUpdated}
 											onLikeState={handleLikeState}
 											knownTags={knownTags}
-											activeTag={activeTag}
-											onTagClick={selectTag}
+											activeTags={activeTags}
+											onTagClick={addTag}
 										/>
 									</li>
 								)
@@ -556,11 +562,11 @@ function ThoughtCard({
 	onUpdated,
 	onLikeState,
 	knownTags,
-	activeTag,
+	activeTags,
 	onTagClick,
 }: {
 	knownTags: string[]
-	activeTag: string | null
+	activeTags: readonly string[]
 	onTagClick: (tag: string) => void
 	thought: Thought
 	preset: PaperSheetVariant
@@ -769,7 +775,7 @@ function ThoughtCard({
 							!expanded && 'line-clamp-5',
 						)}
 					>
-						<LinkifiedText text={thought.body} onTagClick={onTagClick} activeTag={activeTag} />
+						<LinkifiedText text={thought.body} onTagClick={onTagClick} activeTags={activeTags} />
 					</p>
 
 					{(overflows || expanded) && (
