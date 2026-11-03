@@ -5,20 +5,23 @@ import {
 	createThought,
 	deleteThought,
 	likeThought,
+	listThoughtTags,
 	listThoughts,
 	unlikeThought,
 	updateThought,
 } from '@/api/thoughts'
+import type { ThoughtTagCount } from '@/api/thoughts'
 import { EmojiInsertButton } from '@/components/thoughts/EmojiInsertButton'
+import { TagTextarea, type TagTextareaHandle } from '@/components/thoughts/TagTextarea'
 import { Button } from '@/components/ui/button'
 import { LinkifiedText } from '@/components/ui/linkified-text'
 import { PageHeader } from '@/components/ui/page-header'
 import { PaperSheet, type PaperSheetVariant } from '@/components/ui/paper-sheet'
-import { ResizableTextarea } from '@/components/ui/textarea'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
-import { Heart, Loader2, Pencil, Send, Trash2, X } from 'lucide-react'
+import { normalizeThoughtTag } from '@briar/shared'
+import { Hash, Heart, Loader2, Pencil, Send, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -112,6 +115,159 @@ function ThoughtScrapDecor({ preset }: { preset: PaperSheetVariant }) {
 	)
 }
 
+function readTagFromUrl(): string | null {
+	if (typeof window === 'undefined') return null
+	const raw = new URLSearchParams(window.location.search).get('tag')
+	return raw ? normalizeThoughtTag(raw) || null : null
+}
+
+function writeTagToUrl(tag: string | null, push: boolean) {
+	const url = new URL(window.location.href)
+	if (tag) url.searchParams.set('tag', tag)
+	else url.searchParams.delete('tag')
+	if (url.href === window.location.href) return
+	window.history[push ? 'pushState' : 'replaceState'](null, '', url)
+}
+
+function TagInsertButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
+	return (
+		<Button
+			type="button"
+			variant="default"
+			size="sm"
+			disabled={disabled}
+			onClick={onClick}
+			className="h-8 gap-1 rounded-none px-2 text-xs"
+			aria-label="插入标签"
+			title="插入 #标签（输入时会联想已有标签）"
+		>
+			<Hash className="h-3.5 w-3.5" />
+			标签
+		</Button>
+	)
+}
+
+/** 标签筛选条：热门标签 + 当前筛选 */
+function TagFilterBar({
+	tags,
+	activeTag,
+	onSelect,
+}: {
+	tags: ThoughtTagCount[]
+	activeTag: string | null
+	onSelect: (tag: string | null) => void
+}) {
+	const [query, setQuery] = useState('')
+	const [expanded, setExpanded] = useState(false)
+	if (tags.length === 0 && !activeTag) return null
+	const chipRow = 'flex gap-1.5 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible lg:pb-0'
+	const q = normalizeThoughtTag(query)
+	const filtered = q ? tags.filter((t) => t.tag.includes(q)) : tags
+	const shown = expanded || q ? filtered : filtered.slice(0, 12)
+	return (
+		<PaperSheet variant="stamp" bodyClassName="!px-4 !py-4 space-y-3">
+			<div className="flex items-center justify-between gap-2">
+				<span className="inline-flex items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground">
+					<Hash className="h-3 w-3" />
+					热门标签
+				</span>
+				{tags.length > 8 && (
+					<input
+						value={query}
+						onChange={(e) => setQuery(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === 'Enter' && filtered[0]) {
+								onSelect(filtered[0].tag)
+								setQuery('')
+							}
+						}}
+						placeholder="搜标签…"
+						className="h-7 w-24 rounded-none border border-dashed border-[color:var(--rv-rose)]/60 bg-[var(--rv-beige)]/80 px-2 text-xs outline-none focus:border-[color:var(--rv-rose-deep)]"
+					/>
+				)}
+			</div>
+			<div className={chipRow}>
+				{shown.map((t) => {
+					const active = t.tag === activeTag
+					return (
+						<button
+							key={t.tag}
+							type="button"
+							onClick={() => onSelect(active ? null : t.tag)}
+							aria-pressed={active}
+							className={cn(
+								'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-none border border-dashed px-2 py-0.5 text-xs transition-colors',
+								active
+									? 'border-[color:var(--rv-rose-deep)] bg-[color:var(--rv-rose)]/25 text-[color:var(--rv-rose-deep)]'
+									: 'border-[color:var(--rv-rose)]/60 bg-[var(--rv-pink)]/30 text-[color:var(--rv-rose-deep)] hover:bg-[var(--rv-pink)]/70',
+							)}
+						>
+							#{t.tag}
+							<span className="text-[10px] opacity-60">{t.count}</span>
+						</button>
+					)
+				})}
+				{!q && filtered.length > 12 && (
+					<button
+						type="button"
+						onClick={() => setExpanded((v) => !v)}
+						className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+					>
+						{expanded ? '收起' : `更多 ${filtered.length - 12}`}
+					</button>
+				)}
+			</div>
+			{activeTag && (
+				<div className="flex flex-wrap items-center gap-2 border-t border-[color:var(--rv-navy)]/10 pt-2 text-sm">
+					<span className="text-muted-foreground">正在看</span>
+					<span className="font-medium text-[color:var(--rv-rose-deep)]">#{activeTag}</span>
+					<button
+						type="button"
+						onClick={() => onSelect(null)}
+						className="inline-flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
+					>
+						<X className="h-3 w-3" />
+						清除筛选
+					</button>
+				</div>
+			)}
+		</PaperSheet>
+	)
+}
+
+/** 侧栏「小统计」：条数 / 标签数 / 当前列表获赞 */
+function StatsCard({
+	total,
+	tagCount,
+	items,
+	activeTag,
+}: {
+	total: number
+	tagCount: number
+	items: Thought[]
+	activeTag: string | null
+}) {
+	const likes = items.reduce((n, t) => n + (t.likeCount ?? 0), 0)
+	const cells: [string, number][] = [
+		[activeTag ? `#${activeTag}` : '想法', total],
+		['标签', tagCount],
+		['获赞', likes],
+	]
+	return (
+		<PaperSheet variant="kraft" className="hidden lg:block" bodyClassName="!px-4 !py-4">
+			<span className="rv-script text-lg text-[color:var(--rv-rose-deep)]">en bref</span>
+			<dl className="mt-2 grid grid-cols-3 gap-2 text-center">
+				{cells.map(([k, v]) => (
+					<div key={k} className="min-w-0">
+						<dt className="truncate text-[11px] text-muted-foreground">{k}</dt>
+						<dd className="text-lg font-semibold tabular-nums">{v}</dd>
+					</div>
+				))}
+			</dl>
+		</PaperSheet>
+	)
+}
+
 export default function ThoughtsPage() {
 	return (
 		<PermissionProvider>
@@ -129,12 +285,38 @@ function ThoughtsPageInner() {
 	const [draft, setDraft] = useState('')
 	const [publishing, setPublishing] = useState(false)
 	const [publishError, setPublishError] = useState<string | null>(null)
+	const [activeTag, setActiveTag] = useState<string | null>(() => readTagFromUrl())
+	const [tagCounts, setTagCounts] = useState<ThoughtTagCount[]>([])
+	const composeRef = useRef<TagTextareaHandle>(null)
+	const knownTags = useMemo(() => tagCounts.map((t) => t.tag), [tagCounts])
+
+	const loadTags = useCallback(async () => {
+		try {
+			const res = await listThoughtTags()
+			if (res.success && res.data) setTagCounts(res.data)
+		} catch {
+			/* 标签条加载失败不影响列表 */
+		}
+	}, [])
+
+	useEffect(() => {
+		void loadTags()
+		const onPop = () => setActiveTag(readTagFromUrl())
+		window.addEventListener('popstate', onPop)
+		return () => window.removeEventListener('popstate', onPop)
+	}, [loadTags])
+
+	const selectTag = useCallback((tag: string | null) => {
+		setActiveTag(tag)
+		writeTagToUrl(tag, true)
+		window.scrollTo({ top: 0, behavior: 'smooth' })
+	}, [])
 
 	const load = useCallback(async () => {
 		setLoading(true)
 		setError(null)
 		try {
-			const res = await listThoughts(1, 50)
+			const res = await listThoughts(1, 50, activeTag)
 			if (res.success && res.data) {
 				setItems(res.data.items)
 				setTotal(res.data.total)
@@ -146,7 +328,7 @@ function ThoughtsPageInner() {
 		} finally {
 			setLoading(false)
 		}
-	}, [])
+	}, [activeTag])
 
 	useEffect(() => {
 		void load()
@@ -161,8 +343,12 @@ function ThoughtsPageInner() {
 			const res = await createThought(text)
 			if (res.success && res.data) {
 				setDraft('')
-				setItems((prev) => [res.data!, ...prev])
-				setTotal((t) => t + 1)
+				const matches = !activeTag || (res.data.tags ?? []).includes(activeTag)
+				if (matches) {
+					setItems((prev) => [res.data!, ...prev])
+					setTotal((t) => t + 1)
+				}
+				void loadTags()
 			} else {
 				setPublishError(res.message || '发布失败')
 			}
@@ -179,6 +365,7 @@ function ThoughtsPageInner() {
 			if (res.success) {
 				setItems((prev) => prev.filter((t) => t.id !== id))
 				setTotal((t) => Math.max(0, t - 1))
+				void loadTags()
 				toast.success('想法已删除')
 			} else {
 				toast.error(res.message || '删除失败，请稍后重试')
@@ -199,6 +386,7 @@ function ThoughtsPageInner() {
 
 	const handleUpdated = (updated: Thought) => {
 		setItems((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+		void loadTags()
 	}
 
 	const handleLikeState = (id: string, likeCount: number, likedByMe: boolean) => {
@@ -209,97 +397,122 @@ function ThoughtsPageInner() {
 		<ThemeShell variant="scrapbook">
 			<PageHeader crumbs={[{ label: '想法' }]} />
 
-			<main className="rv-content-inset mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
-				<header className="mb-6">
-					<span className="rv-script text-2xl text-[color:var(--rv-rose-deep)]">Pensées</span>
-					<h1 className="text-3xl font-semibold tracking-tight">想法</h1>
-					<p className="mt-1 text-sm text-muted-foreground">
-						一小段话就好 · 纯文本与 emoji · 共 {total} 条
-					</p>
-				</header>
-
-				{isAdmin && (
-					<PaperSheet variant="torn" className="mb-6" bodyClassName="space-y-3">
-						<div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-							<span className="inline-block h-2 w-2 rotate-45 bg-[color:var(--rv-rose)]" />
-							记一笔
-						</div>
-						<ResizableTextarea
-							value={draft}
-							onChange={(e) => setDraft(e.target.value.slice(0, MAX_BODY))}
-							placeholder="写点什么… 支持 emoji 😊"
-							rows={4}
-							className="min-h-[96px] resize-y rounded-none border-border/60 bg-[var(--rv-beige)]/80 font-normal"
+			<main className="rv-content-inset mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+				<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-8">
+					<aside className="order-first space-y-4 lg:sticky lg:top-24 lg:order-last lg:self-start">
+						<TagFilterBar tags={tagCounts} activeTag={activeTag} onSelect={selectTag} />
+						<StatsCard
+							total={total}
+							tagCount={tagCounts.length}
+							items={items}
+							activeTag={activeTag}
 						/>
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-2">
-								<EmojiInsertButton
-									disabled={publishing}
-									onPick={(emoji) => setDraft((prev) => (prev + emoji).slice(0, MAX_BODY))}
+					</aside>
+					<section className="min-w-0">
+						<header className="mb-6">
+							<span className="rv-script text-2xl text-[color:var(--rv-rose-deep)]">Pensées</span>
+							<h1 className="text-3xl font-semibold tracking-tight">想法</h1>
+							<p className="mt-1 text-sm text-muted-foreground">
+								一小段话就好 · 纯文本、emoji 与 #标签 · {activeTag ? `#${activeTag} ` : ''}共{' '}
+								{total} 条
+							</p>
+						</header>
+
+						{isAdmin && (
+							<PaperSheet variant="torn" className="mb-6" bodyClassName="space-y-3">
+								<div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+									<span className="inline-block h-2 w-2 rotate-45 bg-[color:var(--rv-rose)]" />
+									记一笔
+								</div>
+								<TagTextarea
+									ref={composeRef}
+									value={draft}
+									onChange={setDraft}
+									maxLength={MAX_BODY}
+									knownTags={knownTags}
+									placeholder="写点什么… 支持 emoji 😊 和 #标签"
+									className="min-h-[96px] resize-y rounded-none border-border/60 bg-[var(--rv-beige)]/80 font-normal"
 								/>
-								<span className="text-xs text-muted-foreground">
-									{draft.trim().length}/{MAX_BODY}
-								</span>
+								<div className="flex items-center justify-between gap-3">
+									<div className="flex items-center gap-2">
+										<EmojiInsertButton
+											disabled={publishing}
+											onPick={(emoji) => setDraft((prev) => (prev + emoji).slice(0, MAX_BODY))}
+										/>
+										<TagInsertButton
+											disabled={publishing}
+											onClick={() => composeRef.current?.insertHash()}
+										/>
+										<span className="text-xs text-muted-foreground">
+											{draft.trim().length}/{MAX_BODY}
+										</span>
+									</div>
+									<Button
+										type="button"
+										onClick={() => void handlePublish()}
+										disabled={!draft.trim() || publishing}
+										className="gap-1.5 rounded-none"
+									>
+										{publishing ? (
+											<Loader2 className="h-4 w-4 animate-spin" />
+										) : (
+											<Send className="h-4 w-4" />
+										)}
+										发布
+									</Button>
+								</div>
+								{publishError && <p className="text-xs text-destructive">{publishError}</p>}
+							</PaperSheet>
+						)}
+
+						{(loading || permsLoading) && (
+							<div className="flex justify-center py-16 text-muted-foreground">
+								<Loader2 className="h-6 w-6 animate-spin" />
 							</div>
-							<Button
-								type="button"
-								onClick={() => void handlePublish()}
-								disabled={!draft.trim() || publishing}
-								className="gap-1.5 rounded-none"
+						)}
+
+						{!loading && error && (
+							<p className="rounded-none border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+								{error}
+							</p>
+						)}
+
+						{!loading && !error && items.length === 0 && (
+							<PaperSheet
+								variant="torn"
+								bodyClassName="py-12 text-center text-sm text-muted-foreground"
 							>
-								{publishing ? (
-									<Loader2 className="h-4 w-4 animate-spin" />
-								) : (
-									<Send className="h-4 w-4" />
-								)}
-								发布
-							</Button>
-						</div>
-						{publishError && <p className="text-xs text-destructive">{publishError}</p>}
-					</PaperSheet>
-				)}
+								{activeTag
+									? `还没有带 #${activeTag} 的想法。`
+									: `还没有想法，${isAdmin ? '在上面写一条吧。' : '等管理员记一笔。'}`}
+							</PaperSheet>
+						)}
 
-				{(loading || permsLoading) && (
-					<div className="flex justify-center py-16 text-muted-foreground">
-						<Loader2 className="h-6 w-6 animate-spin" />
-					</div>
-				)}
-
-				{!loading && error && (
-					<p className="rounded-none border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-						{error}
-					</p>
-				)}
-
-				{!loading && !error && items.length === 0 && (
-					<PaperSheet
-						variant="torn"
-						bodyClassName="py-12 text-center text-sm text-muted-foreground"
-					>
-						还没有想法，{isAdmin ? '在上面写一条吧。' : '等管理员记一笔。'}
-					</PaperSheet>
-				)}
-
-				<ul className="rv-stagger space-y-5">
-					{items.map((t) => {
-						const preset = thoughtPreset(t.id)
-						const tilt = thoughtTilt(t.id)
-						return (
-							<li key={t.id} className="rv-thought-card" style={{ rotate: `${tilt}deg` }}>
-								<ThoughtCard
-									thought={t}
-									preset={preset}
-									canEdit={!!isAdmin && user?.id === t.userId}
-									canDelete={!!isAdmin && user?.id === t.userId}
-									isLoggedIn={isLoggedIn}
-									onDelete={() => void handleDelete(t.id)}
-									onUpdated={handleUpdated}
-									onLikeState={handleLikeState}
-								/>
-							</li>
-						)
-					})}
-				</ul>
+						<ul className="rv-stagger space-y-5">
+							{items.map((t) => {
+								const preset = thoughtPreset(t.id)
+								const tilt = thoughtTilt(t.id)
+								return (
+									<li key={t.id} className="rv-thought-card" style={{ rotate: `${tilt}deg` }}>
+										<ThoughtCard
+											thought={t}
+											preset={preset}
+											canEdit={!!isAdmin && user?.id === t.userId}
+											canDelete={!!isAdmin && user?.id === t.userId}
+											isLoggedIn={isLoggedIn}
+											onDelete={() => void handleDelete(t.id)}
+											onUpdated={handleUpdated}
+											onLikeState={handleLikeState}
+											knownTags={knownTags}
+											activeTag={activeTag}
+											onTagClick={selectTag}
+										/>
+									</li>
+								)
+							})}
+						</ul>
+					</section>
+				</div>
 			</main>
 		</ThemeShell>
 	)
@@ -314,7 +527,13 @@ function ThoughtCard({
 	onDelete,
 	onUpdated,
 	onLikeState,
+	knownTags,
+	activeTag,
+	onTagClick,
 }: {
+	knownTags: string[]
+	activeTag: string | null
+	onTagClick: (tag: string) => void
 	thought: Thought
 	preset: PaperSheetVariant
 	canEdit: boolean
@@ -332,6 +551,7 @@ function ThoughtCard({
 	const [editError, setEditError] = useState<string | null>(null)
 	const [liking, setLiking] = useState(false)
 	const bodyRef = useRef<HTMLParagraphElement>(null)
+	const editRef = useRef<TagTextareaHandle>(null)
 
 	useEffect(() => {
 		if (!editing) setEditDraft(thought.body)
@@ -464,10 +684,12 @@ function ThoughtCard({
 
 			{editing ? (
 				<div className="space-y-3">
-					<ResizableTextarea
+					<TagTextarea
+						ref={editRef}
 						value={editDraft}
-						onChange={(e) => setEditDraft(e.target.value.slice(0, MAX_BODY))}
-						rows={4}
+						onChange={setEditDraft}
+						maxLength={MAX_BODY}
+						knownTags={knownTags}
 						className="min-h-[96px] resize-y rounded-none border-border/60 bg-[var(--rv-beige)]/80 font-normal"
 						autoFocus
 					/>
@@ -477,6 +699,7 @@ function ThoughtCard({
 								disabled={saving}
 								onPick={(emoji) => setEditDraft((prev) => (prev + emoji).slice(0, MAX_BODY))}
 							/>
+							<TagInsertButton disabled={saving} onClick={() => editRef.current?.insertHash()} />
 							<span className="text-xs text-muted-foreground">
 								{editDraft.trim().length}/{MAX_BODY}
 							</span>
@@ -523,7 +746,7 @@ function ThoughtCard({
 							!expanded && 'line-clamp-5',
 						)}
 					>
-						<LinkifiedText text={thought.body} />
+						<LinkifiedText text={thought.body} onTagClick={onTagClick} activeTag={activeTag} />
 					</p>
 
 					{(overflows || expanded) && (

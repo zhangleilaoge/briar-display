@@ -1,4 +1,4 @@
-import { generateId } from '@briar/shared'
+import { extractThoughtTags, generateId, normalizeThoughtTag } from '@briar/shared'
 import { execute, query, queryOne } from '../lib/db'
 
 export interface ThoughtRecord {
@@ -11,6 +11,7 @@ export interface ThoughtRecord {
 	authorAvatar: string | null
 	likeCount: number
 	likedByMe: boolean
+	tags: string[]
 }
 
 interface ThoughtRow {
@@ -42,6 +43,7 @@ const mapRow = (row: ThoughtRow): ThoughtRecord => ({
 	authorAvatar: row.author_avatar,
 	likeCount: Number(row.like_count) || 0,
 	likedByMe: Boolean(Number(row.liked_by_me)),
+	tags: [],
 })
 
 export const thoughtDal = {
@@ -52,6 +54,7 @@ export const thoughtDal = {
 			data.userId,
 			data.body,
 		])
+		await thoughtDal.syncTags(id, data.body)
 		const record = await thoughtDal.findById(id, data.userId)
 		if (!record) throw new Error('Failed to create thought')
 		return record
@@ -68,16 +71,25 @@ export const thoughtDal = {
 			WHERE t.id = ? AND t.deleted_at IS NULL`,
 			params,
 		)
-		return row ? mapRow(row) : null
+		if (!row) return null
+		const [record] = await thoughtDal.attachTags([mapRow(row)])
+		return record ?? null
 	},
 
 	async list(params: {
 		page: number
 		pageSize: number
 		viewerId?: string | null
+		tag?: string | null
 	}): Promise<{ items: ThoughtRecord[]; total: number }> {
+		const tag = params.tag ? normalizeThoughtTag(params.tag) : ''
+		const tagWhere = tag
+			? ' AND EXISTS (SELECT 1 FROM thought_tags tt WHERE tt.thought_id = t.id AND tt.tag = ? AND tt.deleted_at IS NULL)'
+			: ''
+		const tagParams: unknown[] = tag ? [tag] : []
 		const countRow = await queryOne<{ cnt: number }>(
-			'SELECT COUNT(*) AS cnt FROM thoughts WHERE deleted_at IS NULL',
+			`SELECT COUNT(*) AS cnt ${FROM_JOIN} WHERE t.deleted_at IS NULL${tagWhere}`,
+			tagParams,
 		)
 		const total = countRow?.cnt ?? 0
 		const offset = (params.page - 1) * params.pageSize
@@ -85,17 +97,17 @@ export const thoughtDal = {
 			? '(SELECT COUNT(*) FROM thought_likes tl2 WHERE tl2.thought_id = t.id AND tl2.user_id = ?) AS liked_by_me'
 			: '0 AS liked_by_me'
 		const sqlParams: unknown[] = params.viewerId
-			? [params.viewerId, params.pageSize, offset]
-			: [params.pageSize, offset]
+			? [params.viewerId, ...tagParams, params.pageSize, offset]
+			: [...tagParams, params.pageSize, offset]
 		const rows = await query<ThoughtRow>(
 			`${SELECT_COLS}, ${likedExpr}
 			${FROM_JOIN}
-			WHERE t.deleted_at IS NULL
+			WHERE t.deleted_at IS NULL${tagWhere}
 			ORDER BY t.created_at DESC
 			LIMIT ? OFFSET ?`,
 			sqlParams,
 		)
-		return { items: rows.map(mapRow), total }
+		return { items: await thoughtDal.attachTags(rows.map(mapRow)), total }
 	},
 
 	async updateBody(id: string, userId: string, body: string): Promise<ThoughtRecord | null> {
@@ -104,6 +116,7 @@ export const thoughtDal = {
 			[body, id, userId],
 		)
 		if (result.affectedRows === 0) return null
+		await thoughtDal.syncTags(id, body)
 		return thoughtDal.findById(id, userId)
 	},
 
@@ -150,5 +163,76 @@ export const thoughtDal = {
 			liked = (mine?.cnt ?? 0) > 0
 		}
 		return { likeCount: countRow?.cnt ?? 0, liked }
+	},
+
+	/** 按正文同步标签：新增的插入/恢复，移除的软删 */
+	async syncTags(thoughtId: string, body: string): Promise<string[]> {
+		const tags = extractThoughtTags(body)
+		if (tags.length > 0) {
+			await execute(
+				`UPDATE thought_tags SET deleted_at = NOW()
+				WHERE thought_id = ? AND deleted_at IS NULL AND tag NOT IN (${tags.map(() => '?').join(', ')})`,
+				[thoughtId, ...tags],
+			)
+			for (const tag of tags) {
+				await execute(
+					'INSERT INTO thought_tags (id, thought_id, tag) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE deleted_at = NULL',
+					[generateId(), thoughtId, tag],
+				)
+			}
+		} else {
+			await execute(
+				'UPDATE thought_tags SET deleted_at = NOW() WHERE thought_id = ? AND deleted_at IS NULL',
+				[thoughtId],
+			)
+		}
+		return tags
+	},
+
+	async attachTags(records: ThoughtRecord[]): Promise<ThoughtRecord[]> {
+		if (records.length === 0) return records
+		const rows = await query<{ thought_id: string; tag: string }>(
+			`SELECT thought_id, tag FROM thought_tags
+			WHERE deleted_at IS NULL AND thought_id IN (${records.map(() => '?').join(', ')})
+			ORDER BY created_at, tag`,
+			records.map((r) => r.id),
+		)
+		const byId = new Map<string, string[]>()
+		for (const r of rows) {
+			const list = byId.get(r.thought_id) ?? []
+			list.push(r.tag)
+			byId.set(r.thought_id, list)
+		}
+		return records.map((r) => ({ ...r, tags: byId.get(r.id) ?? [] }))
+	},
+
+	/** 标签列表 + 未删除想法数（热门在前） */
+	async listTags(limit = 100): Promise<{ tag: string; count: number }[]> {
+		const rows = await query<{ tag: string; cnt: number | string }>(
+			`SELECT tt.tag, COUNT(*) AS cnt
+			FROM thought_tags tt
+			JOIN thoughts t ON t.id = tt.thought_id AND t.deleted_at IS NULL
+			JOIN users u ON u.id = t.user_id AND u.deleted_at IS NULL
+			WHERE tt.deleted_at IS NULL
+			GROUP BY tt.tag
+			ORDER BY cnt DESC, tt.tag ASC
+			LIMIT ?`,
+			[limit],
+		)
+		return rows.map((r) => ({ tag: r.tag, count: Number(r.cnt) || 0 }))
+	},
+
+	/** 存量回填：从未同步过标签（无任何 thought_tags 行）且正文含 # 的想法 */
+	async backfillTags(): Promise<number> {
+		const rows = await query<{ id: string; body: string }>(
+			`SELECT t.id, t.body FROM thoughts t
+			WHERE t.deleted_at IS NULL AND t.body LIKE '%#%'
+			AND NOT EXISTS (SELECT 1 FROM thought_tags tt WHERE tt.thought_id = t.id)`,
+		)
+		let n = 0
+		for (const r of rows) {
+			if ((await thoughtDal.syncTags(r.id, r.body)).length > 0) n++
+		}
+		return n
 	},
 }

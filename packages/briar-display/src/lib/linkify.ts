@@ -1,8 +1,16 @@
-/** Split plain text into text / http(s) URL parts for safe React rendering. */
+/** Split plain text into text / http(s) URL (/ optional #tag) parts for safe React rendering. */
+
+import { splitTagText } from '@briar/shared'
 
 export type LinkifyPart =
 	| { type: 'text'; value: string }
 	| { type: 'link'; href: string; value: string }
+	| { type: 'tag'; tag: string; value: string }
+
+export interface SplitLinkifyOptions {
+	/** 识别 `#标签`（URL 内的 #fragment 不受影响） */
+	tags?: boolean
+}
 
 /**
  * ASCII URL body only — never swallows whitespace, CJK, or other non-URL text.
@@ -34,7 +42,7 @@ function pushText(parts: LinkifyPart[], value: string) {
 	}
 }
 
-export function splitLinkify(text: string): LinkifyPart[] {
+export function splitLinkify(text: string, options: SplitLinkifyOptions = {}): LinkifyPart[] {
 	if (!text) return []
 
 	const parts: LinkifyPart[] = []
@@ -62,5 +70,7 @@ export function splitLinkify(text: string): LinkifyPart[] {
 		pushText(parts, text.slice(lastIndex))
 	}
 
-	return parts.length > 0 ? parts : [{ type: 'text', value: text }]
+	const base: LinkifyPart[] = parts.length > 0 ? parts : [{ type: 'text', value: text }]
+	if (!options.tags) return base
+	return base.flatMap((p): LinkifyPart[] => (p.type === 'text' ? splitTagText(p.value) : [p]))
 }
