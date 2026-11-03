@@ -108,3 +108,6 @@ SELECT u.id, 'role-user' FROM users u
 WHERE u.deleted_at IS NULL
   AND NOT EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.deleted_at IS NULL)
 ON DUPLICATE KEY UPDATE deleted_at = NULL;
+
+-- 6) 想法 #标签：thought_tags 表由 schema.sql 的 CREATE TABLE IF NOT EXISTS 建出；
+--    存量想法的标签由服务启动时 thoughtDal.backfillTags() 从正文解析回填（SQL 难以可靠解析 Unicode 标签），本文件无需语句。

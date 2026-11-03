@@ -15,6 +15,7 @@ export interface Thought {
 	updatedAt: string | Date
 	likeCount: number
 	likedByMe: boolean
+	tags?: string[]
 	author: ThoughtAuthor
 }
 
@@ -30,10 +31,20 @@ export interface ThoughtLikeState {
 	likedByMe: boolean
 }
 
-export const listThoughts = async (page = 1, pageSize = 20) => {
+export interface ThoughtTagCount {
+	tag: string
+	count: number
+}
+
+export const listThoughts = async (page = 1, pageSize = 20, tag?: string | null) => {
 	const response = await apiClient.get<ApiResponse<ThoughtList>>('/thoughts', {
-		params: { page, pageSize },
+		params: tag ? { page, pageSize, tag } : { page, pageSize },
 	})
+	return response.data
+}
+
+export const listThoughtTags = async () => {
+	const response = await apiClient.get<ApiResponse<ThoughtTagCount[]>>('/thoughts/tags')
 	return response.data
 }
 

@@ -36,6 +36,7 @@ function toPublic(record: NonNullable<Awaited<ReturnType<typeof thoughtDal.findB
 		updatedAt: record.updatedAt,
 		likeCount: record.likeCount,
 		likedByMe: record.likedByMe,
+		tags: record.tags,
 		author: {
 			id: record.userId,
 			name: record.authorName,
@@ -49,7 +50,8 @@ thoughtRoutes.get('/', async (c) => {
 	const page = Math.max(1, Number(c.req.query('page')) || 1)
 	const pageSize = Math.min(50, Math.max(1, Number(c.req.query('pageSize')) || 20))
 	const viewerId = await resolveUserId(c)
-	const { items, total } = await thoughtDal.list({ page, pageSize, viewerId })
+	const tag = (c.req.query('tag') || '').trim().slice(0, 64) || null
+	const { items, total } = await thoughtDal.list({ page, pageSize, viewerId, tag })
 	return c.json<ApiResponse>({
 		success: true,
 		data: {
@@ -59,6 +61,12 @@ thoughtRoutes.get('/', async (c) => {
 			pageSize,
 		},
 	})
+})
+
+/** GET /tags — 标签列表（公开只读，按使用次数降序） */
+thoughtRoutes.get('/tags', async (c) => {
+	const tags = await thoughtDal.listTags()
+	return c.json<ApiResponse>({ success: true, data: tags })
 })
 
 /** POST / — 发布想法（仅管理员） */

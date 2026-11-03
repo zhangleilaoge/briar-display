@@ -106,3 +106,16 @@ describe('splitLinkify', () => {
 		])
 	})
 })
+
+describe('splitLinkify tags', () => {
+	it('tags off by default', () => {
+		expect(splitLinkify('#a b')).toEqual([{ type: 'text', value: '#a b' }])
+	})
+	it('url fragment stays in link, tag after url', () => {
+		expect(splitLinkify('https://a.com/x#frag #标签', { tags: true })).toEqual([
+			{ type: 'link', href: 'https://a.com/x#frag', value: 'https://a.com/x#frag' },
+			{ type: 'text', value: ' ' },
+			{ type: 'tag', tag: '标签', value: '#标签' },
+		])
+	})
+})

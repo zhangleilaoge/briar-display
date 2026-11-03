@@ -476,3 +476,17 @@ CREATE TABLE IF NOT EXISTS thought_likes (
   FOREIGN KEY (thought_id) REFERENCES thoughts(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='想法点赞';
+
+-- ============================================================
+-- 想法标签（正文 #标签 解析而来，发布/编辑时同步；移除标签即软删）
+-- ============================================================
+CREATE TABLE IF NOT EXISTS thought_tags (
+  id VARCHAR(36) PRIMARY KEY COMMENT '标签关系唯一标识',
+  thought_id VARCHAR(36) NOT NULL COMMENT '想法 ID',
+  tag VARCHAR(32) NOT NULL COMMENT '规范化标签（不含 #，拉丁字母小写）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
+  UNIQUE KEY uk_thought_tag (thought_id, tag),
+  INDEX idx_tag (tag, deleted_at),
+  FOREIGN KEY (thought_id) REFERENCES thoughts(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='想法标签';

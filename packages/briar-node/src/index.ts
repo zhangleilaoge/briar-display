@@ -107,6 +107,11 @@ const startServer = async () => {
 	if (process.env.NODE_ENV === 'production' || process.env.BRIAR_ENABLE_SCHEDULER === '1') {
 		const { ensureAdminRole } = await import('./services/authService')
 		await ensureAdminRole()
+		const { thoughtDal } = await import('./dal/thoughtDal')
+		await thoughtDal
+			.backfillTags()
+			.then((n) => n > 0 && console.log(`🏷️  想法标签回填 ${n} 条`))
+			.catch((e) => console.error('⚠️  想法标签回填失败:', e))
 		startScheduler(schedulerTasks)
 	} else {
 		console.log('⏭️  非生产环境，跳过超管角色分配与定时任务调度器')
