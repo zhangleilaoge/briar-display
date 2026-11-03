@@ -1,21 +1,47 @@
 /* 手账专用控件：与 Arcane 的直角 HUD 分离。 */
 
 .theme-scrapbook .rv-popover {
-	--rv-popover-corner-size: clamp(16px, 8%, 36px);
+	--foreground: 27 31% 27%;
+	--popover-foreground: 27 31% 27%;
+	--muted-foreground: 31 23% 40%;
+	--accent: 40 25% 93%;
+	--accent-foreground: 27 31% 27%;
+	--border: 34 29% 67%;
+	--row-hover: #f5efe4;
+	--row-selected: #f0e7d7;
+	--row-selected-fg: #594132;
+	isolation: isolate;
 	overflow: visible !important;
-	border: 1px solid #ded4ca !important;
-	border-radius: 2px !important;
-	background-color: #fffaf3 !important;
-	background-image: url("../assets/decor/popover-corners/tl.png"),
-		url("../assets/decor/popover-corners/tr.png"), url("../assets/decor/popover-corners/br.png"),
-		url("../assets/decor/popover-corners/bl.png"), var(--paper-grain),
-		linear-gradient(145deg, #fffef9, #f6e9e2) !important;
-	background-position: left top, right top, right bottom, left bottom, left top, left top;
-	background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat;
-	background-size: var(--rv-popover-corner-size), var(--rv-popover-corner-size),
-		var(--rv-popover-corner-size), var(--rv-popover-corner-size), 180px 180px, auto;
-	box-shadow: inset 0 0 0 3px #fffaf3, inset 0 0 0 4px #e8dfd5, 0 12px 24px -14px
-		hsl(350 30% 35% / 0.24) !important;
+	border: 1px solid #98734f !important;
+	border-radius: 12px 14px 11px 13px / 13px 11px 14px 12px !important;
+	background-color: #fdfaf4 !important;
+	background-image: var(--paper-grain),
+		repeating-linear-gradient(0deg, hsl(35 40% 35% / 0.035) 0 1px, transparent 1px 3px),
+		repeating-linear-gradient(90deg, hsl(35 45% 45% / 0.04) 0 1px, transparent 1px 3px),
+		linear-gradient(145deg, #fffefb, #fbf7ef) !important;
+	box-shadow: inset 0 1px 0 hsl(45 80% 98% / 0.68), 0 2px 0 #e7ddcc, 0 12px 24px -14px
+		hsl(25 35% 25% / 0.28) !important;
+	color: #594132 !important;
+}
+.theme-scrapbook .rv-popover::before {
+	content: "";
+	position: absolute;
+	inset: 4px;
+	border: 1px dashed #9b7653;
+	border-radius: 8px 10px 7px 9px / 9px 7px 10px 8px;
+	opacity: 0.78;
+	pointer-events: none;
+}
+.theme-scrapbook .rv-popover .text-muted-foreground {
+	color: #80674e !important;
+}
+.theme-scrapbook .rv-popover.rv-paper-float [data-highlighted],
+.theme-scrapbook .rv-popover.rv-paper-float [data-selected="true"],
+.theme-scrapbook .rv-popover.rv-paper-float [cmdk-item][data-selected="true"] {
+	border-radius: 8px !important;
+	background: var(--row-selected) !important;
+	box-shadow: inset 2px 0 0 #9b7653 !important;
+	color: var(--row-selected-fg) !important;
 }
 .theme-scrapbook .rv-command,
 .theme-scrapbook .rv-select-content {

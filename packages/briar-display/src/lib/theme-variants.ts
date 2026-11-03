@@ -40,7 +40,7 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 		id: 'popover',
 		via: 'shared-paper',
 		status: 'done',
-		notes: 'scrapbook 细线矩形纸卡 + 哥特尖叶四角 PNG；arcane 保持直角 HUD',
+		notes: 'scrapbook 淡黄织纹 + 褐色内缝线；arcane 保持直角 HUD',
 	},
 	{
 		id: 'select',
