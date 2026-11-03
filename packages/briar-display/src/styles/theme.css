@@ -249,7 +249,7 @@
 	--sidebar-tag-stroke: #5d6f96;
 	--sidebar-icon: #42557f;
 	/* 浅蓝 glow 选中，禁止实心藏青条 */
-	--sidebar-active-fill: color-mix(in srgb, #8ea4c6 48%, #f7fafd);
+	--sidebar-active-fill: color-mix(in srgb, #8ea4c6 32%, #f7fafd);
 	--sidebar-active-icon: #3a4a6b;
 	--sidebar-active-dash: #5d6f96;
 	--sidebar-string: #8ea4c6;
@@ -448,7 +448,7 @@ body {
 }
 
 /* ---------------- 全局左侧吊牌导航（ribbon-sidebar） ---------------- */
-/* md+：无背景栏；吊牌串默认藏左侧外，data-open 拉出（JS：进立刻 / 离延迟约 2.5s） */
+/* md+：无背景栏；吊牌串默认藏左侧外，data-open 拉出（悬停展开，锁定后固定展开） */
 .rv-ribbon-rail {
 	transform: translateX(-100%);
 	transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
@@ -474,8 +474,7 @@ body {
 }
 @media (min-width: 768px) {
 	html:has(.rv-ribbon[data-open]) .rv-content-inset {
-		/* 与 .rv-ribbon-rail 宽 4.75rem 对齐，略加 0.25rem 空隙 */
-		padding-left: 5rem;
+		padding-left: 96px;
 	}
 }
 
@@ -487,7 +486,7 @@ body {
 }
 @media (min-width: 768px) {
 	html:has(.rv-ribbon[data-open]) .rv-header-lead {
-		transform: translateX(5rem);
+		transform: translateX(96px);
 	}
 }
 @media (prefers-reduced-motion: reduce) {
@@ -584,7 +583,7 @@ body {
 
 .rv-ribbon-tag:hover,
 .rv-ribbon-tag:focus-visible {
-	transform: rotate(0deg) translateY(2px) !important;
+	transform: translateX(var(--rv-ribbon-x, 0)) rotate(0deg) translateY(2px) !important;
 }
 
 /* 异形贴纸：fill 走 token；白描边由 SVG stroke="#fff" 承担，勿在此覆盖 stroke */
@@ -655,52 +654,52 @@ body {
 	box-sizing: border-box;
 	pointer-events: none;
 	/* 默认：避开挂环与描边；图文一组光学居中 */
-	padding: 16px 6px 14px;
-	gap: 4px;
+	padding: 19px 7px 17px;
+	gap: 5px;
 }
 /* 拱形 Accueil：挂环占上沿，组略偏下 */
 .rv-ribbon-tag[data-kind="home"] .rv-ribbon-stack {
-	padding: 16px 6px 15px;
-	gap: 3.5px;
+	padding: 19px 7px 18px;
+	gap: 4px;
 }
 /* 扇面 Outils：外形底边偏高（~y53/72），底 inset 要大，gap 收紧 */
 .rv-ribbon-tag[data-kind="tools"] .rv-ribbon-stack {
-	padding: 16px 8px 24px;
-	gap: 3px;
+	padding: 19px 10px 29px;
+	gap: 4px;
 	/* 真机标注：整体右下各偏 1px */
 	transform: translate(1px, 1px);
 }
 /* 波浪顶 Fichiers */
 .rv-ribbon-tag[data-kind="files"] .rv-ribbon-stack {
-	padding: 16px 6px 15px;
-	gap: 3.5px;
+	padding: 19px 7px 18px;
+	gap: 4px;
 }
 /* 花边盾 Pensées：侧边尖角，左右多收；底留白防贴边 */
 .rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-stack {
-	padding: 15px 9px 20px;
-	gap: 3px;
+	padding: 18px 11px 24px;
+	gap: 4px;
 }
 /* 波浪底 Étoiles：尖底安全 inset */
 .rv-ribbon-tag[data-kind="markets"] .rv-ribbon-stack {
-	padding: 16px 6px 23px;
-	gap: 3px;
+	padding: 19px 7px 28px;
+	gap: 4px;
 }
 /* 心形 Clef：上叶留白，组进心肚；尖底多 inset；gap 再收 */
 .rv-ribbon-tag[data-kind="admin"] .rv-ribbon-stack {
-	padding: 19px 10px 23px 10px;
-	gap: 2.5px;
+	padding: 23px 12px 28px;
+	gap: 3px;
 }
 /* 椭圆 Moi */
 .rv-ribbon-tag[data-kind="profile"] .rv-ribbon-stack {
-	padding: 15px 9px 16px;
-	gap: 3.5px;
+	padding: 18px 11px 19px;
+	gap: 4px;
 }
 
 .rv-ribbon-tag .rv-ribbon-cutout {
 	position: relative;
 	flex-shrink: 0;
-	width: 22px;
-	height: 22px;
+	width: 26px;
+	height: 26px;
 	object-fit: contain;
 	/* 主题色滤镜 + 白边投影 */
 	filter: var(--sidebar-cutout-filter, none) drop-shadow(0 0 0.4px #fff)
@@ -713,60 +712,60 @@ body {
 }
 /* 鸢尾花主体偏右，向左校正光学中心 */
 .rv-ribbon-tag[data-kind="style"] .rv-ribbon-cutout {
-	transform: translateX(-2px);
+	transform: translateX(-4px);
 }
 /* 易叠字/尖底的外形：略缩插画，给 caption 与描边让距 */
 .rv-ribbon-tag[data-kind="home"] .rv-ribbon-cutout {
-	width: 22px;
-	height: 22px;
+	width: 26px;
+	height: 26px;
 }
 .rv-ribbon-tag[data-kind="files"] .rv-ribbon-cutout {
-	width: 21px;
-	height: 21px;
+	width: 25px;
+	height: 25px;
 }
 .rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-cutout {
-	width: 17px;
-	height: 17px;
+	width: 20px;
+	height: 20px;
 	/* 真机标注：书本往下 2px */
 	transform: translateY(2px);
 }
 .rv-ribbon-tag[data-kind="markets"] .rv-ribbon-cutout {
-	width: 17px;
-	height: 17px;
+	width: 20px;
+	height: 20px;
 }
 .rv-ribbon-tag[data-kind="admin"] .rv-ribbon-cutout {
-	width: 14px;
-	height: 14px;
+	width: 17px;
+	height: 17px;
 	/* 钥匙斜构图视觉偏左，微右移 */
 	transform: translateX(2px);
 }
 .rv-ribbon-tag[data-kind="tools"] .rv-ribbon-cutout {
-	width: 13px;
-	height: 16px;
+	width: 16px;
+	height: 19px;
 }
 .rv-ribbon-tag[data-kind="profile"] .rv-ribbon-cutout {
-	width: 19px;
-	height: 21px;
+	width: 23px;
+	height: 25px;
 }
 
-/* 法文 caption：Josefin font-label，再小一号（7.5→6.5），勿用锐利等宽 */
+/* 法文 caption：Josefin font-label，勿用锐利等宽 */
 .rv-ribbon-tag .rv-ribbon-caption {
 	position: relative;
 	flex-shrink: 0;
 	margin: 0;
 	padding: 0;
-	max-width: 48px;
+	max-width: 58px;
 	/* 勿 hidden：长词（Pensées/Étoiles）会被裁尾字母 */
 	overflow: visible;
 	white-space: nowrap;
 	text-align: center;
 	font-family: var(--font-label);
-	font-size: 6.5px;
+	font-size: 8px;
 	font-weight: 400;
 	font-style: normal;
 	/* 固定行盒，避免 Josefin 字形溢出吃掉 flex gap */
-	line-height: 1.15;
-	height: 8px;
+	line-height: 10px;
+	height: 10px;
 	letter-spacing: 0.03em;
 	text-transform: uppercase;
 	color: var(--sidebar-icon);
@@ -791,44 +790,44 @@ body {
 
 /* 移动端缩略 */
 .rv-ribbon-mobile .rv-ribbon-stack {
-	padding: 12px 5px 12px;
-	gap: 3px;
+	padding: 14px 6px;
+	gap: 4px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="tools"] .rv-ribbon-stack {
-	padding: 13px 6px 15px;
-	gap: 2.5px;
+	padding: 16px 7px 18px;
+	gap: 3px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-stack {
-	padding: 13px 7px 14px;
-	gap: 2.5px;
+	padding: 16px 8px 17px;
+	gap: 3px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="markets"] .rv-ribbon-stack {
-	padding: 13px 5px 15px;
-	gap: 2.5px;
+	padding: 16px 6px 18px;
+	gap: 3px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="admin"] .rv-ribbon-stack {
-	padding: 17px 7px 14px 8px;
-	gap: 2.5px;
+	padding: 20px 8px 17px 10px;
+	gap: 3px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag .rv-ribbon-cutout {
-	width: 18px;
-	height: 18px;
+	width: 22px;
+	height: 22px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="thoughts"] .rv-ribbon-cutout,
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="markets"] .rv-ribbon-cutout,
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="admin"] .rv-ribbon-cutout {
-	width: 15px;
-	height: 15px;
+	width: 18px;
+	height: 18px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag[data-kind="tools"] .rv-ribbon-cutout {
-	width: 12px;
-	height: 15px;
+	width: 14px;
+	height: 18px;
 }
 .rv-ribbon-mobile .rv-ribbon-tag .rv-ribbon-caption {
-	font-size: 5.5px;
+	font-size: 7px;
 	font-weight: 400;
-	height: 7px;
-	max-width: 34px;
+	height: 8px;
+	max-width: 41px;
 	letter-spacing: 0.04em;
 }
 

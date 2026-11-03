@@ -2,7 +2,7 @@
 
 import { useNavigate } from '@/components/common/SectionRouter'
 import { cn } from '@/lib/utils'
-import { Plus, X } from 'lucide-react'
+import { Lock, LockOpen, Plus, X } from 'lucide-react'
 import { type KeyboardEvent, type PointerEvent, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Badge } from './badge'
@@ -23,6 +23,9 @@ interface DesktopRibbonNavProps {
 	active: string | null
 	expanded: boolean
 	canEdit: boolean
+	locked: boolean
+	canLock: boolean
+	onToggleLock: () => void
 	onAdd: (kind: RibbonTagKind) => boolean
 	onRemove: (kind: RibbonTagKind) => boolean
 	onMove: (from: number, to: number) => boolean
@@ -36,6 +39,9 @@ export function DesktopRibbonNav({
 	active,
 	expanded,
 	canEdit,
+	locked,
+	canLock,
+	onToggleLock,
 	onAdd,
 	onRemove,
 	onMove,
@@ -274,7 +280,7 @@ export function DesktopRibbonNav({
 		<>
 			<ul
 				ref={listRef}
-				className={cn('rv-ribbon-list relative flex flex-col items-center gap-0.5 pt-3', {
+				className={cn('rv-ribbon-list relative flex flex-col items-center gap-[2px] pt-[14px]', {
 					'is-settling': settling !== null,
 				})}
 				onPointerMoveCapture={movePointer}
@@ -341,7 +347,7 @@ export function DesktopRibbonNav({
 										draggable={false}
 										tabIndex={editing ? 0 : undefined}
 										className={cn(
-											'rv-ribbon-tag relative flex h-[70px] w-[58px] select-none flex-col items-center outline-none [touch-action:none]',
+											'rv-ribbon-tag relative flex h-[84px] w-[70px] select-none flex-col items-center outline-none [touch-action:none]',
 											isActive && 'is-active',
 										)}
 										onPointerDown={(event) => startLongPress(event, item.kind)}
@@ -351,7 +357,7 @@ export function DesktopRibbonNav({
 										onKeyDown={(event) => moveWithKeyboard(event, index)}
 									>
 										{dragged === item.kind ? (
-											<Badge variant="outline" className="my-auto px-1.5 text-[10px]">
+											<Badge variant="outline" className="my-auto px-[7px] text-[12px]">
 												insert here
 											</Badge>
 										) : (
@@ -377,56 +383,74 @@ export function DesktopRibbonNav({
 								<button
 									type="button"
 									aria-label={`移除${item.label}标签`}
-									className="rv-ribbon-remove absolute -right-1 -top-0.5 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-white bg-[var(--sidebar-tag-stroke)] text-[var(--sidebar-tag-fill)] shadow-sm transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]"
+									className="rv-ribbon-remove absolute -right-[5px] -top-[2px] z-10 flex h-6 w-6 items-center justify-center rounded-full border border-white bg-[var(--sidebar-tag-stroke)] text-[var(--sidebar-tag-fill)] shadow-sm transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]"
 									onClick={() => remove(item.kind)}
 								>
-									<X size={12} strokeWidth={2.5} />
+									<X size={14} strokeWidth={3} />
 								</button>
 							)}
 						</li>
 					)
 				})}
 			</ul>
-			{canEdit && editing && (
-				<div className="relative mt-1 flex justify-center">
-					<Popover open={addOpen} onOpenChange={setAddOpen}>
-						<PopoverTrigger asChild>
-							<button
-								type="button"
-								aria-label="添加左侧标签"
-								className="rv-ribbon-remove flex h-5 w-5 items-center justify-center rounded-full border border-white bg-[var(--sidebar-tag-fill)] text-[var(--sidebar-tag-stroke)] shadow-sm transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]"
+			{canEdit && (
+				<div className="relative mt-[5px] flex items-center justify-center gap-2">
+					{!editing && canLock && (
+						<button
+							type="button"
+							aria-label={locked ? '取消固定左侧导航' : '固定左侧导航'}
+							aria-pressed={locked}
+							className="rv-ribbon-remove flex h-6 w-6 items-center justify-center rounded-full border border-white bg-[var(--sidebar-tag-fill)] text-[var(--sidebar-tag-stroke)] shadow-sm transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]"
+							onClick={onToggleLock}
+						>
+							{locked ? <Lock size={14} strokeWidth={3} /> : <LockOpen size={14} strokeWidth={3} />}
+						</button>
+					)}
+					{editing && (
+						<Popover open={addOpen} onOpenChange={setAddOpen}>
+							<PopoverTrigger asChild>
+								<button
+									type="button"
+									aria-label="添加左侧标签"
+									className="rv-ribbon-remove flex h-6 w-6 items-center justify-center rounded-full border border-white bg-[var(--sidebar-tag-fill)] text-[var(--sidebar-tag-stroke)] shadow-sm transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]"
+								>
+									<Plus size={14} strokeWidth={3} />
+								</button>
+							</PopoverTrigger>
+							<PopoverContent
+								ref={addContentRef}
+								side="right"
+								align="end"
+								className="w-64 p-[10px]"
 							>
-								<Plus size={12} strokeWidth={2.5} />
-							</button>
-						</PopoverTrigger>
-						<PopoverContent ref={addContentRef} side="right" align="end" className="w-56 p-2">
-							<p className="px-2 pb-2 pt-1 text-xs text-muted-foreground">添加一个未展示的标签</p>
-							{availableItems.length === 0 ? (
-								<p className="px-2 pb-2 text-sm">所有标签均已添加</p>
-							) : (
-								<ul className="grid grid-cols-3 gap-1">
-									{availableItems.map((item) => (
-										<li key={item.kind}>
-											<button
-												type="button"
-												className="flex w-full flex-col items-center rounded-md px-1 py-1.5 text-xs transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]"
-												onClick={() => {
-													if (onAdd(item.kind)) setAddOpen(false)
-												}}
-											>
-												<RibbonTagPreview
-													kind={item.kind}
-													caption={item.caption}
-													label={item.label}
-												/>
-												<span>{item.label}</span>
-											</button>
-										</li>
-									))}
-								</ul>
-							)}
-						</PopoverContent>
-					</Popover>
+								<p className="px-2 pb-2 pt-1 text-xs text-muted-foreground">添加一个未展示的标签</p>
+								{availableItems.length === 0 ? (
+									<p className="px-2 pb-2 text-sm">所有标签均已添加</p>
+								) : (
+									<ul className="grid grid-cols-3 gap-1">
+										{availableItems.map((item) => (
+											<li key={item.kind}>
+												<button
+													type="button"
+													className="flex w-full flex-col items-center rounded-md px-1 py-[7px] text-xs transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]"
+													onClick={() => {
+														if (onAdd(item.kind)) setAddOpen(false)
+													}}
+												>
+													<RibbonTagPreview
+														kind={item.kind}
+														caption={item.caption}
+														label={item.label}
+													/>
+													<span>{item.label}</span>
+												</button>
+											</li>
+										))}
+									</ul>
+								)}
+							</PopoverContent>
+						</Popover>
+					)}
 				</div>
 			)}
 			{draggedItem &&
@@ -437,7 +461,7 @@ export function DesktopRibbonNav({
 						aria-hidden
 						data-kind={draggedItem.kind}
 						className={cn(
-							'rv-ribbon-tag pointer-events-none fixed z-[100] flex h-[70px] w-[58px] select-none flex-col items-center',
+							'rv-ribbon-tag pointer-events-none fixed z-[100] flex h-[84px] w-[70px] select-none flex-col items-center',
 							active === draggedItem.href && 'is-active',
 						)}
 						style={{

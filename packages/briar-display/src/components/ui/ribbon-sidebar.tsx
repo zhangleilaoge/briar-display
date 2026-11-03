@@ -22,6 +22,7 @@ import {
 	TagThoughts,
 	TagTools,
 } from './ribbon-tags'
+import { useRibbonLock } from './useRibbonLock'
 import { useRibbonNavigation } from './useRibbonNavigation'
 
 export { RIBBON_ITEMS } from './ribbon-items'
@@ -166,17 +167,19 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 
 	const active = activeRibbonHref(path)
 	const { order, canEdit, add, remove, move, discard } = useRibbonNavigation()
+	const { locked, canLock, toggleLocked } = useRibbonLock()
 	const candidates = RIBBON_ITEMS.filter((item) => !item.adminOnly || (mounted && isAdmin))
 	const items = order
 		.map((kind) => candidates.find((item) => item.kind === kind))
 		.filter((item): item is RibbonItem => Boolean(item))
+	const expanded = open || locked
 
 	return (
 		<>
 			<nav
 				ref={navRef}
 				aria-label="全局导航"
-				data-open={open ? '' : undefined}
+				data-open={expanded ? '' : undefined}
 				onMouseEnter={openNow}
 				onMouseLeave={scheduleClose}
 				onFocusCapture={openNow}
@@ -186,25 +189,28 @@ export function RibbonSidebar({ className, currentPath }: RibbonSidebarProps) {
 					scheduleClose()
 				}}
 				className={cn(
-					'rv-ribbon group/ribbon fixed inset-y-0 left-0 z-[60] hidden w-[5.25rem] md:block',
+					'rv-ribbon group/ribbon fixed inset-y-0 left-0 z-[60] hidden w-[101px] md:block',
 					className,
 				)}
 			>
-				<div className="rv-ribbon-rail absolute inset-y-0 left-0 flex w-[4.75rem] flex-col items-center pt-2">
+				<div className="rv-ribbon-rail absolute inset-y-0 left-0 flex w-[92px] flex-col items-center pt-[10px]">
 					<span
 						aria-hidden
 						className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[var(--sidebar-string)]"
 					/>
 					<span
 						aria-hidden
-						className="relative mb-1 h-2.5 w-2.5 rotate-45 border border-[color:var(--sidebar-tag-stroke)] bg-[var(--sidebar-tag-fill)]"
+						className="relative mb-[5px] h-3 w-3 rotate-45 border border-[color:var(--sidebar-tag-stroke)] bg-[var(--sidebar-tag-fill)]"
 					/>
 					<DesktopRibbonNav
 						items={items}
 						candidates={candidates}
 						active={active}
-						expanded={open}
+						expanded={expanded}
 						canEdit={canEdit}
+						locked={locked}
+						canLock={canLock}
+						onToggleLock={toggleLocked}
 						onAdd={add}
 						onRemove={remove}
 						onMove={move}
@@ -295,7 +301,7 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 			<div className="relative">
 				<ul
 					ref={trackRef}
-					className="rv-ribbon-mobile-track relative flex h-[4.5rem] items-start gap-0.5 overflow-x-auto overflow-y-hidden overscroll-x-contain px-2 scroll-smooth"
+					className="rv-ribbon-mobile-track relative flex h-[86px] items-start gap-[2px] overflow-x-auto overflow-y-hidden overscroll-x-contain px-[10px] scroll-smooth"
 				>
 					{items.map((item) => {
 						const isActive = active === item.href
@@ -311,26 +317,26 @@ function MobileRibbonNav({ items, active }: MobileRibbonNavProps) {
 									aria-current={isActive ? 'page' : undefined}
 									data-kind={item.kind}
 									className={cn(
-										'rv-ribbon-tag group flex h-[4.25rem] w-[3.4rem] min-w-11 flex-col items-center outline-none',
+										'rv-ribbon-tag group flex h-[82px] w-[65px] min-w-[53px] flex-col items-center outline-none',
 										isActive && 'is-active',
 									)}
 									style={{
 										transform: `rotate(${jitter.rotate / 2}deg)`,
 									}}
 								>
-									<span aria-hidden className="h-1.5 w-px bg-[var(--sidebar-string)]" />
+									<span aria-hidden className="h-[7px] w-px bg-[var(--sidebar-string)]" />
 									<RibbonTag
 										kind={item.kind}
 										active={isActive}
 										caption={item.caption}
-										className="h-[58px] w-[48px]"
+										className="h-[70px] w-[58px]"
 									/>
 									<span className="sr-only">{item.label}</span>
 								</a>
 							</li>
 						)
 					})}
-					<li aria-hidden className="w-6 shrink-0" />
+					<li aria-hidden className="w-7 shrink-0" />
 				</ul>
 				<span aria-hidden className={cn('rv-ribbon-fade rv-ribbon-fade-l', edge.left && 'is-on')} />
 				<span

@@ -145,7 +145,7 @@ export default function TrendChart({ data, timeZone, resetKey, className }: Tren
 				textColor: TEXT,
 				fontFamily: CHART.fontFamily,
 				fontSize: 11,
-				attributionLogo: true,
+				attributionLogo: false,
 			},
 			grid: { vertLines: { color: GRID }, horzLines: { color: GRID } },
 			rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.08, bottom: 0.26 } },

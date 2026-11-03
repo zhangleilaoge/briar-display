@@ -68,7 +68,7 @@ export default function Csi300EtfScaleChart({
 				textColor: TEXT,
 				fontFamily: CHART.fontFamily,
 				fontSize: 11,
-				attributionLogo: true,
+				attributionLogo: false,
 			},
 			grid: { vertLines: { color: GRID }, horzLines: { color: GRID } },
 			leftPriceScale: {
