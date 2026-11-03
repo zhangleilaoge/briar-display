@@ -32,7 +32,8 @@ export const getPreference = async <T = unknown>(key: string) => {
 export const putPreference = async <T = unknown>(key: string, value: T) => {
 	const response = await apiClient.put<ApiResponse<{ key: string; value: T }>>(
 		`/users/me/preferences/${encodeURIComponent(key)}`,
-		value,
+		JSON.stringify(value),
+		{ headers: { 'Content-Type': 'application/json' } },
 	)
 	return response.data
 }
