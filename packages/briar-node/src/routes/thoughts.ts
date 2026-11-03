@@ -1,5 +1,5 @@
 import type { ApiResponse } from '@briar/shared'
-import { HTTP_STATUS } from '@briar/shared'
+import { HTTP_STATUS, parseThoughtTagList } from '@briar/shared'
 import { type Context, Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { thoughtDal } from '../dal/thoughtDal'
@@ -50,8 +50,9 @@ thoughtRoutes.get('/', async (c) => {
 	const page = Math.max(1, Number(c.req.query('page')) || 1)
 	const pageSize = Math.min(50, Math.max(1, Number(c.req.query('pageSize')) || 20))
 	const viewerId = await resolveUserId(c)
-	const tag = (c.req.query('tag') || '').trim().slice(0, 64) || null
-	const { items, total } = await thoughtDal.list({ page, pageSize, viewerId, tag })
+	// 多标签 OR 筛选：?tag=a&tag=b 或 ?tag=a,b（兼容旧的单个 ?tag=）
+	const tags = parseThoughtTagList(c.req.queries('tag') ?? [])
+	const { items, total } = await thoughtDal.list({ page, pageSize, viewerId, tags })
 	return c.json<ApiResponse>({
 		success: true,
 		data: {
