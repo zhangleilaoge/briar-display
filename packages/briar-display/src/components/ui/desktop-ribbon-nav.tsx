@@ -237,7 +237,10 @@ export function DesktopRibbonNav({
 		if (event.currentTarget.hasPointerCapture(event.pointerId)) {
 			event.currentTarget.releasePointerCapture(event.pointerId)
 		}
-		if (shouldNavigate && href) navigate(href)
+		if (shouldNavigate && href) {
+			suppressClickRef.current = true
+			navigate(href)
+		}
 	}
 
 	const remove = (kind: RibbonTagKind) => {

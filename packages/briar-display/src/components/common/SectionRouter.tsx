@@ -132,7 +132,7 @@ export function SectionRouterProvider({
 }: SectionRouterValue & { children: ReactNode }) {
 	return (
 		<SectionRouterContext.Provider value={{ path, navigate, globalShell }}>
-			<div className="contents" onClickCapture={(e) => onLinkClick(e, navigate)}>
+			<div className="contents" onClick={(e) => onLinkClick(e, navigate)}>
 				{children}
 			</div>
 		</SectionRouterContext.Provider>
