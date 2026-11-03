@@ -1,6 +1,7 @@
 {
 	"name": "bid-compare-desktop",
-	"version": "1.0.11",
+	"version": "1.0.13",
+	"displayVersion": "v20261102.2",
 	"description": "施工方案比对工具桌面端",
 	"type": "module",
 	"private": true,

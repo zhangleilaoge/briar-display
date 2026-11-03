@@ -48,8 +48,8 @@ npm run build
 ```
 
 产物：
-- `src-tauri/target/release/bundle/macos/施工方案比对.app`
-- `src-tauri/target/release/bundle/dmg/施工方案比对_1.0.0_aarch64.dmg`
+- `src-tauri/target/aarch64-apple-darwin/release/bundle/macos/施工方案比对.app`
+- `src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/施工方案比对_v20261102.1_aarch64.dmg`
 
 ### macOS Intel
 
@@ -80,15 +80,15 @@ npm run build:windows
 ```
 
 产物：
-- `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/施工方案比对_1.0.0_x64_en-US.msi`
-- `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/施工方案比对_1.0.0_x64-setup.exe`
+- `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/施工方案比对_v20261102.1_x64_en-US.msi`
+- `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/施工方案比对_v20261102.1_x64-setup.exe`
 - 同时自动复制 `.msi` 到当前用户桌面
 
 > Windows 版本运行后，默认把比对结果输出到用户桌面（`bid_compare_result_<时间戳>` 文件夹），macOS 保持下载目录不变。
 
 ## 发布到 GitHub Release
 
-打包后自动上传 `.dmg` / `.msi` / `.exe` 到 GitHub Release，标签格式为 `desktop-v{version}`。
+打包后自动上传 `.dmg` / `.msi` / `.exe` 到 GitHub Release，标签格式为 `desktop-vYYYYMMDD.N`。
 
 前提：安装并登录 GitHub CLI
 
@@ -121,22 +121,15 @@ cd bid-compare-desktop
 
 ## 版本号
 
-无论用 `./build.sh` 还是直接跑 `bun run build:windows`，构建前都会询问版本升级方式，默认 `patch`（小版本 +1），也可选择 `minor` / `major` 或不升级：
+所有桌面端构建统一使用“日期 + 当日序号”：对外显示 `vYYYYMMDD.N`（例如 `v20261102.1`），同一天后续构建递增为 `.2`、`.3`，跨日期从 `.1` 重新开始，不再需要交互选择或 `BUMP` 环境变量。
+
+`package.json` 的 `displayVersion` 记录对外日期版本；应用界面、安装包文件名和 Release 标签统一显示为 `vYYYYMMDD.N`。Cargo、npm 和 Tauri 的内部版本保留自动递增的三段式格式，以兼容 Windows 安装器的版本号限制。每次构建都会同步更新 `package.json`、`package-lock.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml` 和 `src-tauri/Cargo.lock`。
+
+只需手动更新日期版本时运行：
 
 ```bash
-cd bid-compare-desktop
-./build.sh windows
-# 或
-bun run build:windows
-# 交互提示：1) patch [默认] 2) minor 3) major 4) 不升级
-
-# 非交互/CI 环境直接指定
-BUMP=patch ./build.sh windows
-BUMP=minor bun run build:windows
-BUMP=major bun run build:mac-silicon
+./scripts/bump-version.sh
 ```
-
-版本会同步写入 `package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`。
 
 ## 快捷入口
 

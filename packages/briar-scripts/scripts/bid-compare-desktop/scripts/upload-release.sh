@@ -2,9 +2,8 @@
 set -e
 
 # 上传 Tauri 桌面端产物到 GitHub Release
-# 用法：./scripts/upload-release.sh [target] [version]
+# 用法：./scripts/upload-release.sh [target]
 #   target: current | mac-intel | mac-silicon | windows
-#   version: 1.0.0（默认读取 package.json）
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DESKTOP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -12,9 +11,9 @@ DESKTOP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${DESKTOP_DIR}"
 
 TARGET="${1:-current}"
-VERSION="${2:-$(node -p "require('./package.json').version")}"
-TAG="desktop-v${VERSION}"
-TITLE="施工方案比对桌面端 ${VERSION}"
+DISPLAY_VERSION=$(node scripts/version.cjs display)
+TAG="desktop-${DISPLAY_VERSION}"
+TITLE="施工方案比对桌面端 ${DISPLAY_VERSION}"
 
 # 检查 gh
 if ! command -v gh >/dev/null 2>&1; then
@@ -33,24 +32,33 @@ fi
 # 收集要上传的文件
 FILES=()
 case "${TARGET}" in
-	current|mac-intel|mac-silicon)
-		for f in "${DESKTOP_DIR}/src-tauri/target/release/bundle/dmg"/施工方案比对_*.dmg; do
-			[ -e "${f}" ] && FILES+=("${f}")
-		done
+	current)
+		BUNDLE_DIR="${DESKTOP_DIR}/src-tauri/target/release/bundle"
+		;;
+	mac-silicon)
+		BUNDLE_DIR="${DESKTOP_DIR}/src-tauri/target/aarch64-apple-darwin/release/bundle"
+		;;
+	mac-intel)
+		BUNDLE_DIR="${DESKTOP_DIR}/src-tauri/target/x86_64-apple-darwin/release/bundle"
 		;;
 	windows)
-		for f in "${DESKTOP_DIR}/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi"/施工方案比对_*.msi; do
-			[ -e "${f}" ] && FILES+=("${f}")
-		done
-		for f in "${DESKTOP_DIR}/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis"/施工方案比对_*.exe; do
-			[ -e "${f}" ] && FILES+=("${f}")
-		done
+		BUNDLE_DIR="${DESKTOP_DIR}/src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
 		;;
 	*)
-		echo "用法: $0 [current|mac-intel|mac-silicon|windows] [version]"
+		echo "用法: $0 [current|mac-intel|mac-silicon|windows]"
 		exit 1
 		;;
 esac
+
+if [[ "${TARGET}" == "windows" ]]; then
+	for f in "${BUNDLE_DIR}/msi"/施工方案比对_*.msi "${BUNDLE_DIR}/nsis"/施工方案比对_*.exe; do
+		[ -e "${f}" ] && FILES+=("${f}")
+	done
+else
+	for f in "${BUNDLE_DIR}/dmg"/施工方案比对_*.dmg; do
+		[ -e "${f}" ] && FILES+=("${f}")
+	done
+fi
 
 if [ ${#FILES[@]} -eq 0 ]; then
 	echo "错误：没有找到可上传的产物，请先成功打包"
@@ -60,7 +68,7 @@ fi
 echo ""
 echo "=============================================="
 echo "上传产物到 GitHub Release"
-echo "版本: ${VERSION}"
+echo "版本: ${DISPLAY_VERSION}"
 echo "标签: ${TAG}"
 echo "平台: ${TARGET}"
 echo "产物:"
@@ -70,7 +78,7 @@ echo "=============================================="
 # 确保 tag 存在（使用当前 HEAD）
 if ! git rev-parse "${TAG}" >/dev/null 2>&1; then
 	echo "创建标签: ${TAG}"
-	git tag -a "${TAG}" -m "Desktop release ${VERSION}"
+	git tag -a "${TAG}" -m "Desktop release ${DISPLAY_VERSION}"
 	git push origin "${TAG}"
 else
 	echo "标签已存在: ${TAG}"
@@ -81,7 +89,7 @@ if ! gh release view "${TAG}" >/dev/null 2>&1; then
 	echo "创建 GitHub Release: ${TAG}"
 	gh release create "${TAG}" \
 		--title "${TITLE}" \
-		--notes "施工方案比对桌面端 ${VERSION}" \
+		--notes "施工方案比对桌面端 ${DISPLAY_VERSION}" \
 		|| {
 			echo "创建 release 失败，可能已存在或网络问题"
 			exit 1

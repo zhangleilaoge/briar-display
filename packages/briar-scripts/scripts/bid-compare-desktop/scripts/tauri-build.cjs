@@ -2,7 +2,7 @@
 const fs = require('fs')
 const path = require('path')
 const { spawn } = require('child_process')
-const readline = require('readline')
+const { displayVersion, nextBuildVersions, syncVersions } = require('./version.cjs')
 
 const DESKTOP_DIR = path.resolve(__dirname, '..')
 const TARGET = process.argv[2] || 'current'
@@ -13,117 +13,43 @@ function now() {
 	return d.toTimeString().slice(0, 8)
 }
 
-function bumpVersion(version, kind) {
-	const [maj, min, pat] = version.split('.').map(Number)
-	switch (kind) {
-		case 'major':
-			return `${maj + 1}.0.0`
-		case 'minor':
-			return `${maj}.${min + 1}.0`
-		case 'patch':
-			return `${maj}.${min}.${pat + 1}`
-		default:
-			throw new Error(`unknown bump kind: ${kind}`)
-	}
-}
-
-function setVersion(file, pattern, replacement) {
-	const p = path.join(DESKTOP_DIR, file)
-	const content = fs.readFileSync(p, 'utf8')
-	const next = content.replace(pattern, replacement)
-	if (next !== content) {
-		fs.writeFileSync(p, next)
-		console.log(`  - ${file}`)
-	}
-}
-
-async function promptBump() {
-	const envBump = process.env.BUMP
-	if (envBump) {
-		return envBump === 'none' || envBump === 'no' ? '' : envBump
-	}
-	if (!process.stdin.isTTY) {
-		return 'patch'
-	}
-	const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
-	const choice = await new Promise((resolve) => {
-		rl.question(
-			'\n请选择版本升级方式（默认: patch）：\n' +
-				'  1) patch  小版本+1 [默认]\n' +
-				'  2) minor  中版本+1\n' +
-				'  3) major  大版本+1\n' +
-				'  4) 不升级\n' +
-				'输入选项 [1]: ',
-			(answer) => resolve(answer.trim()),
-		)
-	})
-	rl.close()
-	switch (choice || '1') {
-		case '1':
-		case 'patch':
-		case '':
-			return 'patch'
-		case '2':
-		case 'minor':
-			return 'minor'
-		case '3':
-		case 'major':
-			return 'major'
-		case '4':
-		case 'none':
-		case 'no':
-			return ''
-		default:
-			throw new Error(`无效选项: ${choice}`)
+function renameBundles(version, display) {
+	const targetDir =
+		TARGET === 'current'
+			? path.join(DESKTOP_DIR, 'src-tauri/target/release')
+			: path.join(DESKTOP_DIR, `src-tauri/target/${TARGET}/release`)
+	for (const kind of ['dmg', 'msi', 'nsis']) {
+		const dir = path.join(targetDir, 'bundle', kind)
+		if (!fs.existsSync(dir)) continue
+		for (const name of fs.readdirSync(dir)) {
+			if (!name.includes(version)) continue
+			const nextName = name.replaceAll(version, display)
+			fs.renameSync(path.join(dir, name), path.join(dir, nextName))
+			console.log(`安装包: ${path.join(dir, nextName)}`)
+		}
 	}
 }
 
 async function main() {
-	const bumpKind = await promptBump()
-	if (bumpKind) {
-		const pkgPath = path.join(DESKTOP_DIR, 'package.json')
-		const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
-		const current = pkg.version
-		const next = bumpVersion(current, bumpKind)
-		console.log(`更新版本: ${current} -> ${next}`)
-		console.log('已同步更新:')
-		const replacement = (v) => v.replace(/"version":\s*"[^"]+"/, `"version": "${next}"`)
-		const cargoReplacement = (v) => v.replace(/^version = "[^"]+"/m, `version = "${next}"`)
-		setVersion('package.json', /"version":\s*"[^"]+"/, `"version": "${next}"`)
-		setVersion('src-tauri/tauri.conf.json', /"version":\s*"[^"]+"/, `"version": "${next}"`)
-		setVersion('src-tauri/Cargo.toml', /^version = "[^"]+"/m, `version = "${next}"`)
-		// npm 的 lockfile 也要同步，否则版本号不一致
-		const lockPath = path.join(DESKTOP_DIR, 'package-lock.json')
-		if (fs.existsSync(lockPath)) {
-			const lockContent = fs.readFileSync(lockPath, 'utf8')
-			// 顶层 version 和 packages[""].version 都要更新
-			const updated = lockContent
-				.replace(/^\s+"version": "[^"]+"/m, `  "version": "${next}"`)
-				.replace(
-					/("": \{\n\s+"name": "bid-compare-desktop",\n\s+)"version": "[^"]+"/,
-					`$1"version": "${next}"`,
-				)
-			if (updated !== lockContent) {
-				fs.writeFileSync(lockPath, updated)
-				console.log('  - package-lock.json')
-			}
-		}
-	}
+	const pkg = JSON.parse(fs.readFileSync(path.join(DESKTOP_DIR, 'package.json'), 'utf8'))
+	const previousDisplay = pkg.displayVersion || displayVersion(pkg.version)
+	const { internal, display } = nextBuildVersions()
+	console.log(`更新日期版本: ${previousDisplay} -> ${display}`)
+	console.log(`安装器内部版本: ${internal}`)
+	for (const file of syncVersions(internal, display)) console.log(`  - ${file}`)
 
 	console.log('')
 	console.log(`[${now()}] 开始: Tauri 构建 (${LABEL})`)
 	const start = Date.now()
-
 	const args = ['tauri', 'build']
-	if (TARGET !== 'current') {
-		args.push('--target', TARGET)
-	}
+	if (TARGET !== 'current') args.push('--target', TARGET)
 
 	await new Promise((resolve, reject) => {
 		const child = spawn('npx', args, {
 			cwd: DESKTOP_DIR,
 			stdio: 'inherit',
 			shell: true,
+			env: { ...process.env, BRIAR_DISPLAY_VERSION: display.replace(/^v/, '') },
 		})
 		child.on('error', reject)
 		child.on('close', (code) => {
@@ -132,6 +58,7 @@ async function main() {
 		})
 	})
 
+	renameBundles(internal, display)
 	const elapsed = Math.round((Date.now() - start) / 1000)
 	console.log(`[${now()}] 结束: Tauri 构建 (${LABEL}) (耗时 ${elapsed}s)`)
 }

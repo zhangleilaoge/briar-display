@@ -219,7 +219,9 @@ async fn open_file(app: AppHandle, path: String) -> Result<(), String> {
 /// 获取应用版本号
 #[tauri::command]
 fn get_version() -> String {
-	env!("CARGO_PKG_VERSION").to_string()
+	option_env!("BRIAR_DISPLAY_VERSION")
+		.unwrap_or(env!("CARGO_PKG_VERSION"))
+		.to_string()
 }
 
 /// 用系统文件选择器选择 PDF 文件

@@ -113,32 +113,37 @@ run_with_timing "准备内嵌运行环境" ./scripts/prepare-embedded.sh "${TRIP
 # Tauri 会按当前版本生成新文件，但旧版本命名的产物不会自动删除
 echo "清理旧版本产物..."
 rm -rf "${SCRIPT_DIR}/src-tauri/target/release/bundle"
+rm -rf "${SCRIPT_DIR}/src-tauri/target/aarch64-apple-darwin/release/bundle"
+rm -rf "${SCRIPT_DIR}/src-tauri/target/x86_64-apple-darwin/release/bundle"
 rm -rf "${SCRIPT_DIR}/src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
 
-# Tauri 构建（tauri-build.cjs 已包含版本提示和计时）
+# Tauri 构建（自动更新日期版本并计时）
 case "${TARGET}" in
 	current)
 		node scripts/tauri-build.cjs current current
+		BUNDLE_DIR="${SCRIPT_DIR}/src-tauri/target/release/bundle"
 		;;
 	mac-intel)
 		node scripts/tauri-build.cjs x86_64-apple-darwin mac-intel
+		BUNDLE_DIR="${SCRIPT_DIR}/src-tauri/target/x86_64-apple-darwin/release/bundle"
 		;;
 	mac-silicon)
 		node scripts/tauri-build.cjs aarch64-apple-darwin mac-silicon
+		BUNDLE_DIR="${SCRIPT_DIR}/src-tauri/target/aarch64-apple-darwin/release/bundle"
 		;;
 	windows)
 		node scripts/tauri-build.cjs x86_64-pc-windows-msvc windows
+		BUNDLE_DIR="${SCRIPT_DIR}/src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
 		;;
 esac
 
 echo ""
 echo "=============================================="
 echo "打包完成"
-echo "产物目录: ${SCRIPT_DIR}/src-tauri/target/release/bundle/"
+echo "产物目录: ${BUNDLE_DIR}/"
 echo ""
 case "${TARGET}" in
 	windows)
-		BUNDLE_DIR="${SCRIPT_DIR}/src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
 		DESKTOP_DIR="$(cygpath -u "${USERPROFILE}")/Desktop"
 		mkdir -p "${DESKTOP_DIR}"
 		cp -f "${BUNDLE_DIR}"/msi/*.msi "${DESKTOP_DIR}/" 2>/dev/null || true
@@ -152,11 +157,11 @@ case "${TARGET}" in
 		;;
 	mac-intel|mac-silicon|current)
 		echo "macOS 产物:"
-		echo "  ${SCRIPT_DIR}/src-tauri/target/release/bundle/macos/施工方案比对.app"
-		echo "  ${SCRIPT_DIR}/src-tauri/target/release/bundle/dmg/施工方案比对_*.dmg"
+		echo "  ${BUNDLE_DIR}/macos/施工方案比对.app"
+		echo "  ${BUNDLE_DIR}/dmg/施工方案比对_*.dmg"
 		echo ""
 		echo "提示: 把 .app 放到工具根目录使用:"
-		echo "  cp -R '${SCRIPT_DIR}/src-tauri/target/release/bundle/macos/施工方案比对.app' '${TOOL_DIR}/'"
+		echo "  cp -R '${BUNDLE_DIR}/macos/施工方案比对.app' '${TOOL_DIR}/'"
 		;;
 esac
 # 上传到 GitHub Release
@@ -171,10 +176,10 @@ echo "总耗时: ${TOTAL_ELAPSED}s"
 echo "=============================================="
 
 # GitHub Release 上传
-VERSION=$(node -p "require('./package.json').version")
+DISPLAY_VERSION=$(node scripts/version.cjs display)
 UPLOAD_RELEASE="${UPLOAD_RELEASE:-}"
 if [ -z "${UPLOAD_RELEASE}" ] && [ -t 0 ]; then
-	read -rp "是否上传到 GitHub Release v${VERSION}? [y/N]: " upload_choice
+	read -rp "是否上传到 GitHub Release ${DISPLAY_VERSION}? [y/N]: " upload_choice
 	case "${upload_choice}" in
 		[Yy]*)
 			UPLOAD_RELEASE="1"
@@ -183,5 +188,5 @@ if [ -z "${UPLOAD_RELEASE}" ] && [ -t 0 ]; then
 fi
 
 if [ "${UPLOAD_RELEASE}" = "1" ]; then
-	./scripts/upload-release.sh "${TARGET}" "${VERSION}"
+	./scripts/upload-release.sh "${TARGET}"
 fi

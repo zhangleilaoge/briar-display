@@ -271,7 +271,7 @@ export function DesktopRibbonNav({
 		<>
 			<ul
 				ref={listRef}
-				className={cn('rv-ribbon-list relative flex flex-col items-center gap-0.5', {
+				className={cn('rv-ribbon-list relative flex flex-col items-center gap-0.5 pt-3', {
 					'is-settling': settling !== null,
 				})}
 				onPointerMoveCapture={movePointer}
