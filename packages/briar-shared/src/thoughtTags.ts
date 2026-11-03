@@ -42,3 +42,26 @@ export function extractThoughtTags(body: string): string[] {
 	}
 	return [...seen]
 }
+
+/** 多标签筛选最多同时选几个 */
+export const THOUGHT_TAG_FILTER_MAX = 10
+
+/**
+ * 解析筛选用的标签列表：支持重复参数（?tag=a&tag=b）与逗号分隔（?tag=a,b），
+ * 规范化、去空、去重（保持顺序），最多 THOUGHT_TAG_FILTER_MAX 个。
+ */
+export function parseThoughtTagList(
+	values: readonly (string | null | undefined)[] | string | null | undefined,
+): string[] {
+	const list = Array.isArray(values) ? values : [values as string | null | undefined]
+	const seen = new Set<string>()
+	for (const v of list) {
+		if (!v) continue
+		for (const piece of String(v).split(/[,，]/)) {
+			const tag = normalizeThoughtTag(piece)
+			if (tag) seen.add(tag)
+			if (seen.size >= THOUGHT_TAG_FILTER_MAX) return [...seen]
+		}
+	}
+	return [...seen]
+}

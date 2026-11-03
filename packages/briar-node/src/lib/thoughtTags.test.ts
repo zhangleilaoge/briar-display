@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import { extractThoughtTags, normalizeThoughtTag, splitTagText } from '@briar/shared'
+import {
+	extractThoughtTags,
+	normalizeThoughtTag,
+	parseThoughtTagList,
+	splitTagText,
+} from '@briar/shared'
 
 describe('想法 #标签 解析', () => {
 	test('中英数字与下划线', () => {
@@ -35,5 +40,20 @@ describe('想法 #标签 解析', () => {
 			{ type: 'tag', tag: '标签', value: '#标签' },
 			{ type: 'text', value: '，ok' },
 		])
+	})
+})
+
+describe('多标签筛选参数解析', () => {
+	test('重复参数 + 逗号分隔 + 兼容单个', () => {
+		expect(parseThoughtTagList(['读书'])).toEqual(['读书'])
+		expect(parseThoughtTagList(['读书', 'Book'])).toEqual(['读书', 'book'])
+		expect(parseThoughtTagList('a,b，c')).toEqual(['a', 'b', 'c'])
+	})
+	test('去空、去 #、去重', () => {
+		expect(parseThoughtTagList(['#A', 'a', '', ' , ', null, undefined, 'b'])).toEqual(['a', 'b'])
+		expect(parseThoughtTagList(null)).toEqual([])
+	})
+	test('最多 10 个', () => {
+		expect(parseThoughtTagList(Array.from({ length: 20 }, (_, i) => `t${i}`))).toHaveLength(10)
 	})
 })
