@@ -131,21 +131,41 @@ function writeTagToUrl(tag: string | null, push: boolean) {
 
 function TagInsertButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
 	return (
-		<Button
+		<button
 			type="button"
-			variant="default"
-			size="sm"
 			disabled={disabled}
 			onClick={onClick}
-			className="h-8 gap-1 rounded-none px-2 text-xs"
+			className="inline-flex h-8 items-center gap-1 rounded-sm border border-dashed border-[color:var(--rv-rose-deep)]/45 bg-[var(--rv-pink)]/35 px-2.5 font-label text-[12px] tracking-[0.06em] text-[color:var(--rv-rose-deep)] transition-colors hover:border-[color:var(--rv-rose-deep)]/70 hover:bg-[var(--rv-pink)]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose-deep)]/30 disabled:pointer-events-none disabled:opacity-50"
 			aria-label="插入标签"
 			title="插入 #标签（输入时会联想已有标签）"
 		>
 			<Hash className="h-3.5 w-3.5" />
 			标签
-		</Button>
+		</button>
 	)
 }
+
+/** 侧栏卡片统一标题：花体法文 + 小号 Josefin 中文副标 */
+function SideCardTitle({ script, label }: { script: string; label: string }) {
+	return (
+		<div className="flex items-baseline gap-2">
+			<span className="rv-script text-lg leading-none text-[color:var(--rv-rose-deep)]">
+				{script}
+			</span>
+			<span className="font-label text-[10px] uppercase tracking-[0.22em] text-[color:var(--rv-navy)]/55">
+				{label}
+			</span>
+		</div>
+	)
+}
+
+/** 标签 chip：侧栏筛选 / 正文共用一套视觉 */
+const tagChipBase =
+	'inline-flex items-center gap-1 whitespace-nowrap rounded-sm border border-dashed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose-deep)]/30'
+const tagChipIdle =
+	'border-[color:var(--rv-rose-deep)]/30 bg-[var(--rv-pink)]/30 text-[color:var(--rv-rose-deep)] hover:border-[color:var(--rv-rose-deep)]/55 hover:bg-[var(--rv-pink)]/65'
+const tagChipActive =
+	'border-solid border-[color:var(--rv-rose-deep)]/45 bg-[color:var(--rv-rose)]/55 text-[color:var(--rv-rose-deep)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.6)]'
 
 /** 标签筛选条：热门标签 + 当前筛选 */
 function TagFilterBar({
@@ -160,17 +180,13 @@ function TagFilterBar({
 	const [query, setQuery] = useState('')
 	const [expanded, setExpanded] = useState(false)
 	if (tags.length === 0 && !activeTag) return null
-	const chipRow = 'flex gap-1.5 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible lg:pb-0'
 	const q = normalizeThoughtTag(query)
 	const filtered = q ? tags.filter((t) => t.tag.includes(q)) : tags
 	const shown = expanded || q ? filtered : filtered.slice(0, 12)
 	return (
-		<PaperSheet variant="stamp" bodyClassName="!px-4 !py-4 space-y-3">
+		<PaperSheet variant="stamp" className="min-w-0" bodyClassName="!px-4 !py-4 space-y-3">
 			<div className="flex items-center justify-between gap-2">
-				<span className="inline-flex items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground">
-					<Hash className="h-3 w-3" />
-					热门标签
-				</span>
+				<SideCardTitle script="mots-clés" label="热门标签" />
 				{tags.length > 8 && (
 					<input
 						value={query}
@@ -182,11 +198,11 @@ function TagFilterBar({
 							}
 						}}
 						placeholder="搜标签…"
-						className="h-7 w-24 rounded-none border border-dashed border-[color:var(--rv-rose)]/60 bg-[var(--rv-beige)]/80 px-2 text-xs outline-none focus:border-[color:var(--rv-rose-deep)]"
+						className="h-8 w-24 min-w-0 rounded-sm border border-dashed border-[color:var(--rv-rose-deep)]/30 bg-[var(--rv-beige)]/80 px-2 text-[12px] outline-none placeholder:text-muted-foreground/70 focus:border-[color:var(--rv-rose-deep)]/60"
 					/>
 				)}
 			</div>
-			<div className={chipRow}>
+			<div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden">
 				{shown.map((t) => {
 					const active = t.tag === activeTag
 					return (
@@ -196,14 +212,15 @@ function TagFilterBar({
 							onClick={() => onSelect(active ? null : t.tag)}
 							aria-pressed={active}
 							className={cn(
-								'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-none border border-dashed px-2 py-0.5 text-xs transition-colors',
-								active
-									? 'border-[color:var(--rv-rose-deep)] bg-[color:var(--rv-rose)]/25 text-[color:var(--rv-rose-deep)]'
-									: 'border-[color:var(--rv-rose)]/60 bg-[var(--rv-pink)]/30 text-[color:var(--rv-rose-deep)] hover:bg-[var(--rv-pink)]/70',
+								tagChipBase,
+								'h-8 shrink-0 px-2.5 text-[13px] leading-none lg:h-7',
+								active ? tagChipActive : tagChipIdle,
 							)}
 						>
-							#{t.tag}
-							<span className="text-[10px] opacity-60">{t.count}</span>
+							<span>#{t.tag}</span>
+							<span className="font-label text-[10px] tabular-nums text-[color:var(--rv-navy)]/45">
+								{t.count}
+							</span>
 						</button>
 					)
 				})}
@@ -211,20 +228,21 @@ function TagFilterBar({
 					<button
 						type="button"
 						onClick={() => setExpanded((v) => !v)}
-						className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+						className="h-8 shrink-0 px-1 font-label text-[11px] tracking-[0.06em] text-muted-foreground underline-offset-4 hover:text-[color:var(--rv-rose-deep)] hover:underline lg:h-7"
 					>
 						{expanded ? '收起' : `更多 ${filtered.length - 12}`}
 					</button>
 				)}
 			</div>
 			{activeTag && (
-				<div className="flex flex-wrap items-center gap-2 border-t border-[color:var(--rv-navy)]/10 pt-2 text-sm">
-					<span className="text-muted-foreground">正在看</span>
-					<span className="font-medium text-[color:var(--rv-rose-deep)]">#{activeTag}</span>
+				<div className="flex min-h-8 items-center justify-between gap-2 border-t border-dashed border-[color:var(--rv-navy)]/12 pt-2.5">
+					<span className="min-w-0 truncate text-[13px] text-muted-foreground">
+						正在看 <span className="text-[color:var(--rv-rose-deep)]">#{activeTag}</span>
+					</span>
 					<button
 						type="button"
 						onClick={() => onSelect(null)}
-						className="inline-flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
+						className="inline-flex h-8 shrink-0 items-center gap-1 px-1 font-label text-[11px] tracking-[0.06em] text-muted-foreground underline-offset-4 transition-colors hover:text-[color:var(--rv-rose-deep)] hover:underline lg:h-7"
 					>
 						<X className="h-3 w-3" />
 						清除筛选
@@ -255,12 +273,16 @@ function StatsCard({
 	]
 	return (
 		<PaperSheet variant="kraft" className="hidden lg:block" bodyClassName="!px-4 !py-4">
-			<span className="rv-script text-lg text-[color:var(--rv-rose-deep)]">en bref</span>
-			<dl className="mt-2 grid grid-cols-3 gap-2 text-center">
+			<SideCardTitle script="en bref" label="小统计" />
+			<dl className="mt-3 grid grid-cols-3 divide-x divide-dashed divide-[color:var(--rv-navy)]/15 text-center">
 				{cells.map(([k, v]) => (
-					<div key={k} className="min-w-0">
-						<dt className="truncate text-[11px] text-muted-foreground">{k}</dt>
-						<dd className="text-lg font-semibold tabular-nums">{v}</dd>
+					<div key={k} className="min-w-0 px-1">
+						<dd className="font-display text-2xl font-semibold leading-none tabular-nums text-[color:var(--rv-navy)]">
+							{v}
+						</dd>
+						<dt className="mt-1.5 truncate font-label text-[10px] tracking-[0.12em] text-[color:var(--rv-navy)]/55">
+							{k}
+						</dt>
 					</div>
 				))}
 			</dl>
@@ -399,7 +421,7 @@ function ThoughtsPageInner() {
 
 			<main className="rv-content-inset mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
 				<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-8">
-					<aside className="order-first space-y-4 lg:sticky lg:top-24 lg:order-last lg:self-start">
+					<aside className="order-first min-w-0 space-y-4 lg:sticky lg:top-24 lg:order-last lg:self-start">
 						<TagFilterBar tags={tagCounts} activeTag={activeTag} onSelect={selectTag} />
 						<StatsCard
 							total={total}
