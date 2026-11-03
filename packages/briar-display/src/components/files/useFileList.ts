@@ -17,6 +17,7 @@ const BASE_PATH = '/briar/files'
 export type FileSortValue = `${FileSortField}-${FileSortOrder}`
 
 export const DEFAULT_SORT: FileSortValue = 'createdAt-desc'
+export type FileViewFilter = FileTypeFilter | 'folder'
 
 export function splitSort(value: FileSortValue): { sort: FileSortField; order: FileSortOrder } {
 	const idx = value.lastIndexOf('-')
@@ -47,7 +48,7 @@ export function useFileList() {
 	const [loading, setLoading] = useState(true)
 	const [search, setSearch] = useState('')
 	const [keyword, setKeyword] = useState('')
-	const [typeFilter, setTypeFilter] = useState<'' | FileTypeFilter>('')
+	const [typeFilter, setTypeFilter] = useState<'' | FileViewFilter>('')
 	const [sortValue, setSortValue] = useState<FileSortValue>(DEFAULT_SORT)
 	const [page, setPage] = useState(1)
 	const [currentFolderId, setCurrentFolderIdState] = useState<string | null>(() =>
@@ -72,7 +73,7 @@ export function useFileList() {
 		async (
 			kw: string,
 			folderId: string | null,
-			type: '' | FileTypeFilter,
+			type: '' | FileViewFilter,
 			sort: FileSortValue,
 			p: number,
 		) => {
@@ -81,7 +82,7 @@ export function useFileList() {
 				const res = await getFiles({
 					keyword: kw || undefined,
 					folderId,
-					type: type || undefined,
+					type: type && type !== 'folder' ? type : undefined,
 					...splitSort(sort),
 					page: p,
 					pageSize: PAGE_SIZE,

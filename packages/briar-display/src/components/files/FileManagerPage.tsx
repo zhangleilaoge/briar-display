@@ -143,7 +143,7 @@ function FileManagerPageInner() {
 		}
 	}
 
-	// 当前文件夹下的子文件夹（搜索或类型筛选时为扁平结果视图，隐藏文件夹）
+	// 搜索或文件类型筛选时隐藏文件夹，文件夹筛选时仅展示当前层级的子文件夹
 	// fileCount 从直接文件数替换为递归总数（含所有子孙文件夹内的文件）
 	const folderTotalCounts = useMemo(() => {
 		const childrenMap = new Map<string | null, FolderItem[]>()
@@ -169,7 +169,7 @@ function FileManagerPageInner() {
 	}, [folders])
 
 	const subFolders = useMemo(() => {
-		if (keyword || typeFilter) return []
+		if (keyword || (typeFilter && typeFilter !== 'folder')) return []
 		const { sort, order } = splitSort(sortValue)
 		const dir = order === 'asc' ? 1 : -1
 		// 预览图同样递归：子文件夹的图也算进父文件夹的扇形预览（去重，取前 3 张）
@@ -209,6 +209,12 @@ function FileManagerPageInner() {
 			})
 	}, [folders, keyword, typeFilter, currentFolderId, folderTotalCounts, sortValue])
 
+	const folderCount = useMemo(
+		() => folders.filter((folder) => (folder.parentId ?? null) === currentFolderId).length,
+		[folders, currentFolderId],
+	)
+	const visibleFiles = typeFilter === 'folder' ? [] : files
+
 	// ========== 选择 ==========
 
 	const toggleSelect = (id: string) => {
@@ -221,7 +227,10 @@ function FileManagerPageInner() {
 	}
 
 	const toggleSelectAll = () => {
-		const allKeys = [...subFolders.map((f) => folderSelectKey(f.id)), ...files.map((i) => i.id)]
+		const allKeys = [
+			...subFolders.map((f) => folderSelectKey(f.id)),
+			...visibleFiles.map((i) => i.id),
+		]
 		if (selected.size === allKeys.length) setSelected(new Set())
 		else setSelected(new Set(allKeys))
 	}
@@ -421,6 +430,7 @@ function FileManagerPageInner() {
 	}
 
 	const detailIndex = detailFile ? files.findIndex((file) => file.id === detailFile.id) : -1
+	const gridTotal = typeFilter === 'folder' ? subFolders.length : total
 
 	return (
 		<FileManagerLayout>
@@ -431,6 +441,7 @@ function FileManagerPageInner() {
 					typeFilter={typeFilter}
 					onTypeFilterChange={setTypeFilter}
 					typeCounts={typeCounts}
+					folderCount={folderCount}
 					sortValue={sortValue}
 					onSortChange={setSortValue}
 					selectedCount={selected.size}
@@ -455,17 +466,21 @@ function FileManagerPageInner() {
 					<div className="rv-fade-in flex items-center justify-center py-20">
 						<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 					</div>
-				) : files.length === 0 && subFolders.length === 0 ? (
+				) : visibleFiles.length === 0 && subFolders.length === 0 ? (
 					<div className="rv-fade-in py-20 text-center text-muted-foreground">
-						{keyword || typeFilter ? '没有匹配的文件' : '这里还是空的，上传文件或新建文件夹吧'}
+						{typeFilter === 'folder'
+							? '没有匹配的文件夹'
+							: keyword || typeFilter
+								? '没有匹配的文件'
+								: '这里还是空的，上传文件或新建文件夹吧'}
 					</div>
 				) : (
 					<>
 						<FileGrid
-							files={files}
+							files={visibleFiles}
 							subFolders={subFolders}
 							selected={selected}
-							total={total}
+							total={gridTotal}
 							dropFolderId={dropFolderId}
 							onToggleSelect={toggleSelect}
 							onToggleSelectAll={toggleSelectAll}
@@ -481,12 +496,14 @@ function FileManagerPageInner() {
 							onFolderDrop={handleFolderDrop}
 						/>
 
-						<AdminPagination
-							total={total}
-							limit={PAGE_SIZE}
-							offset={(page - 1) * PAGE_SIZE}
-							onPageChange={(offset) => setPage(offset / PAGE_SIZE + 1)}
-						/>
+						{typeFilter !== 'folder' && (
+							<AdminPagination
+								total={total}
+								limit={PAGE_SIZE}
+								offset={(page - 1) * PAGE_SIZE}
+								onPageChange={(offset) => setPage(offset / PAGE_SIZE + 1)}
+							/>
+						)}
 					</>
 				)}
 			</div>

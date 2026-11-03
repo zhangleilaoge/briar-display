@@ -1,6 +1,6 @@
 'use client'
 
-import { type FileTypeCounts, type FileTypeFilter, createFolder } from '@/api/files'
+import { type FileTypeCounts, createFolder } from '@/api/files'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,
@@ -22,13 +22,13 @@ import { ArrowDownUp, FolderPlus, Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import UploadDialog from './UploadDialog'
-import type { FileSortValue } from './useFileList'
+import type { FileSortValue, FileViewFilter } from './useFileList'
 
-const TYPE_TABS: { value: '' | FileTypeFilter; label: string }[] = [
+const TYPE_TABS: { value: '' | FileViewFilter; label: string }[] = [
 	{ value: '', label: '全部' },
 	{ value: 'image', label: '图片' },
 	{ value: 'video', label: '视频' },
-	{ value: 'text', label: '文本' },
+	{ value: 'folder', label: '文件夹' },
 	{ value: 'other', label: '其他' },
 ]
 
@@ -44,9 +44,10 @@ const SORT_OPTIONS: { value: FileSortValue; label: string }[] = [
 interface FileToolbarProps {
 	search: string
 	onSearchChange: (value: string) => void
-	typeFilter: '' | FileTypeFilter
-	onTypeFilterChange: (value: '' | FileTypeFilter) => void
+	typeFilter: '' | FileViewFilter
+	onTypeFilterChange: (value: '' | FileViewFilter) => void
 	typeCounts: FileTypeCounts
+	folderCount: number
 	sortValue: FileSortValue
 	onSortChange: (value: FileSortValue) => void
 	selectedCount: number
@@ -63,6 +64,7 @@ export default function FileToolbar({
 	typeFilter,
 	onTypeFilterChange,
 	typeCounts,
+	folderCount,
 	sortValue,
 	onSortChange,
 	selectedCount,
@@ -106,12 +108,12 @@ export default function FileToolbar({
 				</div>
 				<Tabs
 					value={typeFilter}
-					onValueChange={(v) => onTypeFilterChange(v as '' | FileTypeFilter)}
+					onValueChange={(v) => onTypeFilterChange(v as '' | FileViewFilter)}
 				>
 					<TabsList className="h-9">
 						{TYPE_TABS.map((t) => (
 							<TabsTrigger key={t.value} value={t.value} className="px-3 text-xs">
-								{t.label} {typeCounts[t.value || 'all']}
+								{t.label} {t.value === 'folder' ? folderCount : typeCounts[t.value || 'all']}
 							</TabsTrigger>
 						))}
 					</TabsList>
