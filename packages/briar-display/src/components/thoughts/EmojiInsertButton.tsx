@@ -14,11 +14,9 @@ const EmojiPicker = lazy(() => import('emoji-picker-react'))
 type Props = {
 	onPick: (emoji: string) => void
 	disabled?: boolean
-	/** 已用字数，接近上限时仍可开面板但插入会被调用方截断 */
-	className?: string
 }
 
-export function EmojiInsertButton({ onPick, disabled, className }: Props) {
+export function EmojiInsertButton({ onPick, disabled }: Props) {
 	const [open, setOpen] = useState(false)
 
 	return (
@@ -26,14 +24,12 @@ export function EmojiInsertButton({ onPick, disabled, className }: Props) {
 			<PopoverTrigger asChild>
 				<Button
 					type="button"
-					variant="default"
+					variant="secondary"
 					size="sm"
 					disabled={disabled}
-					className={className ?? 'h-8 gap-1 rounded-none px-2 text-xs'}
 					aria-label="插入 emoji"
 					title="插入 emoji"
 				>
-					<SmilePlus className="h-3.5 w-3.5" />
 					emoji
 				</Button>
 			</PopoverTrigger>

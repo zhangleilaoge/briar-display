@@ -11,13 +11,16 @@ const buttonVariants = cva(
 		variants: {
 			variant: {
 				default:
-					'bg-secondary [background-image:var(--btn-default-image)] text-secondary-foreground shadow-control hover:shadow-control-hover',
+					'rv-btn-default bg-secondary [background-image:var(--btn-default-image)] text-secondary-foreground shadow-control hover:shadow-control-hover',
 				primary:
 					'rv-btn-primary bg-primary [background-image:var(--btn-primary-image)] text-[hsl(var(--btn-primary-fg))] shadow-control hover:shadow-control-hover hover:brightness-[1.03]',
+				secondary:
+					'rv-btn-secondary bg-secondary text-secondary-foreground shadow-control hover:shadow-control-hover',
+				tool: 'rv-btn-tool text-secondary-foreground shadow-control hover:shadow-control-hover',
 				destructive:
-					'bg-destructive text-destructive-foreground shadow-control hover:bg-destructive/90 hover:shadow-control-hover',
-				ghost: 'text-foreground hover:bg-accent hover:text-accent-foreground',
-				link: 'text-primary underline-offset-4 hover:underline',
+					'rv-btn-destructive bg-destructive text-destructive-foreground shadow-control hover:bg-destructive/90 hover:shadow-control-hover',
+				ghost: 'rv-btn-ghost text-foreground hover:bg-accent hover:text-accent-foreground',
+				link: 'rv-btn-link text-primary underline-offset-4 hover:underline',
 			},
 			size: {
 				default: 'h-10 px-4 py-2',

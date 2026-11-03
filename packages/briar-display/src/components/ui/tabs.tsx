@@ -63,7 +63,7 @@ const TabsList = React.forwardRef<
 			ref={setRefs}
 			data-tab-indicator={ready ? 'ready' : undefined}
 			className={cn(
-				'relative inline-flex h-10 items-center justify-center gap-0.5 rounded-control border border-[color:hsl(var(--border))] bg-[var(--tabs-list-bg)] p-1 text-muted-foreground shadow-sm',
+				'rv-tabs-list relative inline-flex h-10 items-center justify-center gap-0.5 rounded-control border border-[color:hsl(var(--border))] bg-[var(--tabs-list-bg)] p-1 text-muted-foreground shadow-sm',
 				className,
 			)}
 			{...props}

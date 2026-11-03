@@ -1,0 +1,265 @@
+/* 手账专用控件：与 Arcane 的直角 HUD 分离。 */
+
+.theme-scrapbook .rv-popover {
+	--rv-popover-corner-size: clamp(16px, 8%, 36px);
+	overflow: visible !important;
+	border: 1px solid #ded4ca !important;
+	border-radius: 2px !important;
+	background-color: #fffaf3 !important;
+	background-image: url("../assets/decor/popover-corners/tl.png"),
+		url("../assets/decor/popover-corners/tr.png"), url("../assets/decor/popover-corners/br.png"),
+		url("../assets/decor/popover-corners/bl.png"), var(--paper-grain),
+		linear-gradient(145deg, #fffef9, #f6e9e2) !important;
+	background-position: left top, right top, right bottom, left bottom, left top, left top;
+	background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat;
+	background-size: var(--rv-popover-corner-size), var(--rv-popover-corner-size),
+		var(--rv-popover-corner-size), var(--rv-popover-corner-size), 180px 180px, auto;
+	box-shadow: inset 0 0 0 3px #fffaf3, inset 0 0 0 4px #e8dfd5, 0 12px 24px -14px
+		hsl(350 30% 35% / 0.24) !important;
+}
+.theme-scrapbook .rv-command,
+.theme-scrapbook .rv-select-content {
+	border: 1px solid #c39a96 !important;
+	border-radius: 16px 18px 15px 17px / 17px 15px 18px 16px !important;
+	background-color: #fffaf3 !important;
+	background-image: var(--paper-grain), linear-gradient(160deg, #fffdf8, #f7eae5) !important;
+	box-shadow: 0 3px 0 #ead1cd, 0 10px 24px -14px hsl(350 30% 35% / 0.28) !important;
+}
+.theme-scrapbook .rv-popover .rv-command {
+	border: 0 !important;
+	border-radius: 12px !important;
+	background: transparent;
+	box-shadow: none;
+}
+.theme-scrapbook .rv-command [cmdk-input-wrapper] {
+	min-height: 46px;
+	margin: 5px 6px 7px;
+	padding: 0 10px;
+	border: 1px dashed hsl(352 35% 58% / 0.42);
+	border-radius: 12px 14px 11px 13px;
+	background: hsl(36 60% 99% / 0.72);
+	color: var(--rv-rose-deep);
+}
+.theme-scrapbook .rv-command [cmdk-input-wrapper] > svg {
+	color: var(--rv-rose-deep);
+	opacity: 0.75;
+}
+.theme-scrapbook .rv-command [cmdk-input] {
+	font-family: var(--font-label);
+	color: #543e40;
+}
+.theme-scrapbook .rv-command [cmdk-list] {
+	padding: 3px 4px 6px;
+}
+.theme-scrapbook .rv-command [cmdk-group-heading],
+.theme-scrapbook .rv-select-label {
+	padding: 7px 10px 5px;
+	font-family: var(--font-label);
+	font-size: 10px;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: #a16b72;
+}
+.theme-scrapbook .rv-command [cmdk-item],
+.theme-scrapbook .rv-select-item {
+	margin: 2px 3px;
+	padding: 8px 10px;
+	border: 0;
+	border-radius: 12px;
+	font-family: var(--font-label);
+	color: #594548;
+}
+.theme-scrapbook .rv-select-item {
+	width: calc(100% - 6px);
+	padding-right: 32px;
+}
+.theme-scrapbook .rv-command [cmdk-item][data-selected="true"],
+.theme-scrapbook .rv-select-item[data-highlighted],
+.theme-scrapbook .rv-select-item[data-state="checked"] {
+	border-radius: 12px !important;
+	background-color: #f1d8db !important;
+	background-image: repeating-linear-gradient(
+			0deg,
+			hsl(0 0% 100% / 0.16) 0 1px,
+			transparent 1px 3px
+		), linear-gradient(180deg, #f7e6e6, #edced3) !important;
+	box-shadow: inset 0 0 0 1px hsl(352 35% 58% / 0.28) !important;
+	color: #633d45 !important;
+}
+.theme-scrapbook .rv-command [cmdk-separator],
+.theme-scrapbook .rv-select-separator {
+	margin: 4px 8px;
+	background: repeating-linear-gradient(90deg, #d8b7b5 0 4px, transparent 4px 8px);
+}
+
+.theme-scrapbook .rv-tabs-list {
+	--tab-active-fg: #633d45;
+	border-color: hsl(350 28% 72% / 0.72);
+	border-radius: 16px 18px 15px 17px / 17px 15px 18px 16px;
+	background-image: var(--paper-grain), linear-gradient(180deg, #fffaf3, #f2e3df);
+	box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.75), 0 2px 0 #e8d2cc;
+}
+.theme-scrapbook .rv-tabs-list > [role="tab"] {
+	border-radius: 12px 14px 11px 13px;
+	font-family: var(--font-label);
+	letter-spacing: 0.02em;
+}
+.theme-scrapbook .rv-tabs-list > [role="tab"]:hover {
+	color: var(--rv-rose-deep);
+}
+.theme-scrapbook .rv-tab-indicator {
+	border: 1px solid #b87580;
+	border-radius: 12px 14px 11px 13px / 13px 11px 14px 12px;
+	background-color: #e8b6be;
+	background-image: repeating-linear-gradient(
+			0deg,
+			hsl(0 0% 100% / 0.13) 0 1px,
+			transparent 1px 3px
+		), repeating-linear-gradient(90deg, hsl(352 40% 38% / 0.045) 0 1px, transparent 1px 3px),
+		linear-gradient(180deg, #efc8cd, #e3aab4);
+	box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.65), 0 2px 4px hsl(350 35% 38% / 0.16);
+}
+.theme-scrapbook .rv-tab-indicator::before {
+	content: "";
+	position: absolute;
+	inset: 3px;
+	border: 1px dashed hsl(36 60% 97% / 0.82);
+	border-radius: 8px 10px 7px 9px;
+}
+
+.theme-scrapbook .rv-thoughts-aside {
+	padding: 16px 16px 16px 32px;
+	border: 1px solid hsl(350 28% 72% / 0.72);
+	border-radius: 16px 18px 15px 17px / 17px 15px 18px 16px;
+	background-color: #fffaf3;
+	background-image: var(--paper-grain), linear-gradient(145deg, #fffdf8, #f6e9e3);
+	box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.8), 0 3px 0 #ead1cd, 0 10px 22px -14px
+		hsl(350 30% 35% / 0.3);
+}
+.theme-scrapbook .rv-thoughts-aside::before {
+	content: "";
+	position: absolute;
+	top: 15px;
+	bottom: 15px;
+	left: 8px;
+	width: 8px;
+	background: radial-gradient(
+			circle,
+			#c6a6a0 0 1.5px,
+			#ead5cd 1.5px 2.5px,
+			#fffdf8 2.5px 3px,
+			transparent 3.2px
+		)
+		center top / 8px 18px repeat-y;
+	pointer-events: none;
+}
+.theme-scrapbook .rv-thoughts-aside::after {
+	content: "";
+	position: absolute;
+	top: 13px;
+	bottom: 13px;
+	left: 23px;
+	border-left: 1px dashed hsl(352 35% 58% / 0.3);
+	pointer-events: none;
+}
+
+.theme-scrapbook .rv-switch {
+	position: relative;
+	width: 52px;
+	height: 28px;
+	padding: 2px;
+	border: 1px solid #c3a097 !important;
+	border-radius: 10px;
+	background-color: #eee2d8 !important;
+	background-image: var(--paper-grain), linear-gradient(180deg, #f8f0e7, #e7d6ca) !important;
+	box-shadow: inset 0 1px 2px hsl(24 25% 35% / 0.12), 0 2px 0 #d9c2b6;
+}
+.theme-scrapbook .rv-switch::before {
+	content: "";
+	position: absolute;
+	inset: 3px;
+	border: 1px dashed hsl(25 25% 45% / 0.28);
+	border-radius: 6px;
+	pointer-events: none;
+}
+.theme-scrapbook .rv-switch[data-state="checked"] {
+	border-color: #b87d84 !important;
+	background-color: #dba0aa !important;
+	background-image: repeating-linear-gradient(
+			0deg,
+			hsl(0 0% 100% / 0.15) 0 1px,
+			transparent 1px 3px
+		), repeating-linear-gradient(90deg, hsl(352 40% 38% / 0.05) 0 1px, transparent 1px 3px),
+		linear-gradient(180deg, #e9b9c0, #d6929e) !important;
+	box-shadow: inset 0 1px 2px hsl(350 30% 38% / 0.16), 0 2px 0 #c38b91;
+}
+.theme-scrapbook .rv-switch[data-state="checked"]::before {
+	border-color: hsl(36 60% 97% / 0.72);
+}
+.theme-scrapbook .rv-switch-thumb {
+	width: 22px;
+	height: 22px;
+	border: 0;
+	background: transparent;
+	box-shadow: 0 1px 3px hsl(350 25% 35% / 0.24);
+}
+.theme-scrapbook .rv-switch-button {
+	display: block;
+}
+.theme-scrapbook .rv-switch-thumb[data-state="checked"] {
+	transform: translateX(24px);
+}
+.theme-scrapbook .rv-switch:focus-visible {
+	outline: 2px solid hsl(352 35% 58% / 0.55);
+	outline-offset: 3px;
+}
+
+.theme-scrapbook .rv-sonner {
+	--rv-toast-accent: #b77c85;
+	padding: 14px 16px 14px 22px !important;
+	border: 1px solid #c9a39b !important;
+	border-radius: 9px 12px 10px 11px !important;
+	background-color: #fffaf3 !important;
+	background-image: var(--paper-grain), linear-gradient(150deg, #fffef9, #f5e9e1) !important;
+	box-shadow: 2px 3px 0 #e7d1c7, 0 12px 24px -14px hsl(350 30% 35% / 0.3) !important;
+	color: #543e40 !important;
+}
+.theme-scrapbook .rv-sonner::before {
+	content: "";
+	position: absolute;
+	top: 11px;
+	bottom: 11px;
+	left: 9px;
+	border-left: 2px dashed var(--rv-toast-accent);
+	pointer-events: none;
+}
+.theme-scrapbook .rv-sonner[data-type="success"] {
+	--rv-toast-accent: #78917b;
+}
+.theme-scrapbook .rv-sonner[data-type="error"] {
+	--rv-toast-accent: #b85b68;
+}
+.theme-scrapbook .rv-sonner[data-type="warning"] {
+	--rv-toast-accent: #b28a50;
+}
+.theme-scrapbook .rv-sonner[data-type="info"] {
+	--rv-toast-accent: #718d9b;
+}
+.theme-scrapbook .rv-sonner [data-icon] {
+	color: var(--rv-toast-accent) !important;
+}
+.theme-scrapbook .rv-sonner [data-title] {
+	font-family: var(--font-heading);
+	font-weight: 600;
+	color: #543e40;
+}
+.theme-scrapbook .rv-sonner [data-description] {
+	color: #8b7370 !important;
+}
+.theme-scrapbook .rv-sonner [data-close-button] {
+	border: 1px solid #c9a39b !important;
+	border-radius: 7px;
+	background: #fffaf3 !important;
+	color: #8b5e65 !important;
+	box-shadow: 0 2px 0 #e7d1c7;
+}

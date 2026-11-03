@@ -127,12 +127,23 @@ export function OverlayExhibits() {
 					</Button>
 					<Button
 						variant="default"
-						onClick={() =>
-							toast('已收藏这件组件', {
+						onClick={() => {
+							const toastId = toast('已收藏这件组件', {
 								description: '仅展示 Toast 交互，不会写入任何数据。',
-								action: { label: '撤销', onClick: () => toast.success('已撤销') },
+								action: (
+									<Button
+										size="sm"
+										className="ml-auto shrink-0"
+										onClick={() => {
+											toast.dismiss(toastId)
+											toast.success('已撤销')
+										}}
+									>
+										撤销
+									</Button>
+								),
 							})
-						}
+						}}
 					>
 						带操作提示
 					</Button>

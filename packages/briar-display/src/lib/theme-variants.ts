@@ -40,19 +40,19 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 		id: 'popover',
 		via: 'shared-paper',
 		status: 'done',
-		notes: '共用 .rv-paper-float；scrapbook 暖粉描边仍方角',
+		notes: 'scrapbook 细线矩形纸卡 + 哥特尖叶四角 PNG；arcane 保持直角 HUD',
 	},
 	{
 		id: 'select',
 		via: 'shared-paper',
 		status: 'done',
-		notes: '下拉浮层方角约定保留；颜色跟剪纸/冰蓝分流',
+		notes: 'scrapbook 索引卡 + 圆角织纹选中项；arcane 保持直角 HUD',
 	},
 	{
 		id: 'command',
 		via: 'shared-paper',
 		status: 'done',
-		notes: '共用 .rv-paper-float 选中粉洗 / 冰蓝洗',
+		notes: 'scrapbook 索引卡 + 织纹选中项；arcane 保持直角 HUD',
 	},
 	{
 		id: 'hover-card',
@@ -63,20 +63,20 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 	{
 		id: 'sonner',
 		via: 'shared-paper',
-		status: 'skeleton',
-		notes: 'toast 已挂 rv-paper-float；细调跟弹窗即可',
+		status: 'done',
+		notes: 'scrapbook 缝线票据 + 类型色织带；arcane 保持直角 HUD',
 	},
 	{
 		id: 'button',
 		via: 'css-token',
-		status: 'skeleton',
-		notes: '已有 --btn-*-image；Arcane 淡蓝水彩已部分落地',
+		status: 'done',
+		notes: 'scrapbook 奶油纸签 + 玫瑰刺绣布贴 primary；arcane 水洗牛仔 primary',
 	},
 	{
 		id: 'tabs',
 		via: 'css-token',
-		status: 'skeleton',
-		notes: '--tabs-list-bg / --tab-active-*：scrapbook 暖粉纸标签；天气另有 .rv-wx-tabs 索引签',
+		status: 'done',
+		notes: 'scrapbook 纸纹列表 + 缝线布贴滑块；arcane 保持直角选中态；天气另有 .rv-wx-tabs 索引签',
 	},
 	{
 		id: 'weather-dialog',
@@ -119,8 +119,9 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 	},
 	{
 		id: 'switch',
-		via: 'css-token',
-		status: 'todo',
+		via: 'css-theme-class',
+		status: 'done',
+		notes: 'scrapbook 缝线织物轨道 + SVG 四孔棉线纽扣；arcane 保持简洁拨杆',
 	},
 	{
 		id: 'slider',

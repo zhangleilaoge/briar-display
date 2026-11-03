@@ -66,7 +66,7 @@ const SelectContent = React.forwardRef<
 		<SelectPrimitive.Content
 			ref={ref}
 			className={cn(
-				'rv-paper-float relative z-[200] max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden text-popover-foreground rv-float-motion',
+				'rv-paper-float rv-select-content relative z-[200] max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden text-popover-foreground rv-float-motion',
 				position === 'popper' &&
 					'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
 				className,
@@ -96,7 +96,7 @@ const SelectLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<SelectPrimitive.Label
 		ref={ref}
-		className={cn('px-2 py-1.5 text-sm font-semibold', className)}
+		className={cn('rv-select-label px-2 py-1.5 text-sm font-semibold', className)}
 		{...props}
 	/>
 ))
@@ -109,7 +109,7 @@ const SelectItem = React.forwardRef<
 	<SelectPrimitive.Item
 		ref={ref}
 		className={cn(
-			'relative flex w-full cursor-pointer select-none items-center rounded-none py-1.5 pl-2 pr-8 text-sm outline-none hover:bg-[var(--row-hover)] focus:bg-[var(--row-selected)] focus:text-[color:var(--row-selected-fg)] data-[highlighted]:bg-[var(--row-selected)] data-[highlighted]:text-[color:var(--row-selected-fg)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+			'rv-select-item relative flex w-full cursor-pointer select-none items-center rounded-none py-1.5 pl-2 pr-8 text-sm outline-none hover:bg-[var(--row-hover)] focus:bg-[var(--row-selected)] focus:text-[color:var(--row-selected-fg)] data-[highlighted]:bg-[var(--row-selected)] data-[highlighted]:text-[color:var(--row-selected-fg)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
 			className,
 		)}
 		{...props}
@@ -130,7 +130,7 @@ const SelectSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<SelectPrimitive.Separator
 		ref={ref}
-		className={cn('-mx-1 my-1 h-px bg-muted', className)}
+		className={cn('rv-select-separator -mx-1 my-1 h-px bg-muted', className)}
 		{...props}
 	/>
 ))

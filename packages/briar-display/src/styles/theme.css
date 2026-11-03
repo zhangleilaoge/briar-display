@@ -949,6 +949,97 @@ body {
 	height: 1rem;
 }
 
+/* Scrapbook：默认保持奶油纸签；primary 是玫瑰色刺绣布贴，不与 Arcane 共用纹理 */
+.theme-scrapbook .rv-btn {
+	border-radius: 16px 18px 15px 17px / 17px 15px 18px 16px;
+}
+.theme-scrapbook .rv-btn-default,
+.theme-scrapbook .rv-btn-secondary,
+.theme-scrapbook .rv-btn-tool {
+	border: 1px solid hsl(350 28% 76% / 0.62);
+}
+.theme-scrapbook .rv-btn-secondary {
+	background-image: linear-gradient(180deg, #fff8f5, #f4e3e3);
+}
+.theme-scrapbook .rv-btn-tool {
+	border-style: dashed;
+	background-image: linear-gradient(180deg, hsl(36 60% 99% / 0.8), hsl(345 47% 94% / 0.8));
+	box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.8), 0 2px 5px hsl(350 30% 40% / 0.08);
+	color: var(--rv-rose-deep);
+}
+.theme-scrapbook .rv-btn-tool:hover {
+	background-color: var(--rv-pink);
+	border-color: hsl(352 40% 58% / 0.55);
+}
+.theme-scrapbook .rv-btn-destructive {
+	border: 1px solid hsl(356 58% 40% / 0.5);
+	box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.3), 0 3px 8px hsl(356 45% 35% / 0.18);
+}
+
+.theme-scrapbook .rv-btn.rv-btn-primary {
+	position: relative;
+	isolation: isolate;
+	border: 1px solid #b87580;
+	background-color: #e8b6be;
+	background-image: repeating-linear-gradient(
+			0deg,
+			hsl(0 0% 100% / 0.13) 0 1px,
+			transparent 1px 3px
+		), repeating-linear-gradient(90deg, hsl(352 40% 38% / 0.045) 0 1px, transparent 1px 3px),
+		radial-gradient(ellipse at 28% 0%, hsl(0 0% 100% / 0.42), transparent 70%),
+		linear-gradient(180deg, #efc8cd, #e3aab4);
+	box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.72), inset 0 -1px 0 hsl(352 40% 38% / 0.1), 0 2px 0
+		#fffaf2, 0 5px 12px hsl(350 35% 38% / 0.18);
+	color: #633d45;
+	text-shadow: 0 1px 0 hsl(0 0% 100% / 0.58);
+}
+.theme-scrapbook .rv-btn.rv-btn-primary::before {
+	content: "";
+	position: absolute;
+	inset: 3px;
+	z-index: -1;
+	border: 1px dashed hsl(36 60% 97% / 0.88);
+	border-radius: 11px 13px 10px 12px / 12px 10px 13px 11px;
+	pointer-events: none;
+}
+.theme-scrapbook .rv-btn.rv-btn-primary:not(:has(.rv-control-label > svg:only-child))::after {
+	content: "";
+	flex: 0 0 auto;
+	width: 14px;
+	height: 14px;
+	margin-left: 3px;
+	transform: rotate(-8deg);
+	background:
+		radial-gradient(circle, #a95461 0 1px, transparent 1.6px) center / 5px 5px no-repeat,
+		radial-gradient(ellipse, #fff8ed 0 56%, transparent 62%) center top / 5px 7px no-repeat,
+		radial-gradient(ellipse, #fff8ed 0 56%, transparent 62%) center bottom / 5px 7px no-repeat,
+		radial-gradient(ellipse, #fff8ed 0 56%, transparent 62%) left center / 7px 5px no-repeat,
+		radial-gradient(ellipse, #fff8ed 0 56%, transparent 62%) right center / 7px 5px no-repeat;
+	filter: drop-shadow(0 1px 0 hsl(0 0% 100% / 0.45));
+	pointer-events: none;
+}
+.theme-scrapbook .rv-btn.rv-btn-primary:hover {
+	transform: translateY(-1px) rotate(-0.3deg);
+	filter: brightness(1.02) saturate(0.96);
+	box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.8), 0 2px 0 #fffaf2, 0 8px 16px hsl(350 35% 38% / 0.2);
+}
+.theme-scrapbook .rv-btn.rv-btn-primary:active {
+	transform: translateY(1px);
+}
+.theme-scrapbook .rv-btn.rv-btn-primary:focus-visible {
+	box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.72), 0 2px 0 #fffaf2, var(--glow-focus);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.theme-scrapbook .rv-btn {
+		transition: none;
+	}
+	.theme-scrapbook .rv-btn.rv-btn-primary:hover,
+	.theme-scrapbook .rv-btn.rv-btn-primary:active {
+		transform: none;
+	}
+}
+
 .theme-arcane .rv-btn.rv-btn-primary {
 	--denim-wash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.035 .09' numOctaves='3' seed='12' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 .7 0 0 0 -.18'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)'/%3E%3C/svg%3E"),
 		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75 .55' numOctaves='2' seed='5' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .11 0 0 0 0 .17 0 0 0 0 .29 .32 0 0 0 -.1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
@@ -1005,7 +1096,7 @@ progress {
    - 共享结构类：.rv-paper-dialog / .rv-paper-float / .rv-paper-header / .rv-paper-overlay
    - Arcane（默认本段基线 + .theme-arcane 微调）：藏青顶栏、直角、冰蓝洗、HUD 裁切角
    - Scrapbook：.theme-scrapbook 覆盖为本段末尾「=== Dialog scrapbook ===」——奶油纸页、直角细框、左对齐标题与中性黑遮罩；无 HUD 裁切角
-   下拉浮层（.rv-paper-float）两主题均保持方角直角（Select 溢出约定）。
+   Select 保持溢出裁切；手账索引卡覆盖见 scrapbook-controls.css。
    ============================================================ */
 
 .rv-paper-dialog,
@@ -1292,7 +1383,7 @@ progress {
 		hsl(24 25% 28% / 0.38) !important;
 }
 
-/* 下拉浮层：保持方角，暖粉描边 / 奶油纸（Select 溢出约定） */
+/* 浮层基线：暖粉描边 / 奶油纸；专用控件覆盖见 scrapbook-controls.css */
 .theme-scrapbook .rv-paper-float {
 	--rv-paper-border: color-mix(in srgb, var(--rv-rose-deep) 26%, var(--rv-beige));
 	border-color: var(--rv-paper-border) !important;

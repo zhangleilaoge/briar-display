@@ -22,7 +22,7 @@ import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
 import { normalizeThoughtTag } from '@briar/shared'
-import { Hash, Heart, Loader2, Pencil, Send, Trash2, X } from 'lucide-react'
+import { Hash, Heart, Loader2, Pencil, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -132,17 +132,18 @@ function writeTagToUrl(tag: string | null, push: boolean) {
 
 function TagInsertButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
 	return (
-		<button
+		<Button
 			type="button"
+			variant="secondary"
+			size="sm"
 			disabled={disabled}
 			onClick={onClick}
-			className="inline-flex h-8 items-center gap-1 rounded-sm border border-dashed border-[color:var(--rv-rose-deep)]/45 bg-[var(--rv-pink)]/35 px-2.5 font-label text-[12px] tracking-[0.06em] text-[color:var(--rv-rose-deep)] transition-colors hover:border-[color:var(--rv-rose-deep)]/70 hover:bg-[var(--rv-pink)]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--rv-rose-deep)]/30 disabled:pointer-events-none disabled:opacity-50"
 			aria-label="插入标签"
 			title="插入 #标签（输入时会联想已有标签）"
 		>
 			<Hash className="h-3.5 w-3.5" />
 			标签
-		</button>
+		</Button>
 	)
 }
 
@@ -172,7 +173,6 @@ function TagFilterBar({
 	const shown = expanded || q ? filtered : filtered.slice(0, 12)
 	return (
 		<ThoughtsAsideBlock
-			script="mots-clés"
 			label="热门标签"
 			action={
 				tags.length > 8 && (
@@ -263,11 +263,11 @@ function StatsCard({
 		['获赞', likes],
 	]
 	return (
-		<ThoughtsAsideBlock script="en bref" label="小统计" className="hidden lg:block">
+		<ThoughtsAsideBlock label="小统计" className="hidden lg:block">
 			<dl className="grid grid-cols-3 divide-x divide-dashed divide-[color:var(--rv-navy)]/15 text-center">
 				{cells.map(([k, v]) => (
 					<div key={k} className="min-w-0 px-1">
-						<dd className="font-display text-2xl font-semibold leading-none tabular-nums text-[color:var(--rv-navy)]">
+						<dd className="font-label text-[26px] font-medium leading-none tabular-nums text-[color:var(--rv-navy)]">
 							{v}
 						</dd>
 						<dt className="mt-1.5 truncate font-label text-[10px] tracking-[0.12em] text-[color:var(--rv-navy)]/55">
@@ -388,11 +388,32 @@ function ThoughtsPageInner() {
 	}
 
 	const handleDelete = (id: string) => {
-		toast('确定删除这条想法？', {
+		const toastId = toast('确定删除这条想法？', {
 			description: '删除后无法恢复。',
 			duration: 10000,
-			action: { label: '删除', onClick: () => void confirmDelete(id) },
-			cancel: { label: '取消', onClick: () => {} },
+			action: (
+				<Button
+					variant="destructive"
+					size="sm"
+					className="shrink-0"
+					onClick={() => {
+						toast.dismiss(toastId)
+						void confirmDelete(id)
+					}}
+				>
+					删除
+				</Button>
+			),
+			cancel: (
+				<Button
+					variant="secondary"
+					size="sm"
+					className="ml-auto shrink-0"
+					onClick={() => toast.dismiss(toastId)}
+				>
+					取消
+				</Button>
+			),
 		})
 	}
 
@@ -422,7 +443,6 @@ function ThoughtsPageInner() {
 					</aside>
 					<section className="min-w-0">
 						<header className="mb-6">
-							<span className="rv-script text-2xl text-[color:var(--rv-rose-deep)]">Pensées</span>
 							<h1 className="text-3xl font-semibold tracking-tight">想法</h1>
 							<p className="mt-1 text-sm text-muted-foreground">
 								一小段话就好 · 纯文本、emoji 与 #标签 · {activeTag ? `#${activeTag} ` : ''}共{' '}
@@ -461,15 +481,11 @@ function ThoughtsPageInner() {
 									</div>
 									<Button
 										type="button"
+										variant="primary"
 										onClick={() => void handlePublish()}
 										disabled={!draft.trim() || publishing}
-										className="gap-1.5 rounded-none"
 									>
-										{publishing ? (
-											<Loader2 className="h-4 w-4 animate-spin" />
-										) : (
-											<Send className="h-4 w-4" />
-										)}
+										{publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
 										发布
 									</Button>
 								</div>
@@ -719,9 +735,8 @@ function ThoughtCard({
 						<div className="flex items-center gap-2">
 							<Button
 								type="button"
-								variant="default"
+								variant="secondary"
 								size="sm"
-								className="gap-1 rounded-none"
 								onClick={() => {
 									setEditing(false)
 									setEditError(null)
@@ -734,15 +749,11 @@ function ThoughtCard({
 							<Button
 								type="button"
 								size="sm"
-								className="gap-1 rounded-none"
+								variant="primary"
 								onClick={() => void handleSave()}
 								disabled={!editDraft.trim() || saving}
 							>
-								{saving ? (
-									<Loader2 className="h-3.5 w-3.5 animate-spin" />
-								) : (
-									<Send className="h-3.5 w-3.5" />
-								)}
+								{saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
 								保存
 							</Button>
 						</div>

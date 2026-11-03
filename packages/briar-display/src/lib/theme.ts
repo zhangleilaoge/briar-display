@@ -4,7 +4,7 @@
  * - arcane：奥术 HUD（工具箱、文件、行情、管理后台等检索 / 列表 / 数据类页面）
  *
  * 基础组件双视觉清单与落地状态见 ./theme-variants.ts；
- * 纸片弹层（Dialog/Popover/Select/Command）CSS 分区见 styles/theme.css「剪纸纸片弹层」。
+ * 弹层共用结构见 styles/theme.css；手账 Popover/Command/Tabs 见 styles/scrapbook-controls.css。
  */
 export type ReverieTheme = 'scrapbook' | 'arcane'
 
