@@ -135,7 +135,7 @@ function TagInsertButton({ onClick, disabled }: { onClick: () => void; disabled?
 	return (
 		<Button
 			type="button"
-			variant="secondary"
+			variant="default"
 			size="sm"
 			disabled={disabled}
 			onClick={onClick}
