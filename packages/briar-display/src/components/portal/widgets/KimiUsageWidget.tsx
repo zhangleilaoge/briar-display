@@ -44,7 +44,7 @@ function UsageRow({ label, w, now }: { label: string; w: KimiUsageWindow; now: n
 					<span className="text-[10px] font-medium text-muted-foreground">%</span>
 				</span>
 			</div>
-			<div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--rv-navy)_12%,transparent)]">
+			<div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--rv-navy)_12%,transparent)]">
 				<div
 					className={cn('h-full rounded-full transition-[width] duration-500', barTone(w.usedPct))}
 					style={{ width: `${Math.max(w.usedPct, 2)}%` }}
@@ -251,13 +251,13 @@ export function KimiUsageWidget({
 			(r): r is { label: string; w: KimiUsageWindow } => Boolean(r),
 		)
 		const content = (
-			<div className="flex min-h-0 flex-1 flex-col gap-2.5 pt-1">
+			<div className="flex min-h-0 flex-1 flex-col justify-between gap-2.5 py-0.5">
 				{rows.length ? (
 					rows.map((r) => <UsageRow key={r.label} label={r.label} w={r.w} now={now} />)
 				) : (
 					<Notice title="暂无用量数据" />
 				)}
-				<p className="mt-auto flex items-center justify-end gap-2 truncate text-[10px] text-muted-foreground">
+				<p className="flex shrink-0 items-center justify-end gap-2 truncate text-[10px] leading-none text-muted-foreground">
 					{d.boosterYuan != null && (
 						<span className="truncate tabular-nums">加油包 ¥{d.boosterYuan.toFixed(2)}</span>
 					)}
@@ -303,7 +303,7 @@ export function KimiUsageWidget({
 			plainTypography
 			editing={editing}
 			onRemove={onRemove}
-			bodyClassName="flex flex-col !pt-1 font-label"
+			bodyClassName="flex flex-col !pb-2.5 !pt-2.5 font-label"
 			tilt={-0.4}
 		>
 			{body}
