@@ -1,7 +1,7 @@
 /**
  * Kimi Code 用量（参考 xifandev/KimiCodeBar）：
  * 上游 GET https://api.kimi.com/coding/v1/usages，Authorization: Bearer <sk-kimi-… API Key 或 OAuth token>。
- * 后端代理 + 短缓存，前端只拿归一化后的结果，Key 不出服务器。
+ * 后端代理 + 短缓存；Key 存 site_secrets（密文），接口只回脱敏 hint，全文不出服务器。
  */
 
 /** 单个窗口用量，统一成百分比；有绝对数值时一并给出 */
@@ -29,8 +29,10 @@ export interface KimiUsageSummary {
 }
 
 export interface KimiUsageResponse {
-	/** 服务端未配置 BRIAR_KIMI_API_KEY */
+	/** 库中是否已保存 Kimi API Key（管理员可在卡片上填写） */
 	configured: boolean
+	/** 脱敏提示，如 ****ab12；从未回传全文 */
+	keyHint?: string | null
 	data: KimiUsageSummary | null
 	/** 上游失败时的错误说明（若有缓存则 data 为旧值 + stale） */
 	error?: string

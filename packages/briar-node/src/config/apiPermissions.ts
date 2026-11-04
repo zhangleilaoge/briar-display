@@ -89,6 +89,10 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 
 	// ==================== Users ====================
 	// ==================== Thoughts（想法短帖：写/赞路由内再校验登录与权限） ====================
+	// Kimi 用量：Key 存库，仅管理员
+	'PUT /api/kimi/api-key': PERMISSIONS.PAGE_ADMIN,
+	'DELETE /api/kimi/api-key': PERMISSIONS.PAGE_ADMIN,
+
 	'POST /api/thoughts': null,
 	'PUT /api/thoughts/:id': null,
 	'DELETE /api/thoughts/:id': null,
