@@ -32,6 +32,7 @@ import {
 import { CalendarWidget } from './widgets/CalendarWidget'
 import { ClockWidget } from './widgets/ClockWidget'
 import { GreetingWidget } from './widgets/GreetingWidget'
+import { KimiUsageWidget } from './widgets/KimiUsageWidget'
 import { StocksWidget } from './widgets/StocksWidget'
 import { WeatherWidget } from './widgets/WeatherWidget'
 
@@ -53,6 +54,8 @@ function renderWidget(id: WidgetId, size: WidgetSize, editing: boolean, onRemove
 			return <StocksWidget {...props} />
 		case 'greeting':
 			return <GreetingWidget {...props} />
+		case 'kimi':
+			return <KimiUsageWidget {...props} />
 		default:
 			return null
 	}

@@ -20,3 +20,6 @@ export * from './markets'
 
 // 想法 #标签 解析
 export * from './thoughtTags'
+
+// Kimi Code 用量（首页小组件）
+export * from './kimiUsage'

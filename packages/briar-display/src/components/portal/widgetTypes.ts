@@ -1,6 +1,6 @@
 /** 门户桌面小组件：以 1×1 为单元，尺寸克制，桌面/手机分存 */
 
-export type WidgetId = 'calendar' | 'clock' | 'stocks' | 'weather' | 'greeting'
+export type WidgetId = 'calendar' | 'clock' | 'stocks' | 'weather' | 'greeting' | 'kimi'
 
 /** 网格占位：宽×高（列×行） */
 export type WidgetSize = '1x1' | '2x1' | '2x2'
@@ -73,6 +73,14 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
 		title: '自选股',
 		caption: 'Actions',
 		description: '单标的行情轮播（价 + 涨跌 + 走势）',
+		sizes: ['1x1'],
+		defaultSize: '1x1',
+	},
+	{
+		id: 'kimi',
+		title: 'Kimi 用量',
+		caption: 'Kimi Code',
+		description: 'Kimi Code 5 小时 / 本周或本月用量与重置时间（仅管理员）',
 		sizes: ['1x1'],
 		defaultSize: '1x1',
 	},
