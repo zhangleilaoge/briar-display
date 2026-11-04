@@ -1,9 +1,12 @@
 'use client'
 
-import { getKimiUsage } from '@/api/kimi'
+import { clearKimiApiKey, getKimiUsage, saveKimiApiKey } from '@/api/kimi'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { type KimiUsageResponse, type KimiUsageWindow, formatKimiResetIn } from '@briar/shared'
 import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { WidgetChrome } from '../WidgetChrome'
 import type { WidgetSize } from '../widgetTypes'
 
@@ -36,7 +39,7 @@ function UsageRow({ label, w, now }: { label: string; w: KimiUsageWindow; now: n
 					<span className="font-medium text-foreground/85">{label}</span>
 					<span className="tabular-nums"> · {reset ? `${reset}后重置` : '重置未知'}</span>
 				</span>
-				<span className="shrink-0 font-display text-base font-semibold tabular-nums leading-none text-foreground">
+				<span className="shrink-0 text-sm font-semibold tabular-nums leading-none text-foreground">
 					{w.usedPct}
 					<span className="text-[10px] font-normal text-muted-foreground">%</span>
 				</span>
@@ -62,6 +65,112 @@ function Notice({ title, detail }: { title: string; detail?: string }) {
 	)
 }
 
+function KeyForm({
+	hint,
+	onSaved,
+	onCleared,
+	compact,
+}: {
+	hint?: string | null
+	onSaved: () => void
+	onCleared?: () => void
+	compact?: boolean
+}) {
+	const [value, setValue] = useState('')
+	const [saving, setSaving] = useState(false)
+
+	const save = async (e?: React.FormEvent) => {
+		e?.preventDefault()
+		const trimmed = value.trim()
+		if (!trimmed) {
+			toast('请先填写 API Key')
+			return
+		}
+		setSaving(true)
+		try {
+			const res = await saveKimiApiKey(trimmed)
+			if (!res.success) {
+				toast(res.message || '保存失败')
+				return
+			}
+			toast(res.data?.hint ? `已保存 ${res.data.hint}` : '已保存')
+			setValue('')
+			onSaved()
+		} catch {
+			toast('保存失败')
+		} finally {
+			setSaving(false)
+		}
+	}
+
+	const clear = async () => {
+		setSaving(true)
+		try {
+			const res = await clearKimiApiKey()
+			if (!res.success) {
+				toast(res.message || '清除失败')
+				return
+			}
+			toast('已清除 Key')
+			onCleared?.()
+			onSaved()
+		} catch {
+			toast('清除失败')
+		} finally {
+			setSaving(false)
+		}
+	}
+
+	return (
+		<form
+			onSubmit={save}
+			onClick={(e) => e.stopPropagation()}
+			onKeyDown={(e) => e.stopPropagation()}
+			className={cn(
+				'flex min-h-0 flex-1 flex-col gap-1.5',
+				compact ? 'justify-end' : 'justify-center',
+			)}
+		>
+			{!compact && (
+				<p className="text-center text-[11px] leading-snug text-muted-foreground">
+					在卡片上填写 Kimi Code API Key
+					{hint ? `（当前 ${hint}）` : ''}
+				</p>
+			)}
+			{compact && hint && (
+				<p className="truncate text-[10px] text-muted-foreground">当前 Key {hint}</p>
+			)}
+			<Input
+				type="password"
+				autoComplete="off"
+				spellCheck={false}
+				placeholder="sk-kimi-…"
+				value={value}
+				onChange={(e) => setValue(e.target.value)}
+				className="h-7 px-2 text-xs"
+				disabled={saving}
+			/>
+			<div className="flex items-center gap-1">
+				<Button type="submit" size="sm" className="h-7 flex-1 px-2 text-xs" disabled={saving}>
+					{saving ? '保存中…' : hint ? '覆盖保存' : '保存'}
+				</Button>
+				{hint && onCleared && (
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						className="h-7 px-2 text-xs text-muted-foreground"
+						disabled={saving}
+						onClick={clear}
+					>
+						清除
+					</Button>
+				)}
+			</div>
+		</form>
+	)
+}
+
 export function KimiUsageWidget({
 	editing,
 	onRemove,
@@ -72,12 +181,15 @@ export function KimiUsageWidget({
 }) {
 	const [state, setState] = useState<State>({ kind: 'loading' })
 	const [now, setNow] = useState(() => Date.now())
+	const [showKeyForm, setShowKeyForm] = useState(false)
 
 	const load = useCallback(async () => {
 		try {
 			const res = await getKimiUsage()
-			if (res.success && res.data) setState({ kind: 'ok', body: res.data })
-			else setState({ kind: 'error', message: res.message || '读取失败' })
+			if (res.success && res.data) {
+				setState({ kind: 'ok', body: res.data })
+				if (res.data.configured) setShowKeyForm(false)
+			} else setState({ kind: 'error', message: res.message || '读取失败' })
 		} catch (err) {
 			const status = (err as { response?: { status?: number } })?.response?.status
 			if (status === 401 || status === 403) setState({ kind: 'forbidden' })
@@ -103,10 +215,31 @@ export function KimiUsageWidget({
 		body = <Notice title="仅管理员可见" detail="登录管理员账号后查看" />
 	} else if (state.kind === 'error') {
 		body = <Notice title="读取失败" detail={state.message} />
-	} else if (!state.body.configured) {
-		body = <Notice title="未配置" detail="服务器 .env 设置 BRIAR_KIMI_API_KEY" />
+	} else if (!state.body.configured || showKeyForm) {
+		body = (
+			<KeyForm
+				hint={state.body.keyHint}
+				compact={state.body.configured}
+				onSaved={load}
+				onCleared={state.body.configured ? () => setShowKeyForm(true) : undefined}
+			/>
+		)
 	} else if (!state.body.data) {
-		body = <Notice title="读取失败" detail={state.body.error || '上游无数据'} />
+		body = (
+			<div className="flex min-h-0 flex-1 flex-col gap-2">
+				<Notice title="读取失败" detail={state.body.error || '上游无数据'} />
+				<button
+					type="button"
+					className="text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+					onClick={(e) => {
+						e.stopPropagation()
+						setShowKeyForm(true)
+					}}
+				>
+					更换 Key{state.body.keyHint ? `（${state.body.keyHint}）` : ''}
+				</button>
+			</div>
+		)
 	} else {
 		const d = state.body.data
 		const second = d.weekly
@@ -130,9 +263,20 @@ export function KimiUsageWidget({
 						<span className="text-[color:var(--rv-rose-deep)]" title={state.body.error}>
 							旧数据
 						</span>
-					) : d.boosterYuan != null ? (
-						<span className="tabular-nums">加油包 ¥{d.boosterYuan.toFixed(2)}</span>
-					) : null}
+					) : (
+						<button
+							type="button"
+							className="shrink-0 tabular-nums underline-offset-2 hover:underline"
+							title={state.body.keyHint ? `当前 Key ${state.body.keyHint}` : '更换 Key'}
+							onClick={(e) => {
+								e.preventDefault()
+								e.stopPropagation()
+								setShowKeyForm(true)
+							}}
+						>
+							{d.boosterYuan != null ? `加油包 ¥${d.boosterYuan.toFixed(2)}` : '更换 Key'}
+						</button>
+					)}
 				</p>
 			</div>
 		)

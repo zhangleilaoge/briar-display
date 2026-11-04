@@ -490,3 +490,20 @@ CREATE TABLE IF NOT EXISTS thought_tags (
   INDEX idx_tag (tag, deleted_at),
   FOREIGN KEY (thought_id) REFERENCES thoughts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='想法标签';
+
+-- ============================================================
+-- 站点级密钥（管理员在前端卡片填写；密文入库，接口只回脱敏 hint）
+-- ============================================================
+CREATE TABLE IF NOT EXISTS site_secrets (
+  id VARCHAR(36) PRIMARY KEY COMMENT '记录 ID',
+  name VARCHAR(64) NOT NULL COMMENT '密钥名（如 kimi_api_key）',
+  ciphertext TEXT NOT NULL COMMENT 'AES-256-GCM 密文（v1:base64）',
+  hint VARCHAR(16) NOT NULL DEFAULT '' COMMENT '脱敏提示（末 4 位，如 ****ab12）',
+  updated_by VARCHAR(36) NULL COMMENT '最近更新人 user id',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
+  name_active VARCHAR(64) GENERATED ALWAYS AS (IF(deleted_at IS NULL, name, NULL)) STORED COMMENT '未删除时=name（唯一约束用）',
+  UNIQUE KEY uk_name_active (name_active),
+  INDEX idx_deleted_at (deleted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='站点级密钥';

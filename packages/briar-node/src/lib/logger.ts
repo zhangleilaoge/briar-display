@@ -29,7 +29,7 @@ export const patchConsoleWithTrace = () => {
 	}
 }
 
-const SENSITIVE_KEY = /token|password|secret|authorization|cookie|credential/i
+const SENSITIVE_KEY = /token|password|secret|authorization|cookie|credential|apikey|api[_-]?key/i
 
 /** 日志入库前脱敏：递归把敏感字段值替换为 ***（登录响应的 token、登录/注册的密码等） */
 export const redactSensitive = (value: unknown): unknown => {

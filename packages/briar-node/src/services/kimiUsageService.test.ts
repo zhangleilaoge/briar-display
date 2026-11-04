@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { createHash } from 'node:crypto'
 import { formatKimiResetIn, normalizeKimiUsage } from '@briar/shared'
+import { maskSecretHint, openSecret, sealSecret } from '../lib/secretBox'
 import { KIMI_CACHE_MS, getKimiUsage, resetKimiUsageCache } from './kimiUsageService'
 
 const OLD_PLAN = {
@@ -56,8 +58,33 @@ describe('formatKimiResetIn', () => {
 	})
 })
 
+describe('secretBox', () => {
+	test('seal/open 往返 + hint 脱敏', () => {
+		const raw = 'sk-kimi-abcdefghijklmnop'
+		const sealed = sealSecret(raw)
+		expect(sealed.startsWith('v1:')).toBe(true)
+		expect(sealed).not.toContain(raw)
+		expect(openSecret(sealed)).toBe(raw)
+		expect(maskSecretHint(raw)).toBe('****mnop')
+		expect(maskSecretHint('ab')).toBe('****')
+	})
+	test('密文随 JWT 密钥变化而不同', () => {
+		const prev = process.env.BRIAR_JWT_SECRET
+		process.env.BRIAR_JWT_SECRET = 'aaa'
+		const a = sealSecret('hello')
+		process.env.BRIAR_JWT_SECRET = 'bbb'
+		const b = sealSecret('hello')
+		expect(a).not.toBe(b)
+		if (prev === undefined) process.env.BRIAR_JWT_SECRET = ''
+		else process.env.BRIAR_JWT_SECRET = prev
+		// 仅校验派生不同；createHash 防误用
+		expect(createHash('sha256').update(a).digest('hex')).not.toBe(
+			createHash('sha256').update(b).digest('hex'),
+		)
+	})
+})
+
 describe('getKimiUsage', () => {
-	const prev = process.env.BRIAR_KIMI_API_KEY
 	let calls: { url: string; auth?: string }[] = []
 	const ok =
 		(body: unknown, status = 200) =>
@@ -70,46 +97,64 @@ describe('getKimiUsage', () => {
 		resetKimiUsageCache()
 	})
 	afterEach(() => {
-		if (prev === undefined) process.env.BRIAR_KIMI_API_KEY = ''
-		else process.env.BRIAR_KIMI_API_KEY = prev
+		resetKimiUsageCache()
 	})
 
 	test('未配置 Key：不请求上游', async () => {
-		process.env.BRIAR_KIMI_API_KEY = ''
-		const r = await getKimiUsage({ fetchFn: ok(NEW_PLAN) })
+		const r = await getKimiUsage({
+			fetchFn: ok(NEW_PLAN),
+			resolveKey: async () => ({ key: null, hint: null }),
+		})
 		expect(r.configured).toBe(false)
+		expect(r.keyHint).toBeNull()
 		expect(calls.length).toBe(0)
 	})
 
-	test('Bearer 携带 Key，60s 内命中缓存', async () => {
-		process.env.BRIAR_KIMI_API_KEY = 'sk-kimi-test'
+	test('Bearer 携带 Key，60s 内命中缓存，回传 hint', async () => {
 		let t = 1_000_000
 		const now = () => t
-		const r1 = await getKimiUsage({ fetchFn: ok(NEW_PLAN), now })
+		const r1 = await getKimiUsage({
+			fetchFn: ok(NEW_PLAN),
+			now,
+			resolveKey: async () => ({ key: 'sk-kimi-test', hint: '****test' }),
+		})
 		expect(r1.data?.monthly?.usedPct).toBe(42)
+		expect(r1.keyHint).toBe('****test')
 		expect(calls[0]).toEqual({
 			url: 'https://api.kimi.com/coding/v1/usages',
 			auth: 'Bearer sk-kimi-test',
 		})
 		t += KIMI_CACHE_MS - 1
-		await getKimiUsage({ fetchFn: ok(NEW_PLAN), now })
+		await getKimiUsage({
+			fetchFn: ok(NEW_PLAN),
+			now,
+			resolveKey: async () => ({ key: 'sk-kimi-test', hint: '****test' }),
+		})
 		expect(calls.length).toBe(1)
 		t += 2
-		await getKimiUsage({ fetchFn: ok(NEW_PLAN), now })
+		await getKimiUsage({
+			fetchFn: ok(NEW_PLAN),
+			now,
+			resolveKey: async () => ({ key: 'sk-kimi-test', hint: '****test' }),
+		})
 		expect(calls.length).toBe(2)
 	})
 
 	test('上游 401：返回错误；有旧缓存则 stale 兜底', async () => {
-		process.env.BRIAR_KIMI_API_KEY = 'sk-kimi-test'
 		let t = 0
 		const now = () => t
-		const e1 = await getKimiUsage({ fetchFn: ok({ error: { message: 'invalid key' } }, 401), now })
+		const resolveKey = async () => ({ key: 'sk-kimi-test', hint: '****test' })
+		const e1 = await getKimiUsage({
+			fetchFn: ok({ error: { message: 'invalid key' } }, 401),
+			now,
+			resolveKey,
+		})
 		expect(e1.data).toBeNull()
 		expect(e1.error).toContain('401')
 		resetKimiUsageCache()
-		await getKimiUsage({ fetchFn: ok(NEW_PLAN), now })
+		await getKimiUsage({ fetchFn: ok(NEW_PLAN), now, resolveKey })
 		t += KIMI_CACHE_MS + 1
-		const e2 = await getKimiUsage({ fetchFn: ok({}, 500), now })
+		const e2 = await getKimiUsage({ fetchFn: ok({}, 500), now, resolveKey })
 		expect(e2.stale).toBe(true)
 		expect(e2.data?.monthly?.usedPct).toBe(42)
 	})

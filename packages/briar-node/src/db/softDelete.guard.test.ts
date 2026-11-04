@@ -34,6 +34,7 @@ const SOFT_DELETE_TABLES = [
 	'user_identities',
 	'thoughts',
 	'thought_tags',
+	'site_secrets',
 ]
 
 const SRC = path.resolve(import.meta.dir, '..')
