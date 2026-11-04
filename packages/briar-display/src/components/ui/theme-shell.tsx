@@ -146,7 +146,6 @@ export function PaperPanel({
 }) {
 	return (
 		<section className={cn('rv-panel rv-page-enter relative', className)}>
-			{/* 不再叠加外层裁切角标：面板自身描边 + 纹理已构成唯一框线，避免双层框 */}
 			{title && (
 				<header className="mb-3 flex items-end gap-3 border-b border-[color:var(--rv-navy)]/15 pb-2">
 					<span className="font-label text-[10px] uppercase tracking-[0.28em] text-muted-foreground">

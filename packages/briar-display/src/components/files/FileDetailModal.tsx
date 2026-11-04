@@ -240,9 +240,6 @@ export default function FileDetailModal({
 				className="rv-paper-dialog rv-motion-dialog relative flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col overflow-visible"
 				onClick={(e) => e.stopPropagation()}
 			>
-				<span className="rv-crop-marks" aria-hidden>
-					<span />
-				</span>
 				{/* 藏青顶栏 */}
 				<div className="rv-paper-header z-10 !mx-0 !mt-0 mb-0 shrink-0 rounded-none">
 					<h2 className="rv-paper-title max-w-[85%] truncate px-2">

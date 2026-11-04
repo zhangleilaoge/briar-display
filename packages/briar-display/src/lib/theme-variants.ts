@@ -33,8 +33,7 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 		id: 'dialog',
 		via: 'shared-paper',
 		status: 'done',
-		notes:
-			'scrapbook 奶油纸页 + 左对齐标题/kicker + 折角纸签关闭；arcane 藏青顶栏 + HUD 裁切角 + CRT 关屏',
+		notes: 'scrapbook 奶油纸页 + 左对齐标题/kicker + 折角纸签关闭；arcane 藏青顶栏 + CRT 关屏',
 	},
 	{
 		id: 'popover',
@@ -46,13 +45,13 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 		id: 'select',
 		via: 'shared-paper',
 		status: 'done',
-		notes: 'scrapbook 索引卡 + 圆角织纹选中项；arcane 保持直角 HUD',
+		notes: 'scrapbook 索引卡 + 水彩笔刷（选中玫粉 / hover 灰蓝）；arcane 保持直角 HUD',
 	},
 	{
 		id: 'command',
 		via: 'shared-paper',
 		status: 'done',
-		notes: 'scrapbook 索引卡 + 织纹选中项；arcane 保持直角 HUD',
+		notes: 'scrapbook 索引卡 + 水彩笔刷选中项；arcane 保持直角 HUD',
 	},
 	{
 		id: 'hover-card',
@@ -70,7 +69,7 @@ export const THEME_VARIANT_COMPONENTS: readonly ThemeVariantComponent[] = [
 		id: 'button',
 		via: 'css-token',
 		status: 'done',
-		notes: 'scrapbook 奶油纸签 + 玫瑰刺绣布贴 primary；arcane 水洗牛仔 primary',
+		notes: 'scrapbook 淡玫红水彩 default + 玫瑰刺绣布贴 primary；arcane 水洗牛仔 primary',
 	},
 	{
 		id: 'tabs',

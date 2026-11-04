@@ -15,35 +15,30 @@ function SewnButton() {
 			focusable="false"
 		>
 			<defs>
-				<radialGradient
-					id={surfaceId}
-					cx="0"
-					cy="0"
-					r="1"
-					gradientUnits="userSpaceOnUse"
-					gradientTransform="translate(8 6) rotate(48) scale(19)"
-				>
-					<stop stopColor="#fffef8" />
-					<stop offset="0.62" stopColor="#f2e6d4" />
-					<stop offset="1" stopColor="#cbb59b" />
-				</radialGradient>
+				<linearGradient id={surfaceId} x1="4" y1="3" x2="20" y2="21" gradientUnits="userSpaceOnUse">
+					<stop stopColor="#ffffff" />
+					<stop offset="0.28" stopColor="#edf1f4" />
+					<stop offset="0.48" stopColor="#ffffff" />
+					<stop offset="0.72" stopColor="#d4dae0" />
+					<stop offset="1" stopColor="#aeb6bf" />
+				</linearGradient>
 			</defs>
 			<circle
 				cx="12"
 				cy="12"
 				r="11"
 				fill={`url(#${surfaceId})`}
-				stroke="#b59b82"
+				stroke="#9aa2ab"
 				strokeWidth="0.8"
 			/>
-			<circle cx="12" cy="12" r="8.7" fill="none" stroke="#fff9e9" strokeWidth="0.9" />
+			<circle cx="12" cy="12" r="8.7" fill="none" stroke="#ffffff" strokeWidth="0.9" />
 			<circle
 				cx="12"
 				cy="12"
 				r="7.6"
 				fill="none"
-				stroke="#bca58c"
-				strokeOpacity="0.55"
+				stroke="#98a1aa"
+				strokeOpacity="0.6"
 				strokeWidth="0.65"
 			/>
 			{[
@@ -57,26 +52,26 @@ function SewnButton() {
 					cx={cx}
 					cy={cy}
 					r="1.15"
-					fill="#826c58"
-					stroke="#fff3dc"
-					strokeWidth="0.5"
+					fill="#6a4a34"
+					stroke="#f8fafc"
+					strokeWidth="0.45"
 				/>
 			))}
 			<g fill="none" strokeLinecap="round">
 				<path
 					d="M8.8 8.8C9.5 10.5 14.5 13.5 15.2 15.2M15.2 8.8C14.5 10.5 9.5 13.5 8.8 15.2"
-					stroke="#806853"
-					strokeOpacity="0.45"
+					stroke="#4f3525"
+					strokeOpacity="0.5"
 					strokeWidth="1.9"
 				/>
 				<path
 					d="M8.8 8.8C9.5 10.5 14.5 13.5 15.2 15.2M15.2 8.8C14.5 10.5 9.5 13.5 8.8 15.2"
-					stroke="#f2dfbf"
+					stroke="#856043"
 					strokeWidth="1.35"
 				/>
 				<path
 					d="M8.65 8.7C9.4 10.45 14.4 13.45 15.05 15.15M15.05 8.7C14.4 10.45 9.4 13.45 8.65 15.15"
-					stroke="#fff8e7"
+					stroke="#b38a64"
 					strokeWidth="0.35"
 				/>
 			</g>

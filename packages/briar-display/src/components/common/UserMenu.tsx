@@ -179,7 +179,7 @@ export default function UserMenu() {
 					{/* 菜单项 */}
 					<a
 						href="/briar/profile"
-						className="flex items-center gap-2 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+						className="flex items-center gap-2 rv-watercolor-item rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
 						onClick={() => setOpen(false)}
 					>
 						<UserIcon className="h-3.5 w-3.5" />
@@ -187,7 +187,7 @@ export default function UserMenu() {
 					</a>
 					<a
 						href="/briar/profile?tab=messages"
-						className="flex items-center justify-between gap-2 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+						className="flex items-center justify-between gap-2 rv-watercolor-item rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
 						onClick={() => setOpen(false)}
 					>
 						<span className="flex items-center gap-2">
@@ -198,7 +198,7 @@ export default function UserMenu() {
 					</a>
 					<a
 						href="/briar/"
-						className="flex items-center gap-2 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+						className="flex items-center gap-2 rv-watercolor-item rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
 						onClick={() => setOpen(false)}
 					>
 						<Home className="h-3.5 w-3.5" />
@@ -207,7 +207,7 @@ export default function UserMenu() {
 					{isAdmin && (
 						<a
 							href="/briar/admin/permissions"
-							className="flex items-center gap-2 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+							className="flex items-center gap-2 rv-watercolor-item rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
 							onClick={() => setOpen(false)}
 						>
 							<Shield className="h-3.5 w-3.5" />

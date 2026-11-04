@@ -56,10 +56,6 @@ const DialogContent = React.forwardRef<
 				)}
 				{...props}
 			>
-				{/* Arcane HUD 裁切角；.theme-scrapbook 下 CSS display:none */}
-				<span className="rv-crop-marks" aria-hidden>
-					<span />
-				</span>
 				{children}
 				<DialogPrimitive.Close
 					data-rv-dialog-close=""

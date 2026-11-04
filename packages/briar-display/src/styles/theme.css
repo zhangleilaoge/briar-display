@@ -227,15 +227,10 @@
 	--table-head-bg: hsl(210 50% 96% / 0.6);
 
 	--surface-blur: 14px;
-	/* 四角 HUD 定位角标（纯渐变绘制） */
-	--hud-tick: linear-gradient(var(--rv-navy), var(--rv-navy));
-	--surface-texture: var(--hud-tick), var(--hud-tick), var(--hud-tick), var(--hud-tick),
-		var(--hud-tick), var(--hud-tick), var(--hud-tick), var(--hud-tick);
-	--surface-texture-size: 9px 1px, 1px 9px, 9px 1px, 1px 9px, 9px 1px, 1px 9px, 9px 1px, 1px 9px;
-	--surface-texture-pos: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
-	/* 必须与 --surface-texture 的 8 层一一对应：单值在多层组合里会循环错位，导致角标层平铺成整块藏青 */
-	--surface-texture-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat,
-		no-repeat, no-repeat;
+	--surface-texture: var(--paper-grain);
+	--surface-texture-size: 180px 180px;
+	--surface-texture-pos: 0 0;
+	--surface-texture-repeat: repeat;
 
 	--page-bg: var(--paper-grain),
 		radial-gradient(ellipse 42% 24% at 18% 16%, hsl(0 0% 100% / 0.82), transparent 70%),
@@ -271,7 +266,7 @@ body {
 	color: hsl(var(--foreground));
 }
 
-/* 表面纹理：纸纹（剪贴簿）/ 四角角标（HUD），只用 background-image，不覆盖背景色 */
+/* 表面纸纹只用 background-image，不覆盖背景色 */
 .rv-surface {
 	background-image: var(--surface-texture);
 	background-size: var(--surface-texture-size);
@@ -949,11 +944,25 @@ body {
 	height: 1rem;
 }
 
-/* Scrapbook：默认保持奶油纸签；primary 是玫瑰色刺绣布贴，不与 Arcane 共用纹理 */
+/* Scrapbook：default 淡玫红水彩纸面；primary 是玫瑰色刺绣布贴 */
 .theme-scrapbook .rv-btn {
 	border-radius: 16px 18px 15px 17px / 17px 15px 18px 16px;
 }
-.theme-scrapbook .rv-btn-default,
+.theme-scrapbook .rv-btn.rv-btn-default {
+	--rv-btn-watercolor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='96'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .1' numOctaves='3' seed='14' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .68 0 0 0 0 .47 0 0 0 0 .58 .58 0 0 0 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)'/%3E%3C/svg%3E");
+	border: 1px solid hsl(325 24% 78% / 0.5);
+	background-color: #fdfafc;
+	background-image: var(--rv-btn-watercolor), var(--paper-grain),
+		radial-gradient(ellipse 75% 130% at 12% 18%, hsl(320 36% 89% / 0.38), transparent 72%),
+		radial-gradient(ellipse 65% 120% at 84% 86%, hsl(340 34% 88% / 0.32), transparent 74%),
+		repeating-linear-gradient(
+			98deg,
+			hsl(325 25% 65% / 0.05) 0 1px,
+			transparent 1px 4px,
+			hsl(325 35% 92% / 0.21) 4px 7px,
+			transparent 7px 11px
+		), linear-gradient(110deg, #fdfbfc, #faf4f7 48%, #fdfafc);
+}
 .theme-scrapbook .rv-btn-secondary,
 .theme-scrapbook .rv-btn-tool {
 	border: 1px solid hsl(350 28% 76% / 0.62);
@@ -1094,8 +1103,8 @@ progress {
    剪纸纸片弹层 —— Dialog / Popover / Select / Command / HoverCard
    双主题约定：
    - 共享结构类：.rv-paper-dialog / .rv-paper-float / .rv-paper-header / .rv-paper-overlay
-   - Arcane（默认本段基线 + .theme-arcane 微调）：藏青顶栏、直角、冰蓝洗、HUD 裁切角
-   - Scrapbook：.theme-scrapbook 覆盖为本段末尾「=== Dialog scrapbook ===」——奶油纸页、直角细框、左对齐标题与中性黑遮罩；无 HUD 裁切角
+   - Arcane（默认本段基线 + .theme-arcane 微调）：藏青顶栏、直角、冰蓝洗
+   - Scrapbook：.theme-scrapbook 覆盖为本段末尾「=== Dialog scrapbook ===」——奶油纸页、直角细框、左对齐标题与中性黑遮罩
    Select 保持溢出裁切；手账索引卡覆盖见 scrapbook-controls.css。
    ============================================================ */
 
@@ -1211,47 +1220,6 @@ progress {
 /* 无顶栏时给内容让出粉签位置，避免标题被挡 */
 .rv-paper-dialog:has(.rv-paper-index):not(:has(.rv-paper-header:not(.sr-only))) {
 	padding-top: 2.35rem !important;
-}
-
-/* L 形裁切角标（Arcane HUD） */
-.rv-crop-marks {
-	pointer-events: none;
-	position: absolute;
-	/* 略探出纸边；父级必须 overflow:visible（见 .rv-paper-dialog） */
-	inset: -8px;
-	z-index: 2;
-}
-.rv-crop-marks::before,
-.rv-crop-marks::after,
-.rv-crop-marks span::before,
-.rv-crop-marks span::after {
-	content: "";
-	position: absolute;
-	width: 12px;
-	height: 12px;
-	border-color: var(--rv-navy);
-	border-style: solid;
-	opacity: 0.85;
-}
-.rv-crop-marks::before {
-	left: 0;
-	top: 0;
-	border-width: 1.5px 0 0 1.5px;
-}
-.rv-crop-marks::after {
-	right: 0;
-	top: 0;
-	border-width: 1.5px 1.5px 0 0;
-}
-.rv-crop-marks span::before {
-	left: 0;
-	bottom: 0;
-	border-width: 0 0 1.5px 1.5px;
-}
-.rv-crop-marks span::after {
-	right: 0;
-	bottom: 0;
-	border-width: 0 1.5px 1.5px 0;
 }
 
 /* 右下角 + 印刷记号 */
@@ -1445,10 +1413,7 @@ progress {
 	transform: rotate(-2deg);
 }
 
-/* scrapbook：彻底隐藏 HUD 裁切角与右下印刷记号（两套主题分开） */
-.theme-scrapbook .rv-crop-marks {
-	display: none !important;
-}
+/* scrapbook：隐藏右下印刷记号 */
 .theme-scrapbook .rv-paper-dialog::after {
 	content: none !important;
 	display: none !important;
@@ -1553,7 +1518,7 @@ progress {
 		width: calc(100vw - 1.5rem) !important;
 		max-width: calc(100vw - 1.5rem) !important;
 		max-height: calc(100dvh - 2rem);
-		/* 保持 visible，避免裁切角标；滚动交给内部 .rv-dialog-scroll */
+		/* 滚动交给内部 .rv-dialog-scroll */
 		overflow: visible !important;
 	}
 }
@@ -2042,11 +2007,11 @@ progress {
 .theme-arcane .rv-panel {
 	border-radius: 2px;
 	background-color: hsl(210 60% 98% / 0.78);
-	background-image: var(--surface-texture), var(--paper-grain),
+	background-image: var(--paper-grain),
 		linear-gradient(180deg, hsl(0 0% 100% / 0.92), hsl(210 50% 96% / 0.78));
-	background-size: var(--surface-texture-size), 180px 180px, auto;
-	background-position: var(--surface-texture-pos), 0 0, 0 0;
-	background-repeat: var(--surface-texture-repeat), repeat, no-repeat;
+	background-size: 180px 180px, auto;
+	background-position: 0 0, 0 0;
+	background-repeat: repeat, no-repeat;
 	backdrop-filter: blur(10px) saturate(1.15);
 	-webkit-backdrop-filter: blur(10px) saturate(1.15);
 	box-shadow: 0 0 0 3px hsl(0 0% 100% / 0.9), 0 0 28px hsl(0 0% 100% / 0.45), 0 16px 40px -18px
@@ -2121,7 +2086,7 @@ progress {
 	flex-shrink: 0;
 }
 .rv-paper-dialog
-	> :not(.rv-paper-header):not(.rv-paper-footer):not(.rv-crop-marks):not(.rv-paper-index):not(
+	> :not(.rv-paper-header):not(.rv-paper-footer):not(.rv-paper-index):not(
 		[data-rv-dialog-close]
 	):not([data-rv-dialog-fixed]) {
 	min-height: 0;
@@ -2129,7 +2094,7 @@ progress {
 	flex-shrink: 1;
 }
 .rv-paper-dialog[role="dialog"]
-	> :not(.rv-paper-header):not(.rv-paper-footer):not(.rv-crop-marks):not(.rv-paper-index):not(
+	> :not(.rv-paper-header):not(.rv-paper-footer):not(.rv-paper-index):not(
 		[data-rv-dialog-close]
 	):not([data-rv-dialog-fixed]) {
 	overflow-y: auto;
