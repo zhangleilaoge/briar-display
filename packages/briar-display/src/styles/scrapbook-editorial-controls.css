@@ -1,0 +1,280 @@
+.theme-scrapbook {
+	--rv-editorial-accent: color-mix(in srgb, var(--sidebar-tag-stroke) 42%, #948371);
+	--rv-editorial-border: color-mix(in srgb, var(--sidebar-tag-stroke) 18%, #d9cbbb);
+	--rv-editorial-wash: color-mix(in srgb, var(--rv-pink) 24%, var(--rv-beige));
+}
+.rv-select-item-shell {
+	display: none;
+}
+
+.theme-scrapbook .rv-breadcrumb ol {
+	gap: 10px;
+	color: hsl(var(--muted-foreground));
+	font-family: var(--font-label);
+	font-size: 12px;
+	letter-spacing: 0.02em;
+}
+.theme-scrapbook .rv-breadcrumb li {
+	gap: 10px;
+}
+.theme-scrapbook .rv-breadcrumb li[role="presentation"] {
+	color: var(--rv-editorial-accent);
+	font-family: var(--font-display);
+	font-size: 15px;
+	opacity: 0.6;
+}
+.theme-scrapbook .rv-breadcrumb li[role="presentation"] svg {
+	display: none;
+}
+.theme-scrapbook .rv-breadcrumb li[role="presentation"]::before {
+	content: "/";
+}
+.theme-scrapbook .rv-breadcrumb a {
+	border-bottom: 1px solid transparent;
+	text-decoration: none;
+	transition: color 160ms, border-color 160ms;
+}
+.theme-scrapbook .rv-breadcrumb a:hover {
+	border-bottom-color: var(--rv-editorial-border);
+	color: var(--rv-editorial-accent);
+}
+.theme-scrapbook .rv-breadcrumb a:focus-visible {
+	border-radius: 2px;
+	outline: 1px solid var(--rv-editorial-accent);
+	outline-offset: 3px;
+}
+.theme-scrapbook .rv-breadcrumb [aria-current="page"] {
+	color: var(--rv-editorial-accent);
+	font-style: italic;
+	font-weight: 500;
+}
+
+.theme-scrapbook .rv-input,
+.theme-scrapbook .rv-select-trigger {
+	height: 41px;
+	padding: 9px 12px;
+	border: 1px solid var(--rv-editorial-border);
+	border-radius: 6px 14px;
+	background: color-mix(in srgb, var(--rv-cream) 84%, white);
+	box-shadow: inset 0 1px 2px hsl(28 20% 30% / 0.035), 0 1px 0 hsl(0 0% 100% / 0.65);
+	color: var(--rv-ink);
+	font-family: var(--font-label);
+	line-height: 1.5;
+	transition: border-color 160ms, box-shadow 160ms, background 160ms;
+}
+.theme-scrapbook .rv-input:hover,
+.theme-scrapbook .rv-input:focus-visible,
+.theme-scrapbook .rv-select-trigger:hover,
+.theme-scrapbook .rv-select-trigger:focus-visible,
+.theme-scrapbook .rv-select-trigger[data-state="open"] {
+	border-color: var(--rv-editorial-accent);
+	background: var(--rv-cream);
+}
+.theme-scrapbook .rv-input:focus-visible,
+.theme-scrapbook .rv-select-trigger:focus-visible {
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--rv-editorial-accent) 13%, transparent);
+}
+.theme-scrapbook .rv-input::placeholder,
+.theme-scrapbook .rv-textarea::placeholder {
+	color: hsl(var(--muted-foreground));
+	opacity: 0.8;
+}
+.theme-scrapbook .rv-input:disabled,
+.theme-scrapbook .rv-textarea:disabled {
+	border-color: var(--rv-editorial-border);
+	background: var(--rv-editorial-wash);
+}
+.theme-scrapbook .rv-textarea {
+	min-height: 89px;
+	padding: 12px 14px;
+	border: 1px solid var(--rv-editorial-border);
+	border-radius: 24px 6px;
+	background: color-mix(in srgb, var(--rv-cream) 76%, transparent);
+	box-shadow: inset 0 1px 2px hsl(28 20% 30% / 0.025);
+	color: var(--rv-ink);
+	font-family: var(--font-label);
+	line-height: 1.9;
+	transition: border-color 160ms, background 160ms, box-shadow 160ms;
+}
+.theme-scrapbook .rv-textarea-resizer {
+	right: 10px;
+	bottom: 10px;
+}
+.theme-scrapbook .rv-textarea:hover {
+	border-color: var(--rv-editorial-accent);
+}
+.theme-scrapbook .rv-textarea:focus-visible {
+	border-color: var(--rv-editorial-accent);
+	background: var(--rv-cream);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--rv-editorial-accent) 13%, transparent);
+}
+
+.theme-scrapbook .rv-select-trigger {
+	font-size: 13px;
+	letter-spacing: 0.02em;
+}
+.theme-scrapbook .rv-select-chevron {
+	color: var(--rv-editorial-accent);
+	opacity: 0.75;
+}
+.theme-scrapbook .rv-select-content {
+	padding: 6px;
+	border: 1px solid var(--rv-editorial-border) !important;
+	border-radius: 5px 16px !important;
+	background-color: var(--rv-cream) !important;
+	background-image: var(--paper-grain) !important;
+	box-shadow: inset 0 0 0 4px var(--rv-cream), inset 0 0 0 5px var(--rv-editorial-border), 0 10px
+		30px hsl(28 20% 30% / 0.12) !important;
+}
+.theme-scrapbook .rv-select-content .rv-select-viewport {
+	padding: 3px;
+}
+.theme-scrapbook .rv-select-item {
+	padding: 10px 12px;
+	border-radius: 3px 9px;
+	font-family: var(--font-label);
+	font-size: 12px;
+}
+.theme-scrapbook .rv-select-item::before,
+.theme-scrapbook .rv-select-item::after {
+	content: none !important;
+}
+.theme-scrapbook .rv-select-item[data-state="checked"],
+.theme-scrapbook .rv-select-item[data-highlighted] {
+	border-radius: 3px 9px !important;
+	background: var(--rv-editorial-wash) !important;
+	box-shadow: none !important;
+	color: var(--rv-ink) !important;
+}
+.theme-scrapbook .rv-select-item[data-highlighted] {
+	background: color-mix(in srgb, var(--rv-pink) 32%, var(--rv-beige)) !important;
+}
+.theme-scrapbook .rv-select-item > span:first-child {
+	right: 9px;
+	width: 18px;
+	height: 18px;
+}
+.theme-scrapbook .rv-select-check-icon {
+	display: none;
+}
+.theme-scrapbook .rv-select-item-shell {
+	position: relative;
+	display: block;
+	width: 17px;
+	height: 15px;
+	border-radius: 50% 50% 12% 12% / 85% 85% 12% 12%;
+	background: repeating-conic-gradient(
+		from 260deg at 50% 100%,
+		#b8c9d3 0deg 1deg,
+		#fbfdff 1.5deg 11deg,
+		#e2ecf2 12deg 13deg
+	);
+	box-shadow: inset 0 0 0 1px hsl(203 24% 66% / 0.65), 0 1px 2px hsl(203 20% 35% / 0.12);
+	transform: rotate(-8deg);
+}
+.theme-scrapbook .rv-select-item-shell::after {
+	content: "";
+	position: absolute;
+	bottom: -1px;
+	left: 6px;
+	width: 5px;
+	height: 3px;
+	border-radius: 2px 2px 1px 1px;
+	background: #f5faff;
+	box-shadow: inset 0 0 0 1px hsl(203 24% 66% / 0.5);
+}
+.theme-scrapbook .rv-select-label {
+	color: var(--rv-editorial-accent);
+	font-family: var(--font-label);
+	letter-spacing: 0.14em;
+}
+.theme-scrapbook .rv-select-separator {
+	background: var(--rv-editorial-border);
+}
+
+.theme-scrapbook .rv-calendar [role="status"] {
+	color: var(--rv-ink);
+	font-family: var(--font-display);
+	font-size: 22px;
+	font-weight: 500;
+	letter-spacing: 0.03em;
+}
+.theme-scrapbook .rv-calendar .rv-btn {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+	color: var(--rv-editorial-accent);
+}
+.theme-scrapbook .rv-calendar .rdp-button_previous,
+.theme-scrapbook .rv-calendar .rdp-button_next {
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	opacity: 1;
+}
+.theme-scrapbook .rv-calendar .rdp-button_previous:hover,
+.theme-scrapbook .rv-calendar .rdp-button_next:hover {
+	border-color: var(--rv-editorial-border);
+	background: var(--rv-editorial-wash);
+}
+.theme-scrapbook .rv-calendar .rdp-weekdays {
+	margin-bottom: 5px;
+	padding-bottom: 9px;
+	border-bottom: 1px solid var(--rv-editorial-border);
+}
+.theme-scrapbook .rv-calendar .rdp-weekday {
+	color: hsl(var(--muted-foreground));
+	font-family: var(--font-label);
+	font-size: 10px;
+	letter-spacing: 0.05em;
+}
+.theme-scrapbook .rv-calendar .rdp-day_button {
+	border: 1px solid transparent;
+	border-radius: 50%;
+	background: transparent;
+	box-shadow: none;
+	color: var(--rv-ink);
+	font-family: var(--font-display);
+	font-size: 17px;
+	font-weight: 500;
+	transition: border-color 160ms, background 160ms, color 160ms;
+}
+.theme-scrapbook .rv-calendar .rdp-day_button:hover:not(:disabled) {
+	border-color: var(--rv-editorial-border);
+	background: var(--rv-editorial-wash);
+	color: var(--rv-editorial-accent);
+}
+.theme-scrapbook .rv-calendar .rdp-day_button:focus-visible {
+	outline: 2px solid var(--rv-editorial-accent);
+	outline-offset: 1px;
+}
+.theme-scrapbook .rv-calendar .rdp-today:not(.rv-cal-day-selected) {
+	border-radius: 50%;
+	background: transparent;
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rv-editorial-accent) 35%, transparent);
+	color: var(--rv-editorial-accent);
+}
+.theme-scrapbook .rv-calendar .rv-cal-day-selected {
+	background: transparent;
+	box-shadow: none;
+}
+.theme-scrapbook .rv-calendar [data-selected="true"]:not(.day-range-middle) .rdp-day_button {
+	border-color: var(--rv-editorial-accent);
+	border-radius: 50%;
+	background: var(--rv-editorial-accent) !important;
+	box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--rv-cream) 28%, transparent);
+	color: var(--rv-cream) !important;
+}
+.theme-scrapbook .rv-calendar .day-range-middle {
+	border-radius: 0;
+	background: var(--rv-editorial-wash) !important;
+	color: var(--rv-ink);
+}
+.theme-scrapbook .rv-calendar .day-range-middle .rdp-day_button {
+	border-radius: 0;
+	background: transparent !important;
+	color: var(--rv-ink) !important;
+}
+.theme-scrapbook .rv-calendar .rdp-outside {
+	opacity: 0.35;
+}

@@ -1977,8 +1977,8 @@ progress {
 	}
 }
 
-/* scrapbook 通用 Input / Textarea / Select 触发器：纸片柔角 + 暖灰粉描边 */
-.theme-scrapbook .rounded-field {
+/* scrapbook 通用 Input / Select 触发器：纸片柔角 + 暖灰粉描边 */
+.theme-scrapbook .rounded-field:not(.rv-textarea) {
 	border-radius: var(--radius-field) !important;
 	border-color: color-mix(in srgb, var(--rv-rose-deep) 22%, var(--rv-beige));
 }
