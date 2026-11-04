@@ -39,9 +39,9 @@ function UsageRow({ label, w, now }: { label: string; w: KimiUsageWindow; now: n
 					<span className="font-medium text-foreground/85">{label}</span>
 					<span className="tabular-nums"> · {reset ? `${reset}后重置` : '重置未知'}</span>
 				</span>
-				<span className="shrink-0 text-sm font-semibold tabular-nums leading-none text-foreground">
+				<span className="shrink-0 font-label text-sm font-semibold tabular-nums leading-none text-foreground">
 					{w.usedPct}
-					<span className="text-[10px] font-normal text-muted-foreground">%</span>
+					<span className="text-[10px] font-medium text-muted-foreground">%</span>
 				</span>
 			</div>
 			<div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--rv-navy)_12%,transparent)]">
@@ -299,9 +299,10 @@ export function KimiUsageWidget({
 		<WidgetChrome
 			title="Kimi 用量"
 			caption="Kimi Code"
+			plainTypography
 			editing={editing}
 			onRemove={onRemove}
-			bodyClassName="flex flex-col !pt-1"
+			bodyClassName="flex flex-col !pt-1 font-label"
 			tilt={-0.4}
 		>
 			{body}

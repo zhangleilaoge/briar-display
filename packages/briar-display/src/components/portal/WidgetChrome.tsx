@@ -13,6 +13,8 @@ export function WidgetChrome({
 	editing,
 	onRemove,
 	tilt = 0,
+	/** 去掉花体/衬线标题，改用与正文一致的无衬线（给 Kimi 等偏工具向的卡片） */
+	plainTypography = false,
 }: {
 	title?: string
 	caption?: string
@@ -22,6 +24,7 @@ export function WidgetChrome({
 	editing?: boolean
 	onRemove?: () => void
 	tilt?: number
+	plainTypography?: boolean
 }) {
 	return (
 		<div
@@ -44,12 +47,24 @@ export function WidgetChrome({
 					<header className="flex shrink-0 items-baseline justify-between gap-2 px-3.5 pb-0.5 pt-3 sm:px-4 sm:pt-3.5">
 						<div className="min-w-0">
 							{caption && (
-								<span className="rv-script block truncate text-sm leading-none text-[color:var(--rv-rose-deep)]">
+								<span
+									className={cn(
+										'block truncate leading-none',
+										plainTypography
+											? 'font-label text-[11px] tracking-wide text-muted-foreground'
+											: 'rv-script text-sm text-[color:var(--rv-rose-deep)]',
+									)}
+								>
 									{caption}
 								</span>
 							)}
 							{title && (
-								<h3 className="truncate font-heading text-sm font-semibold text-foreground sm:text-base">
+								<h3
+									className={cn(
+										'truncate text-sm font-semibold text-foreground sm:text-base',
+										plainTypography ? 'font-label' : 'font-heading',
+									)}
+								>
 									{title}
 								</h3>
 							)}
