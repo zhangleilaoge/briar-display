@@ -79,8 +79,8 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
 	{
 		id: 'kimi',
 		title: 'Kimi 用量',
-		caption: 'Kimi Code',
-		description: 'Kimi Code 5 小时 / 本周或本月用量与重置时间（仅管理员）',
+		caption: '',
+		description: '5 小时 / 本周或本月用量与重置时间（仅管理员）',
 		sizes: ['1x1'],
 		defaultSize: '1x1',
 	},
