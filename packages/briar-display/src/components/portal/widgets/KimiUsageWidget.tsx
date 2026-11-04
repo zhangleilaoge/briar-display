@@ -133,7 +133,7 @@ function KeyForm({
 		>
 			{!compact && (
 				<p className="text-center text-[11px] leading-snug text-muted-foreground">
-					在卡片上填写 Kimi Code API Key
+					在卡片上填写 API Key
 					{hint ? `（当前 ${hint}）` : ''}
 				</p>
 			)}
@@ -257,8 +257,10 @@ export function KimiUsageWidget({
 				) : (
 					<Notice title="暂无用量数据" />
 				)}
-				<p className="mt-auto flex items-center justify-between gap-1 truncate text-[10px] text-muted-foreground">
-					<span className="truncate">{d.membership ?? 'Kimi Code'}</span>
+				<p className="mt-auto flex items-center justify-end gap-2 truncate text-[10px] text-muted-foreground">
+					{d.boosterYuan != null && (
+						<span className="truncate tabular-nums">加油包 ¥{d.boosterYuan.toFixed(2)}</span>
+					)}
 					{state.body.stale ? (
 						<span className="text-[color:var(--rv-rose-deep)]" title={state.body.error}>
 							旧数据
@@ -266,7 +268,7 @@ export function KimiUsageWidget({
 					) : (
 						<button
 							type="button"
-							className="shrink-0 tabular-nums underline-offset-2 hover:underline"
+							className="shrink-0 underline-offset-2 hover:underline"
 							title={state.body.keyHint ? `当前 Key ${state.body.keyHint}` : '更换 Key'}
 							onClick={(e) => {
 								e.preventDefault()
@@ -274,7 +276,7 @@ export function KimiUsageWidget({
 								setShowKeyForm(true)
 							}}
 						>
-							{d.boosterYuan != null ? `加油包 ¥${d.boosterYuan.toFixed(2)}` : '更换 Key'}
+							更换 Key
 						</button>
 					)}
 				</p>
@@ -298,7 +300,6 @@ export function KimiUsageWidget({
 	return (
 		<WidgetChrome
 			title="Kimi 用量"
-			caption="Kimi Code"
 			plainTypography
 			editing={editing}
 			onRemove={onRemove}
