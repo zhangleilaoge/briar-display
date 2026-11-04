@@ -140,6 +140,24 @@
 		transparent 3px 5px
 	);
 }
+/* 用户菜单等 rv-watercolor-item：悬停为淡紫水彩（复用 --plum / --plum-soft token） */
+.theme-scrapbook .rv-watercolor-item:hover,
+.theme-scrapbook .rv-watercolor-item:focus-visible {
+	--rv-brush-wash: linear-gradient(
+		96deg,
+		hsl(var(--plum) / 0.08),
+		hsl(var(--plum) / 0.3) 8%,
+		hsl(var(--plum) / 0.22) 45%,
+		hsl(var(--plum-soft) / 0.9) 72%,
+		hsl(var(--plum-soft) / 0.3)
+	);
+	--rv-brush-dry: repeating-linear-gradient(
+		178deg,
+		hsl(var(--plum) / 0.14) 0 1px,
+		hsl(var(--plum) / 0.06) 1px 3px,
+		transparent 3px 5px
+	);
+}
 .theme-scrapbook .rv-command [cmdk-item][data-selected="true"]::before,
 .theme-scrapbook .rv-select-item[data-highlighted]::before,
 .theme-scrapbook .rv-select-item[data-state="checked"]::before,
