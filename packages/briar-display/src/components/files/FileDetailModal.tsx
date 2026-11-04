@@ -89,6 +89,40 @@ function getPreviewKind(file: FileItem): PreviewKind {
 	return 'none'
 }
 
+/**
+ * 上一个/下一个文件按钮。没有相邻文件时保持占位但隐藏（invisible），
+ * 避免出现「看着能点却点不动」的按钮，同时预览区宽度不跳动。
+ */
+export function NavArrow({
+	direction,
+	target,
+	onNavigate,
+}: {
+	direction: 'prev' | 'next'
+	target: FileItem | null
+	onNavigate: (file: FileItem) => void
+}) {
+	const prev = direction === 'prev'
+	const Icon = prev ? ChevronLeft : ChevronRight
+	return (
+		<Button
+			type="button"
+			variant="default"
+			size="icon"
+			aria-label={prev ? '上一个文件' : '下一个文件'}
+			aria-keyshortcuts={prev ? 'ArrowLeft' : 'ArrowRight'}
+			aria-hidden={target ? undefined : true}
+			tabIndex={target ? undefined : -1}
+			disabled={!target}
+			title={target ? `${prev ? '上一个' : '下一个'}：${target.originalName}` : undefined}
+			className={`shrink-0 ${target ? '' : 'invisible'}`}
+			onClick={() => target && onNavigate(target)}
+		>
+			<Icon className="h-5 w-5" />
+		</Button>
+	)
+}
+
 function previewLabel(kind: PreviewKind): { fr: string; zh: string } {
 	switch (kind) {
 		case 'video':
@@ -261,93 +295,74 @@ export default function FileDetailModal({
 
 				<div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pt-5 sm:px-6 sm:pt-6">
 					{/* Preview */}
-					<div className="relative mb-5">
-						<Button
-							type="button"
-							variant="default"
-							size="icon"
-							aria-label="上一个文件"
-							aria-keyshortcuts="ArrowLeft"
-							disabled={!previousFile}
-							className="absolute left-2 top-1/2 z-10 -translate-y-1/2"
-							onClick={() => previousFile && onNavigate(previousFile)}
-						>
-							<ChevronLeft className="h-5 w-5" />
-						</Button>
-						<Button
-							type="button"
-							variant="default"
-							size="icon"
-							aria-label="下一个文件"
-							aria-keyshortcuts="ArrowRight"
-							disabled={!nextFile}
-							className="absolute right-2 top-1/2 z-10 -translate-y-1/2"
-							onClick={() => nextFile && onNavigate(nextFile)}
-						>
-							<ChevronRight className="h-5 w-5" />
-						</Button>
-						{kind === 'image' && (
-							<div className="flex justify-center border border-[color:var(--rv-navy)]/20 bg-[var(--rv-beige)] p-3">
-								<img
-									src={file.cdnUrl}
-									alt={file.originalName}
-									title="点击全屏预览"
-									className="max-h-[50vh] max-w-full cursor-zoom-in object-contain"
-									onClick={() => setPreviewOpen(true)}
-								/>
-							</div>
-						)}
-						{kind === 'video' && (
-							<div className="flex justify-center border border-[color:var(--rv-navy)]/25 bg-[var(--rv-navy)] p-2">
-								{/* biome-ignore lint/a11y/useMediaCaption: 用户上传的视频没有字幕文件 */}
-								<video src={file.cdnUrl} controls autoPlay className="max-h-[50vh] max-w-full" />
-							</div>
-						)}
-						{(kind === 'markdown' || kind === 'text') && (
-							<>
-								{textError && (
-									<div className="border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] p-4 text-center text-sm text-muted-foreground">
-										{textError}
-									</div>
-								)}
-								{!textError && textContent === null && (
-									<div className="border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] p-4 text-center text-sm text-muted-foreground">
-										加载中...
-									</div>
-								)}
-								{!textError && textContent !== null && kind === 'markdown' && (
-									<Suspense
-										fallback={
-											<div className="border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] p-4 text-center text-sm text-muted-foreground">
-												加载中...
-											</div>
-										}
-									>
-										<MarkdownPreview markdown={textContent} />
-									</Suspense>
-								)}
-								{!textError && textContent !== null && kind === 'text' && (
-									<pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap break-all border border-[color:var(--rv-navy)]/15 bg-white p-4 font-mono text-xs">
-										{textContent}
-									</pre>
-								)}
-							</>
-						)}
-						{kind === 'pdf' && <PdfPreview file={file} onDownload={download} />}
-						{kind === 'excel' && <ExcelPreview file={file} />}
-						{kind === 'docx' && <DocxPreview file={file} />}
-						{kind === 'audio' && (
-							<div className="flex justify-center border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] p-6">
-								{/* biome-ignore lint/a11y/useMediaCaption: 用户上传的音频没有字幕文件 */}
-								<audio src={file.cdnUrl} controls className="w-full max-w-md" />
-							</div>
-						)}
-						{kind === 'none' && (
-							<div className="flex flex-col items-center gap-2 border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] py-10 text-muted-foreground">
-								<FileTypeIcon fileName={file.originalName} mimeType={file.mimeType} />
-								<p className="text-sm">该类型不支持预览</p>
-							</div>
-						)}
+					{/* 上一个/下一个放在预览区两侧的独立栏里，不再叠在 iframe（PDF 工具栏）上；到头时隐藏 */}
+					<div className="mb-5 flex items-center gap-2">
+						<NavArrow direction="prev" target={previousFile} onNavigate={onNavigate} />
+						<div className="relative min-w-0 flex-1">
+							{kind === 'image' && (
+								<div className="flex justify-center border border-[color:var(--rv-navy)]/20 bg-[var(--rv-beige)] p-3">
+									<img
+										src={file.cdnUrl}
+										alt={file.originalName}
+										title="点击全屏预览"
+										className="max-h-[50vh] max-w-full cursor-zoom-in object-contain"
+										onClick={() => setPreviewOpen(true)}
+									/>
+								</div>
+							)}
+							{kind === 'video' && (
+								<div className="flex justify-center border border-[color:var(--rv-navy)]/25 bg-[var(--rv-navy)] p-2">
+									{/* biome-ignore lint/a11y/useMediaCaption: 用户上传的视频没有字幕文件 */}
+									<video src={file.cdnUrl} controls autoPlay className="max-h-[50vh] max-w-full" />
+								</div>
+							)}
+							{(kind === 'markdown' || kind === 'text') && (
+								<>
+									{textError && (
+										<div className="border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] p-4 text-center text-sm text-muted-foreground">
+											{textError}
+										</div>
+									)}
+									{!textError && textContent === null && (
+										<div className="border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] p-4 text-center text-sm text-muted-foreground">
+											加载中...
+										</div>
+									)}
+									{!textError && textContent !== null && kind === 'markdown' && (
+										<Suspense
+											fallback={
+												<div className="border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] p-4 text-center text-sm text-muted-foreground">
+													加载中...
+												</div>
+											}
+										>
+											<MarkdownPreview markdown={textContent} />
+										</Suspense>
+									)}
+									{!textError && textContent !== null && kind === 'text' && (
+										<pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap break-all border border-[color:var(--rv-navy)]/15 bg-white p-4 font-mono text-xs">
+											{textContent}
+										</pre>
+									)}
+								</>
+							)}
+							{kind === 'pdf' && <PdfPreview file={file} onDownload={download} />}
+							{kind === 'excel' && <ExcelPreview file={file} />}
+							{kind === 'docx' && <DocxPreview file={file} />}
+							{kind === 'audio' && (
+								<div className="flex justify-center border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] p-6">
+									{/* biome-ignore lint/a11y/useMediaCaption: 用户上传的音频没有字幕文件 */}
+									<audio src={file.cdnUrl} controls className="w-full max-w-md" />
+								</div>
+							)}
+							{kind === 'none' && (
+								<div className="flex flex-col items-center gap-2 border border-[color:var(--rv-navy)]/15 bg-[var(--rv-beige)] py-10 text-muted-foreground">
+									<FileTypeIcon fileName={file.originalName} mimeType={file.mimeType} />
+									<p className="text-sm">该类型不支持预览</p>
+								</div>
+							)}
+						</div>
+						<NavArrow direction="next" target={nextFile} onNavigate={onNavigate} />
 					</div>
 
 					{/* Metadata — 纸片分行 */}
