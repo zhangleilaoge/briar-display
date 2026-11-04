@@ -17,14 +17,14 @@ const SelectTrigger = React.forwardRef<
 	<SelectPrimitive.Trigger
 		ref={ref}
 		className={cn(
-			'flex h-10 w-full items-center justify-between whitespace-nowrap rounded-field border border-input gap-2 bg-card/80 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:border-ring focus-visible:shadow-focus data-[state=open]:border-ring focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
+			'rv-select-trigger flex h-10 w-full items-center justify-between whitespace-nowrap rounded-field border border-input gap-2 bg-card/80 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:border-ring focus-visible:shadow-focus data-[state=open]:border-ring focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
 			className,
 		)}
 		{...props}
 	>
 		{children}
 		<SelectPrimitive.Icon asChild>
-			<ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
+			<ChevronDown className="rv-select-chevron h-4 w-4 shrink-0 opacity-60" />
 		</SelectPrimitive.Icon>
 	</SelectPrimitive.Trigger>
 ))
@@ -116,7 +116,8 @@ const SelectItem = React.forwardRef<
 	>
 		<span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
 			<SelectPrimitive.ItemIndicator>
-				<Check className="h-4 w-4" />
+				<Check className="rv-select-check-icon h-4 w-4" />
+				<span className="rv-select-item-shell" aria-hidden="true" />
 			</SelectPrimitive.ItemIndicator>
 		</span>
 		<SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
