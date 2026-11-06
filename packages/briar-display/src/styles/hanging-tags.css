@@ -1,0 +1,306 @@
+.hanging-tags {
+	position: relative;
+	width: 100%;
+	height: 100svh;
+	min-height: 620px;
+	overflow: hidden;
+	background: #e7e2d9;
+	color: #30332e;
+	font-family: "Josefin Sans", sans-serif;
+}
+
+.hanging-tags__scene,
+.hanging-tags__grain {
+	position: absolute;
+	inset: 0;
+}
+
+.hanging-tags__scene {
+	touch-action: none;
+}
+
+.hanging-tags__canvas {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.hanging-tags__grain {
+	z-index: 1;
+	pointer-events: none;
+	opacity: 0.1;
+	mix-blend-mode: multiply;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.3'/%3E%3C/svg%3E");
+	box-shadow: inset 0 0 160px rgb(65 54 38 / 10%);
+}
+
+.hanging-tags__header {
+	position: absolute;
+	z-index: 2;
+	top: 42px;
+	left: 48px;
+	pointer-events: none;
+}
+
+.hanging-tags__brand {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+	color: inherit;
+	font-size: 15px;
+	font-weight: 600;
+	letter-spacing: 0.2em;
+	text-decoration: none;
+	pointer-events: auto;
+}
+
+.hanging-tags__brand span {
+	padding-left: 12px;
+	border-left: 1px solid rgb(48 51 46 / 28%);
+	font-family: "JetBrains Mono", monospace;
+	font-size: 8px;
+	font-weight: 400;
+	letter-spacing: 0.12em;
+}
+
+.hanging-tags__eyebrow {
+	margin: 68px 0 15px;
+	font-family: "JetBrains Mono", monospace;
+	font-size: 9px;
+	letter-spacing: 0.16em;
+}
+
+.hanging-tags h1 {
+	margin: 0;
+	font-family: "Cormorant Garamond", Georgia, serif;
+	font-size: clamp(48px, 5.5vw, 78px);
+	font-weight: 400;
+	line-height: 0.78;
+	letter-spacing: -0.045em;
+}
+
+.hanging-tags h1 em {
+	font-weight: 400;
+}
+
+.hanging-tags__intro {
+	max-width: 260px;
+	margin: 28px 0 0;
+	font-size: 11px;
+	line-height: 1.9;
+	letter-spacing: 0.08em;
+}
+
+.hanging-tags__specs {
+	position: absolute;
+	z-index: 2;
+	top: 45px;
+	right: 48px;
+	width: 160px;
+	pointer-events: none;
+}
+
+.hanging-tags__specs > span {
+	font-family: "JetBrains Mono", monospace;
+	font-size: 8px;
+	letter-spacing: 0.12em;
+}
+
+.hanging-tags__specs dl {
+	margin: 17px 0 0;
+	padding-top: 12px;
+	border-top: 1px solid rgb(48 51 46 / 22%);
+}
+
+.hanging-tags__specs dl div {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 8px;
+}
+
+.hanging-tags__specs dt,
+.hanging-tags__specs dd {
+	margin: 0;
+	font-family: "JetBrains Mono", monospace;
+	font-size: 8px;
+	font-weight: 400;
+}
+
+.hanging-tags__specs dt {
+	opacity: 0.55;
+}
+
+.hanging-tags__hint {
+	position: absolute;
+	z-index: 2;
+	bottom: 90px;
+	left: 48px;
+	display: flex;
+	align-items: center;
+	gap: 13px;
+	pointer-events: none;
+}
+
+.hanging-tags__hint-icon {
+	display: grid;
+	width: 38px;
+	height: 38px;
+	place-items: center;
+	border: 1px solid rgb(48 51 46 / 28%);
+	border-radius: 50%;
+	transition: background 180ms ease;
+}
+
+.is-dragging .hanging-tags__hint-icon {
+	background: rgb(255 255 255 / 32%);
+}
+
+.hanging-tags__hint strong,
+.hanging-tags__hint div > span {
+	display: block;
+}
+
+.hanging-tags__hint strong {
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.06em;
+}
+
+.hanging-tags__hint div > span {
+	margin-top: 5px;
+	font-size: 9px;
+	letter-spacing: 0.04em;
+	opacity: 0.58;
+}
+
+.hanging-tags__controls {
+	position: absolute;
+	z-index: 3;
+	right: 48px;
+	bottom: 86px;
+	display: flex;
+	gap: 8px;
+}
+
+.hanging-tags__controls button {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 38px;
+	padding: 0 15px;
+	border: 1px solid rgb(48 51 46 / 22%);
+	border-radius: 999px;
+	background: rgb(244 241 234 / 58%);
+	color: inherit;
+	font-family: inherit;
+	font-size: 10px;
+	letter-spacing: 0.05em;
+	cursor: pointer;
+	backdrop-filter: blur(8px);
+	transition: background 160ms ease, transform 160ms ease;
+}
+
+.hanging-tags__controls button:hover {
+	background: rgb(250 248 243 / 88%);
+	transform: translateY(-1px);
+}
+
+.hanging-tags__controls button:focus-visible {
+	outline: 2px solid #6d776c;
+	outline-offset: 3px;
+}
+
+.hanging-tags__footer {
+	position: absolute;
+	z-index: 2;
+	right: 48px;
+	bottom: 27px;
+	left: 48px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-top: 13px;
+	border-top: 1px solid rgb(48 51 46 / 18%);
+	font-family: "JetBrains Mono", monospace;
+	font-size: 8px;
+	letter-spacing: 0.1em;
+	pointer-events: none;
+}
+
+.hanging-tags__status {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.hanging-tags__status-dot {
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: #657d65;
+	box-shadow: 0 0 0 3px rgb(101 125 101 / 12%);
+}
+
+.is-dragging .hanging-tags__status-dot {
+	background: #9a8054;
+}
+
+@media (max-width: 700px) {
+	.hanging-tags {
+		min-height: 560px;
+	}
+
+	.hanging-tags__header {
+		top: 25px;
+		left: 24px;
+	}
+
+	.hanging-tags__eyebrow {
+		margin-top: 30px;
+	}
+
+	.hanging-tags h1 {
+		font-size: 45px;
+		line-height: 0.84;
+	}
+
+	.hanging-tags__intro,
+	.hanging-tags__specs {
+		display: none;
+	}
+
+	.hanging-tags__hint {
+		bottom: 124px;
+		left: 24px;
+	}
+
+	.hanging-tags__hint div > span {
+		max-width: 220px;
+	}
+
+	.hanging-tags__controls {
+		right: auto;
+		bottom: 70px;
+		left: 24px;
+	}
+
+	.hanging-tags__footer {
+		right: 24px;
+		bottom: 22px;
+		left: 24px;
+	}
+
+	.hanging-tags__footer > span:first-child {
+		display: none;
+	}
+
+	.hanging-tags__footer {
+		justify-content: flex-end;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hanging-tags__controls button,
+	.hanging-tags__hint-icon {
+		transition: none;
+	}
+}
