@@ -113,5 +113,3 @@ ON DUPLICATE KEY UPDATE deleted_at = NULL;
 --    存量想法的标签由服务启动时 thoughtDal.backfillTags() 从正文解析回填（SQL 难以可靠解析 Unicode 标签），本文件无需语句。
 
 -- 7) site_secrets（Kimi API Key 等）：表由 schema.sql 的 CREATE TABLE IF NOT EXISTS 建出；本文件无需语句。
-
--- 8) 待办 + 访客留言墙：表由 schema.sql 的 CREATE TABLE IF NOT EXISTS 建出；本文件无需语句。

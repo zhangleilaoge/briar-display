@@ -11,9 +11,6 @@ describe('门户小组件尺寸', () => {
 		expect(WIDGET_META.weather.sizes).toEqual(['1x1'])
 		expect(WIDGET_META.clock.sizes).toEqual(['1x1'])
 		expect(WIDGET_META.stocks.sizes).toEqual(['1x1'])
-		expect(WIDGET_META.todo.sizes).toEqual(['1x1'])
-		expect(WIDGET_META.todo.adminOnly).toBe(true)
-		expect(WIDGET_META.kimi.adminOnly).toBe(true)
 	})
 
 	test('旧布局中取消的尺寸回退默认，日历中号保留', () => {

@@ -6,7 +6,6 @@ import deploymentRoutes from './deployment'
 import filePrivacyRoutes from './filePrivacy'
 import fileUploadRoutes from './fileUpload'
 import fileRoutes from './files'
-import guestbookRoutes from './guestbook'
 import kimiRoutes from './kimi'
 import logRoutes from './log'
 import magnetRoutes from './magnet'
@@ -17,7 +16,6 @@ import schedulerRoutes from './scheduler'
 import sqlConsoleRoutes from './sqlConsole'
 import terminalRoutes from './terminal'
 import thoughtRoutes from './thoughts'
-import todoRoutes from './todos'
 import userRoutes from './users'
 import versionRoutes from './version'
 
@@ -31,7 +29,6 @@ api.route('/admin', adminRoutes)
 api.route('/admin/sql', sqlConsoleRoutes)
 api.route('/cert', certRoutes)
 api.route('/deployment', deploymentRoutes)
-api.route('/guestbook', guestbookRoutes)
 api.route('/kimi', kimiRoutes)
 api.route('/logs', logRoutes)
 api.route('/magnet', magnetRoutes)
@@ -44,7 +41,6 @@ api.route('/files/privacy', filePrivacyRoutes)
 api.route('/files', fileUploadRoutes)
 api.route('/files', fileRoutes)
 api.route('/users', userRoutes)
-api.route('/todos', todoRoutes)
 api.route('/thoughts', thoughtRoutes)
 api.route('/version', versionRoutes)
 

@@ -37,7 +37,6 @@ export const USER_MERGE_HANDLERS: UserMergeHandler[] = [
 	mediaCacheHandler,
 	reassignColumn('messages', 'user_id', '站内信'),
 	reassignColumn('thoughts', 'user_id', '想法'),
-	reassignColumn('todos', 'user_id', '待办'),
 	thoughtLikesHandler,
 	preferencesHandler,
 	reassignColumn('wiki', 'author_id', 'Wiki 作者'), // 旧库遗留表，不在 schema.sql 中，存在才迁移
@@ -56,5 +55,4 @@ export const IGNORED_USER_COLUMNS: Record<string, string> = {
 	'terminal_audit_logs.user_name':
 		'操作时的用户名快照（审计原文），不改写；user_id 已由审计日志 handler 迁移',
 	'site_secrets.updated_by': '站点级密钥最近更新人（审计字段）；密钥本身属全站共享，合并不改写',
-	'guestbook_entries.reviewed_by': '留言审核人审计快照，合并不改写',
 }
