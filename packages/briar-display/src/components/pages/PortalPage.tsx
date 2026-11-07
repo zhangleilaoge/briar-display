@@ -4,6 +4,7 @@ import { useNavigate } from '@/components/common/SectionRouter'
 import UserMenu from '@/components/common/UserMenu'
 import { BinderPeel } from '@/components/portal/BinderPeel'
 import { DeployStatusLink } from '@/components/portal/DeployStatusLink'
+import { GuestbookWall } from '@/components/portal/GuestbookWall'
 import { WidgetDesktop } from '@/components/portal/WidgetDesktop'
 import { useGreeting } from '@/components/portal/greetingStore'
 import { Card, CardContent } from '@/components/ui/card'
@@ -484,6 +485,9 @@ function PortalPageInner() {
 							)}
 						</div>
 					)}
+
+					{/* 访客留言墙：空搜索时展示，与小组件同页 */}
+					{!query.trim() && <GuestbookWall />}
 				</div>
 			</main>
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
 import {
 	type CSSProperties,
@@ -34,6 +35,7 @@ import { ClockWidget } from './widgets/ClockWidget'
 import { GreetingWidget } from './widgets/GreetingWidget'
 import { KimiUsageWidget } from './widgets/KimiUsageWidget'
 import { StocksWidget } from './widgets/StocksWidget'
+import { TodoWidget } from './widgets/TodoWidget'
 import { WeatherWidget } from './widgets/WeatherWidget'
 
 /** 长按进编辑：与点击区分，约 450ms（macOS/iOS 风格） */
@@ -56,6 +58,8 @@ function renderWidget(id: WidgetId, size: WidgetSize, editing: boolean, onRemove
 			return <GreetingWidget {...props} />
 		case 'kimi':
 			return <KimiUsageWidget {...props} />
+		case 'todo':
+			return <TodoWidget {...props} />
 		default:
 			return null
 	}
@@ -89,6 +93,7 @@ function loadLayout(cols: number): WidgetPlacement[] {
 }
 
 export function WidgetDesktop() {
+	const { isAdmin, loading: permsLoading } = usePermissions()
 	const cols = useGridCols()
 	const [editing, setEditing] = useState(false)
 	const [hydrated, setHydrated] = useState(false)
@@ -166,8 +171,21 @@ export function WidgetDesktop() {
 	}
 
 	const missing = useMemo(
-		() => WIDGET_CATALOG.filter((m) => !layout.some((p) => p.id === m.id)),
-		[layout],
+		() =>
+			WIDGET_CATALOG.filter((m) => !layout.some((p) => p.id === m.id) && (!m.adminOnly || isAdmin)),
+		[layout, isAdmin],
+	)
+
+	/** 非管理员不渲染仅管理员卡片（布局里若残留也不展示） */
+	const visibleLayout = useMemo(
+		() =>
+			layout.filter((p) => {
+				const meta = WIDGET_META[p.id]
+				if (!meta) return false
+				if (meta.adminOnly && (permsLoading || !isAdmin)) return false
+				return true
+			}),
+		[layout, isAdmin, permsLoading],
 	)
 
 	const startDrag = (e: ReactPointerEvent, id: WidgetId) => {
@@ -288,11 +306,11 @@ export function WidgetDesktop() {
 
 	const rowCount = useMemo(() => {
 		let max = 2
-		for (const p of layout) {
+		for (const p of visibleLayout) {
 			max = Math.max(max, p.row + SIZE_SPECS[p.size].h)
 		}
 		return max
-	}, [layout])
+	}, [visibleLayout])
 
 	const cellRem = cols === GRID_COLS_MOBILE ? CELL_REM_MOBILE : CELL_REM_DESKTOP
 
@@ -339,7 +357,7 @@ export function WidgetDesktop() {
 					onPointerCancel={onPointerUp}
 					onPointerLeave={clearLongPress}
 				>
-					{layout.map((p) => {
+					{visibleLayout.map((p) => {
 						const isDragging = draggingId === p.id
 						const floating = isDragging && floatPos
 						return (
@@ -421,7 +439,7 @@ export function WidgetDesktop() {
 
 			{/* 有组件：长按进编辑；空桌面：显示「添加新组件」；编辑态保留工具栏 */}
 			<div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-				{!editing && layout.length === 0 && (
+				{!editing && visibleLayout.length === 0 && (
 					<button
 						type="button"
 						onClick={() => {

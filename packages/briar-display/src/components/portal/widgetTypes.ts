@@ -1,6 +1,6 @@
 /** 门户桌面小组件：以 1×1 为单元，尺寸克制，桌面/手机分存 */
 
-export type WidgetId = 'calendar' | 'clock' | 'stocks' | 'weather' | 'greeting' | 'kimi'
+export type WidgetId = 'calendar' | 'clock' | 'stocks' | 'weather' | 'greeting' | 'kimi' | 'todo'
 
 /** 网格占位：宽×高（列×行） */
 export type WidgetSize = '1x1' | '2x1' | '2x2'
@@ -33,6 +33,8 @@ export interface WidgetMeta {
 	description: string
 	sizes: WidgetSize[]
 	defaultSize: WidgetSize
+	/** 仅管理员可见/可添加（不进默认布局） */
+	adminOnly?: boolean
 }
 
 export const WIDGET_CATALOG: WidgetMeta[] = [
@@ -83,6 +85,16 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
 		description: '5 小时 / 本周或本月用量与重置时间（仅管理员）',
 		sizes: ['1x1'],
 		defaultSize: '1x1',
+		adminOnly: true,
+	},
+	{
+		id: 'todo',
+		title: '待办',
+		caption: 'À faire',
+		description: '勾选清单，数据落库（仅管理员，需手动添加）',
+		sizes: ['1x1'],
+		defaultSize: '1x1',
+		adminOnly: true,
 	},
 ]
 
