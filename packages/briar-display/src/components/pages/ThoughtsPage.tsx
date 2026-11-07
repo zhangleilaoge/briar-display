@@ -17,7 +17,7 @@ import { ThoughtsAsideBlock } from '@/components/thoughts/ThoughtsAsideBlock'
 import { Button } from '@/components/ui/button'
 import { LinkifiedText } from '@/components/ui/linkified-text'
 import { PageHeader } from '@/components/ui/page-header'
-import { PaperSheet, type PaperSheetVariant } from '@/components/ui/paper-sheet'
+import { PaperSheet } from '@/components/ui/paper-sheet'
 import { ThemeShell } from '@/components/ui/theme-shell'
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { formatTagList, toggleTagInList } from '@/lib/thoughtTagFilter'
@@ -29,91 +29,15 @@ import { toast } from 'sonner'
 
 const MAX_BODY = 2000
 
-/** 想法列表 5 款手账纸预设（compose 区仍用 torn，不在此列） */
-const THOUGHT_PRESETS: PaperSheetVariant[] = ['stamp', 'polaroid', 'kraft', 'ticket', 'sticky']
-
-/** 稳定哈希：同一 thought.id → 同一预设，无需 DB migration */
-function hashThoughtId(id: string): number {
-	let h = 2166136261
-	for (let i = 0; i < id.length; i++) {
-		h ^= id.charCodeAt(i)
-		h = Math.imul(h, 16777619)
-	}
-	return h >>> 0
-}
-
-function thoughtPreset(id: string): PaperSheetVariant {
-	return THOUGHT_PRESETS[hashThoughtId(id) % THOUGHT_PRESETS.length]!
-}
-
-function thoughtTilt(id: string): number {
-	const h = hashThoughtId(id)
-	const tilts = [-1.4, -0.7, 0.35, 0.9, -0.45, 1.1, -1.0]
-	return tilts[h % tilts.length]!
-}
-
-function ThoughtScrapDecor({ preset }: { preset: PaperSheetVariant }) {
-	if (preset === 'stamp') {
-		return (
-			<svg
-				aria-hidden
-				className="rv-thought-card__deco rv-thought-card__deco--tr h-5 w-5"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				strokeWidth="1.2"
-			>
-				<circle cx="12" cy="12" r="7" strokeDasharray="2 2" />
-				<path d="M12 8v8M8 12h8" opacity="0.55" />
-			</svg>
-		)
-	}
-	if (preset === 'polaroid') {
-		return (
-			<svg
-				aria-hidden
-				className="rv-thought-card__deco rv-thought-card__deco--tl h-4 w-10"
-				viewBox="0 0 40 16"
-				fill="currentColor"
-			>
-				<path d="M2 14 L10 2 H30 L38 14 Z" opacity="0.28" />
-			</svg>
-		)
-	}
-	if (preset === 'kraft') {
-		return (
-			<svg
-				aria-hidden
-				className="rv-thought-card__deco rv-thought-card__deco--br h-4 w-4"
-				viewBox="0 0 16 16"
-				fill="none"
-				stroke="currentColor"
-				strokeWidth="1.1"
-			>
-				<path d="M2 8c2-4 4-4 6 0s4 4 6 0" opacity="0.55" />
-			</svg>
-		)
-	}
-	if (preset === 'ticket') {
-		return (
-			<span
-				aria-hidden
-				className="rv-thought-card__deco rv-thought-card__deco--tr rv-script text-[11px] leading-none opacity-70"
-			>
-				admit
-			</span>
-		)
-	}
-	/* sticky */
+/** 想法列表统一票根纸，水平摆正（compose 区仍用 torn） */
+function ThoughtTicketDecor() {
 	return (
-		<svg
+		<span
 			aria-hidden
-			className="rv-thought-card__deco rv-thought-card__deco--tl h-3 w-8"
-			viewBox="0 0 32 12"
-			fill="currentColor"
+			className="rv-thought-card__deco rv-thought-card__deco--tr rv-script text-[11px] leading-none opacity-70"
 		>
-			<rect x="1" y="2" width="30" height="7" rx="1" opacity="0.35" />
-		</svg>
+			admit
+		</span>
 	)
 }
 
@@ -523,27 +447,22 @@ function ThoughtsPageInner() {
 						)}
 
 						<ul className="rv-stagger space-y-5">
-							{items.map((t) => {
-								const preset = thoughtPreset(t.id)
-								const tilt = thoughtTilt(t.id)
-								return (
-									<li key={t.id} className="rv-thought-card" style={{ rotate: `${tilt}deg` }}>
-										<ThoughtCard
-											thought={t}
-											preset={preset}
-											canEdit={!!isAdmin && user?.id === t.userId}
-											canDelete={!!isAdmin && user?.id === t.userId}
-											isLoggedIn={isLoggedIn}
-											onDelete={() => void handleDelete(t.id)}
-											onUpdated={handleUpdated}
-											onLikeState={handleLikeState}
-											knownTags={knownTags}
-											activeTags={activeTags}
-											onTagClick={addTag}
-										/>
-									</li>
-								)
-							})}
+							{items.map((t) => (
+								<li key={t.id} className="rv-thought-card">
+									<ThoughtCard
+										thought={t}
+										canEdit={!!isAdmin && user?.id === t.userId}
+										canDelete={!!isAdmin && user?.id === t.userId}
+										isLoggedIn={isLoggedIn}
+										onDelete={() => void handleDelete(t.id)}
+										onUpdated={handleUpdated}
+										onLikeState={handleLikeState}
+										knownTags={knownTags}
+										activeTags={activeTags}
+										onTagClick={addTag}
+									/>
+								</li>
+							))}
 						</ul>
 					</section>
 				</div>
@@ -554,7 +473,6 @@ function ThoughtsPageInner() {
 
 function ThoughtCard({
 	thought,
-	preset,
 	canEdit,
 	canDelete,
 	isLoggedIn,
@@ -569,7 +487,6 @@ function ThoughtCard({
 	activeTags: readonly string[]
 	onTagClick: (tag: string) => void
 	thought: Thought
-	preset: PaperSheetVariant
 	canEdit: boolean
 	canDelete: boolean
 	isLoggedIn: boolean
@@ -667,11 +584,11 @@ function ThoughtCard({
 
 	return (
 		<PaperSheet
-			variant={preset}
+			variant="ticket"
 			className="rv-thought-card"
 			bodyClassName="!px-4 !py-4 sm:!px-5 sm:!py-5"
 		>
-			<ThoughtScrapDecor preset={preset} />
+			<ThoughtTicketDecor />
 			<div className="mb-3 flex items-start justify-between gap-3">
 				<div className="flex min-w-0 items-center gap-2.5">
 					<div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-[var(--rv-beige)]">

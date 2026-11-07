@@ -29,10 +29,12 @@ export const RouteConfig = {
 		'/api/media/proxy',
 		// 磁力查询免登录（路由内自带 IP 限频）
 		'/api/magnet/parse',
+		// 留言墙提交免登录（路由内 IP 限流 + 审核）
+		'/api/guestbook/submit',
 	],
 
 	/** API GET 公开的路径（写操作仍需认证） */
-	API_PUBLIC_PATHS: ['/api/version', '/api/thoughts'],
+	API_PUBLIC_PATHS: ['/api/version', '/api/thoughts', '/api/guestbook'],
 
 	/** API GET 公开的路径前缀（写操作仍需认证） */
 	API_PUBLIC_PREFIXES: [

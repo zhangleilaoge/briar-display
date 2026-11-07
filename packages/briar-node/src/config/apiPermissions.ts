@@ -89,6 +89,18 @@ export const API_ROUTE_PERMISSIONS: Record<string, string | null> = {
 
 	// ==================== Users ====================
 	// ==================== Thoughts（想法短帖：写/赞路由内再校验登录与权限） ====================
+
+	// ==================== Todos（首页待办小组件，仅管理员） ====================
+	'POST /api/todos': PERMISSIONS.PAGE_ADMIN,
+	'PATCH /api/todos/:id': PERMISSIONS.PAGE_ADMIN,
+	'DELETE /api/todos/:id': PERMISSIONS.PAGE_ADMIN,
+
+	// ==================== Guestbook（访客留言墙） ====================
+	'POST /api/guestbook/submit': null, // 访客免登录提交；路由内 IP 限流
+	'POST /api/guestbook/:id/approve': null, // 路由内校验管理员
+	'POST /api/guestbook/:id/reject': null,
+	'DELETE /api/guestbook/:id': null,
+
 	// Kimi 用量：Key 存库，仅管理员
 	'PUT /api/kimi/api-key': PERMISSIONS.PAGE_ADMIN,
 	'DELETE /api/kimi/api-key': PERMISSIONS.PAGE_ADMIN,
