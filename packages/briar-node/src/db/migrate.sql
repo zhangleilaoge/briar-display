@@ -114,4 +114,5 @@ ON DUPLICATE KEY UPDATE deleted_at = NULL;
 
 -- 7) site_secrets（Kimi API Key 等）：表由 schema.sql 的 CREATE TABLE IF NOT EXISTS 建出；本文件无需语句。
 
--- 8) 待办 + 访客留言墙：表由 schema.sql 的 CREATE TABLE IF NOT EXISTS 建出；本文件无需语句。
+-- 8) 待办：表由 schema.sql 的 CREATE TABLE IF NOT EXISTS 建出；本文件无需语句。
+--    访客留言墙（guestbook_entries）已下线：代码不再读写；若生产库已建过该表可保留不动，不做 DROP。

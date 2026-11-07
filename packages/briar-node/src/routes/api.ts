@@ -6,7 +6,6 @@ import deploymentRoutes from './deployment'
 import filePrivacyRoutes from './filePrivacy'
 import fileUploadRoutes from './fileUpload'
 import fileRoutes from './files'
-import guestbookRoutes from './guestbook'
 import kimiRoutes from './kimi'
 import logRoutes from './log'
 import magnetRoutes from './magnet'
@@ -31,7 +30,6 @@ api.route('/admin', adminRoutes)
 api.route('/admin/sql', sqlConsoleRoutes)
 api.route('/cert', certRoutes)
 api.route('/deployment', deploymentRoutes)
-api.route('/guestbook', guestbookRoutes)
 api.route('/kimi', kimiRoutes)
 api.route('/logs', logRoutes)
 api.route('/magnet', magnetRoutes)
