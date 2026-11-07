@@ -507,3 +507,41 @@ CREATE TABLE IF NOT EXISTS site_secrets (
   UNIQUE KEY uk_name_active (name_active),
   INDEX idx_deleted_at (deleted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='站点级密钥';
+
+-- ============================================================
+-- 待办（首页 1×1 小组件；仅管理员 CRUD，软删除）
+-- ============================================================
+CREATE TABLE IF NOT EXISTS todos (
+  id VARCHAR(36) PRIMARY KEY COMMENT '待办唯一标识',
+  user_id VARCHAR(36) NOT NULL COMMENT '创建者（管理员）',
+  title VARCHAR(200) NOT NULL COMMENT '待办标题',
+  done_at TIMESTAMP NULL DEFAULT NULL COMMENT '完成时间（NULL=未完成）',
+  sort_order INT NOT NULL DEFAULT 0 COMMENT '排序（越小越靠前）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
+  INDEX idx_user_active (user_id, deleted_at, sort_order),
+  INDEX idx_deleted_at (deleted_at),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员待办';
+
+-- ============================================================
+-- 访客留言墙（匿名可提交；管理员审核通过后公开展示；软删除）
+-- 参考 Twikoo：昵称+正文、匿名、人工审核、IP 限流；展示为手账便签墙
+-- ============================================================
+CREATE TABLE IF NOT EXISTS guestbook_entries (
+  id VARCHAR(36) PRIMARY KEY COMMENT '留言唯一标识',
+  nickname VARCHAR(32) NOT NULL COMMENT '昵称',
+  content VARCHAR(500) NOT NULL COMMENT '留言正文',
+  status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending' COMMENT '审核状态',
+  ip VARCHAR(64) NULL COMMENT '提交 IP（限流/审计）',
+  user_agent VARCHAR(255) NULL COMMENT 'UA 截断',
+  reviewed_at TIMESTAMP NULL DEFAULT NULL COMMENT '审核时间',
+  reviewed_by VARCHAR(36) NULL COMMENT '审核人 user id（审计快照）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
+  INDEX idx_status_created (status, created_at),
+  INDEX idx_deleted_at (deleted_at),
+  INDEX idx_ip_created (ip, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='访客留言墙';
