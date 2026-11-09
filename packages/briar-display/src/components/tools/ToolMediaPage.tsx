@@ -1,14 +1,7 @@
 'use client'
 
 import { isTokenUsable } from '@/api/auth'
-import {
-	clearMediaHistory,
-	fetchMediaBlob,
-	getMediaHistory,
-	parseMedia,
-	removeMediaHistory,
-} from '@/api/media'
-import { toArrayBuffer } from '@/lib/binary'
+import { clearMediaHistory, getMediaHistory, parseMedia, removeMediaHistory } from '@/api/media'
 import type { MediaParseResult } from '@briar/shared'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -17,18 +10,16 @@ import ToolMediaHistory from './ToolMediaHistory'
 import ToolMediaResult from './ToolMediaResult'
 import ToolMediaSearchBar from './ToolMediaSearchBar'
 import ToolsLayout from './ToolsLayout'
+import { useMediaTasks } from './mediaTaskContext'
 import {
 	type MediaHistoryItem,
 	type MediaItem,
-	type MediaProgress,
 	type MediaSections,
 	buildMediaSections,
-	createZip,
 	extractShareUrl,
 	loadMediaHistory,
 	pushMediaHistory,
 	sanitizeFilename,
-	saveBlob,
 	saveMediaHistory,
 } from './toolMediaUtils'
 
@@ -40,10 +31,7 @@ export default function ToolMediaPage() {
 	const [result, setResult] = useState<MediaParseResult | null>(null)
 	const [sections, setSections] = useState<MediaSections | null>(null)
 	const [selected, setSelected] = useState<Set<string>>(new Set())
-	// 下载中状态：itemId → 进度（百分比 + 已下载字节数），完成或失败后移除
-	const [progress, setProgress] = useState<Record<string, MediaProgress>>({})
-	const [zipping, setZipping] = useState(false)
-	const [zipPercent, setZipPercent] = useState(0)
+	const { startDownload, startZip } = useMediaTasks()
 	// 「添加到文件」弹窗目标（单个或多个媒体项）
 	const [addTarget, setAddTarget] = useState<MediaItem[] | null>(null)
 	const [history, setHistory] = useState<MediaHistoryItem[]>([])
@@ -80,18 +68,6 @@ export default function ToolMediaPage() {
 				if (res.success && res.data) setHistory(res.data)
 			})
 			.catch(() => {})
-	}
-
-	const setItemProgress = (id: string, value: MediaProgress | null) => {
-		setProgress((prev) => {
-			const next = { ...prev }
-			if (value === null) {
-				delete next[id]
-			} else {
-				next[id] = value
-			}
-			return next
-		})
 	}
 
 	const handleParse = async (rawInput?: string) => {
@@ -167,30 +143,6 @@ export default function ToolMediaPage() {
 		setResult(null)
 		setSections(null)
 		setSelected(new Set())
-		setProgress({})
-	}
-
-	const downloadItem = async (item: MediaItem): Promise<Uint8Array | null> => {
-		setItemProgress(item.id, { percent: 0 })
-		try {
-			const blob = await fetchMediaBlob(
-				item.url,
-				(p, loaded, total) => setItemProgress(item.id, { percent: p, loaded, total }),
-				item.sourceUrl,
-			)
-			return new Uint8Array(await blob.arrayBuffer())
-		} catch (err: any) {
-			toast.error(err?.response?.data?.message || `${item.label} 下载失败`)
-			return null
-		} finally {
-			setItemProgress(item.id, null)
-		}
-	}
-
-	const handleDownload = async (item: MediaItem) => {
-		if (progress[item.id] !== undefined || zipping) return
-		const data = await downloadItem(item)
-		if (data) saveBlob(new Blob([toArrayBuffer(data)]), item.filename)
 	}
 
 	const handleToggle = (id: string) => {
@@ -226,8 +178,8 @@ export default function ToolMediaPage() {
 		})
 	}
 
-	const handleZip = async (kind: 'images' | 'videos' | 'livePhotos') => {
-		if (!sections || zipping) return
+	const handleZip = (kind: 'images' | 'videos' | 'livePhotos') => {
+		if (!sections) return
 		const pool =
 			kind === 'images'
 				? sections.images
@@ -240,31 +192,9 @@ export default function ToolMediaPage() {
 			toast.error(`请先勾选要下载的${noun}`)
 			return
 		}
-		setZipping(true)
-		setZipPercent(0)
-		try {
-			const entries: { name: string; data: Uint8Array }[] = []
-			for (let i = 0; i < items.length; i++) {
-				const data = await downloadItem(items[i])
-				if (!data) throw new Error('abort')
-				entries.push({ name: items[i].filename, data })
-				setZipPercent(Math.round(((i + 1) / items.length) * 100))
-			}
-			const zip = createZip(entries)
-			const fallback =
-				kind === 'images'
-					? 'media-images'
-					: kind === 'videos'
-						? 'media-videos'
-						: 'media-live-photos'
-			saveBlob(zip, `${sanitizeFilename(result?.title || fallback)}.zip`)
-			toast.success(`已打包 ${entries.length} 个${noun}`)
-		} catch {
-			// downloadItem 已提示失败原因
-		} finally {
-			setZipping(false)
-			setZipPercent(0)
-		}
+		const fallback =
+			kind === 'images' ? 'media-images' : kind === 'videos' ? 'media-videos' : 'media-live-photos'
+		startZip(items, `${sanitizeFilename(result?.title || fallback)}.zip`)
 	}
 
 	return (
@@ -290,11 +220,8 @@ export default function ToolMediaPage() {
 						result={result}
 						sections={sections}
 						selected={selected}
-						progress={progress}
-						zipping={zipping}
-						zipPercent={zipPercent}
 						canAddTo={authed}
-						onDownload={handleDownload}
+						onDownload={startDownload}
 						onAddTo={setAddTarget}
 						onToggle={handleToggle}
 						onToggleAll={handleToggleAll}

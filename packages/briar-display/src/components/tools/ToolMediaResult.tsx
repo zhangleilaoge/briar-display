@@ -8,11 +8,10 @@ import { Download, FolderPlus, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import ToolMediaLightbox from './ToolMediaLightbox'
+import { useMediaTasks } from './mediaTaskContext'
 import {
 	type MediaItem,
-	type MediaProgress,
 	type MediaSections,
-	formatMb,
 	platformIcon,
 	platformLabel,
 	probeMediaError,
@@ -26,9 +25,6 @@ interface ToolMediaResultProps {
 	result: MediaParseResult
 	sections: MediaSections
 	selected: Set<string>
-	progress: Record<string, MediaProgress>
-	zipping: boolean
-	zipPercent: number
 	/** 是否已登录（未登录隐藏「添加到」按钮，下载/打包仍可用） */
 	canAddTo: boolean
 	onDownload: (item: MediaItem) => void
@@ -41,51 +37,29 @@ interface ToolMediaResultProps {
 /** 单个媒体项的操作按钮：下载 + 添加到文件 */
 function ItemActions({
 	item,
-	prog,
-	disabled,
+	active,
 	canAddTo,
 	onDownload,
 	onAddTo,
 }: {
 	item: MediaItem
-	prog: MediaProgress | undefined
-	disabled: boolean
+	active: boolean
 	canAddTo: boolean
 	onDownload: (item: MediaItem) => void
 	onAddTo: (items: MediaItem[]) => void
 }) {
-	const downloading = prog !== undefined
-	// 下载中：百分比 + 已下载量（整拉兜底拿不到总量时只显示已下载）
-	const progressText = (() => {
-		if (!prog) return ''
-		if (prog.loaded === undefined) return `${prog.percent}%`
-		const loadedMb = formatMb(prog.loaded)
-		return prog.total !== undefined
-			? `${prog.percent}% · ${loadedMb}/${formatMb(prog.total)}MB`
-			: `${prog.percent}% · ${loadedMb}MB`
-	})()
 	return (
 		<div className="flex items-center gap-1.5">
-			<Button
-				variant="default"
-				size="sm"
-				disabled={downloading || disabled}
-				onClick={() => onDownload(item)}
-			>
-				{downloading ? (
+			<Button variant="default" size="sm" disabled={active} onClick={() => onDownload(item)}>
+				{active ? (
 					<Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
 				) : (
 					<Download className="mr-1.5 h-4 w-4" />
 				)}
-				{downloading ? progressText : '下载'}
+				{active ? '任务中' : '下载'}
 			</Button>
 			{canAddTo && (
-				<Button
-					variant="default"
-					size="sm"
-					disabled={downloading || disabled}
-					onClick={() => onAddTo([item])}
-				>
+				<Button variant="default" size="sm" disabled={active} onClick={() => onAddTo([item])}>
 					<FolderPlus className="mr-1.5 h-4 w-4" />
 					添加到
 				</Button>
@@ -98,9 +72,6 @@ export default function ToolMediaResult({
 	result,
 	sections,
 	selected,
-	progress,
-	zipping,
-	zipPercent,
 	canAddTo,
 	onDownload,
 	onAddTo,
@@ -109,6 +80,7 @@ export default function ToolMediaResult({
 	onZip,
 }: ToolMediaResultProps) {
 	const [previewIndex, setPreviewIndex] = useState<number | null>(null)
+	const { activeItemIds, zipRunning } = useMediaTasks()
 	/** 加载失败的媒体：id → 失败原因（探测后端拿到真实状态，避免黑框无提示） */
 	const [loadErrors, setLoadErrors] = useState<Record<string, string>>({})
 	const selectedImages = sections.images.filter((item) => selected.has(item.id))
@@ -181,8 +153,7 @@ export default function ToolMediaResult({
 						<div>
 							<ItemActions
 								item={sections.cover}
-								prog={progress[sections.cover.id]}
-								disabled={zipping}
+								active={activeItemIds.has(sections.cover.id)}
 								canAddTo={canAddTo}
 								onDownload={onDownload}
 								onAddTo={onAddTo}
@@ -207,7 +178,7 @@ export default function ToolMediaResult({
 								variant="default"
 								size="sm"
 								onClick={() => onToggleAll('videos')}
-								disabled={zipping}
+								disabled={zipRunning}
 							>
 								{allVideosChecked ? '取消全选' : '全选'}
 							</Button>
@@ -216,7 +187,7 @@ export default function ToolMediaResult({
 									variant="default"
 									size="sm"
 									onClick={() => onAddTo(selectedVideos)}
-									disabled={zipping || selectedVideos.length === 0}
+									disabled={zipRunning || selectedVideos.length === 0}
 								>
 									<FolderPlus className="mr-1.5 h-4 w-4" />
 									添加所选到文件 · {selectedVideos.length}
@@ -225,10 +196,10 @@ export default function ToolMediaResult({
 							<Button
 								size="sm"
 								onClick={() => onZip('videos')}
-								disabled={zipping || selectedVideos.length === 0}
+								disabled={zipRunning || selectedVideos.length === 0}
 							>
-								{zipping && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-								{zipping ? `打包中 ${zipPercent}%` : `打包下载所选视频 · ${selectedVideos.length}`}
+								{zipRunning && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+								{zipRunning ? '打包任务中' : `打包下载所选视频 · ${selectedVideos.length}`}
 							</Button>
 						</div>
 					</div>
@@ -249,8 +220,7 @@ export default function ToolMediaResult({
 										</div>
 										<ItemActions
 											item={video}
-											prog={progress[video.id]}
-											disabled={zipping}
+											active={activeItemIds.has(video.id)}
 											canAddTo={canAddTo}
 											onDownload={onDownload}
 											onAddTo={onAddTo}
@@ -290,7 +260,7 @@ export default function ToolMediaResult({
 								variant="default"
 								size="sm"
 								onClick={() => onToggleAll('images')}
-								disabled={zipping}
+								disabled={zipRunning}
 							>
 								{allImagesChecked ? '取消全选' : '全选'}
 							</Button>
@@ -299,7 +269,7 @@ export default function ToolMediaResult({
 									variant="default"
 									size="sm"
 									onClick={() => onAddTo(selectedImages)}
-									disabled={zipping || selectedImages.length === 0}
+									disabled={zipRunning || selectedImages.length === 0}
 								>
 									<FolderPlus className="mr-1.5 h-4 w-4" />
 									添加所选到文件 · {selectedImages.length}
@@ -308,10 +278,10 @@ export default function ToolMediaResult({
 							<Button
 								size="sm"
 								onClick={() => onZip('images')}
-								disabled={zipping || selectedImages.length === 0}
+								disabled={zipRunning || selectedImages.length === 0}
 							>
-								{zipping && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-								{zipping ? `打包中 ${zipPercent}%` : `打包下载所选图片 · ${selectedImages.length}`}
+								{zipRunning && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+								{zipRunning ? '打包任务中' : `打包下载所选图片 · ${selectedImages.length}`}
 							</Button>
 						</div>
 					</div>
@@ -342,8 +312,7 @@ export default function ToolMediaResult({
 										<span className="text-sm">{image.label}</span>
 										<ItemActions
 											item={image}
-											prog={progress[image.id]}
-											disabled={zipping}
+											active={activeItemIds.has(image.id)}
 											canAddTo={canAddTo}
 											onDownload={onDownload}
 											onAddTo={onAddTo}
@@ -371,7 +340,7 @@ export default function ToolMediaResult({
 								variant="default"
 								size="sm"
 								onClick={() => onToggleAll('livePhotos')}
-								disabled={zipping}
+								disabled={zipRunning}
 							>
 								{allLivePhotosChecked ? '取消全选' : '全选'}
 							</Button>
@@ -380,7 +349,7 @@ export default function ToolMediaResult({
 									variant="default"
 									size="sm"
 									onClick={() => onAddTo(selectedLivePhotos)}
-									disabled={zipping || selectedLivePhotos.length === 0}
+									disabled={zipRunning || selectedLivePhotos.length === 0}
 								>
 									<FolderPlus className="mr-1.5 h-4 w-4" />
 									添加所选到文件 · {selectedLivePhotos.length}
@@ -389,12 +358,10 @@ export default function ToolMediaResult({
 							<Button
 								size="sm"
 								onClick={() => onZip('livePhotos')}
-								disabled={zipping || selectedLivePhotos.length === 0}
+								disabled={zipRunning || selectedLivePhotos.length === 0}
 							>
-								{zipping && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-								{zipping
-									? `打包中 ${zipPercent}%`
-									: `打包下载所选动态照片 · ${selectedLivePhotos.length}`}
+								{zipRunning && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+								{zipRunning ? '打包任务中' : `打包下载所选动态照片 · ${selectedLivePhotos.length}`}
 							</Button>
 						</div>
 					</div>
@@ -425,8 +392,7 @@ export default function ToolMediaResult({
 										<span className="text-sm">{live.label}</span>
 										<ItemActions
 											item={live}
-											prog={progress[live.id]}
-											disabled={zipping}
+											active={activeItemIds.has(live.id)}
 											canAddTo={canAddTo}
 											onDownload={onDownload}
 											onAddTo={onAddTo}
@@ -458,8 +424,7 @@ export default function ToolMediaResult({
 					)}
 					<ItemActions
 						item={sections.audio}
-						prog={progress[sections.audio.id]}
-						disabled={zipping}
+						active={activeItemIds.has(sections.audio.id)}
 						canAddTo={canAddTo}
 						onDownload={onDownload}
 						onAddTo={onAddTo}

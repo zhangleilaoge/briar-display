@@ -2234,6 +2234,15 @@ progress {
 .theme-scrapbook .rv-motion-dialog[data-state="closed"] > * {
 	animation: rv-fade-out 100ms ease-in forwards;
 }
+.theme-arcane .rv-media-task-center,
+.theme-arcane .rv-media-task-card,
+.theme-arcane .rv-media-task-item,
+.theme-arcane .rv-media-task-icon {
+	border-radius: 0;
+}
+.theme-arcane .rv-media-task-center {
+	background-color: hsl(210 45% 97%);
+}
 .rv-motion-overlay[data-state="open"] {
 	animation: rv-fade-in var(--motion-base) ease-out both;
 }

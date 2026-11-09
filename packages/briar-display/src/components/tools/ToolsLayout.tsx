@@ -16,6 +16,7 @@ import {
 	SquareStack,
 } from 'lucide-react'
 import { type ReactNode, useEffect } from 'react'
+import { MediaTaskProvider } from './MediaTaskProvider'
 
 interface NavItem {
 	label: string
@@ -51,7 +52,11 @@ interface ToolsLayoutProps {
 /** 子页包装：在工具箱 SPA 壳内直通，单独渲染时（兜底）自带外壳 */
 export default function ToolsLayout({ children, currentPath }: ToolsLayoutProps) {
 	if (useSectionRouter()) return <>{children}</>
-	return <ToolsShell currentPath={currentPath}>{children}</ToolsShell>
+	return (
+		<MediaTaskProvider>
+			<ToolsShell currentPath={currentPath}>{children}</ToolsShell>
+		</MediaTaskProvider>
+	)
 }
 
 export function ToolsShell({ children, currentPath }: ToolsLayoutProps) {

@@ -9,6 +9,7 @@ import {
 	useSectionPath,
 	useSectionRouter,
 } from '@/components/common/SectionRouter'
+import { MediaTaskProvider } from '@/components/tools/MediaTaskProvider'
 import { TOOLS_LAST_TAB_KEY, ToolsShell } from '@/components/tools/ToolsLayout'
 import { TOOL_ROUTES } from '@/components/tools/toolRoutes'
 import { RibbonSidebar } from '@/components/ui/ribbon-sidebar'
@@ -118,8 +119,10 @@ export default function SiteApp({ initialPath }: { initialPath: string }) {
 	return (
 		<PermissionProvider>
 			<SectionRouterProvider path={path} navigate={navigate} globalShell>
-				<RibbonSidebar currentPath={path} />
-				{outlet}
+				<MediaTaskProvider>
+					<RibbonSidebar currentPath={path} />
+					{outlet}
+				</MediaTaskProvider>
 			</SectionRouterProvider>
 		</PermissionProvider>
 	)
