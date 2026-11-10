@@ -4,9 +4,9 @@
 
 ## 1. ssh2 / cpu-features 的原生绑定会让进程 core dump
 
-ssh2 的两个可选原生依赖（`sshcrypto.node`、`cpufeatures.node`）在 `bun install` 时编译，但**加载即崩溃**（bun 报 `unsupported uv function: uv_version_string`，node 直接 segfault），表现为部署后 briar-node 崩溃循环、502。
+ssh2 的两个可选原生依赖（`sshcrypto.node`、`cpufeatures.node`）的安装脚本会编译原生绑定，但**加载即崩溃**（bun 报 `unsupported uv function: uv_version_string`，node 直接 segfault），表现为部署后 briar-node 崩溃循环、502。
 
-修复：`scripts/remove-ssh2-native.mjs` 删除这两个 build 目录（ssh2 有纯 JS 降级）。已挂三处：根 `package.json` postinstall、`Makefile init`、`scripts/deploy.sh`（bun install 之后）。**bun 不会可靠执行根 package.json 的 postinstall**，所以 deploy.sh 里必须显式调用。
+修复：CI 初始化与服务器部署使用 `bun install --frozen-lockfile --ignore-scripts`，不为需要删除的原生绑定执行安装编译；`scripts/remove-ssh2-native.mjs` 再清理可能残留的 build 目录（ssh2 有纯 JS 降级）。普通本地 `bun install` 由根 `package.json` postinstall 清理，`Makefile init`、`scripts/deploy.sh` 则在安装后显式调用清理脚本，不能依赖 Bun 执行根 postinstall。
 
 ## 2. 页面权限门控必须同时处理 Provider 层级和三态
 

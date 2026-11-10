@@ -251,7 +251,7 @@ main() {
   # 安装依赖
   if [ "$SKIP_INSTALL" = false ]; then
     log_info "安装依赖..."
-    bun install
+    bun install --frozen-lockfile --ignore-scripts
     # ssh2/cpu-features 的原生绑定加载即崩溃（bun/node 均 core dump），必须删除
     log_info "清理 ssh2/cpu-features 原生绑定..."
     node scripts/remove-ssh2-native.mjs

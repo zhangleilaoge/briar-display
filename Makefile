@@ -40,7 +40,7 @@ init:
 	fi
 	@echo ""
 	@echo "📦 Step 3: 安装项目依赖..."
-	@bun install --frozen-lockfile --verbose
+	@bun install --frozen-lockfile --ignore-scripts --verbose
 	@node scripts/remove-ssh2-native.mjs
 	@echo ""
 	@echo "================================================"
