@@ -6,7 +6,7 @@
 	"engines": {
 		"node": ">=22.0.0"
 	},
-	"packageManager": "bun@1.2.0",
+	"packageManager": "bun@1.3.14",
 	"workspaces": ["packages/*"],
 	"scripts": {
 		"dev": "rm -rf node_modules/.cache packages/*/node_modules/.cache; lsof -ti :3888 | xargs kill -9 2>/dev/null || true; bun run --filter @briar/shared build && concurrently -k -n shared,display,node -c gray,cyan,magenta --hide shared \"bun run --filter @briar/shared dev\" \"bun run --filter @briar/display dev\" \"bun run --filter @briar/node dev\"",
