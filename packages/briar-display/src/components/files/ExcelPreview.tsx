@@ -60,7 +60,7 @@ export default function ExcelPreview({ file }: { file: FileItem }) {
 	const truncated = rows.length > MAX_ROWS
 
 	return (
-		<div className="rounded-lg border">
+		<div className="overflow-hidden rounded-lg border">
 			{sheets.length > 1 && (
 				<div className="flex flex-wrap gap-1 border-b bg-muted/50 px-2 py-1.5">
 					{sheets.map((s, i) => (
