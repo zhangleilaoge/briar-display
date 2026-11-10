@@ -113,37 +113,17 @@ export async function fetchSzseEtfShares(month: string): Promise<Record<string, 
 	return shares
 }
 
-export function parseNavTrend(
-	script: string,
-): Record<string, { date: string; unitNav: number; cumulativeNav: number }> {
+export function parseNavTrend(script: string): Record<string, { date: string; unitNav: number }> {
 	const unitMatch = /\bvar\s+Data_netWorthTrend\s*=\s*(\[[\s\S]*?\]);/.exec(script)
 	if (!unitMatch) throw new Error('基金净值响应缺少 Data_netWorthTrend')
-	const cumulativeMatch = /\bvar\s+Data_ACWorthTrend\s*=\s*(\[[\s\S]*?\]);/.exec(script)
-	if (!cumulativeMatch) throw new Error('基金净值响应缺少 Data_ACWorthTrend')
 	const unitRows: unknown = JSON.parse(unitMatch[1])
-	const cumulativeRows: unknown = JSON.parse(cumulativeMatch[1])
-	if (!Array.isArray(unitRows) || !Array.isArray(cumulativeRows)) {
-		throw new Error('基金净值格式错误')
-	}
-	const cumulativeByTimestamp = new Map<number, number>()
-	for (const row of cumulativeRows) {
-		if (!Array.isArray(row) || row.length < 2) throw new Error('基金累计净值行格式错误')
-		const [timestamp, value] = row as [number, number]
-		const date = shanghaiDate(timestamp)
-		cumulativeByTimestamp.set(timestamp, positiveNumber(value, `${date} 累计净值`))
-	}
-	const result: Record<string, { date: string; unitNav: number; cumulativeNav: number }> = {}
+	if (!Array.isArray(unitRows)) throw new Error('基金净值格式错误')
+	const result: Record<string, { date: string; unitNav: number }> = {}
 	for (const row of unitRows) {
 		if (typeof row !== 'object' || row === null) throw new Error('基金单位净值行格式错误')
 		const { x, y } = row as { x?: number; y?: number }
 		const date = shanghaiDate(x ?? Number.NaN)
-		const cumulativeNav = cumulativeByTimestamp.get(x ?? Number.NaN)
-		if (cumulativeNav === undefined) throw new Error(`${date} 缺少当日累计净值`)
-		result[date] = {
-			date,
-			unitNav: positiveNumber(y ?? Number.NaN, `${date} 单位净值`),
-			cumulativeNav,
-		}
+		result[date] = { date, unitNav: positiveNumber(y ?? Number.NaN, `${date} 单位净值`) }
 	}
 	return result
 }
@@ -208,7 +188,7 @@ export async function fetchNavTrends() {
 	)
 	return Object.fromEntries(entries) as Record<
 		string,
-		Record<string, { date: string; unitNav: number; cumulativeNav: number }>
+		Record<string, { date: string; unitNav: number }>
 	>
 }
 

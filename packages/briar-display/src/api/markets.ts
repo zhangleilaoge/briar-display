@@ -28,7 +28,7 @@ export const getMarketOverview = async () => {
 	return response.data
 }
 
-/** 四只头部沪深300ETF官方历史快照：视频口径与实际规模双序列 */
+/** 四只头部沪深300ETF官方历史快照：份额 × 单位净值的实际规模与占比 */
 export const getCsi300EtfScale = async () => {
 	const response = await apiClient.get<ApiResponse<Csi300EtfScaleResponse>>(
 		'/markets/csi300-etf-scale',
