@@ -6,7 +6,7 @@ import { usePermissions } from '@/contexts/PermissionContext'
 import { useUnreadMessages } from '@/hooks/useUnreadMessages'
 import { buildLoginUrl } from '@/lib/loginRedirect'
 import { cn } from '@/lib/utils'
-import { ChevronDown, Home, LogIn, LogOut, Mail, Shield, User as UserIcon } from 'lucide-react'
+import { ChevronDown, LogIn, LogOut, Mail, Shield, User as UserIcon } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 interface StoredUser {
@@ -68,7 +68,7 @@ export default function UserMenu() {
 	const [mounted, setMounted] = useState(false)
 	// 登录链接（mount 后带上当前页 redirect 参数，避免 SSR/hydration 不一致）
 	const [loginUrl, setLoginUrl] = useState('/briar/login')
-	const { roles, isAdmin } = usePermissions()
+	const { roles } = usePermissions()
 	const { unread } = useUnreadMessages()
 
 	useEffect(() => {
@@ -196,25 +196,6 @@ export default function UserMenu() {
 						</span>
 						{unread > 0 && <CountBadge variant="danger">{unread > 99 ? '99+' : unread}</CountBadge>}
 					</a>
-					<a
-						href="/briar/"
-						className="flex items-center gap-2 rv-watercolor-item rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
-						onClick={() => setOpen(false)}
-					>
-						<Home className="h-3.5 w-3.5" />
-						回到主页
-					</a>
-					{isAdmin && (
-						<a
-							href="/briar/admin/permissions"
-							className="flex items-center gap-2 rv-watercolor-item rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
-							onClick={() => setOpen(false)}
-						>
-							<Shield className="h-3.5 w-3.5" />
-							管理后台
-						</a>
-					)}
-
 					<div className="my-1 border-t border-border" />
 
 					<button

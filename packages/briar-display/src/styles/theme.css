@@ -368,6 +368,21 @@ body {
 	background-color: hsl(210 60% 97% / 0.5);
 }
 
+/* 圆角分割列表：裁切行 hover 的方形背景，避免在容器圆角处露白。
+   覆盖自选股、站内信、管理后台定时任务等 divide-y + rounded-* 列表。
+   已显式写 overflow-* 的容器不覆盖。 */
+:is(
+		.rounded,
+		.rounded-sm,
+		.rounded-md,
+		.rounded-lg,
+		.rounded-xl,
+		.rounded-2xl,
+		.rounded-3xl
+	).divide-y:not([class*="overflow-"]) {
+	overflow: hidden;
+}
+
 /* 代码块保持普通 IDE 极简：白底细灰框等宽字，不受主题装饰影响 */
 .theme-scrapbook pre,
 .theme-arcane pre,
