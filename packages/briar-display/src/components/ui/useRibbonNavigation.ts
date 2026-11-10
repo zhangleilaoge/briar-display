@@ -2,6 +2,7 @@
 
 import { getPreference, putPreference } from '@/api/users'
 import { usePermissions } from '@/contexts/PermissionContext'
+import { publishPreference, subscribePreference } from '@/lib/preferenceBus'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { DEFAULT_RIBBON_ORDER } from './ribbon-items'
@@ -21,6 +22,7 @@ export function useRibbonNavigation() {
 	const savedOrderRef = useRef(order)
 	const revisionRef = useRef(0)
 	const writeQueueRef = useRef<Promise<void>>(Promise.resolve())
+	const sourceRef = useRef(Symbol('ribbon-navigation'))
 
 	const replaceOrder = useCallback((next: RibbonTagKind[]) => {
 		const current = orderRef.current
@@ -29,6 +31,18 @@ export function useRibbonNavigation() {
 		orderRef.current = next
 		setOrder(next)
 	}, [])
+
+	// 同页其它实例（侧栏 / 个人中心设置）提交或回滚后同步
+	useEffect(
+		() =>
+			subscribePreference(PREFERENCE_KEY, (value, source) => {
+				if (source === sourceRef.current) return
+				const next = normalizeRibbonOrder(value, DEFAULT_RIBBON_ORDER)
+				savedOrderRef.current = next
+				replaceOrder(next)
+			}),
+		[replaceOrder],
+	)
 
 	useIsomorphicLayoutEffect(() => {
 		const cached = readRibbonOrderCache(window.localStorage)
@@ -84,6 +98,7 @@ export function useRibbonNavigation() {
 			const revision = ++revisionRef.current
 			if (user?.id) writeRibbonOrderCache(window.localStorage, user.id, normalized)
 			replaceOrder(normalized)
+			publishPreference(PREFERENCE_KEY, normalized, sourceRef.current)
 			setSaving(true)
 			writeQueueRef.current = writeQueueRef.current
 				.catch(() => undefined)
@@ -98,6 +113,7 @@ export function useRibbonNavigation() {
 								writeRibbonOrderCache(window.localStorage, user.id, savedOrderRef.current)
 							}
 							replaceOrder(savedOrderRef.current)
+							publishPreference(PREFERENCE_KEY, savedOrderRef.current, sourceRef.current)
 							toast.error('标签设置保存失败，请重试')
 						}
 					} finally {
