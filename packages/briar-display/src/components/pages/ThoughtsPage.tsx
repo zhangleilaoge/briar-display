@@ -361,6 +361,12 @@ function ThoughtsPageInner() {
 			<PageHeader crumbs={[{ label: '想法' }]} />
 
 			<main className="rv-content-inset mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+				<header className="mb-6">
+					<h1 className="text-3xl font-semibold tracking-tight">想法</h1>
+					<p className="mt-1 text-sm text-muted-foreground">
+						{activeTags.length ? `${formatTagList(activeTags)} · ` : ''}共 {total} 条
+					</p>
+				</header>
 				<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-8">
 					<aside className="order-first min-w-0 space-y-4 lg:sticky lg:top-24 lg:order-last lg:self-start">
 						<TagFilterBar tags={tagCounts} activeTags={activeTags} onToggle={toggleTag} />
@@ -372,14 +378,6 @@ function ThoughtsPageInner() {
 						/>
 					</aside>
 					<section className="min-w-0">
-						<header className="mb-6">
-							<h1 className="text-3xl font-semibold tracking-tight">想法</h1>
-							<p className="mt-1 text-sm text-muted-foreground">
-								一小段话就好 · 纯文本、emoji 与 #标签 ·{' '}
-								{activeTags.length ? `${formatTagList(activeTags)} ` : ''}共 {total} 条
-							</p>
-						</header>
-
 						{isAdmin && (
 							<PaperSheet variant="torn" className="mb-6" bodyClassName="space-y-3">
 								<div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">

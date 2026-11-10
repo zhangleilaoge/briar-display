@@ -9,6 +9,7 @@ import {
 	setRolePermissions,
 	updateRole,
 } from '@/api/admin'
+import { RoleIcon } from '@/components/admin/RoleIcon'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -26,10 +27,10 @@ import {
 	AlertCircle,
 	Check,
 	ChevronRight,
+	KeyRound,
 	Loader2,
 	Pencil,
 	Plus,
-	Shield,
 	Trash2,
 	X,
 } from 'lucide-react'
@@ -217,8 +218,10 @@ function AdminPermissionsPageInner() {
 
 	return (
 		<AdminLayout currentPath="/briar/admin/permissions">
-			<div className="mb-4 flex items-center gap-2">
-				<Shield className="h-5 w-5" />
+			<div className="mb-4 flex items-center gap-2.5">
+				<span className="flex h-9 w-9 items-center justify-center rounded-control border border-border/60 bg-accent/40 text-foreground shadow-surface">
+					<KeyRound className="h-4 w-4" aria-hidden />
+				</span>
 				<h1 className="text-lg font-semibold">角色与权限管理</h1>
 			</div>
 
@@ -346,7 +349,9 @@ function AdminPermissionsPageInner() {
 										</div>
 									) : (
 										<>
-											<Shield className="h-3.5 w-3.5 shrink-0" />
+											<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control border border-border/50 bg-background/65 text-muted-foreground shadow-surface transition-colors group-hover:text-foreground">
+												<RoleIcon name={role.name} className="h-4 w-4" />
+											</span>
 											<div className="min-w-0 flex-1">
 												<div className="truncate">{role.displayName}</div>
 												<div className="truncate text-xs text-muted-foreground">
@@ -463,9 +468,19 @@ function AdminPermissionsPageInner() {
 							</CardContent>
 						</>
 					) : (
-						<CardContent className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-							<Shield className="mb-3 h-10 w-10 opacity-30" />
-							<p className="text-sm">选择左侧角色查看和编辑权限</p>
+						<CardContent className="flex min-h-[360px] flex-col items-center justify-center py-16 text-center">
+							<div className="relative mb-5">
+								<span className="flex h-16 w-16 items-center justify-center rounded-surface border border-border/60 bg-accent/35 text-muted-foreground shadow-surface">
+									<KeyRound className="h-7 w-7" aria-hidden />
+								</span>
+								<span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-border/60 bg-card text-primary shadow-control">
+									<Check className="h-3 w-3" aria-hidden />
+								</span>
+							</div>
+							<p className="text-sm font-medium text-foreground">先选择一个角色</p>
+							<p className="mt-1.5 text-xs text-muted-foreground">
+								在左侧选择角色，即可查看并调整它的权限范围
+							</p>
 						</CardContent>
 					)}
 				</Card>

@@ -6,8 +6,6 @@ import { prefersReducedMotion, useFlip } from '@/components/ui/motion'
 import { RIBBON_ITEMS, type RibbonItem } from '@/components/ui/ribbon-items'
 import type { RibbonTagKind } from '@/components/ui/ribbon-tags'
 import { ribbonDragOffset, ribbonInsertionIndex } from '@/components/ui/ribbonPreferences'
-import { Switch } from '@/components/ui/switch'
-import { useRibbonLock } from '@/components/ui/useRibbonLock'
 import { useRibbonNavigation } from '@/components/ui/useRibbonNavigation'
 import { usePermissions } from '@/contexts/PermissionContext'
 import { cn } from '@/lib/utils'
@@ -24,11 +22,9 @@ import {
 	LayoutGrid,
 	Lightbulb,
 	Loader2,
-	Lock,
 	type LucideIcon,
 	Palette,
 	PanelLeft,
-	Plus,
 	ShieldCheck,
 	UserRound,
 } from 'lucide-react'
@@ -58,7 +54,6 @@ type DragPosition = { from: number; to: number }
 export function RibbonSettingsCard() {
 	const { isAdmin } = usePermissions()
 	const { order, canEdit, saving, add, remove, move } = useRibbonNavigation()
-	const { locked, canLock, toggleLocked } = useRibbonLock()
 	const [dragged, setDragged] = useState<RibbonTagKind | null>(null)
 	const [dragPosition, setDragPosition] = useState<DragPosition | null>(null)
 	const [dragPoint, setDragPoint] = useState<{ x: number; y: number } | null>(null)
@@ -74,8 +69,9 @@ export function RibbonSettingsCard() {
 		.map((kind) => candidates.find((item) => item.kind === kind))
 		.filter((item): item is RibbonItem => Boolean(item))
 	const hidden = candidates.filter((item) => !order.includes(item.kind))
+	const items = [...visible, ...hidden]
 	const draggedItem = dragged ? visible.find((item) => item.kind === dragged) : undefined
-	useFlip(listRef, [visible.map((item) => item.kind).join(',')], skipNextFlipRef, 'y')
+	useFlip(listRef, [items.map((item) => item.kind).join(',')], skipNextFlipRef, 'y')
 
 	const finishDrag = useCallback(
 		(persist: boolean) => {
@@ -114,7 +110,7 @@ export function RibbonSettingsCard() {
 	}, [canEdit, finishDrag])
 
 	const startDrag = (event: ReactPointerEvent<HTMLButtonElement>, index: number) => {
-		if (!canEdit || event.button !== 0 || draggedRef.current) return
+		if (!canEdit || index < 0 || event.button !== 0 || draggedRef.current) return
 		const item = visible[index]
 		const row = event.currentTarget.closest('li')
 		if (!item || !row || !listRef.current) return
@@ -138,7 +134,7 @@ export function RibbonSettingsCard() {
 		setDragPoint({ x: event.clientX, y: event.clientY })
 		const pointerY = event.clientY - list.getBoundingClientRect().top + list.scrollTop
 		const siblings = Array.from(
-			list.querySelectorAll<HTMLLIElement>(':scope > li[data-flip-key]'),
+			list.querySelectorAll<HTMLLIElement>(':scope > li[data-flip-key][data-shown="true"]'),
 		).filter((element) => element.dataset.flipKey !== kind)
 		const midpoints = siblings.map((element) => element.offsetTop + element.offsetHeight / 2)
 		const to = ribbonInsertionIndex(pointerY, midpoints)
@@ -157,6 +153,7 @@ export function RibbonSettingsCard() {
 	}
 
 	const moveBy = (index: number, delta: -1 | 1) => {
+		if (index < 0) return
 		const target = visible[index + delta]
 		const item = visible[index]
 		if (!target || !item || !move(index, index + delta)) return
@@ -189,32 +186,12 @@ export function RibbonSettingsCard() {
 				}
 			/>
 
-			<div className="flex items-center justify-between gap-4 rounded-control border border-border/50 bg-accent/25 px-3.5 py-3">
-				<div className="flex min-w-0 items-center gap-3">
-					<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control border border-border/50 bg-card text-muted-foreground shadow-surface">
-						<Lock className="h-3.5 w-3.5" aria-hidden />
-					</span>
-					<div className="min-w-0">
-						<p className="text-sm font-medium">固定展开</p>
-						<p className="mt-0.5 text-xs text-muted-foreground">侧栏常驻，不随鼠标收起</p>
-					</div>
-				</div>
-				<Switch
-					checked={locked}
-					disabled={!canLock}
-					onCheckedChange={(checked) => {
-						if (checked !== locked) toggleLocked()
-					}}
-					aria-label="固定左侧导航"
-				/>
-			</div>
-
 			<div className="flex items-center justify-between px-1">
 				<p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 					导航顺序
 				</p>
 				<span className="text-xs tabular-nums text-muted-foreground">
-					{visible.length} 个已显示
+					{visible.length} / {items.length} 个已显示
 				</span>
 			</div>
 			<ul
@@ -226,18 +203,26 @@ export function RibbonSettingsCard() {
 				onPointerCancel={(event) => finishPointer(event, false)}
 				onLostPointerCapture={(event) => finishPointer(event, false)}
 			>
-				{visible.map((item, index) => {
+				{items.map((item) => {
+					const shown = order.includes(item.kind)
+					const itemIndex = visible.findIndex((visibleItem) => visibleItem.kind === item.kind)
 					const isDragged = dragged === item.kind
-					const dragOffset = dragPosition
-						? ribbonDragOffset(index, dragPosition.from, dragPosition.to)
-						: 0
+					const dragOffset =
+						shown && dragPosition
+							? ribbonDragOffset(itemIndex, dragPosition.from, dragPosition.to)
+							: 0
 					return (
 						<li
 							key={item.kind}
 							data-flip-key={item.kind}
+							data-shown={shown}
 							className={cn(
-								'group relative flex h-16 items-center gap-2 rounded-control border border-border/50 bg-card/65 px-2.5 shadow-surface motion-safe:transition-[transform,border-color,box-shadow,background-color] motion-safe:duration-200',
-								!isDragged &&
+								'group relative flex h-16 items-center gap-2 rounded-control border px-2.5 motion-safe:transition-[transform,border-color,box-shadow,background-color] motion-safe:duration-200',
+								shown
+									? 'border-border/50 bg-card/65 shadow-surface'
+									: 'border-border/30 bg-muted/25 text-muted-foreground shadow-none',
+								shown &&
+									!isDragged &&
 									'hover:border-primary/30 hover:bg-card focus-within:border-primary/40 focus-within:shadow-control',
 								isDragged && 'border-dashed border-primary/40 bg-accent/35 shadow-none',
 							)}
@@ -260,15 +245,15 @@ export function RibbonSettingsCard() {
 										variant="ghost"
 										size="icon-sm"
 										className="-ml-1 h-9 w-7 cursor-grab px-0 text-muted-foreground [touch-action:none] hover:bg-transparent active:cursor-grabbing"
-										disabled={!canEdit}
+										disabled={!canEdit || !shown}
 										aria-label={`拖动${item.label}，也可按 Alt 加上下方向键排序`}
 										aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
-										onPointerDown={(event) => startDrag(event, index)}
-										onKeyDown={(event) => moveWithKeyboard(event, index)}
+										onPointerDown={(event) => startDrag(event, itemIndex)}
+										onKeyDown={(event) => moveWithKeyboard(event, itemIndex)}
 									>
 										<GripVertical className="h-4 w-4" aria-hidden />
 									</Button>
-									<ItemIdentity item={item} index={index} />
+									<ItemIdentity item={item} index={shown ? itemIndex : null} muted={!shown} />
 									<div className="flex shrink-0 items-center gap-0.5 transition-opacity max-sm:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
 										<Button
 											type="button"
@@ -276,8 +261,8 @@ export function RibbonSettingsCard() {
 											size="icon-sm"
 											className="h-8 w-7 px-0"
 											aria-label={`${item.label}上移`}
-											disabled={!canEdit || index === 0}
-											onClick={() => moveBy(index, -1)}
+											disabled={!canEdit || !shown || itemIndex === 0}
+											onClick={() => moveBy(itemIndex, -1)}
 										>
 											<ChevronUp className="h-4 w-4" aria-hidden />
 										</Button>
@@ -287,8 +272,8 @@ export function RibbonSettingsCard() {
 											size="icon-sm"
 											className="h-8 w-7 px-0"
 											aria-label={`${item.label}下移`}
-											disabled={!canEdit || index === visible.length - 1}
-											onClick={() => moveBy(index, 1)}
+											disabled={!canEdit || !shown || itemIndex === visible.length - 1}
+											onClick={() => moveBy(itemIndex, 1)}
 										>
 											<ChevronDown className="h-4 w-4" aria-hidden />
 										</Button>
@@ -298,12 +283,20 @@ export function RibbonSettingsCard() {
 										variant="ghost"
 										size="icon-sm"
 										className="h-9 w-9 px-0 text-muted-foreground hover:text-foreground"
-										disabled={!canEdit || visible.length <= 1}
-										aria-label={`隐藏${item.label}`}
-										title={visible.length <= 1 ? '至少保留一个标签' : `隐藏${item.label}`}
-										onClick={() => remove(item.kind)}
+										disabled={!canEdit || (shown && visible.length <= 1)}
+										aria-label={`${shown ? '隐藏' : '显示'}${item.label}`}
+										title={
+											shown && visible.length <= 1
+												? '至少保留一个标签'
+												: `${shown ? '隐藏' : '显示'}${item.label}`
+										}
+										onClick={() => (shown ? remove(item.kind) : add(item.kind))}
 									>
-										<Eye className="h-4 w-4" aria-hidden />
+										{shown ? (
+											<Eye className="h-4 w-4" aria-hidden />
+										) : (
+											<EyeOff className="h-4 w-4" aria-hidden />
+										)}
 									</Button>
 								</>
 							)}
@@ -312,36 +305,8 @@ export function RibbonSettingsCard() {
 				})}
 			</ul>
 
-			{hidden.length > 0 && (
-				<div className="border-t border-border/40 pt-3">
-					<p className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-						<EyeOff className="h-3.5 w-3.5" aria-hidden />
-						未显示
-					</p>
-					<ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-						{hidden.map((item) => (
-							<li key={item.kind}>
-								<Button
-									type="button"
-									variant="ghost"
-									className="h-auto w-full justify-start gap-2 border border-dashed border-border/60 px-3 py-2.5 text-muted-foreground hover:border-primary/40 hover:text-foreground"
-									disabled={!canEdit}
-									onClick={() => add(item.kind)}
-									aria-label={`显示${item.label}`}
-								>
-									<Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />
-									<span>{item.label}</span>
-									<span className="truncate font-label text-[10px] uppercase tracking-wide opacity-70">
-										{item.caption}
-									</span>
-								</Button>
-							</li>
-						))}
-					</ul>
-				</div>
-			)}
 			<p className="text-xs text-muted-foreground">
-				也可按 Alt + ↑↓ 排序；至少保留一个标签，重新显示的标签会排到最后。
+				点击眼睛切换显隐，也可按 Alt + ↑↓ 排序；至少保留一个标签，重新显示的标签会排到最后。
 			</p>
 			<p className="sr-only" aria-live="polite">
 				{announcement}
@@ -370,12 +335,20 @@ export function RibbonSettingsCard() {
 	)
 }
 
-function ItemIdentity({ item, index }: { item: RibbonItem; index: number }) {
+function ItemIdentity({
+	item,
+	index,
+	muted = false,
+}: {
+	item: RibbonItem
+	index: number | null
+	muted?: boolean
+}) {
 	const Icon = ITEM_ICONS[item.kind]
 	return (
-		<div className="flex min-w-0 flex-1 items-center gap-3">
+		<div className={cn('flex min-w-0 flex-1 items-center gap-3', muted && 'opacity-55')}>
 			<span className="w-5 shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground">
-				{String(index + 1).padStart(2, '0')}
+				{index === null ? '—' : String(index + 1).padStart(2, '0')}
 			</span>
 			<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-border/50 bg-accent/35 text-foreground">
 				<Icon className="h-4 w-4" aria-hidden />

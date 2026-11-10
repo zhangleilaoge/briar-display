@@ -1,6 +1,7 @@
 'use client'
 
 import { getRoles, getUsers, setUserRoles } from '@/api/admin'
+import { RoleIcon } from '@/components/admin/RoleIcon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,7 +19,7 @@ import {
 import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import type { Role } from '@briar/shared'
-import { AlertCircle, Check, History, Loader2, Search, Shield, User, X } from 'lucide-react'
+import { AlertCircle, Check, History, Loader2, Search, User, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import AccountStatusDialog, { type AccountStatusTarget } from './AccountStatusDialog'
 import AdminLayout from './AdminLayout'
@@ -295,7 +296,7 @@ function AdminUsersPageInner() {
 														{user.roles.length > 0 ? (
 															user.roles.map((role) => (
 																<Badge key={role.id} variant="secondary" className="gap-1">
-																	<Shield className="h-3 w-3" />
+																	<RoleIcon name={role.name} className="h-3 w-3" />
 																	{role.displayName}
 																</Badge>
 															))
@@ -307,7 +308,7 @@ function AdminUsersPageInner() {
 											</TableCell>
 											<TableCell>
 												{editingUserId === user.userId ? (
-													<div className="flex gap-1">
+													<div className="flex flex-wrap gap-2">
 														<Button
 															size="sm"
 															onClick={() => handleSave(user.userId)}
@@ -326,11 +327,12 @@ function AdminUsersPageInner() {
 														</Button>
 													</div>
 												) : (
-													<div className="flex gap-1">
+													<div className="flex flex-wrap gap-2">
 														{canChangeUserStatus(user) && (
 															<Button
 																size="sm"
-																variant="ghost"
+																variant="default"
+																className="h-8"
 																onClick={() => setStatusTarget(user)}
 															>
 																{user.disabledAt ? '启用' : '禁用'}
@@ -348,7 +350,8 @@ function AdminUsersPageInner() {
 														{isAdmin && (
 															<Button
 																size="sm"
-																variant="ghost"
+																variant="default"
+																className="h-8"
 																onClick={() => setMergeSource(user)}
 																data-testid="merge-user-button"
 															>

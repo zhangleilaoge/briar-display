@@ -163,12 +163,12 @@ export default function SchedulerTasksCard() {
 											)}
 										</p>
 									</div>
-									<div className="flex shrink-0 items-center justify-end gap-1.5">
+									<div className="flex shrink-0 items-center justify-end gap-2">
 										<Button
 											size="sm"
-											variant="ghost"
+											variant="default"
 											onClick={() => setHistoryTask(task)}
-											className="gap-1.5 text-muted-foreground"
+											className="gap-1.5"
 										>
 											<History className="h-3.5 w-3.5" />
 											历史记录
