@@ -342,6 +342,7 @@ function AdminUsersPageInner() {
 															<Button
 																size="sm"
 																variant="default"
+																className="h-8"
 																onClick={() => startEditing(user)}
 															>
 																编辑角色

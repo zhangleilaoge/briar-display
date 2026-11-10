@@ -121,8 +121,9 @@ export function RibbonSettingsCard() {
 		dragPositionRef.current = { from: index, to: index }
 		setDragged(item.kind)
 		setDragPosition({ from: index, to: index })
-		setDragPoint({ x: event.clientX, y: event.clientY })
-		setDragWidth(row.getBoundingClientRect().width)
+		const bounds = row.getBoundingClientRect()
+		setDragPoint({ x: bounds.left + bounds.width / 2, y: event.clientY })
+		setDragWidth(bounds.width)
 	}
 
 	const previewDrag = (event: ReactPointerEvent<HTMLUListElement>) => {
@@ -131,7 +132,7 @@ export function RibbonSettingsCard() {
 		const position = dragPositionRef.current
 		if (!kind || !list || !position || pointerIdRef.current !== event.pointerId) return
 		event.preventDefault()
-		setDragPoint({ x: event.clientX, y: event.clientY })
+		setDragPoint((current) => (current ? { ...current, y: event.clientY } : null))
 		const pointerY = event.clientY - list.getBoundingClientRect().top + list.scrollTop
 		const siblings = Array.from(
 			list.querySelectorAll<HTMLLIElement>(':scope > li[data-flip-key][data-shown="true"]'),
