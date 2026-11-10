@@ -2,6 +2,7 @@
 
 import { getPreference, putPreference } from '@/api/users'
 import { usePermissions } from '@/contexts/PermissionContext'
+import { publishPreference, subscribePreference } from '@/lib/preferenceBus'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { readRibbonLockCache, writeRibbonLockCache } from './ribbonLockCache'
@@ -17,11 +18,24 @@ export function useRibbonLock() {
 	const savedLockedRef = useRef(false)
 	const revisionRef = useRef(0)
 	const writeQueueRef = useRef<Promise<void>>(Promise.resolve())
+	const sourceRef = useRef(Symbol('ribbon-locked'))
 
 	const replaceLocked = useCallback((next: boolean) => {
 		lockedRef.current = next
 		setLocked(next)
 	}, [])
+
+	// 同页其它实例（侧栏锁图标 / 个人中心设置）切换或回滚后同步
+	useEffect(
+		() =>
+			subscribePreference(PREFERENCE_KEY, (value, source) => {
+				if (source === sourceRef.current) return
+				const next = value === true
+				savedLockedRef.current = next
+				replaceLocked(next)
+			}),
+		[replaceLocked],
+	)
 
 	useIsomorphicLayoutEffect(() => {
 		const cached = readRibbonLockCache(window.localStorage)
@@ -75,6 +89,7 @@ export function useRibbonLock() {
 		const revision = ++revisionRef.current
 		writeRibbonLockCache(window.localStorage, user.id, next)
 		replaceLocked(next)
+		publishPreference(PREFERENCE_KEY, next, sourceRef.current)
 		writeQueueRef.current = writeQueueRef.current
 			.catch(() => undefined)
 			.then(async () => {
@@ -86,6 +101,7 @@ export function useRibbonLock() {
 					if (revisionRef.current === revision) {
 						writeRibbonLockCache(window.localStorage, user.id, savedLockedRef.current)
 						replaceLocked(savedLockedRef.current)
+						publishPreference(PREFERENCE_KEY, savedLockedRef.current, sourceRef.current)
 						toast.error('侧栏固定设置保存失败，请重试')
 					}
 				}

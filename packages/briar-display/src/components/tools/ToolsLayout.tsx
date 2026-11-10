@@ -17,6 +17,8 @@ import {
 } from 'lucide-react'
 import { type ReactNode, useEffect } from 'react'
 import { MediaTaskProvider } from './MediaTaskProvider'
+import { visibleToolItems } from './toolsVisibility'
+import { useToolsVisibility } from './useToolsVisibility'
 
 interface NavItem {
 	label: string
@@ -73,12 +75,7 @@ export function ToolsShell({ children, currentPath }: ToolsLayoutProps) {
 				currentPath={currentPath}
 				className="flex h-screen flex-col overflow-hidden"
 			>
-				<PageHeader
-					crumbs={[{ label: '工具箱' }]}
-					nav={TOOLS_NAV_ITEMS}
-					currentPath={currentPath}
-					inlineAt="2xl"
-				/>
+				<ToolsHeader currentPath={currentPath} />
 
 				{/* 内容区 */}
 				<main className="rv-content-inset flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
@@ -92,5 +89,18 @@ export function ToolsShell({ children, currentPath }: ToolsLayoutProps) {
 				</main>
 			</ThemeShell>
 		</PermissionProvider>
+	)
+}
+
+/** 顶栏 tab 按个人中心「设置」里的工具箱显隐过滤（需在 PermissionProvider 内） */
+function ToolsHeader({ currentPath }: { currentPath: string }) {
+	const { hidden } = useToolsVisibility()
+	return (
+		<PageHeader
+			crumbs={[{ label: '工具箱' }]}
+			nav={visibleToolItems(TOOLS_NAV_ITEMS, hidden, currentPath)}
+			currentPath={currentPath}
+			inlineAt="2xl"
+		/>
 	)
 }

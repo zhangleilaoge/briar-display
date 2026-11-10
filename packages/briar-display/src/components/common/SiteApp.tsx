@@ -12,6 +12,7 @@ import {
 import { MediaTaskProvider } from '@/components/tools/MediaTaskProvider'
 import { TOOLS_LAST_TAB_KEY, ToolsShell } from '@/components/tools/ToolsLayout'
 import { TOOL_ROUTES } from '@/components/tools/toolRoutes'
+import { readHiddenToolsCache } from '@/components/tools/toolsVisibility'
 import { RibbonSidebar } from '@/components/ui/ribbon-sidebar'
 import { MARKETS_SECTION, sectionTitle } from '@/config/site-routes'
 import { PermissionProvider } from '@/contexts/PermissionContext'
@@ -31,6 +32,24 @@ function restoreLastRoute(key: string, routes: SectionRoute[], fallback: string)
 		// 存储不可用时使用默认子页。
 	}
 	return fallback
+}
+
+/** 工具箱入口：跳过个人中心「设置」里隐藏的工具 */
+function restoreToolRoute() {
+	let routes = TOOL_ROUTES
+	try {
+		const hidden = new Set(
+			readHiddenToolsCache(
+				localStorage,
+				TOOL_ROUTES.map((route) => route.path),
+			) ?? [],
+		)
+		const visible = TOOL_ROUTES.filter((route) => !hidden.has(route.path))
+		if (visible.length > 0) routes = visible
+	} catch {
+		// 存储不可用时不过滤。
+	}
+	return restoreLastRoute(TOOLS_LAST_TAB_KEY, routes, routes[0].path)
 }
 
 const MarketSectorsRoute = lazy(async () => {
@@ -62,7 +81,7 @@ export const SITE_ROUTES: SiteRoute[] = [
 		path: '/briar/tools',
 		title: '工具箱',
 		section: 'tools',
-		redirect: () => restoreLastRoute(TOOLS_LAST_TAB_KEY, TOOL_ROUTES, TOOL_ROUTES[0].path),
+		redirect: restoreToolRoute,
 	},
 	...TOOL_ROUTES.map((route) => ({ ...route, section: 'tools' as const })),
 	{

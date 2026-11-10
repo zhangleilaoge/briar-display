@@ -6,6 +6,7 @@ import LoginMethodsCard from '@/components/profile/LoginMethodsCard'
 import MergeHistoryCard from '@/components/profile/MergeHistoryCard'
 import MessagesPanel from '@/components/profile/MessagesPanel'
 import { ProfileSheet, ProfileSheetHeader } from '@/components/profile/ProfileSheet'
+import SettingsPanel from '@/components/profile/SettingsPanel'
 import { CountBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,6 +26,7 @@ import {
 	Loader2,
 	Mail,
 	Pencil,
+	Settings,
 	Shield,
 	User as UserIcon,
 	X,
@@ -52,12 +54,11 @@ function ProfilePageInner() {
 	const [savingName, setSavingName] = useState(false)
 	const [nameError, setNameError] = useState<string | null>(null)
 	const fileInputRef = useRef<HTMLInputElement>(null)
-	// 支持 ?tab=messages 直达站内信页签
+	// 支持 ?tab=messages / ?tab=settings 直达对应页签
 	const [tab, setTab] = useState(() => {
 		if (typeof window === 'undefined') return 'profile'
-		return new URLSearchParams(window.location.search).get('tab') === 'messages'
-			? 'messages'
-			: 'profile'
+		const param = new URLSearchParams(window.location.search).get('tab')
+		return param === 'messages' || param === 'settings' ? param : 'profile'
 	})
 
 	if (permLoading || permsLoading) {
@@ -189,6 +190,13 @@ function ProfilePageInner() {
 							{unread > 0 && (
 								<CountBadge variant="danger">{unread > 99 ? '99+' : unread}</CountBadge>
 							)}
+						</TabsTrigger>
+						<TabsTrigger
+							value="settings"
+							className="justify-start gap-2 px-3 py-2 data-[state=active]:shadow-control md:w-full"
+						>
+							<Settings className="h-3.5 w-3.5" />
+							设置
 						</TabsTrigger>
 					</TabsList>
 
@@ -399,6 +407,10 @@ function ProfilePageInner() {
 
 						<TabsContent value="messages" className="mt-0">
 							<MessagesPanel />
+						</TabsContent>
+
+						<TabsContent value="settings" className="mt-0">
+							<SettingsPanel />
 						</TabsContent>
 					</div>
 				</Tabs>
