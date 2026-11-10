@@ -82,11 +82,11 @@
 
 ## 头部沪深300ETF占比（官方历史快照）
 
-概览页 `/briar/markets` 的自选股下方有「头部沪深300ETF占比」卡片，橙色线为四只样本 ETF 对应计算值占沪深300流通市值的百分比（左轴），紫色线为沪深300收盘点位（右轴）。默认展示「视频口径 + 全部」，可切换「实际规模」和「近一年」；下方基金明细及悬停 / 触摸历史点同步切换。前端组件 `Csi300EtfScaleCard.tsx` / `Csi300EtfScaleChart.tsx`，沿用 `lightweight-charts` 按需加载，独立于现有分时 / K 线 `TrendChart`。
+概览页 `/briar/markets` 的自选股下方有「头部沪深300ETF占比」卡片，橙色线为四只样本 ETF 实际规模（份额 × 单位净值）占沪深300流通市值的百分比（左轴），紫色线为沪深300收盘点位（右轴）。只有一种口径；可切换「全部 / 近一年」时间范围。前端组件 `Csi300EtfScaleCard.tsx` / `Csi300EtfScaleChart.tsx`，沿用 `lightweight-charts` 按需加载，独立于现有分时 / K 线 `TrendChart`。
 
-- API：`GET /api/markets/csi300-etf-scale`，公开 GET、无任意基金代码参数。返回 `asOf`（曲线与基金明细共同截止日）、`points`（日期、两种占比、指数收盘、两种合计计算值、流通市值）、`funds`（最新原始份额、两种净值及对应计算值）、`sources` 与缓存元信息。`ratioPct` / `totalAssets` / `assets` 为实际规模口径；`videoRatioPct` / `videoValue` / `cumulativeValue` 为视频口径。
+- API：`GET /api/markets/csi300-etf-scale`，公开 GET、无任意基金代码参数。返回 `asOf`（曲线与基金明细共同截止日）、`points`（日期、占比 `ratioPct`、指数收盘、合计实际规模 `totalAssets`、流通市值）、`funds`（最新原始份额、单位净值、实际规模 `assets`）、`sources` 与缓存元信息。
 - 固定样本：华泰柏瑞 **510300**、华夏 **510330**（上交所），嘉实 **159919**（深交所），易方达 **510310**（上交所）。仅为头部 ETF 样本，**不是中央汇金 / 国家队真实持仓**，不含其他沪深300ETF、场外基金和联接基金；也不能把全部份额变化解释成国家队申赎。
-- 实际规模 = 当日份额 × 当日**单位净值**；视频口径计算值 = 当日份额 × 当日**累计净值**；各自占比 = 四只对应计算值之和 / 沪深300流通市值 × 100%。视频口径用于按参考视频的公式复现曲线，不读取 EasyK 原始数据。**累计净值含历史分红，其乘积不是实际资产规模**，两种口径不能混称。
+- 实际规模 = 当日份额 × 当日**单位净值**；占比 = 四只实际规模之和 / 沪深300流通市值 × 100%。**不使用累计净值**：累计净值含历史分红 / 份额折算调整（如 510300 约 1.83 vs 单位净值约 4.06），份额 × 累计净值会把规模低估一半以上。早期「视频口径」（份额 × 累计净值）已下线。
 - 不是通用基金模块：本次没有新增场外基金目录、搜索、详情或自选体系，原有个股 / ETF 搜索与自选不变。
 
 ### 数据源、单位与完整月份边界
@@ -95,19 +95,19 @@
 | :--- | :--- | :--- |
 | 上交所三只 ETF 份额 | `query.sse.com.cn/commonQuery.do`，`COMMON_SSE_ZQPZ_ETFZL_XXPL_ETFGM_SEARCH_L`，按 `STAT_DATE` 每日查询 | 筛 `SEC_CODE`，`TOT_VOL` 为万份，×10000 转为份；单日一次取全表，不在前端请求时回源 |
 | 159919 份额 | `www.szse.cn/api/report/ShowReport/data`，`CATALOGID=scsj_fund_jjgm&jjlb=ETF&txtDm=159919` | `current_size` 为带千分位的万份；固定 20 行分页，单次范围最长 6 个月，本功能按月查询。T 日晚间仅供参考，以 T+1 早间更新为准 |
-| 四只 ETF 单位、累计净值 | `fund.eastmoney.com/pingzhongdata/{code}.js` | 分别提取并 `JSON.parse` `Data_netWorthTrend` 和 `Data_ACWorthTrend`；`y` 是单位净值，累计净值为二元数组的第二项。按同一时间戳配对，再按 `Asia/Shanghai` 取交易日；不执行 JS |
+| 四只 ETF 单位净值 | `fund.eastmoney.com/pingzhongdata/{code}.js` | 提取并 `JSON.parse` `Data_netWorthTrend`，`y` 是单位净值；按 `Asia/Shanghai` 取交易日；不执行 JS |
 | 沪深300收盘、流通市值 | 上交所统计月报 `COMMON_SSE_ZQZS_M_CSI300_INDEX_C&MDATE=YYYYMM` | 整月逐日 `MDATE / CLS / CPT_NGT`；`CPT_NGT` 为亿元，×1e8 转为元并消除浮点尾差 |
 
-所有数据必须对齐同一个交易日，四只样本缺一不可。缺份额、缺单位或累计净值、净值日期错位、数值无效时，该次月份同步失败并保留旧快照，不补零、不借用相邻交易日，也不把累计净值回退为单位净值。上交所月报尚未公布当月时返回空结果；**页面只展示官方完整月份，不用实时总市值或自由流通股本估算当月点**。卡片始终显示实际 `asOf`，普通的月报发布滞后不等于上游失败。当前 2026 年 10 月月报尚无数据，曲线截止 2026-09-30，不补估算点。
+所有数据必须对齐同一个交易日，四只样本缺一不可。缺份额、缺单位净值、净值日期错位、数值无效时，该次月份同步失败并保留旧快照，不补零、不借用相邻交易日。上交所月报尚未公布当月时返回空结果；**页面只展示官方完整月份，不用实时总市值或自由流通股本估算当月点**。卡片始终显示实际 `asOf`，普通的月报发布滞后不等于上游失败。内置种子截止 2026-09-30，之后的完整月份由调度任务写入数据库。
 
 ### 历史种子、数据库和更新
 
-- `csi300EtfScale.ts`：样本定义、日期 / 单位、快照校验、合并和两种占比计算；`csi300EtfSources.ts`：上游解析与抓取；`csi300EtfService.ts`：读取、缓存和增量同步。解析、生成种子和线上同步共用同一套逻辑。
+- `csi300EtfScale.ts`：样本定义、日期 / 单位、快照校验、合并和占比计算；`csi300EtfSources.ts`：上游解析与抓取；`csi300EtfService.ts`：读取、缓存和增量同步。解析、生成种子和线上同步共用同一套逻辑。
 - 手动重建种子：根目录运行 `bun run --filter @briar/node generate:csi300-etf-scale`。默认从 **2022-10-10** 覆盖到最近已结束月份，可用 `--from YYYY-MM-DD --to YYYY-MM-DD` 限定日期。脚本限速顺序请求上交所日份额，输出 `services/market/csi300EtfScale.seed.json`（原始快照，不手写行情数值）；本次内置 2022-10-10 至 2026-09-30 共 968 个交易日。
-- MySQL 表 `market_csi300_etf_snapshots` 以 `trade_date` 为主键，保存指数收盘、流通市值（元）及四只基金原始 JSON。表定义在 `schema.sql`，`CREATE TABLE IF NOT EXISTS` 同时覆盖新库与存量库；DAL 为 `csi300EtfScaleDal.ts`，同日多条批量 upsert 幂等。读取旧数据库快照时，可从同日种子补累计净值；无法在构建响应时取得累计净值则明确失败。
+- MySQL 表 `market_csi300_etf_snapshots` 以 `trade_date` 为主键，保存指数收盘、流通市值（元）及四只基金原始 JSON。表定义在 `schema.sql`，`CREATE TABLE IF NOT EXISTS` 同时覆盖新库与存量库；DAL 为 `csi300EtfScaleDal.ts`，同日多条批量 upsert 幂等。旧快照 JSON 里残留的 `cumulativeNav` 字段会被忽略。
 - GET 合并内置种子与 2022-10-10 以来的数据库快照（同日以数据库为准），通过 `cachedLoad('csi300:etf-scale', 5分钟)` 单飞缓存，**不会在用户打开页面时回溯上游**。数据库未迁移或暂时不可用时返回内置种子并标 `stale`；有效快照为空才返回 502。前端按接口 `pollMs` 每小时刷新。
 - 调度任务 `sync-csi300-etf-scale` 每日 **21:43** 检查最近完整月份（`BRIAR_CSI300_ETF_SCALE_CRON` 可覆盖，`runOnStart: false`）：月报未发布或种子 / 数据库已完整则跳过；有缺日才完整抓取、校验并 upsert 该月。任务注册于 `schedulerConfig.ts`，支持管理后台手动触发，worker 为 `src/jobs/sync-csi300-etf-scale.mjs`，运行记录沿用 `scheduler_runs`。
-- 视频可辨认采样点复算（2025-06-03）：沪深300收盘 **3852.01**，视频口径占比 **1.097194%**（图中约 1.0979%），实际规模口径 **2.336535%**。采样测试使用当日交易所份额、上交所流通市值和公开累计净值，不能用实际规模曲线冒充视频曲线。
+- 采样点复算（2025-06-03）：沪深300收盘 **3852.01**，实际规模占比 **2.336535%**。
 - 截止日交叉校验示例（2026-09-30）：四只单位净值分别为 4.4312、4.6207、4.6260、4.3043，合计实际规模约 2295.50 亿元，占比约 0.4553477%。数值由份额 × 单位净值重算，不引用行情市值字段代替。
 
 ## 板块详情弹窗：成分股 → 个股（导航栈）

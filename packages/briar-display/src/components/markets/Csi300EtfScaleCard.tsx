@@ -11,30 +11,22 @@ import { StaleBadge } from './MarketStatusBar'
 import { formatAmount } from './marketUtils'
 import { unwrap, useMarketPolling } from './useMarketPolling'
 
-type ScaleMode = 'video' | 'actual'
 type ChartRange = 'all' | 'year'
 
 export default function Csi300EtfScaleCard() {
-	const [mode, setMode] = useState<ScaleMode>('video')
 	const [range, setRange] = useState<ChartRange>('all')
 	const { data, error, loading, refreshing, refresh } = useMarketPolling(
 		async () => unwrap(await getCsi300EtfScale()),
 		(result) => result.pollMs,
 		[],
 	)
-	const isVideo = mode === 'video'
 	const points = useMemo(() => {
 		const all = data?.points ?? []
 		const cutoff = data
 			? new Date(Date.parse(`${data.asOf}T00:00:00Z`) - 365 * 86_400_000).toISOString().slice(0, 10)
 			: ''
-		return (range === 'year' ? all.filter((point) => point.date >= cutoff) : all).map((point) => ({
-			date: point.date,
-			indexClose: point.indexClose,
-			ratioPct: isVideo ? point.videoRatioPct : point.ratioPct,
-			totalAssets: isVideo ? point.videoValue : point.totalAssets,
-		}))
-	}, [data, range, isVideo])
+		return range === 'year' ? all.filter((point) => point.date >= cutoff) : all
+	}, [data, range])
 	const latest = points.at(-1)
 
 	return (
@@ -47,9 +39,7 @@ export default function Csi300EtfScaleCard() {
 							<h2 className="text-base font-medium">头部沪深300ETF占比</h2>
 						</div>
 						<p className="mt-1 text-xs text-muted-foreground">
-							{isVideo
-								? '4只样本ETF份额 × 累计净值 ÷ 沪深300流通市值'
-								: '4只样本ETF实际规模 ÷ 沪深300流通市值'}
+							4只样本ETF份额 × 单位净值 ÷ 沪深300流通市值
 							{data && <span className="ml-1">· 官方数据截至 {data.asOf}</span>}
 						</p>
 					</div>
@@ -66,12 +56,6 @@ export default function Csi300EtfScaleCard() {
 				</div>
 
 				<div className="flex flex-wrap gap-2">
-					<Tabs value={mode} onValueChange={(value) => setMode(value as ScaleMode)}>
-						<TabsList aria-label="占比计算口径">
-							<TabsTrigger value="video">视频口径</TabsTrigger>
-							<TabsTrigger value="actual">实际规模</TabsTrigger>
-						</TabsList>
-					</Tabs>
 					<Tabs value={range} onValueChange={(value) => setRange(value as ChartRange)}>
 						<TabsList aria-label="图表时间范围">
 							<TabsTrigger value="all">全部</TabsTrigger>
@@ -102,7 +86,7 @@ export default function Csi300EtfScaleCard() {
 									{latest.ratioPct.toFixed(3)}%
 								</span>
 								<span className="text-sm text-muted-foreground">
-									{isVideo ? '四只累计净值计算值' : '四只实际规模合计'}{' '}
+									四只实际规模合计{' '}
 									<span className="font-medium text-foreground">
 										{formatAmount(latest.totalAssets)}
 									</span>
@@ -114,8 +98,8 @@ export default function Csi300EtfScaleCard() {
 						)}
 						<Csi300EtfScaleChart
 							data={points}
-							ratioLabel={isVideo ? '视频占比' : '规模占比'}
-							amountLabel={isVideo ? '累计净值计算值' : '实际规模'}
+							ratioLabel="规模占比"
+							amountLabel="实际规模"
 							className="h-[280px] sm:h-[320px]"
 						/>
 						<div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
@@ -129,12 +113,9 @@ export default function Csi300EtfScaleCard() {
 											{fund.code}
 										</span>
 									</div>
-									<p className="mt-2 font-medium tabular-nums">
-										{formatAmount(isVideo ? fund.cumulativeValue : fund.assets)}
-									</p>
+									<p className="mt-2 font-medium tabular-nums">{formatAmount(fund.assets)}</p>
 									<p className="mt-0.5 text-[11px] leading-4 text-muted-foreground tabular-nums">
-										{formatAmount(fund.shares)}份 · {isVideo ? '累计净值' : '单位净值'}{' '}
-										{(isVideo ? fund.cumulativeNav : fund.unitNav).toFixed(4)}
+										{formatAmount(fund.shares)}份 · 单位净值 {fund.unitNav.toFixed(4)}
 									</p>
 								</div>
 							))}
@@ -143,13 +124,12 @@ export default function Csi300EtfScaleCard() {
 				)}
 
 				<div className="space-y-2 text-xs text-muted-foreground">
-					<p>官方月报发布后补齐完整月份，未公布的当月不估算。份额与两种净值按交易日对齐。</p>
+					<p>官方月报发布后补齐完整月份，未公布的当月不估算。份额与单位净值按交易日对齐。</p>
 					<details className="rounded-lg bg-card/40 px-3 py-2">
 						<summary className="cursor-pointer select-none">计算公式与数据来源</summary>
 						<div className="mt-2 space-y-1.5 leading-5">
-							<p>实际规模 = 当日份额 × 当日单位净值；视频口径 = 当日份额 × 当日累计净值。</p>
-							<p>占比 = 四只ETF对应计算值之和 ÷ 当日沪深300流通市值 × 100%。</p>
-							<p>视频口径用于复现参考曲线；累计净值含历史分红，其乘积不代表实际资产规模。</p>
+							<p>实际规模 = 当日份额 × 当日单位净值。</p>
+							<p>占比 = 四只ETF实际规模之和 ÷ 当日沪深300流通市值 × 100%。</p>
 							{data?.sources.map((source) => (
 								<p key={source}>{source}</p>
 							))}

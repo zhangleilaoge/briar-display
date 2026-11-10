@@ -11,7 +11,7 @@ export const CSI300_ETFS = [
 export const CSI300_ETF_SOURCES = [
 	'上海证券交易所：ETF 份额、沪深300收盘及流通市值',
 	'深圳证券交易所：ETF 份额',
-	'东方财富基金：单位净值、累计净值',
+	'东方财富基金：单位净值',
 ]
 
 export const CSI300_HISTORY_START = '2022-10-10'
@@ -20,7 +20,6 @@ export interface Csi300EtfFundSnapshot {
 	code: string
 	shares: number
 	unitNav: number
-	cumulativeNav?: number
 }
 
 export interface Csi300EtfSnapshot {
@@ -100,7 +99,7 @@ export function assertCompletedMonth(month: string, now = Date.now()): string {
 export function createSnapshot(
 	index: Csi300IndexDay,
 	sharesByCode: Readonly<Record<string, number>>,
-	navByCode: Readonly<Record<string, { date: string; unitNav: number; cumulativeNav?: number }>>,
+	navByCode: Readonly<Record<string, { date: string; unitNav: number }>>,
 ): Csi300EtfSnapshot {
 	assertDate(index.date)
 	const funds = CSI300_ETFS.map((fund) => {
@@ -110,11 +109,6 @@ export function createSnapshot(
 			code: fund.code,
 			shares: positiveNumber(sharesByCode[fund.code], `${index.date} ${fund.code} 份额`),
 			unitNav: positiveNumber(nav.unitNav, `${index.date} ${fund.code} 单位净值`),
-			...(nav.cumulativeNav === undefined
-				? {}
-				: {
-						cumulativeNav: positiveNumber(nav.cumulativeNav, `${index.date} ${fund.code} 累计净值`),
-					}),
 		}
 	})
 	return {
@@ -125,29 +119,13 @@ export function createSnapshot(
 	}
 }
 
-function requireCumulativeNav(fund: Csi300EtfFundSnapshot, date: string) {
-	if (fund.cumulativeNav === undefined) throw new Error(`${date} ${fund.code} 缺少当日累计净值`)
-	return positiveNumber(fund.cumulativeNav, `${date} ${fund.code} 累计净值`)
-}
-
 export function mergeSnapshots(
 	seed: readonly Csi300EtfSnapshot[],
 	stored: readonly Csi300EtfSnapshot[],
 	now = Date.now(),
 ): Csi300EtfSnapshot[] {
 	const byDate = new Map(seed.map((snapshot) => [snapshot.date, snapshot]))
-	for (const snapshot of stored) {
-		const seededByCode = new Map(
-			(byDate.get(snapshot.date)?.funds ?? []).map((fund) => [fund.code, fund]),
-		)
-		byDate.set(snapshot.date, {
-			...snapshot,
-			funds: snapshot.funds.map((fund) => {
-				const cumulativeNav = fund.cumulativeNav ?? seededByCode.get(fund.code)?.cumulativeNav
-				return { ...fund, ...(cumulativeNav === undefined ? {} : { cumulativeNav }) }
-			}),
-		})
-	}
+	for (const snapshot of stored) byDate.set(snapshot.date, snapshot)
 	const today = shanghaiDate(now)
 	return [...byDate.values()]
 		.filter((snapshot) => snapshot.date >= CSI300_HISTORY_START && snapshot.date <= today)
@@ -163,30 +141,18 @@ export function buildScaleData(
 			snapshot,
 			Object.fromEntries(snapshot.funds.map((fund) => [fund.code, fund.shares])),
 			Object.fromEntries(
-				snapshot.funds.map((fund) => [
-					fund.code,
-					{
-						date: snapshot.date,
-						unitNav: fund.unitNav,
-						...(fund.cumulativeNav === undefined ? {} : { cumulativeNav: fund.cumulativeNav }),
-					},
-				]),
+				snapshot.funds.map((fund) => [fund.code, { date: snapshot.date, unitNav: fund.unitNav }]),
 			),
 		),
 	)
 	const points = completeSnapshots.map((snapshot) => {
+		// 实际规模 = 份额 × 单位净值；累计净值含历史分红/折算调整，不能用来算规模
 		const totalAssets = snapshot.funds.reduce((sum, fund) => sum + fund.shares * fund.unitNav, 0)
-		const videoValue = snapshot.funds.reduce(
-			(sum, fund) => sum + fund.shares * requireCumulativeNav(fund, snapshot.date),
-			0,
-		)
 		return {
 			date: snapshot.date,
 			ratioPct: (totalAssets / snapshot.floatMarketCap) * 100,
-			videoRatioPct: (videoValue / snapshot.floatMarketCap) * 100,
 			indexClose: snapshot.indexClose,
 			totalAssets,
-			videoValue,
 			floatMarketCap: snapshot.floatMarketCap,
 		}
 	})
@@ -196,10 +162,8 @@ export function buildScaleData(
 		points,
 		funds: latest.funds.map((fund) => ({
 			...fund,
-			cumulativeNav: requireCumulativeNav(fund, latest.date),
 			name: CSI300_ETFS.find((item) => item.code === fund.code)?.name ?? fund.code,
 			assets: fund.shares * fund.unitNav,
-			cumulativeValue: fund.shares * requireCumulativeNav(fund, latest.date),
 		})),
 		sources: [...CSI300_ETF_SOURCES],
 		pollMs: 60 * 60_000,
