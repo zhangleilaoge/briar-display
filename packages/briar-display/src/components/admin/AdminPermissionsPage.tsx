@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { RefreshRegion } from '@/components/ui/refresh-region'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import {
@@ -49,6 +50,7 @@ function AdminPermissionsPageInner() {
 	const [allPermissions, setAllPermissions] = useState<Permission[]>([])
 	const [selectedRole, setSelectedRole] = useState<RoleWithPermissions | null>(null)
 	const [loading, setLoading] = useState(true)
+	const [hasLoaded, setHasLoaded] = useState(false)
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -72,6 +74,7 @@ function AdminPermissionsPageInner() {
 		} catch {
 			setError('加载数据失败')
 		} finally {
+			setHasLoaded(true)
 			setLoading(false)
 		}
 	}, [])
@@ -189,7 +192,7 @@ function AdminPermissionsPageInner() {
 		})
 	}
 
-	if (permLoading || loading) {
+	if (permLoading || (loading && !hasLoaded)) {
 		return (
 			<AdminLayout currentPath="/briar/admin/permissions">
 				<div className="flex items-center justify-center py-20">
@@ -229,7 +232,11 @@ function AdminPermissionsPageInner() {
 				</div>
 			)}
 
-			<div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+			<RefreshRegion
+				refreshing={loading}
+				label="正在更新角色与权限…"
+				className="grid gap-6 lg:grid-cols-[300px_1fr]"
+			>
 				{/* 左侧：角色列表 */}
 				<Card>
 					<CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
@@ -462,7 +469,7 @@ function AdminPermissionsPageInner() {
 						</CardContent>
 					)}
 				</Card>
-			</div>
+			</RefreshRegion>
 		</AdminLayout>
 	)
 }

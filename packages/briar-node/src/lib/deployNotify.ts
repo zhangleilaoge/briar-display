@@ -1,6 +1,6 @@
 /**
  * 发布站内信：文案与判定（纯函数，便于单测）
- * 仅 CDN 主流程 deploy.yml；开始/失败通知管理员，成功不发。
+ * 仅 CDN 主流程 deploy.yml；成功/失败时通知管理员。
  */
 
 import { githubRunUrl } from './deployFailure'
@@ -22,11 +22,7 @@ export const isCdnDeployWorkflow = (workflowPath?: string | null): boolean => {
 	return /(^|\/)deploy\.yml$/.test(workflowPath)
 }
 
-export const isDeployRunningStatus = (status: string): boolean => {
-	const s = status.toLowerCase()
-	if (s === 'success' || FAILED.has(s) || s === 'skipped' || s === 'neutral') return false
-	return true
-}
+export const isDeploySuccessStatus = (status: string): boolean => status.toLowerCase() === 'success'
 
 export const isDeployFailedStatus = (status: string): boolean => FAILED.has(status.toLowerCase())
 
@@ -35,7 +31,7 @@ const shortSha = (sha: string) => (sha.length > 7 ? sha.slice(0, 7) : sha)
 const truncate = (text: string, max: number) =>
 	text.length <= max ? text : `${text.slice(0, max - 1)}…`
 
-export interface DeployNotifyStartInput {
+export interface DeployNotifyInput {
 	runId: string
 	commit: string
 	ref: string
@@ -44,19 +40,19 @@ export interface DeployNotifyStartInput {
 	repo?: string
 }
 
-export interface DeployNotifyFailInput extends DeployNotifyStartInput {
+export interface DeployNotifyFailInput extends DeployNotifyInput {
 	status: string
 	failedJob?: string | null
 	failedStep?: string | null
 	errorExcerpt?: string | null
 }
 
-export const buildDeployStartMessage = (
-	input: DeployNotifyStartInput,
+export const buildDeploySuccessMessage = (
+	input: DeployNotifyInput,
 ): { type: string; title: string; content: string } => {
 	const repo = input.repo || 'zhangleilaoge/briar-display'
 	const lines = [
-		'CDN 部署已开始。',
+		'CDN 部署成功。',
 		`触发：${input.actor || '未知'}`,
 		`分支：${input.ref || '未知'}`,
 		`提交：${shortSha(input.commit || '')}`,
@@ -64,8 +60,8 @@ export const buildDeployStartMessage = (
 	if (input.msg?.trim()) lines.push(`说明：${truncate(input.msg.trim().split('\n')[0], 120)}`)
 	if (/^\d+$/.test(input.runId)) lines.push(`Actions：${githubRunUrl(repo, input.runId)}`)
 	return {
-		type: 'deploy_start',
-		title: '发布开始',
+		type: 'deploy_success',
+		title: '发布成功',
 		content: lines.join('\n'),
 	}
 }

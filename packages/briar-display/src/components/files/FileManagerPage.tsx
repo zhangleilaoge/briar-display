@@ -12,6 +12,7 @@ import {
 	renameFolder,
 } from '@/api/files'
 import AdminPagination from '@/components/admin/AdminPagination'
+import { RefreshRegion } from '@/components/ui/refresh-region'
 import { PermissionProvider } from '@/contexts/PermissionContext'
 import { useRequirePermission } from '@/hooks/useRequirePermission'
 import { PERMISSIONS } from '@briar/shared'
@@ -71,6 +72,7 @@ function FileManagerPageInner() {
 		total,
 		typeCounts,
 		loading,
+		hasLoaded,
 		search,
 		keyword,
 		typeFilter,
@@ -462,49 +464,53 @@ function FileManagerPageInner() {
 					/>
 				)}
 
-				{loading ? (
+				{loading && !hasLoaded ? (
 					<div className="rv-fade-in flex items-center justify-center py-20">
 						<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 					</div>
-				) : visibleFiles.length === 0 && subFolders.length === 0 ? (
-					<div className="rv-fade-in py-20 text-center text-muted-foreground">
-						{typeFilter === 'folder'
-							? '没有匹配的文件夹'
-							: keyword || typeFilter
-								? '没有匹配的文件'
-								: '这里还是空的，上传文件或新建文件夹吧'}
-					</div>
 				) : (
-					<>
-						<FileGrid
-							files={visibleFiles}
-							subFolders={subFolders}
-							selected={selected}
-							total={gridTotal}
-							dropFolderId={dropFolderId}
-							onToggleSelect={toggleSelect}
-							onToggleSelectAll={toggleSelectAll}
-							onFileClick={handleFileClick}
-							onFileContextMenu={openFileContextMenu}
-							onFolderContextMenu={openFolderContextMenu}
-							onFolderOpen={openFolder}
-							onFolderRename={setRenameTarget}
-							onFolderDelete={handleDeleteFolder}
-							onFileDragStart={handleFileDragStart}
-							onFolderDragOver={handleFolderDragOver}
-							onFolderDragLeave={() => setDropFolderId(null)}
-							onFolderDrop={handleFolderDrop}
-						/>
+					<RefreshRegion refreshing={loading} label="正在更新文件列表…">
+						{visibleFiles.length === 0 && subFolders.length === 0 ? (
+							<div className="rv-fade-in py-20 text-center text-muted-foreground">
+								{typeFilter === 'folder'
+									? '没有匹配的文件夹'
+									: keyword || typeFilter
+										? '没有匹配的文件'
+										: '这里还是空的，上传文件或新建文件夹吧'}
+							</div>
+						) : (
+							<>
+								<FileGrid
+									files={visibleFiles}
+									subFolders={subFolders}
+									selected={selected}
+									total={gridTotal}
+									dropFolderId={dropFolderId}
+									onToggleSelect={toggleSelect}
+									onToggleSelectAll={toggleSelectAll}
+									onFileClick={handleFileClick}
+									onFileContextMenu={openFileContextMenu}
+									onFolderContextMenu={openFolderContextMenu}
+									onFolderOpen={openFolder}
+									onFolderRename={setRenameTarget}
+									onFolderDelete={handleDeleteFolder}
+									onFileDragStart={handleFileDragStart}
+									onFolderDragOver={handleFolderDragOver}
+									onFolderDragLeave={() => setDropFolderId(null)}
+									onFolderDrop={handleFolderDrop}
+								/>
 
-						{typeFilter !== 'folder' && (
-							<AdminPagination
-								total={total}
-								limit={PAGE_SIZE}
-								offset={(page - 1) * PAGE_SIZE}
-								onPageChange={(offset) => setPage(offset / PAGE_SIZE + 1)}
-							/>
+								{typeFilter !== 'folder' && (
+									<AdminPagination
+										total={total}
+										limit={PAGE_SIZE}
+										offset={(page - 1) * PAGE_SIZE}
+										onPageChange={(offset) => setPage(offset / PAGE_SIZE + 1)}
+									/>
+								)}
+							</>
 						)}
-					</>
+					</RefreshRegion>
 				)}
 			</div>
 

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { RefreshRegion } from '@/components/ui/refresh-region'
 import {
 	Table,
 	TableBody,
@@ -55,6 +56,7 @@ function AdminUsersPageInner() {
 	const [users, setUsers] = useState<UserWithRoles[]>([])
 	const [allRoles, setAllRoles] = useState<Role[]>([])
 	const [loading, setLoading] = useState(true)
+	const [hasLoaded, setHasLoaded] = useState(false)
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [search, setSearch] = useState('')
@@ -90,6 +92,7 @@ function AdminUsersPageInner() {
 		} catch {
 			setError('加载用户数据失败')
 		} finally {
+			setHasLoaded(true)
 			setLoading(false)
 		}
 	}, [])
@@ -242,12 +245,12 @@ function AdminUsersPageInner() {
 						</div>
 					)}
 
-					{loading ? (
+					{loading && !hasLoaded ? (
 						<div className="rv-fade-in flex items-center justify-center py-20">
 							<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 						</div>
 					) : (
-						<>
+						<RefreshRegion refreshing={loading} label="正在更新用户列表…">
 							<Table className="rv-fade-in">
 								<TableHeader>
 									<TableRow>
@@ -372,7 +375,7 @@ function AdminUsersPageInner() {
 								offset={(page - 1) * PAGE_SIZE}
 								onPageChange={(offset) => setPage(Math.floor(offset / PAGE_SIZE) + 1)}
 							/>
-						</>
+						</RefreshRegion>
 					)}
 				</CardContent>
 			</Card>

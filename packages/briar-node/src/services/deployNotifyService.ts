@@ -5,10 +5,10 @@ import { userRoleDal } from '../dal/userRoleDal'
 import { query } from '../lib/db'
 import {
 	buildDeployFailMessage,
-	buildDeployStartMessage,
+	buildDeploySuccessMessage,
 	isCdnDeployWorkflow,
 	isDeployFailedStatus,
-	isDeployRunningStatus,
+	isDeploySuccessStatus,
 } from '../lib/deployNotify'
 import type { DeployHistoryItem } from './deploymentService'
 
@@ -49,18 +49,16 @@ const broadcast = async (payload: {
 }
 
 export const deployNotifyService = {
-	/**
-	 * 同步落库后：进行中的 CDN 部署发「发布开始」（幂等 claim）
-	 */
-	async notifyStarts(items: DeployHistoryItem[]): Promise<void> {
+	/** 同步落库后：成功的 CDN 部署发「发布成功」（幂等 claim） */
+	async notifySuccesses(items: DeployHistoryItem[]): Promise<void> {
 		for (const item of items) {
 			if (!item.run) continue
 			if (!isCdnDeployWorkflow(item.workflowPath)) continue
-			if (!isDeployRunningStatus(item.status ?? '')) continue
+			if (!isDeploySuccessStatus(item.status ?? '')) continue
 			try {
-				const claimed = await deployRunDal.claimStartNotify(String(item.run))
+				const claimed = await deployRunDal.claimSuccessNotify(String(item.run))
 				if (!claimed) continue
-				const payload = buildDeployStartMessage({
+				const payload = buildDeploySuccessMessage({
 					runId: String(item.run),
 					commit: item.commit ?? '',
 					ref: item.ref ?? '',
@@ -69,9 +67,9 @@ export const deployNotifyService = {
 					repo: resolveRepo(),
 				})
 				const n = await broadcast(payload)
-				console.log(`[deploy-notify] 发布开始 run=${item.run} → ${n} 位管理员`)
+				console.log(`[deploy-notify] 发布成功 run=${item.run} → ${n} 位管理员`)
 			} catch (e) {
-				console.error(`[deploy-notify] 发布开始通知失败 run=${item.run}:`, e)
+				console.error(`[deploy-notify] 发布成功通知失败 run=${item.run}:`, e)
 			}
 		}
 	},

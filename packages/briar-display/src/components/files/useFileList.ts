@@ -46,6 +46,7 @@ export function useFileList() {
 		other: 0,
 	})
 	const [loading, setLoading] = useState(true)
+	const [hasLoaded, setHasLoaded] = useState(false)
 	const [search, setSearch] = useState('')
 	const [keyword, setKeyword] = useState('')
 	const [typeFilter, setTypeFilter] = useState<'' | FileViewFilter>('')
@@ -95,6 +96,7 @@ export function useFileList() {
 			} catch {
 				/* ignore */
 			} finally {
+				setHasLoaded(true)
 				setLoading(false)
 			}
 		},
@@ -132,6 +134,7 @@ export function useFileList() {
 		total,
 		typeCounts,
 		loading,
+		hasLoaded,
 		search,
 		keyword,
 		typeFilter,

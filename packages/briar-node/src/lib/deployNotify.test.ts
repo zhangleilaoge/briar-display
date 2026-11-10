@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import {
 	buildDeployFailMessage,
-	buildDeployStartMessage,
+	buildDeploySuccessMessage,
 	isCdnDeployWorkflow,
 	isDeployFailedStatus,
-	isDeployRunningStatus,
+	isDeploySuccessStatus,
 } from './deployNotify'
 
 describe('isCdnDeployWorkflow', () => {
@@ -22,11 +22,11 @@ describe('isCdnDeployWorkflow', () => {
 })
 
 describe('status helpers', () => {
-	test('running-like', () => {
-		expect(isDeployRunningStatus('in_progress')).toBe(true)
-		expect(isDeployRunningStatus('queued')).toBe(true)
-		expect(isDeployRunningStatus('success')).toBe(false)
-		expect(isDeployRunningStatus('failure')).toBe(false)
+	test('success', () => {
+		expect(isDeploySuccessStatus('success')).toBe(true)
+		expect(isDeploySuccessStatus('SUCCESS')).toBe(true)
+		expect(isDeploySuccessStatus('in_progress')).toBe(false)
+		expect(isDeploySuccessStatus('failure')).toBe(false)
 	})
 	test('failed-like', () => {
 		expect(isDeployFailedStatus('failure')).toBe(true)
@@ -37,18 +37,19 @@ describe('status helpers', () => {
 })
 
 describe('message builders', () => {
-	test('start message', () => {
-		const msg = buildDeployStartMessage({
+	test('success message', () => {
+		const msg = buildDeploySuccessMessage({
 			runId: '123',
 			commit: 'abcdef012345',
 			ref: 'master',
 			actor: 'zhangleilaoge',
 			msg: 'fix: something',
 		})
-		expect(msg.type).toBe('deploy_start')
-		expect(msg.title).toBe('发布开始')
-		expect(msg.content).toContain('CDN 部署已开始')
+		expect(msg.type).toBe('deploy_success')
+		expect(msg.title).toBe('发布成功')
+		expect(msg.content).toContain('CDN 部署成功')
 		expect(msg.content).toContain('abcdef0')
+		expect(msg.content).toContain('fix: something')
 		expect(msg.content).toContain('https://github.com/zhangleilaoge/briar-display/actions/runs/123')
 	})
 	test('fail message with excerpt', () => {

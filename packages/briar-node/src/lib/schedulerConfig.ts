@@ -109,8 +109,7 @@ export const schedulerTasks: SchedulerTask[] = [
 	{
 		name: 'sync-deploy-runs',
 		label: '同步部署记录',
-		description:
-			'拉取 GitHub Actions / jsonl 部署记录；CDN 发布开始与失败时给管理员发站内信（成功不发）',
+		description: '拉取 GitHub Actions / jsonl 部署记录；CDN 发布成功或失败时给管理员发站内信',
 		scheduleText: '每分钟',
 		cron: resolveCron('BRIAR_SYNC_DEPLOY_CRON', '* * * * *'),
 		runOnStart: false,

@@ -19,6 +19,7 @@ interface DeployRunRow {
 	failure_excerpt?: string | null
 	workflow_path?: string | null
 	start_notified_at?: Date | null
+	success_notified_at?: Date | null
 	fail_notified_at?: Date | null
 }
 
@@ -72,6 +73,7 @@ const mapRow = (row: DeployRunRow) => ({
 	failureExcerpt: row.failure_excerpt ?? null,
 	workflowPath: row.workflow_path ?? '',
 	startNotifiedAt: row.start_notified_at ?? null,
+	successNotifiedAt: row.success_notified_at ?? null,
 	failNotifiedAt: row.fail_notified_at ?? null,
 })
 
@@ -112,12 +114,10 @@ export const deployRunDal = {
 		return row ? mapRow(row) : null
 	},
 
-	/**
-	 * 原子抢占「开始」通知资格；affectedRows>0 表示本次应发站内信
-	 */
-	async claimStartNotify(runId: string): Promise<boolean> {
+	/** 原子抢占「成功」通知资格；affectedRows>0 表示本次应发站内信 */
+	async claimSuccessNotify(runId: string): Promise<boolean> {
 		const result = await execute(
-			'UPDATE deploy_runs SET start_notified_at = NOW() WHERE run_id = ? AND start_notified_at IS NULL',
+			'UPDATE deploy_runs SET success_notified_at = NOW() WHERE run_id = ? AND success_notified_at IS NULL',
 			[runId],
 		)
 		return result.affectedRows > 0

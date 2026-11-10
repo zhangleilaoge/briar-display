@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DateRangePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
+import { RefreshRegion } from '@/components/ui/refresh-region'
 import {
 	Select,
 	SelectContent,
@@ -81,6 +82,7 @@ function AdminLogsPageInner() {
 	const [total, setTotal] = useState(0)
 	const [offset, setOffset] = useState(0)
 	const [loading, setLoading] = useState(true)
+	const [hasLoaded, setHasLoaded] = useState(false)
 	// 默认全部展开；collapsedIds 记录被手动折叠的行（新查询结果自然恢复全展开）
 	const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set())
 	const [copiedTraceId, setCopiedTraceId] = useState<string | null>(null)
@@ -119,22 +121,26 @@ function AdminLogsPageInner() {
 	})
 
 	const fetchLogs = useCallback(async () => {
-		const res = await getLogs({
-			method: method !== 'all' ? method : undefined,
-			statusGroup: statusGroup !== 'all' ? statusGroup : undefined,
-			traceId: traceId || undefined,
-			keyword: keyword || undefined,
-			userId: userId || undefined,
-			startTime: startDate?.toISOString(),
-			endTime: endDate?.toISOString(),
-			limit: PAGE_SIZE,
-			offset,
-		})
-		if (res.success && res.data) {
-			setLogs(res.data.items)
-			setTotal(res.data.total)
+		try {
+			const res = await getLogs({
+				method: method !== 'all' ? method : undefined,
+				statusGroup: statusGroup !== 'all' ? statusGroup : undefined,
+				traceId: traceId || undefined,
+				keyword: keyword || undefined,
+				userId: userId || undefined,
+				startTime: startDate?.toISOString(),
+				endTime: endDate?.toISOString(),
+				limit: PAGE_SIZE,
+				offset,
+			})
+			if (res.success && res.data) {
+				setLogs(res.data.items)
+				setTotal(res.data.total)
+			}
+		} finally {
+			setHasLoaded(true)
+			setLoading(false)
 		}
-		setLoading(false)
 	}, [method, statusGroup, traceId, keyword, userId, startDate, endDate, offset])
 
 	const fetchStats = useCallback(async () => {
@@ -425,7 +431,7 @@ function AdminLogsPageInner() {
 			</div>
 
 			{/* Query summary */}
-			{!loading && logs.length > 0 && (
+			{logs.length > 0 && (
 				<div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border bg-card px-4 py-3 text-xs text-muted-foreground">
 					<span>
 						总计 <strong className="text-foreground">{total.toLocaleString()}</strong> 条
@@ -448,7 +454,7 @@ function AdminLogsPageInner() {
 			)}
 
 			{/* Log table */}
-			{loading ? (
+			{loading && !hasLoaded ? (
 				<div className="rv-fade-in flex items-center justify-center gap-2 py-16 text-muted-foreground">
 					<Loader2 className="h-5 w-5 animate-spin" />
 					加载中...
@@ -459,190 +465,192 @@ function AdminLogsPageInner() {
 					<p className="text-sm">暂无日志记录</p>
 				</div>
 			) : (
-				<div className="rv-fade-in overflow-x-auto rounded-md border">
-					<table className="w-full text-sm">
-						<thead>
-							<tr className="border-b bg-muted/50">
-								<th className="w-8 px-2 py-2" />
-								<th className="px-3 py-2 text-left rv-label text-[10px] text-muted-foreground">
-									时间
-								</th>
-								<th className="px-3 py-2 text-left rv-label text-[10px] text-muted-foreground">
-									方法
-								</th>
-								<th className="px-3 py-2 text-left rv-label text-[10px] text-muted-foreground">
-									路径
-								</th>
-								<th className="px-3 py-2 text-left rv-label text-[10px] text-muted-foreground">
-									状态
-								</th>
-								<th className="px-3 py-2 text-right rv-label text-[10px] text-muted-foreground">
-									耗时
-								</th>
-								<th className="hidden px-3 py-2 text-left font-medium text-muted-foreground lg:table-cell">
-									用户
-								</th>
-							</tr>
-						</thead>
-						<tbody className="divide-y">
-							{logs.map((log) => {
-								const isExpanded = !collapsedIds.has(log.id)
-								const toggleRow = () =>
-									setCollapsedIds((prev) => {
-										const next = new Set(prev)
-										if (next.has(log.id)) next.delete(log.id)
-										else next.add(log.id)
-										return next
-									})
-								return (
-									<Fragment key={log.id}>
-										<tr
-											key={log.id}
-											className={`cursor-pointer transition-colors hover:bg-muted/30 ${isExpanded ? 'bg-muted/20' : ''}`}
-											onClick={toggleRow}
-										>
-											<td className="px-2 py-2 text-muted-foreground">
-												{isExpanded ? (
-													<ChevronDown className="h-4 w-4" />
-												) : (
-													<ChevronRight className="h-4 w-4" />
-												)}
-											</td>
-											<td
-												className="whitespace-nowrap px-3 py-2"
-												title={formatFullTime(log.createdAt)}
+				<RefreshRegion refreshing={loading} label="正在更新日志…">
+					<div className="rv-fade-in overflow-x-auto rounded-md border">
+						<table className="w-full text-sm">
+							<thead>
+								<tr className="border-b bg-muted/50">
+									<th className="w-8 px-2 py-2" />
+									<th className="px-3 py-2 text-left rv-label text-[10px] text-muted-foreground">
+										时间
+									</th>
+									<th className="px-3 py-2 text-left rv-label text-[10px] text-muted-foreground">
+										方法
+									</th>
+									<th className="px-3 py-2 text-left rv-label text-[10px] text-muted-foreground">
+										路径
+									</th>
+									<th className="px-3 py-2 text-left rv-label text-[10px] text-muted-foreground">
+										状态
+									</th>
+									<th className="px-3 py-2 text-right rv-label text-[10px] text-muted-foreground">
+										耗时
+									</th>
+									<th className="hidden px-3 py-2 text-left font-medium text-muted-foreground lg:table-cell">
+										用户
+									</th>
+								</tr>
+							</thead>
+							<tbody className="divide-y">
+								{logs.map((log) => {
+									const isExpanded = !collapsedIds.has(log.id)
+									const toggleRow = () =>
+										setCollapsedIds((prev) => {
+											const next = new Set(prev)
+											if (next.has(log.id)) next.delete(log.id)
+											else next.add(log.id)
+											return next
+										})
+									return (
+										<Fragment key={log.id}>
+											<tr
+												key={log.id}
+												className={`cursor-pointer transition-colors hover:bg-muted/30 ${isExpanded ? 'bg-muted/20' : ''}`}
+												onClick={toggleRow}
 											>
-												<span className="font-mono text-xs">{formatTime(log.createdAt)}</span>
-											</td>
-											<td className="px-3 py-2">
-												<Badge
-													variant="secondary"
-													className={`text-[11px] ${METHOD_COLORS[log.method] || ''}`}
-												>
-													{log.method}
-												</Badge>
-											</td>
-											<td
-												className="max-w-[300px] truncate px-3 py-2 font-mono text-xs"
-												title={log.path}
-											>
-												{log.path}
-											</td>
-											<td className="px-3 py-2">
-												<Badge
-													variant="secondary"
-													className={`text-[11px] ${statusColor(log.status)}`}
-												>
-													{log.status}
-												</Badge>
-											</td>
-											<td
-												className={`whitespace-nowrap px-3 py-2 text-right font-mono text-xs ${durationColor(log.duration)}`}
-											>
-												{log.duration}ms
-											</td>
-											<td
-												className="hidden px-3 py-2 font-mono text-xs text-muted-foreground lg:table-cell"
-												title={log.userId || ''}
-											>
-												{log.userId?.slice(0, 8) || '-'}
-											</td>
-										</tr>
-										{isExpanded && (
-											<tr key={`${log.id}-detail`}>
+												<td className="px-2 py-2 text-muted-foreground">
+													{isExpanded ? (
+														<ChevronDown className="h-4 w-4" />
+													) : (
+														<ChevronRight className="h-4 w-4" />
+													)}
+												</td>
 												<td
-													colSpan={7}
-													className="border-b-2 border-b-[color:var(--rv-navy)]/25 bg-white/90 px-6 py-4 shadow-[inset_3px_0_0_var(--rv-navy)]"
+													className="whitespace-nowrap px-3 py-2"
+													title={formatFullTime(log.createdAt)}
 												>
-													<div className="grid grid-cols-1 gap-4 text-xs md:grid-cols-2">
-														<div>
-															<p className="mb-1 rv-label text-[10px] text-muted-foreground">
-																Trace ID
-															</p>
-															<div className="flex items-center gap-2">
-																<code className="rounded bg-muted px-2 py-0.5 font-mono">
-																	{log.traceId}
-																</code>
-																<button
-																	type="button"
-																	onClick={(e) => {
-																		e.stopPropagation()
-																		handleCopyTraceId(log.traceId)
-																	}}
-																	className="text-muted-foreground hover:text-foreground"
-																>
-																	{copiedTraceId === log.traceId ? (
-																		<Check className="h-3.5 w-3.5 text-success" />
-																	) : (
-																		<Copy className="h-3.5 w-3.5" />
-																	)}
-																</button>
-															</div>
-															{log.ip && (
-																<div className="mt-2">
-																	<p className="mb-0.5 rv-label text-[10px] text-muted-foreground">
-																		IP
-																	</p>
-																	<code className="font-mono">{log.ip}</code>
-																</div>
-															)}
-															{log.userAgent && (
-																<div className="mt-2">
-																	<p className="mb-0.5 rv-label text-[10px] text-muted-foreground">
-																		User-Agent
-																	</p>
-																	<p className="break-all text-foreground">{log.userAgent}</p>
-																</div>
-															)}
-														</div>
-														<div>
-															{log.requestParams && Object.keys(log.requestParams).length > 0 && (
-																<div>
-																	<p className="mb-1 rv-label text-[10px] text-muted-foreground">
-																		请求参数
-																	</p>
-																	<pre className="max-h-40 overflow-auto rounded bg-muted p-2 font-mono">
-																		{JSON.stringify(log.requestParams, null, 2)}
-																	</pre>
-																</div>
-															)}
-															{log.responseBody && (
-																<div className="mt-2">
-																	<p className="mb-0.5 rv-label text-[10px] text-muted-foreground">
-																		响应体（截断 2000 字符）
-																	</p>
-																	<pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-2 font-mono">
-																		{log.responseBody}
-																	</pre>
-																</div>
-															)}
-															{log.errorMessage && (
-																<div className="mt-2">
-																	<p className="mb-0.5 font-medium text-danger">错误信息</p>
-																	<pre className="rounded border border-danger/30 bg-danger-soft p-2 text-danger">
-																		{log.errorMessage}
-																	</pre>
-																</div>
-															)}
-															{log.errorStack && (
-																<div className="mt-2">
-																	<p className="mb-0.5 font-medium text-danger">错误堆栈</p>
-																	<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-all rounded border border-danger/30 bg-danger-soft p-2 font-mono text-[11px] text-danger">
-																		{log.errorStack}
-																	</pre>
-																</div>
-															)}
-														</div>
-													</div>
+													<span className="font-mono text-xs">{formatTime(log.createdAt)}</span>
+												</td>
+												<td className="px-3 py-2">
+													<Badge
+														variant="secondary"
+														className={`text-[11px] ${METHOD_COLORS[log.method] || ''}`}
+													>
+														{log.method}
+													</Badge>
+												</td>
+												<td
+													className="max-w-[300px] truncate px-3 py-2 font-mono text-xs"
+													title={log.path}
+												>
+													{log.path}
+												</td>
+												<td className="px-3 py-2">
+													<Badge
+														variant="secondary"
+														className={`text-[11px] ${statusColor(log.status)}`}
+													>
+														{log.status}
+													</Badge>
+												</td>
+												<td
+													className={`whitespace-nowrap px-3 py-2 text-right font-mono text-xs ${durationColor(log.duration)}`}
+												>
+													{log.duration}ms
+												</td>
+												<td
+													className="hidden px-3 py-2 font-mono text-xs text-muted-foreground lg:table-cell"
+													title={log.userId || ''}
+												>
+													{log.userId?.slice(0, 8) || '-'}
 												</td>
 											</tr>
-										)}
-									</Fragment>
-								)
-							})}
-						</tbody>
-					</table>
-				</div>
+											{isExpanded && (
+												<tr key={`${log.id}-detail`}>
+													<td
+														colSpan={7}
+														className="border-b-2 border-b-[color:var(--rv-navy)]/25 bg-white/90 px-6 py-4 shadow-[inset_3px_0_0_var(--rv-navy)]"
+													>
+														<div className="grid grid-cols-1 gap-4 text-xs md:grid-cols-2">
+															<div>
+																<p className="mb-1 rv-label text-[10px] text-muted-foreground">
+																	Trace ID
+																</p>
+																<div className="flex items-center gap-2">
+																	<code className="rounded bg-muted px-2 py-0.5 font-mono">
+																		{log.traceId}
+																	</code>
+																	<button
+																		type="button"
+																		onClick={(e) => {
+																			e.stopPropagation()
+																			handleCopyTraceId(log.traceId)
+																		}}
+																		className="text-muted-foreground hover:text-foreground"
+																	>
+																		{copiedTraceId === log.traceId ? (
+																			<Check className="h-3.5 w-3.5 text-success" />
+																		) : (
+																			<Copy className="h-3.5 w-3.5" />
+																		)}
+																	</button>
+																</div>
+																{log.ip && (
+																	<div className="mt-2">
+																		<p className="mb-0.5 rv-label text-[10px] text-muted-foreground">
+																			IP
+																		</p>
+																		<code className="font-mono">{log.ip}</code>
+																	</div>
+																)}
+																{log.userAgent && (
+																	<div className="mt-2">
+																		<p className="mb-0.5 rv-label text-[10px] text-muted-foreground">
+																			User-Agent
+																		</p>
+																		<p className="break-all text-foreground">{log.userAgent}</p>
+																	</div>
+																)}
+															</div>
+															<div>
+																{log.requestParams && Object.keys(log.requestParams).length > 0 && (
+																	<div>
+																		<p className="mb-1 rv-label text-[10px] text-muted-foreground">
+																			请求参数
+																		</p>
+																		<pre className="max-h-40 overflow-auto rounded bg-muted p-2 font-mono">
+																			{JSON.stringify(log.requestParams, null, 2)}
+																		</pre>
+																	</div>
+																)}
+																{log.responseBody && (
+																	<div className="mt-2">
+																		<p className="mb-0.5 rv-label text-[10px] text-muted-foreground">
+																			响应体（截断 2000 字符）
+																		</p>
+																		<pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-2 font-mono">
+																			{log.responseBody}
+																		</pre>
+																	</div>
+																)}
+																{log.errorMessage && (
+																	<div className="mt-2">
+																		<p className="mb-0.5 font-medium text-danger">错误信息</p>
+																		<pre className="rounded border border-danger/30 bg-danger-soft p-2 text-danger">
+																			{log.errorMessage}
+																		</pre>
+																	</div>
+																)}
+																{log.errorStack && (
+																	<div className="mt-2">
+																		<p className="mb-0.5 font-medium text-danger">错误堆栈</p>
+																		<pre className="max-h-60 overflow-auto whitespace-pre-wrap break-all rounded border border-danger/30 bg-danger-soft p-2 font-mono text-[11px] text-danger">
+																			{log.errorStack}
+																		</pre>
+																	</div>
+																)}
+															</div>
+														</div>
+													</td>
+												</tr>
+											)}
+										</Fragment>
+									)
+								})}
+							</tbody>
+						</table>
+					</div>
+				</RefreshRegion>
 			)}
 
 			<AdminPagination

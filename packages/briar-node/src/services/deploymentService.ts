@@ -237,7 +237,7 @@ export const deploymentService = {
 	},
 
 	/**
-	 * 同步部署记录（jsonl + GitHub），落库并触发站内信。
+	 * 同步部署记录（jsonl + GitHub），落库并在发布成功/失败时触发站内信。
 	 * API 优先合并；token 全失效时退回纯 jsonl。
 	 * @param awaitFailureBackfill 定时任务传 true，等失败回填（含失败站内信）完成再返回；管理端列表默认 false 以免拖慢接口
 	 */
@@ -279,10 +279,9 @@ export const deploymentService = {
 		const merged = [...byRun.values()].sort((a, b) => b.at.localeCompare(a.at))
 		// 落库：部署记录持久化到 deploy_runs（写库失败不影响列表返回）
 		await deployRunDal.upsertMany(merged).catch((e) => console.error('部署记录落库失败:', e))
-		// 进行中的 CDN 部署 → 给管理员发「发布开始」站内信（幂等）
 		await deployNotifyService
-			.notifyStarts(merged)
-			.catch((e) => console.error('部署开始站内信失败:', e))
+			.notifySuccesses(merged)
+			.catch((e) => console.error('部署成功站内信失败:', e))
 		// 回填：库中缺起止时间的旧记录，按 run_id 逐个查 GitHub（每次同步最多 BACKFILL_BATCH 条）
 		if (workingToken) {
 			await backfillDeployDurations(workingToken).catch((e) =>

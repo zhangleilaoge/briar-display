@@ -116,3 +116,10 @@ ON DUPLICATE KEY UPDATE deleted_at = NULL;
 
 -- 8) 待办：表由 schema.sql 的 CREATE TABLE IF NOT EXISTS 建出；本文件无需语句。
 --    访客留言墙（guestbook_entries）已下线：代码不再读写；若生产库已建过该表可保留不动，不做 DROP。
+
+-- 9) 只在发布有结果时通知；历史成功记录标记为已通知，避免刷屏
+SET @s = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'deploy_runs' AND COLUMN_NAME = 'success_notified_at') = 0,
+  'ALTER TABLE deploy_runs ADD COLUMN success_notified_at TIMESTAMP NULL DEFAULT NULL COMMENT ''已发「发布成功」站内信时间（NULL=未发）'' AFTER start_notified_at', 'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+UPDATE deploy_runs SET success_notified_at = COALESCE(success_notified_at, NOW())
+WHERE status = 'success' AND success_notified_at IS NULL;

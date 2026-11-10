@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog'
 import { LinkifiedText } from '@/components/ui/linkified-text'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { RefreshRegion } from '@/components/ui/refresh-region'
 import { cn } from '@/lib/utils'
 import type { SiteMessage } from '@briar/shared'
 import { format } from 'date-fns'
@@ -43,6 +44,7 @@ export default function MessagesPanel() {
 	const [total, setTotal] = useState(0)
 	const [page, setPage] = useState(1)
 	const [loading, setLoading] = useState(true)
+	const [hasLoaded, setHasLoaded] = useState(false)
 	const [detail, setDetail] = useState<SiteMessage | null>(null)
 	const [detailOpen, setDetailOpen] = useState(false)
 	const [confirmId, setConfirmId] = useState<string | null>(null)
@@ -61,6 +63,7 @@ export default function MessagesPanel() {
 				setTotal(res.data.total)
 			}
 		} finally {
+			setHasLoaded(true)
 			setLoading(false)
 		}
 	}, [])
@@ -169,7 +172,7 @@ export default function MessagesPanel() {
 				}
 			/>
 			<div>
-				{loading ? (
+				{loading && !hasLoaded ? (
 					<div className="rv-fade-in flex items-center justify-center gap-2 py-10 text-muted-foreground">
 						<Loader2 className="h-4 w-4 animate-spin" />
 						加载中...
@@ -177,7 +180,7 @@ export default function MessagesPanel() {
 				) : items.length === 0 ? (
 					<p className="rv-fade-in py-10 text-center text-sm text-muted-foreground">暂无消息</p>
 				) : (
-					<>
+					<RefreshRegion refreshing={loading} label="正在更新站内信…">
 						<div className="rv-fade-in divide-y rounded-md border">
 							{items.map((msg) => (
 								<div
@@ -278,7 +281,7 @@ export default function MessagesPanel() {
 								</Button>
 							</div>
 						)}
-					</>
+					</RefreshRegion>
 				)}
 			</div>
 
