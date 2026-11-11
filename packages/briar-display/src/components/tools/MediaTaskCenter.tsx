@@ -17,7 +17,7 @@ import {
 	TriangleAlert,
 	X,
 } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useMediaTasks } from './mediaTaskContext'
 import { type MediaTask, type MediaTaskItem, getMediaTaskPercent } from './mediaTaskUtils'
 import { formatMb } from './toolMediaUtils'
@@ -28,7 +28,7 @@ const TASK_ICONS = {
 	zip: Package,
 } as const
 
-function TaskRing({ percent, status }: { percent: number; status: MediaTask['status'] }) {
+function TaskRing({ percent, status }: { percent: number; status: MediaTask['status'] | 'idle' }) {
 	const radius = 18
 	const circumference = 2 * Math.PI * radius
 	return (
@@ -64,7 +64,7 @@ function TaskRing({ percent, status }: { percent: number; status: MediaTask['sta
 					<Check className="h-4 w-4 text-success" />
 				) : status === 'error' ? (
 					<TriangleAlert className="h-4 w-4 text-destructive" />
-				) : (
+				) : status === 'idle' ? null : (
 					<span className="text-[9px] font-semibold">{percent}%</span>
 				)}
 			</span>
@@ -291,18 +291,28 @@ function TaskCard({ task }: { task: MediaTask }) {
 export default function MediaTaskCenter() {
 	const { tasks } = useMediaTasks()
 	const [expanded, setExpanded] = useState(false)
-	const [closedForTaskId, setClosedForTaskId] = useState<string | null>(null)
-	const latestTaskId = tasks[0]?.id
+	const [open, setOpen] = useState(false)
+	const prevNewestId = useRef<string | undefined>(undefined)
+	const newestId = tasks[0]?.id
+	if (newestId && newestId !== prevNewestId.current) {
+		prevNewestId.current = newestId
+		if (!open) setOpen(true)
+	}
 	const close = useCallback(() => {
-		setClosedForTaskId(latestTaskId ?? null)
+		setOpen(false)
 		setExpanded(false)
-	}, [latestTaskId])
+	}, [])
 	const { closing, requestClose, state } = useExitAnimation(close)
-	if (tasks.length === 0 || closedForTaskId === tasks[0].id) return null
+	if (!open) return null
 	const running = tasks.filter((task) => task.status === 'running').length
 	const featured = tasks.find((task) => task.status === 'running') ?? tasks[0]
-	const featuredPercent = getMediaTaskPercent(featured)
-	const summary = running > 0 ? `${running} 个进行中` : `${tasks.length} 个已结束`
+	const featuredPercent = featured ? getMediaTaskPercent(featured) : 0
+	const summary =
+		tasks.length === 0
+			? '暂无任务'
+			: running > 0
+				? `${running} 个进行中`
+				: `${tasks.length} 个已结束`
 
 	return (
 		<aside
@@ -320,11 +330,11 @@ export default function MediaTaskCenter() {
 					aria-label={expanded ? '收起媒体任务' : '展开媒体任务'}
 				>
 					<span className="flex w-full items-center gap-2.5">
-						<TaskRing percent={featuredPercent} status={featured.status} />
+						<TaskRing percent={featuredPercent} status={featured?.status ?? 'idle'} />
 						<span className="min-w-0 flex-1">
 							<span className="block text-sm font-semibold">媒体任务</span>
 							<span className="mt-0.5 block truncate text-[11px] font-normal text-muted-foreground">
-								{summary} · {featured.title}
+								{featured ? `${summary} · ${featured.title}` : summary}
 							</span>
 						</span>
 					</span>
@@ -365,9 +375,11 @@ export default function MediaTaskCenter() {
 				<div className="min-h-0 overflow-hidden">
 					<div className="max-h-[min(560px,calc(100dvh-8rem))] overflow-y-auto p-2">
 						<div className="flex flex-col gap-2">
-							{tasks.map((task) => (
-								<TaskCard key={task.id} task={task} />
-							))}
+							{tasks.length === 0 ? (
+								<p className="px-1 py-6 text-center text-xs text-muted-foreground">暂无任务</p>
+							) : (
+								tasks.map((task) => <TaskCard key={task.id} task={task} />)
+							)}
 						</div>
 						<footer className="mt-2 border-t px-1 pb-0.5 pt-2 text-[11px] text-muted-foreground">
 							站内切换保留任务；刷新或关闭页面会中断。
