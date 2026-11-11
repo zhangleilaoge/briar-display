@@ -2479,6 +2479,17 @@ progress {
 .rv-term-btn:hover {
 	color: var(--term-title);
 }
+.rv-terminal .rv-btn.rv-btn-default {
+	border-color: var(--term-border);
+	background-color: var(--term-bg-raised);
+	background-image: none;
+	color: var(--term-title);
+	box-shadow: none;
+}
+.rv-terminal .rv-btn.rv-btn-default:hover {
+	background-color: #212a38;
+	color: var(--term-title);
+}
 /* 终端型 Dialog：盖掉纸片底色/纸纹，标题不用纸片墨色 */
 .rv-paper-dialog.rv-terminal {
 	background-color: var(--term-bg) !important;

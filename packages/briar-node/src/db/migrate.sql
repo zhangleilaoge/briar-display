@@ -123,3 +123,12 @@ SET @s = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA 
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 UPDATE deploy_runs SET success_notified_at = COALESCE(success_notified_at, NOW())
 WHERE status = 'success' AND success_notified_at IS NULL;
+
+
+-- 10) 想法仅作者可见；存量数据默认公开
+SET @s = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'thoughts' AND COLUMN_NAME = 'is_private') = 0,
+  'ALTER TABLE thoughts ADD COLUMN is_private TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''是否仅作者可见：0 公开，1 私密'' AFTER body', 'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+SET @s = IF((SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'thoughts' AND INDEX_NAME = 'idx_visibility_created') = 0,
+  'ALTER TABLE thoughts ADD INDEX idx_visibility_created (is_private, created_at)', 'SELECT 1');
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;

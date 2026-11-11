@@ -1,10 +1,12 @@
 import { extractThoughtTags, generateId, parseThoughtTagList } from '@briar/shared'
 import { execute, query, queryOne } from '../lib/db'
+import { thoughtVisibilityCondition } from './thoughtVisibility'
 
 export interface ThoughtRecord {
 	id: string
 	userId: string
 	body: string
+	isPrivate: boolean
 	createdAt: Date
 	updatedAt: Date
 	authorName: string
@@ -18,6 +20,7 @@ interface ThoughtRow {
 	id: string
 	user_id: string
 	body: string
+	is_private: number | boolean
 	created_at: Date
 	updated_at: Date
 	author_name: string
@@ -26,7 +29,7 @@ interface ThoughtRow {
 	liked_by_me: number | string | boolean
 }
 
-const SELECT_COLS = `SELECT t.id, t.user_id, t.body, t.created_at, t.updated_at,
+const SELECT_COLS = `SELECT t.id, t.user_id, t.body, t.is_private, t.created_at, t.updated_at,
 	u.name AS author_name, u.avatar AS author_avatar,
 	(SELECT COUNT(*) FROM thought_likes tl WHERE tl.thought_id = t.id) AS like_count`
 
@@ -37,6 +40,7 @@ const mapRow = (row: ThoughtRow): ThoughtRecord => ({
 	id: row.id,
 	userId: row.user_id,
 	body: row.body,
+	isPrivate: Boolean(Number(row.is_private)),
 	createdAt: row.created_at,
 	updatedAt: row.updated_at,
 	authorName: row.author_name,
@@ -47,12 +51,13 @@ const mapRow = (row: ThoughtRow): ThoughtRecord => ({
 })
 
 export const thoughtDal = {
-	async create(data: { userId: string; body: string }): Promise<ThoughtRecord> {
+	async create(data: { userId: string; body: string; isPrivate: boolean }): Promise<ThoughtRecord> {
 		const id = generateId()
-		await execute('INSERT INTO thoughts (id, user_id, body) VALUES (?, ?, ?)', [
+		await execute('INSERT INTO thoughts (id, user_id, body, is_private) VALUES (?, ?, ?, ?)', [
 			id,
 			data.userId,
 			data.body,
+			data.isPrivate,
 		])
 		await thoughtDal.syncTags(id, data.body)
 		const record = await thoughtDal.findById(id, data.userId)
@@ -64,11 +69,14 @@ export const thoughtDal = {
 		const likedExpr = viewerId
 			? '(SELECT COUNT(*) FROM thought_likes tl2 WHERE tl2.thought_id = t.id AND tl2.user_id = ?) AS liked_by_me'
 			: '0 AS liked_by_me'
-		const params: unknown[] = viewerId ? [viewerId, id] : [id]
+		const visibility = thoughtVisibilityCondition(viewerId)
+		const params: unknown[] = viewerId
+			? [viewerId, ...visibility.params, id]
+			: [...visibility.params, id]
 		const row = await queryOne<ThoughtRow>(
 			`${SELECT_COLS}, ${likedExpr}
 			${FROM_JOIN}
-			WHERE t.id = ? AND t.deleted_at IS NULL`,
+			WHERE t.deleted_at IS NULL${visibility.sql} AND t.id = ?`,
 			params,
 		)
 		if (!row) return null
@@ -88,9 +96,10 @@ export const thoughtDal = {
 			? ` AND EXISTS (SELECT 1 FROM thought_tags tt WHERE tt.thought_id = t.id AND tt.tag IN (${tags.map(() => '?').join(', ')}) AND tt.deleted_at IS NULL)`
 			: ''
 		const tagParams: unknown[] = tags
+		const visibility = thoughtVisibilityCondition(params.viewerId)
 		const countRow = await queryOne<{ cnt: number }>(
-			`SELECT COUNT(*) AS cnt ${FROM_JOIN} WHERE t.deleted_at IS NULL${tagWhere}`,
-			tagParams,
+			`SELECT COUNT(*) AS cnt ${FROM_JOIN} WHERE t.deleted_at IS NULL${visibility.sql}${tagWhere}`,
+			[...visibility.params, ...tagParams],
 		)
 		const total = countRow?.cnt ?? 0
 		const offset = (params.page - 1) * params.pageSize
@@ -98,12 +107,12 @@ export const thoughtDal = {
 			? '(SELECT COUNT(*) FROM thought_likes tl2 WHERE tl2.thought_id = t.id AND tl2.user_id = ?) AS liked_by_me'
 			: '0 AS liked_by_me'
 		const sqlParams: unknown[] = params.viewerId
-			? [params.viewerId, ...tagParams, params.pageSize, offset]
-			: [...tagParams, params.pageSize, offset]
+			? [params.viewerId, ...visibility.params, ...tagParams, params.pageSize, offset]
+			: [...visibility.params, ...tagParams, params.pageSize, offset]
 		const rows = await query<ThoughtRow>(
 			`${SELECT_COLS}, ${likedExpr}
 			${FROM_JOIN}
-			WHERE t.deleted_at IS NULL${tagWhere}
+			WHERE t.deleted_at IS NULL${visibility.sql}${tagWhere}
 			ORDER BY t.created_at DESC
 			LIMIT ? OFFSET ?`,
 			sqlParams,
@@ -111,10 +120,15 @@ export const thoughtDal = {
 		return { items: await thoughtDal.attachTags(rows.map(mapRow)), total }
 	},
 
-	async updateBody(id: string, userId: string, body: string): Promise<ThoughtRecord | null> {
+	async updateBody(
+		id: string,
+		userId: string,
+		body: string,
+		isPrivate: boolean,
+	): Promise<ThoughtRecord | null> {
 		const result = await execute(
-			'UPDATE thoughts SET body = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
-			[body, id, userId],
+			'UPDATE thoughts SET body = ?, is_private = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+			[body, isPrivate, id, userId],
 		)
 		if (result.affectedRows === 0) return null
 		await thoughtDal.syncTags(id, body)
@@ -207,18 +221,19 @@ export const thoughtDal = {
 		return records.map((r) => ({ ...r, tags: byId.get(r.id) ?? [] }))
 	},
 
-	/** 标签列表 + 未删除想法数（热门在前） */
-	async listTags(limit = 100): Promise<{ tag: string; count: number }[]> {
+	/** 标签列表 + 当前用户可见想法数（热门在前） */
+	async listTags(limit = 100, viewerId?: string | null): Promise<{ tag: string; count: number }[]> {
+		const visibility = thoughtVisibilityCondition(viewerId)
 		const rows = await query<{ tag: string; cnt: number | string }>(
 			`SELECT tt.tag, COUNT(*) AS cnt
 			FROM thought_tags tt
 			JOIN thoughts t ON t.id = tt.thought_id AND t.deleted_at IS NULL
 			JOIN users u ON u.id = t.user_id AND u.deleted_at IS NULL
-			WHERE tt.deleted_at IS NULL
+			WHERE tt.deleted_at IS NULL${visibility.sql}
 			GROUP BY tt.tag
 			ORDER BY cnt DESC, tt.tag ASC
 			LIMIT ?`,
-			[limit],
+			[...visibility.params, limit],
 		)
 		return rows.map((r) => ({ tag: r.tag, count: Number(r.cnt) || 0 }))
 	},

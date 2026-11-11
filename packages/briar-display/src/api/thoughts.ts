@@ -11,6 +11,7 @@ export interface Thought {
 	id: string
 	userId: string
 	body: string
+	isPrivate: boolean
 	createdAt: string | Date
 	updatedAt: string | Date
 	likeCount: number
@@ -49,13 +50,13 @@ export const listThoughtTags = async () => {
 	return response.data
 }
 
-export const createThought = async (body: string) => {
-	const response = await apiClient.post<ApiResponse<Thought>>('/thoughts', { body })
+export const createThought = async (body: string, isPrivate = false) => {
+	const response = await apiClient.post<ApiResponse<Thought>>('/thoughts', { body, isPrivate })
 	return response.data
 }
 
-export const updateThought = async (id: string, body: string) => {
-	const response = await apiClient.put<ApiResponse<Thought>>(`/thoughts/${id}`, { body })
+export const updateThought = async (id: string, body: string, isPrivate: boolean) => {
+	const response = await apiClient.put<ApiResponse<Thought>>(`/thoughts/${id}`, { body, isPrivate })
 	return response.data
 }
 

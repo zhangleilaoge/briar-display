@@ -18,3 +18,4 @@
 - 权限 `admin:terminal:access`（admin 角色已授权），所有会话的命令行输入落 `terminal_audit_logs` 审计表
 - **设备授权**：使用前需邮箱验证码验证（复用通用验证码邮件模板），验码通过签发 7 天设备令牌（JWT，purpose=`terminal-device`，存前端 localStorage `briar_terminal_device`）；WS 连接与 `/api/terminal/host-info` 均强校验设备令牌
 - 页面顶部服务器信息面板（`/api/terminal/host-info`，ssh2 采集系统/CPU 负载/内存/硬盘，10s 缓存，前端 15s 轮询）
+- 标签可双击或点铅笔重命名；名称按会话序号保存在当前浏览器 localStorage `briar_terminal_tab_names`，最长 24 字符，不改变 SSH 会话，刷新后新会话按序号恢复名称

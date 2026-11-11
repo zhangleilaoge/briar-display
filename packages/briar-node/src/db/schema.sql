@@ -454,10 +454,12 @@ CREATE TABLE IF NOT EXISTS thoughts (
   id VARCHAR(36) PRIMARY KEY COMMENT '想法唯一标识',
   user_id VARCHAR(36) NOT NULL COMMENT '作者用户 ID',
   body TEXT NOT NULL COMMENT '正文（纯文本 + emoji，无 Markdown）',
+  is_private TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否仅作者可见：0 公开，1 私密',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL 为未删除）',
   INDEX idx_created_at (created_at),
+  INDEX idx_visibility_created (is_private, created_at),
   INDEX idx_user_id (user_id),
   INDEX idx_deleted_at (deleted_at),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

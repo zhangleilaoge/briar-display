@@ -32,6 +32,7 @@ function toPublic(record: NonNullable<Awaited<ReturnType<typeof thoughtDal.findB
 		id: record.id,
 		userId: record.userId,
 		body: record.body,
+		isPrivate: record.isPrivate,
 		createdAt: record.createdAt,
 		updatedAt: record.updatedAt,
 		likeCount: record.likeCount,
@@ -45,7 +46,7 @@ function toPublic(record: NonNullable<Awaited<ReturnType<typeof thoughtDal.findB
 	}
 }
 
-/** GET / — 想法列表（公开只读；登录则带 likedByMe） */
+/** GET / — 想法列表（公开只读；登录则带 likedByMe 和自己的私密想法） */
 thoughtRoutes.get('/', async (c) => {
 	const page = Math.max(1, Number(c.req.query('page')) || 1)
 	const pageSize = Math.min(50, Math.max(1, Number(c.req.query('pageSize')) || 20))
@@ -64,9 +65,10 @@ thoughtRoutes.get('/', async (c) => {
 	})
 })
 
-/** GET /tags — 标签列表（公开只读，按使用次数降序） */
+/** GET /tags — 标签列表（公开只读，按当前用户可见想法计数） */
 thoughtRoutes.get('/tags', async (c) => {
-	const tags = await thoughtDal.listTags()
+	const viewerId = await resolveUserId(c)
+	const tags = await thoughtDal.listTags(100, viewerId)
 	return c.json<ApiResponse>({ success: true, data: tags })
 })
 
@@ -83,7 +85,9 @@ thoughtRoutes.post('/', async (c) => {
 		)
 	}
 
-	const body = await c.req.json<{ body?: string }>().catch(() => ({}) as { body?: string })
+	const body = await c.req
+		.json<{ body?: string; isPrivate?: boolean }>()
+		.catch(() => ({}) as { body?: string; isPrivate?: boolean })
 	const text = typeof body.body === 'string' ? body.body.trim() : ''
 	if (!text) {
 		return c.json<ApiResponse>({ success: false, message: '内容不能为空' }, HTTP_STATUS.BAD_REQUEST)
@@ -95,7 +99,11 @@ thoughtRoutes.post('/', async (c) => {
 		)
 	}
 
-	const created = await thoughtDal.create({ userId: user.id, body: text })
+	const created = await thoughtDal.create({
+		userId: user.id,
+		body: text,
+		isPrivate: body.isPrivate === true,
+	})
 	return c.json<ApiResponse>({ success: true, data: toPublic(created) }, HTTP_STATUS.CREATED)
 })
 
@@ -124,7 +132,9 @@ thoughtRoutes.put('/:id', async (c) => {
 		)
 	}
 
-	const body = await c.req.json<{ body?: string }>().catch(() => ({}) as { body?: string })
+	const body = await c.req
+		.json<{ body?: string; isPrivate?: boolean }>()
+		.catch(() => ({}) as { body?: string; isPrivate?: boolean })
 	const text = typeof body.body === 'string' ? body.body.trim() : ''
 	if (!text) {
 		return c.json<ApiResponse>({ success: false, message: '内容不能为空' }, HTTP_STATUS.BAD_REQUEST)
@@ -136,7 +146,8 @@ thoughtRoutes.put('/:id', async (c) => {
 		)
 	}
 
-	const updated = await thoughtDal.updateBody(id, user.id, text)
+	const isPrivate = typeof body.isPrivate === 'boolean' ? body.isPrivate : existing.isPrivate
+	const updated = await thoughtDal.updateBody(id, user.id, text, isPrivate)
 	if (!updated) {
 		return c.json<ApiResponse>({ success: false, message: '更新失败' }, HTTP_STATUS.NOT_FOUND)
 	}

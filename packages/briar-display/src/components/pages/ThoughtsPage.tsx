@@ -15,6 +15,7 @@ import { EmojiInsertButton } from '@/components/thoughts/EmojiInsertButton'
 import { TagTextarea, type TagTextareaHandle } from '@/components/thoughts/TagTextarea'
 import { ThoughtsAsideBlock } from '@/components/thoughts/ThoughtsAsideBlock'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { LinkifiedText } from '@/components/ui/linkified-text'
 import { PageHeader } from '@/components/ui/page-header'
 import { PaperSheet } from '@/components/ui/paper-sheet'
@@ -23,7 +24,7 @@ import { PermissionProvider, usePermissions } from '@/contexts/PermissionContext
 import { formatTagList, toggleTagInList } from '@/lib/thoughtTagFilter'
 import { cn } from '@/lib/utils'
 import { normalizeThoughtTag, parseThoughtTagList } from '@briar/shared'
-import { Hash, Heart, Loader2, Pencil, Trash2, X } from 'lucide-react'
+import { Hash, Heart, Loader2, LockKeyhole, Pencil, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -69,6 +70,41 @@ function TagInsertButton({ onClick, disabled }: { onClick: () => void; disabled?
 			<Hash className="h-3.5 w-3.5" />
 			标签
 		</Button>
+	)
+}
+
+function PrivateVisibilityToggle({
+	id,
+	checked,
+	onChange,
+	disabled,
+}: {
+	id: string
+	checked: boolean
+	onChange: (checked: boolean) => void
+	disabled?: boolean
+}) {
+	return (
+		<div className="flex shrink-0 items-center gap-2">
+			<Checkbox
+				id={id}
+				checked={checked}
+				disabled={disabled}
+				onCheckedChange={(value) => onChange(value === true)}
+			/>
+			<label
+				htmlFor={id}
+				title="勾选后，访客和其他用户都看不到这条想法"
+				className={cn(
+					'inline-flex cursor-pointer items-center gap-1 whitespace-nowrap text-xs text-muted-foreground',
+					checked && 'font-medium text-[color:var(--rv-rose-deep)]',
+					disabled && 'cursor-not-allowed opacity-50',
+				)}
+			>
+				<LockKeyhole className="h-3.5 w-3.5" aria-hidden />
+				仅自己可见
+			</label>
+		</div>
 	)
 }
 
@@ -210,6 +246,7 @@ function ThoughtsPageInner() {
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const [draft, setDraft] = useState('')
+	const [draftPrivate, setDraftPrivate] = useState(false)
 	const [publishing, setPublishing] = useState(false)
 	const [publishError, setPublishError] = useState<string | null>(null)
 	const [activeTags, setActiveTags] = useState<string[]>(() => readTagsFromUrl())
@@ -281,9 +318,10 @@ function ThoughtsPageInner() {
 		setPublishing(true)
 		setPublishError(null)
 		try {
-			const res = await createThought(text)
+			const res = await createThought(text, draftPrivate)
 			if (res.success && res.data) {
 				setDraft('')
+				setDraftPrivate(false)
 				const matches =
 					activeTags.length === 0 || (res.data.tags ?? []).some((t) => activeTags.includes(t))
 				if (matches) {
@@ -407,15 +445,23 @@ function ThoughtsPageInner() {
 											{draft.trim().length}/{MAX_BODY}
 										</span>
 									</div>
-									<Button
-										type="button"
-										variant="primary"
-										onClick={() => void handlePublish()}
-										disabled={!draft.trim() || publishing}
-									>
-										{publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-										发布
-									</Button>
+									<div className="flex items-center gap-3">
+										<PrivateVisibilityToggle
+											id="new-thought-private"
+											checked={draftPrivate}
+											onChange={setDraftPrivate}
+											disabled={publishing}
+										/>
+										<Button
+											type="button"
+											variant="primary"
+											onClick={() => void handlePublish()}
+											disabled={!draft.trim() || publishing}
+										>
+											{publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+											发布
+										</Button>
+									</div>
 								</div>
 								{publishError && <p className="text-xs text-destructive">{publishError}</p>}
 							</PaperSheet>
@@ -496,6 +542,7 @@ function ThoughtCard({
 	const [overflows, setOverflows] = useState(false)
 	const [editing, setEditing] = useState(false)
 	const [editDraft, setEditDraft] = useState(thought.body)
+	const [editPrivate, setEditPrivate] = useState(thought.isPrivate)
 	const [saving, setSaving] = useState(false)
 	const [editError, setEditError] = useState<string | null>(null)
 	const [liking, setLiking] = useState(false)
@@ -503,8 +550,11 @@ function ThoughtCard({
 	const editRef = useRef<TagTextareaHandle>(null)
 
 	useEffect(() => {
-		if (!editing) setEditDraft(thought.body)
-	}, [thought.body, editing])
+		if (!editing) {
+			setEditDraft(thought.body)
+			setEditPrivate(thought.isPrivate)
+		}
+	}, [thought.body, thought.isPrivate, editing])
 
 	useEffect(() => {
 		const el = bodyRef.current
@@ -541,7 +591,7 @@ function ThoughtCard({
 		setSaving(true)
 		setEditError(null)
 		try {
-			const res = await updateThought(thought.id, text)
+			const res = await updateThought(thought.id, text, editPrivate)
 			if (res.success && res.data) {
 				onUpdated(res.data)
 				setEditing(false)
@@ -597,7 +647,18 @@ function ThoughtCard({
 						)}
 					</div>
 					<div className="min-w-0">
-						<p className="truncate text-sm font-medium">{thought.author?.name || '匿名'}</p>
+						<div className="flex min-w-0 items-center gap-2">
+							<p className="truncate text-sm font-medium">{thought.author?.name || '匿名'}</p>
+							{thought.isPrivate && (
+								<span
+									title="只有你能看到这条想法"
+									className="inline-flex shrink-0 items-center gap-1 rounded-sm border border-[color:var(--rv-rose-deep)]/20 bg-[var(--rv-pink)]/35 px-1.5 py-0.5 text-[10px] font-medium text-[color:var(--rv-rose-deep)]"
+								>
+									<LockKeyhole className="h-3 w-3" aria-hidden />
+									仅自己可见
+								</span>
+							)}
+						</div>
 						<p className="text-xs text-muted-foreground">{timeLabel}</p>
 					</div>
 				</div>
@@ -608,6 +669,7 @@ function ThoughtCard({
 								type="button"
 								onClick={() => {
 									setEditDraft(thought.body)
+									setEditPrivate(thought.isPrivate)
 									setEditError(null)
 									setEditing(true)
 								}}
@@ -642,7 +704,7 @@ function ThoughtCard({
 						className="min-h-[96px] resize-y rounded-none border-border/60 bg-[var(--rv-beige)]/80 font-normal"
 						autoFocus
 					/>
-					<div className="flex items-center justify-between gap-3">
+					<div className="flex flex-wrap items-center justify-between gap-3">
 						<div className="flex items-center gap-2">
 							<EmojiInsertButton
 								disabled={saving}
@@ -653,7 +715,13 @@ function ThoughtCard({
 								{editDraft.trim().length}/{MAX_BODY}
 							</span>
 						</div>
-						<div className="flex items-center gap-2">
+						<div className="flex flex-wrap items-center gap-2">
+							<PrivateVisibilityToggle
+								id={`edit-thought-private-${thought.id}`}
+								checked={editPrivate}
+								onChange={setEditPrivate}
+								disabled={saving}
+							/>
 							<Button
 								type="button"
 								variant="secondary"
