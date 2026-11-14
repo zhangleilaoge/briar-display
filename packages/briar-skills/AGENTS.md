@@ -21,7 +21,7 @@
 | `briar-youzan-ai-profile-push` | 给指定导购推一客一策：导入/生成画像话术 → 触发每日行动计划或单导购企微卡片 → H5/天网验证；支持按真实排期立即直发企微测试卡（preview/send/status、幂等回查） |
 | `briar-youzan-sales-leads-push` | 给指定导购推销售线索：选专属客户调 guide-promotion 测试入口造线索 → 线索列表 + 今日任务 LEADS_FOLLOW 分组验证 → 可清理 |
 | `briar-mail` | 发邮件（支持附件）：直连收件方 MX 投递，无需邮箱凭证 |
-| `briar-subtitle` | 视频字幕提取：烧录字幕抽帧直读或 whisper 语音转录（带时间轴） |
+| `briar-subtitle` | 视频字幕与语音内容提取：内嵌字幕导出、whisper 转录或烧录字幕抽帧，按提取目标与视频条件选择 |
 | `briar-grok-silly-tavern` | macOS 上安装/接线 grok2api（Go）与 SillyTavern（纯 Node），CDP 导入 grok SSO，ST 用 OpenAI 兼容接口聊 Grok |
 | `briar-media-download` | 通用媒体下载路由：平台枚举对齐网页「媒体解析」+ `mrds66`/`91porn`；网页已支持优先自助，仅本地站点走本机脚本（91porn 勿用 yt-dlp） |
 
